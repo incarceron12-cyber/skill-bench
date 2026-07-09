@@ -77,8 +77,25 @@ Recent benchmark papers suggest keeping three evaluation layers separate:
 1. **Artifact quality:** final deliverables such as spreadsheets, decks, memos, notebooks, and tickets should be graded for correctness, maintainability, and professional presentation.
 2. **Workflow checkpoints:** long-horizon tasks should expose partial-credit state checks so agents can be compared even when they fail before full completion.
 3. **Trace diagnosis:** execution logs should retain enough structure to localize failures to upstream causes such as planning, evidence retrieval, state tracking, tool use, or artifact construction.
+4. **Psychometric calibration:** per-task and per-rubric-check histories should estimate difficulty/discrimination so routine evaluation can use an informative mid-difficulty panel rather than always running the full task bank.
 
 This separation lets the project compound in two ways: benchmark scores become more informative for users, and failed runs become training data for improving agents, skills, and task design.
+
+## Benchmark operation principles
+
+Two reviewed papers sharpen the operating model:
+
+- **Efficient Benchmarking of AI Agents:** rank fidelity can remain high even when absolute score prediction degrades under scaffold or temporal shift. For routine comparisons, the project should distinguish rank-preserving reduced panels from full-suite absolute capability claims.
+- **Agent Psychometrics:** task difficulty in agentic benchmarks is explained by the whole task package, not only the user-facing prompt. Difficulty metadata should include source corpus structure, hidden constraints, verifier/rubric properties, reference-solution notes, tool requirements, and scaffold/model metadata.
+
+Implications for `skill-bench`:
+
+1. Keep a **full task bank** for coverage and periodic calibration.
+2. Maintain a **routine evaluation panel** of tasks or rubric checks with historical pass rates in the discriminative middle, initially around 30–70%.
+3. Store a **response matrix** with one row per agent-task/check attempt: task id, check id, model, scaffold, skills enabled, tool policy, outcome, cost, timestamp, and benchmark version.
+4. Report **rank fidelity** separately from absolute scores; use occasional full runs to validate that reduced panels still preserve ordering.
+5. Treat scaffold and skill-package choices as measurable confounds, not incidental metadata.
+6. Preserve private calibration metadata separately from public prompts to avoid leaking reference solutions or verifier logic.
 
 ## How domain expertise becomes a benchmark
 
@@ -91,6 +108,8 @@ A domain expert should not be asked to “make a benchmark.” Instead, extract 
 - Artifact convention: what a professional deliverable must look like.
 - Failure signature: what a polished but wrong answer looks like.
 - Review rubric: what criteria separate acceptable from excellent.
+- Difficulty feature: what makes this task/check easy, mid-range, or hard for current agents.
+- Scaffold sensitivity: what depends on browser control, file editing, memory, retrieval, or other harness design choices.
 
 ## Strategic idea
 

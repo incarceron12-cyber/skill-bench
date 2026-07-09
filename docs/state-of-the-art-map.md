@@ -14,6 +14,7 @@ This file tracks benchmark families relevant to `skill-bench`.
 | AIDABench | Document analysis agents | Heterogeneous documents | Analysis outputs | End-to-end pipeline checks | Useful for document-heavy source pools | How to evaluate evidence use? |
 | SaaS-Bench | Real deployable SaaS workflows | 23 open-source SaaS systems, multimodal inputs, persistent app state | Cross-application task completion | Weighted verification checkpoints + resolved score | Strong model for professional workflow realism and partial-credit state checks | Can we borrow checkpoint scoring without inheriting heavy environment maintenance? |
 | STRACE / trajectory diagnosis | Long-horizon agent failure optimization | Execution traces and dependency graphs | Root-cause module updates / diagnostic slices | Success-rate lift after localized optimization | Suggests benchmark logs should support causal failure slicing, not just final scoring | What minimal trace schema lets us diagnose planner vs retrieval vs artifact failures? |
+| Efficient Benchmarking / Agent Psychometrics | Low-cost, calibrated agent evaluation | Per-task response matrices, task artifacts, model/scaffold metadata | Reduced task panels, predicted difficulty, component ability estimates | Rank fidelity, AUC-ROC, IRT-style difficulty/ability models | Shows that benchmark operation needs psychometric infrastructure: pass-rate histories, mid-difficulty panels, and scaffold-aware reporting | Can artifact-heavy knowledge-work rubrics be reduced at the rubric-check level without losing diagnostic coverage? |
 | ClawsBench | Productivity agents + safety | Simulated workspace services | API actions / task completion | State-based task success and safety | Important for productivity-agent risks | How to include safety and prompt injection? |
 | SWE-bench / Terminal-Bench | Coding / terminal tasks | Repos or terminal envs | Patches / terminal outcomes | Tests | Shows value of executable scoring | What analogs exist for decks/spreadsheets/memos? |
 | PaperBench / PresentBench | Research replication / presentations | Papers, specs | Artifacts | Task-specific / judge scoring | Adjacent artifact-generation benchmarks | How mature are methods? |
@@ -38,6 +39,8 @@ This file tracks benchmark families relevant to `skill-bench`.
 - Presentation quality
 - Safety / policy compliance
 - Cost/time efficiency
+- Rank fidelity vs absolute score calibration
+- Task difficulty / discrimination
 
 ### Domain knowledge conversion primitives
 
@@ -51,3 +54,15 @@ This file tracks benchmark families relevant to `skill-bench`.
 - Data quality issue
 - “Looks good but wrong” trap
 - Root-cause failure slice
+- Mid-range difficulty panel
+- Scaffold / skill-package confound
+
+### Benchmark operation layer
+
+Recent psychometric benchmark papers suggest treating evaluation as an operating system, not only a dataset release:
+
+- **Full task bank:** broad coverage, used for cold-start calibration and periodic drift checks.
+- **Routine evaluation panel:** smaller set of historically mid-difficulty tasks or rubric checks, selected to preserve rank fidelity at lower cost.
+- **Private calibration metadata:** reference solutions, verifier internals, task-feature labels, and difficulty estimates kept separate from public prompts to avoid leakage.
+- **Response matrix:** one row per agent-task/check attempt with model, scaffold, skills, outcome, timestamp, cost, and benchmark version.
+- **Drift/saturation monitor:** trigger full re-evaluation when formerly discriminative tasks become too easy or too hard.
