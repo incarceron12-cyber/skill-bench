@@ -55,6 +55,7 @@ Output:
 | SOTA map | `docs/state-of-the-art-map.md` | Accumulates landscape understanding |
 | Incentive design | `docs/incentive-design.md` | Evolves strategy for expert contributions |
 | Benchmark templates | `templates/` | Converts research insights into buildable specs |
+| Task metadata template | `templates/task-metadata.md` | Captures difficulty features, domain primitives, root-cause tags, leakage controls, and response-matrix fields before pilots are built |
 | Daily reports | `reports/daily/` | Preserves thinking over time |
 | Git commits | GitHub history | Makes progress inspectable and reversible |
 
