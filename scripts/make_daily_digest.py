@@ -30,7 +30,26 @@ def main() -> int:
     args = ap.parse_args()
     idx = load_index()
     papers = list(idx.get("papers", {}).values())
-    papers.sort(key=lambda p: p.get("published") or p.get("updated") or "", reverse=True)
+
+    relevance_terms = [
+        "agent", "benchmark", "evaluation", "workflow", "office", "spreadsheet",
+        "document", "productivity", "long-horizon", "tool", "rubric", "skill",
+        "computer-use", "saas", "trajectory", "trace", "artifact", "professional",
+    ]
+
+    def score(p: dict) -> tuple[int, str]:
+        haystack = " ".join([
+            p.get("title", ""),
+            p.get("summary", ""),
+            p.get("discovered_via", ""),
+            " ".join(p.get("categories", [])),
+        ]).lower()
+        rel = sum(1 for t in relevance_terms if t in haystack)
+        if p.get("discovered_via") == "seed_arxiv_ids":
+            rel += 5
+        return rel, p.get("published") or p.get("updated") or ""
+
+    papers.sort(key=score, reverse=True)
     selected = papers[: args.limit]
     today = dt.datetime.utcnow().strftime("%Y-%m-%d")
 
