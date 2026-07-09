@@ -1,0 +1,1234 @@
+                                         O DYSSEY B ENCH : E VALUATING LLM AGENTS ON
+                                         L ONG -H ORIZON C OMPLEX O FFICE A PPLICATION
+                                         W ORKFLOWS
+                                          Weixuan Wang1 † ♡ Dongge Han2 †                  Daniel Madrigal Diaz 2      Jin Xu 2
+                                          Victor Rühle 2 Saravan Rajmohan 2
+                                          1                                                         2
+                                           School of Informatics, University of Edinburgh               Microsoft
+                                          weixuan.wang@ed.ac.uk
+
+
+
+
+arXiv:2508.09124v1 [cs.CL] 12 Aug 2025
+                                                                                         A BSTRACT
+
+                                                    Autonomous agents powered by large language models (LLMs) are increasingly
+                                                    deployed in real-world applications requiring complex, long-horizon workflows.
+                                                    However, existing benchmarks predominantly focus on atomic tasks that are self-
+                                                    contained and independent, failing to capture the long-term contextual dependen-
+                                                    cies and multi-interaction coordination required in realistic scenarios. To address
+                                                    this gap, we introduce OdysseyBench, a comprehensive benchmark for evaluat-
+                                                    ing LLM agents on long-horizon workflows across diverse office applications
+                                                    including Word, Excel, PDF, Email, and Calendar. Our benchmark comprises two
+                                                    complementary splits: OdysseyBench+ with 300 tasks derived from real-world use
+                                                    cases, and OdysseyBench-Neo with 302 newly synthesized complex tasks. Each
+                                                    task requires agent to identify essential information from long-horizon interaction
+                                                    histories and perform multi-step reasoning across various applications. To enable
+                                                    scalable benchmark creation, we propose H OMER AGENTS, a multi-agent frame-
+                                                    work that automates the generation of long-horizon workflow benchmarks through
+                                                    systematic environment exploration, task generation, and dialogue synthesis. Our
+                                                    extensive evaluation demonstrates that OdysseyBench effectively challenges state-
+                                                    of-the-art LLM agents, providing more accurate assessment of their capabilities
+                                                    in complex, real-world contexts compared to existing atomic task benchmarks.
+                                                    We believe that OdysseyBench will serve as a valuable resource for advancing the
+                                                    development and evaluation of LLM agents in real-world productivity scenarios. In
+                                                    addition, we release OdysseyBench and H OMER AGENTS to foster research along
+                                                    this line.1
+
+
+                                         1     I NTRODUCTION
+
+                                         Autonomous agents powered by large language models (LLMs) have demonstrated remarkable
+                                         capabilities across diverse domains, including reasoning (Lin et al., 2024; Boisvert et al., 2024; Yao
+                                         et al., 2024; Wang et al., 2024a), software development (Qian et al., 2023; Yang et al., 2024; Murty
+                                         et al., 2024; Zhou et al., 2023; Xie et al., 2025), and scientific research (Drouin et al., 2024; Wu et al.,
+                                         2025; Zheng et al., 2025). As these agents increasingly transition from research settings to real-world
+                                         applications, they are expected to handle complex, multi-step tasks such as drafting professional
+                                         emails, updating documents, and managing personal calendars (Yao et al., 2024; Wang et al., 2024d;
+                                         Xu et al., 2024a). This shift underscores the need for the development of comprehensive benchmarks
+                                         that accurately reflect real-world scenarios and rigorously evaluate agent performance in complex,
+                                         contextual task environments.
+                                         However, existing benchmarks for agents predominantly focus on atomic tasks that are self-contained
+                                         and independent of previous interactions or accumulated context (Zhou et al., 2023; Paranjape
+                                              †
+                                                 Equal contribution.
+                                              ♡
+                                                  This work was done during an internship at Microsoft.
+                                              1
+                                                https://github.com/microsoft/OdysseyBench.git
+
+
+                                                                                                1
+        OfficeBench:                                                               Task Intent:
+        Add the sentence "This is a test sentence for task 1-15-0."                Save the extracted text into two PDF files and place them in the appropriate folders.
+        to the end of house_creak.docx.
+
+
+        AgentCompany:                                                               Dialogues:
+                                                                                   ...
+        We are collecting employees' preferences on drinks to
+                                                                                   {"role": "Bob", "text": "Can you extract text from this combined notification image?", "ts": "2020-04-27 09:00"},
+        help with our purchasing plan. Please navigate to                          {"role": "Assistant", "text": “Sure!", "ts": "2020-04-27 09:00"},
+        http://the-agent-company.com:8092/ and find                                …
+        drinks_survey.pdf, which contains a questionnaire that we                  {"role": "Bob", "text": "Can you split the extracted text into two parts: party and meeting?", "ts": "2020-04-28 9:00"},
+        have placed in the office. Please organize the employees'                  {"role": "Assistant", "text": "Noted!", "ts": "2020-04-28 9:00"},
+        responses into a CSV spreadsheet, clearly indicating the                   ….
+                                                                                   {"role": "Bob", "text": "Can you create a PDF file named party.pdf with the party text?", "ts": "2020-04-30 7:00"},
+        number of people who like each type of beverage.
+                                                                                     {"role": "Assistant", "text": "Will do!", "ts": "2020-04-30 7:00"},
+                                                                                   …
+                                                                                   {"role": "Bob", "text": "I saw a documentary about the Amazon rainforest. It was eye-opening.", "ts": "2020-04-28
+        AgentBench:                                                     chitchat   11:05"},
+        Stock logs are shown in /usr/stock.log. The last two            event      {"role": "Assistant", "text": "The Amazon rainforest is incredible. What did you learn from the documentary?", "ts":
+        columns are stock index and count. Tell me how many                        "2020-04-28 11:06"},
+                                                                                   …
+        times Alice sold a stock.                                                  {"role": "Bob", "text": "Can you create a PDF file named meeting.pdf with the meeting text?", "ts": "2020-04-30
+                                                                                   12:00"},
+                                                                                    {"role": "Assistant", "text": "Noted!","ts": "2020-04-30 12:00"},
+        WebArena:                                                                  …
+        What is the top-1 best-selling brand in Quarter 1 2022.                     {"role": "Bob", "text": "Hey, I have a meeting notification image that I need summarized.", "ts": "2020-05-01 09:00"},
+                                                                      irrelevant   {"role": "Assistant", "text": "Sure, send it over and I’ll take care of it.", "ts": "2020-05-01 09:00"},
+                                                                      office event …
+                                                                                     {"role": "Bob", "text": "Can you save party.pdf in the activities folder and meeting.pdf in the schedule folder?",
+        WindowsAgentArena:                                                         "ts": "2020-05-02 15:00"},
+        In the windows clock app, can you set a timer for half an                    {"role": "Assistant", "text": “Sure, will do!", "ts": "2020-05-02 15:00"},
+        hour? I need to wrap something up by then.                                 …
+
+
+
+                     (a) Atomic Tasks                                                                         (b) Long-horizon Tasks
+
+Figure 1: (a) Atomic tasks: each task is self-contained and does not rely on previous interactions or
+context. (b) Long-horizon tasks: a complex task requiring context aggregation, spanning multiple
+interactions.
+
+
+et al., 2023; Bonatti et al., 2024; Wang et al., 2024d; Xu et al., 2024a), as illustrated in Figure 1(a).
+While these benchmarks serve as valuable initial assessments, they fundamentally misrepresent the
+nature of real-world workflows, which typically unfold across extended periods and encompass
+various agent-user interactions and require agents to systematically curate, integrate, and leverage
+information accumulated over extended periods (Schick et al., 2023; Wang et al., 2024c; Hu et al.,
+2024; Erdogan et al., 2025). Agents that perform well on atomic task benchmarks may struggle
+with the contextual dependencies, information persistence, and collaborative workflow management
+required in real-world scenarios.
+In this work, we address these challenges by introducing a novel benchmark OdysseyBench designed
+to evaluate agents on complex, long-horizon workflows spanning diverse office applications, including
+    Word,      Excel,      PDF,      Email, and       Calendar. Our benchmark includes two splits:
+OdysseyBench+, which consists of 300 long-horizon tasks originated from real-world use cases in
+OfficeBench (Wang et al., 2024d), and OdysseyBench-Neo, which contains 302 newly generated
+tasks that are more complex and diverse. Each task, as illustrated in Figure 1(b), is designed to
+require the agent to reason about the task and extract essential information from long-horizon dialogue
+histories between the user and agent. This enables the construction of feasible workflows and supports
+multi-step reasoning across various applications. The tasks are structured to reflect the complexities of
+agent-user interactions, emphasizing the need for agents to maintain context, synthesize information
+from prior exchanges, and coordinate actions across diverse tools and environments.
+Furthermore, many benchmarks rely on costly human annotation, limiting scalability and constraining
+the diversity of evaluation scenarios (Zhou et al., 2023; Xu et al., 2024a; Yao et al., 2024). While
+recent efforts have explored synthetic data generation with LLMs (Ou et al., 2024; Xu et al., 2024b;
+Xie et al., 2025), these approaches typically yield atomic tasks, lacking the sustained interactions and
+long-term context essential for realistic workflows. These limitations highlight the urgent need for
+systematic, automated benchmarks that accurately reflect the challenges of real-world, long-horizon
+tasks.
+To address these challenges, we propose H OMER AGENTS, a multi-agent framework that automates
+the generation of long-horizon workflow benchmarks. Our framework consists of two complementary
+components: H OMER AGENTS +, which leverages existing benchmarks from OfficeBench (Wang
+et al., 2024d) and employs a two-agent iterative refinement process to transform atomic tasks into con-
+textually rich, multi-interaction scenarios, thereby creating OdysseyBench+; and H OMER AGENTS -
+N EO, which utilizes a multi-agent system operating within realistic application environments to
+generate entirely new long-horizon tasks from scratch, producing OdysseyBench-Neo. Through
+systematic environment exploration, task generation, and dialogue creation, H OMER AGENTS enables
+scalable production of diverse, contextually grounded benchmark tasks that reflect the complexity
+
+
+                                                                                               2
+of real-world productivity scenarios while maintaining the quality standards necessary for rigorous
+agent evaluation.
+We conduct extensive evaluations of OdysseyBench using state-of-the-art agents, demonstrating that
+these benchmarks effectively challenge current models and provide a more accurate assessment of
+their capabilities in real-world contexts.
+In summary, our contributions are as follows:
+       • We introduce OdysseyBench, a comprehensive benchmark for evaluating agents on long-
+         horizon workflows across multiple office applications, consisting of OdysseyBench+ and
+         OdysseyBench-Neo.
+       • We propose H OMER AGENTS, a multi-agent framework that automates the generation of
+         long-horizon tasks, enabling scalable and diverse benchmark creation.
+       • We demonstrate the effectiveness of OdysseyBench in challenging state-of-the-art language
+         agents, providing insights into their performance in complex, real-world scenarios.
+       • We analyze the impact of dialogue storage formats within OdysseyBench, demonstrating
+         that semantic compression and coherent aggregation are essential for effective multi-step
+         reasoning and agent performance.
+
+
+2    R ELATED W ORK
+
+Evaluating LLMs in Executive Environments As LLMs advance in tackling real-world challenges
+(Hurst et al., 2024; Jaech et al., 2024; OpenAI, 2025; Anthropic, 2025b;a; Comanici et al., 2025),
+there is a growing shift toward evaluating their capabilities in dynamic, executive environments
+rather than static datasets. Beyond text-based games (Côté et al., 2018; Shridhar et al., 2020), recent
+research increasingly simulates realistic scenarios to assess agents’ proficiency in tool use (Deng
+et al., 2023; Qin et al., 2023a; Zhuang et al., 2023; Qin et al., 2023b; Lù et al., 2024; Wang et al.,
+2024b; Shen et al., 2024; Xu et al., 2024a; Sutela & Lindström, 2024). Current benchmarks, such
+as WebArena (Zhou et al., 2023), AgentBench (Paranjape et al., 2023), WindowsArena (Bonatti
+et al., 2024), and OfficeBench (Wang et al., 2024d), provide valuable evaluation settings focused on
+web and office environments. However, these platforms primarily measure atomic performance in
+self-contained contexts and lack mechanisms to evaluate LLM agents’ interactions with complex
+environments over extended periods. This limitation is significant, as robust assessment of planning,
+long-term information retrieval, and execution is essential for understanding agents’ true capabilities
+in real-world tasks.
+
+
+Synthetic Benchmark Generation Existing agent datasets and benchmarks largely rely on human
+annotators for task creation, demonstrations, and evaluation metric design (Zhou et al., 2023; Xu et al.,
+2024a; Yao et al., 2024), resulting in high costs and limited diversity. Recent studies try to leverage
+LLMs to automatically generate agent tasks and trajectories (Ou et al., 2024; Xu et al., 2024b; Xie
+et al., 2025). For instance, Murty et al. (2024); Pahuja et al. (2025); Trabucco et al. (2025); Gandhi &
+Neubig (2025) employ LLMs as web agents to synthesize web-based interactions in semi-realistic
+environments. Moreover, composing atomic tasks is another method to construct more challenging
+tasks (Boisvert et al., 2024; Drouin et al., 2024). Li et al. (2024) iteratively propose and refine dataset
+descriptions to generate topic-specific problems. However, these approaches predominantly focus
+on web-based activities and are generally limited to simple interactions, lacking the complexity of
+multi-step reasoning and extensive tool use required for robust agent evaluation.
+
+
+Ours Distinct from previous approaches, we introduces a multi-agent framework H OMER AGENTS
+to automatically construct the long-term workflow benchmark OdysseyBench, enabling a more
+rigorous assessment of agents’ abilities to curate context to handle complex tasks. OdysseyBench is
+specifically designed to evaluate agent performance in realistic office scenarios, where agents must
+interact with multiple applications to accomplish intricate objectives. This benchmark challenges
+agents to reason about task intent, extract critical information from dialogue history, and assemble
+feasible workflows, thereby providing a comprehensive evaluation of their capabilities in dynamic,
+multi-step environments.
+
+
+                                                    3
+                                                                                subtask1                                    Day5
+                                                                                           subtask3                       Day4
+                                                                                                                        Day3
+                                                                                                                      Day2
+                                                                                subtask2                             Day1
+                                                                        task                       evaluation
+                                                                       intent            subtask    criteria
+                                                                                       instruction
+
+
+                    Verifier
+                                             Surfers
+
+                                                                                Task Generator                  Dialogue Generator
+        Dialogues,     Task     Feedback
+        Task intent description
+                                              Information                                                       Reflection
+                                               Gathering                                                        Re-Planning
+
+
+
+
+                     Dialogue                                          Orchestrator
+                    Generator
+
+                                                   decompose    plan              track        verify       adjust
+
+            (a) HomerAgents+                                       (b) HomerAgents-Neo
+
+    Figure 2: H OMER AGENTS Framework Overview. H OMER AGENTS consists of two components:
+    H OMER AGENTS + and H OMER AGENTS -N EO. H OMER AGENTS + builds upon the task descriptions
+    from OfficeBench to generate long-horizon dialogues, while H OMER AGENTS -N EO creates entirely
+    new tasks and corresponding dialogues from scratch by employing a multi-agent system that operates
+    within realistic application environments.
+
+
+    Algorithm 1: H OMER AGENTS +
+  Input: Task description T ; the generator G; the verifier V; the maximal number of iterations Nmax ;
+  Output: Task intent I and dialogues D;
+1 F0 ← ∅ ;                                                                 ▷ Initialize empty feedback
+2 for i=1 to Nmax do
+3      {Ii , Di } ← G(T , Fi−1 ) ; ▷ The generator G generates the task intent I and dialogues D
+4      Fi ← V(T , Ii , Di ) ;    ▷ The verifier V evaluates I and D, and provides feedback Fi
+5      if Fi == pass then
+6            return {Ii , Di } ;     ▷ Early stop if the verifier V thinks the task intent I and
+              dialogues D are satisfactory
+7   return {INmax , DNmax } ;      ▷ Return the task intent I and dialogues D after Nmax iterations
+
+
+
+    3      M ETHODOLOGY
+
+    In this section, we firstly introduce H OMER AGENTS, a multi-agent framework that automatically
+    generates the long-horizon workflow benchmark OdysseyBench in Section 3.1, including two compo-
+    nents: H OMER AGENTS + (Section 3.1.1) and H OMER AGENTS -N EO (Section 3.1.2). We then describe
+    the long-horizon workflow benchmark OdysseyBench in Section 3.2, including the dataset analysis
+    (Section 3.2.2), quality control measures (Section 3.2.3), and human evaluation (Section 3.2.4).
+
+
+    3.1      H OMER AGENTS : AUTOMATING B ENCHMARK C REATION
+
+    It is highly challenging to create OdysseyBench in a scalable and reliable manner, as it requires
+    generating realistic user–assistant interaction histories and the context-dependent multi-step tasks that
+    reflect the complexity and ambiguity of real-world productivity scenarios. To facilitate this process, we
+    propose a multi-agent framework H OMER AGENTS that automates the generation of OdysseyBench
+    benchmark tasks, including H OMER AGENTS + (see Section 3.1.1) and H OMER AGENTS -N EO (see
+    Section 3.1.2).
+
+
+                                                            4
+ Algorithm 2: H OMER AGENTS -N EO
+  Input: Applications A = {ak }K                                                        K
+                                  k=0 ; Environment E; Orchestrator O; Surfers S = {Sk }k=0 ; Task
+         Generator Gtask ; Dialogue Generator Gdial ;
+  Output: Task τ and dialogue D;
+1 Phase 1: Planning;
+2 P ← O(A, E) where P = {Psurf , Ptask , Pdial };     ▷ Orchestrator drafts the generation plan P
+3 Phase 2: Environment Exploration;
+       SK
+4 C ←    k=0 Sk (Psurf , ak , E);  ▷ Surfers collect contextual information from environment E
+5 Phase 3: Task Generation;
+6 τ ← Gtask (Ptask , C) where τ = {T, I, K, E} ;        ▷ Task Generator generate task components,
+   including task description T, task intent I, subtask instructions K, and evaluation
+   criteria E
+7 Phase 4: Dialogue Generation;
+8 D ← Gdial (Pdial , C, I, K) ;                   ▷ Dialogue generator generates T-Days dialogues
+9 return Task τ and dialogues D;                                         ▷ Complete task for dataset
+
+
+
+  3.1.1   H OMER AGENTS +: S TANDING ON THE S HOULDERS OF OfficeBench
+  H OMER AGENTS + builds upon the task descriptions from OfficeBench (Wang et al., 2024d) to
+  generate long-horizon dialogue scenarios that more closely mirror real-world productivity workflows.
+  Starting from a given task description T , H OMER AGENTS + employs a two-agent iterative refinement
+  framework to produce task intents I and corresponding long-horizon user-assistant dialogues D,
+  thereby contextualizing and enriching the original task.
+ The framework comprises two core components: a generator (G) and a verifier (V), as depicted in
+ Figure 2. The generator G receives the task description T and any feedback from previous iterations
+ Fi−1 , and outputs a task intent Ii along with a corresponding dialogue Di . Here, the task intent I
+ succinctly captures the user’s goal without specific details, while the dialogue D provides the natural
+ conversational context leading to the task. The verifier V then evaluates the generated content against
+ criteria such as dialogue realism, task alignment, and contextual coherence, returning structured
+ feedback Fi .
+ This process is executed iteratively, as outlined in Algorithm 1, with a maximum of Nmax iterations.
+ In each iteration i, the generator G refines its output based on the original task and accumulated
+ feedback, while the verifier V either approves the result (“pass”) or provides actionable feedback
+ for further improvement. The cycle continues until the verifier approves the content or the iteration
+ limit is reached. By leveraging established benchmarks and introducing an iterative, feedback-driven
+ process, H OMER AGENTS + enables the creation of contextually grounded, long-horizon tasks that are
+ both practically relevant and sufficiently complex to rigorously evaluate long-horizon workflow task
+ understanding in productivity settings.
+
+  3.1.2   H OMER AGENTS -N EO : S CALING UP THE B ENCHMARK C REATION
+ While H OMER AGENTS + effectively leverages existing benchmarks, H OMER AGENTS -N EO addresses
+ the need for more diverse and scalable task generation by creating entirely new long-horizon tasks
+ from scratch. H OMER AGENTS -N EO employs a multi-agent system that operates within realistic
+ application environments to generate authentic productivity scenarios, as shown in Figure 2.
+ H OMER AGENTS -N EO consists of productivity applications A = {ak }K      k=0 , environment E, orches-
+ trator O, surfers S = {Sk }K k=0 , task generator G task , and dialogue generator  Gdial . Orchestrator O
+ manages planning, progress tracking, and coordinates the entire generation process by orchestrating
+ each stage of data generation, ensuring coherence in both task and dialogue creation. Surfers S gather
+ information from environment by interacting with a diverse set of simulated productivity applications.
+ Task generator Gtask synthesizes the tasks and corresponding evaluation criteria. Dialogue generator
+ Gdial then creates multi-day dialogues simulating realistic user-assistant interactions.
+ The framework consists of four distinct phases, as outlined in Algorithm 2:
+
+  Phase 1: Planning The orchestrator O receives a set of applications A = {ak }K     k=0 and environment
+  E, then formulates a comprehensive generation plan P = {Psurf , Ptask , Pdial }. This plan specifies how
+
+
+                                                     5
+the subsequent phases should explore the environment Psurf , generate tasks Ptask , and create dialogues
+Pdial .
+
+Phase 2: Environment Exploration A collection of specialized surfers S = {Sk }K          k=0 systemati-
+cally explore the application environment. Each surfer Sk follows the surfing plan Psurf to interact with
+application ak within environment E, collecting contextual information C. This exploration phase
+ensures that generated tasks are grounded in realistic application capabilities and user workflows.
+
+Phase 3: Task Generation The task generator Gtask utilizes the collected contextual information
+C and the task generation plan Ptask to create comprehensive task specifications τ = {T, I, K, E}.
+This includes the task description T, the task intent I, detailed subtask instructions K, and evaluation
+criteria E. The task description T outlines the specific goals and requirements of the task, the task
+intent I conveys the high-level overall goal but omits specific details of the task, K = {k1 , . . . , kt }
+provides instructions for completing the task, and the evaluation criteria E define how the task’s
+success will be measured.
+
+Phase 4: Dialogue Generation Finally, the dialogue generator Gdial creates natural user-assistant
+conversations D that lead to the generated task. This process incorporates the dialogue plan Pdial ,
+contextual information C, task intent I, and subtask instructions K to produce realistic long-horizon
+dialogues that capture the gradual evolution of user requirements. For each subtask instruction
+ki ∈ K, the dialogue generator Gdial produces a corresponding dialogue Di that simulates the
+interaction between the user and the assistant, reflecting how the task is approached over multiple
+days. Combining these dialogues, we obtain a comprehensive dialogue history D = {D1 , . . . , Dt }
+that illustrates the user’s journey through the task. Additionally, we also include task-irrelevant
+content (e.g. chitchat) in the generated dialogues D to make the generated content align better with
+the real-world scenarios.
+By decomposing the generation process into these four phases, H OMER AGENTS -N EO ensures sys-
+tematic exploration of application environments while maintaining coherence between the generated
+tasks and dialogues. This approach enables scalable creation of diverse, contextually grounded
+benchmark tasks that reflect the complexity of real-world productivity scenarios.
+
+3.1.3    I MPLEMENTATION D ETAILS
+Considering the trade-off between performance and cost, we implement all agents in H OMER A-
+GENTS using the GPT-4.1 model, which offers strong capabilities for complex reasoning tasks while
+remaining cost-effective. The maximum iterations Nmax in Algorithm 1 are set to 5, allowing for
+sufficient exploration of the task space while managing computational resources effectively. The T in
+Algorithm 2 is set to 5, representing generating at least five days of dialogues, which is sufficient to
+capture the complexity of long-term workflows. Additionally, we implement H OMER AGENTS -N EO
+based on the Magentic-One framework (Fourney et al., 2024).
+During dialogue generation, when the user assigns subtasks to the assistant, the assistant does not
+actually execute the tasks but instead simulates execution by generating responses based on the task
+descriptions and dialogue context. This approach enables us to focus on generating diverse and
+realistic dialogues at scale, without the need for real task execution. By deferring execution, our
+benchmark evaluates agents’ abilities to curate and integrate information distributed across multiple
+dialogue turns and days, an essential aspect for assessing long-horizon comprehension and planning.
+
+3.2     OdysseyBench: L ONG -H ORIZON W ORKFLOW B ENCHMARK
+
+3.2.1    E VALUATION
+In OdysseyBench, LLM agents are required to interact with multiple applications to complete complex
+tasks. This process demands that agents reason about task intent and extract essential information
+from the dialogue history to construct feasible workflows. We construct OdysseyBench within a
+Docker environment containing pre-installed applications and automate operations using Python
+libraries. We set up a file system to manage documents, emails, and calendar events required for the
+tasks. After the agents complete each task, we save the entire file system and perform customized
+evaluations to verify correctness.
+
+
+                                                    6
+                             Table 1: Data statistics of OdysseyBench+ and OdysseyBench-Neo.
+
+                                                               OdysseyBench+                 OdysseyBench-Neo
+                                                    single      two       three         single   two     three
+                                                                                overall                        overall
+                                                     apps       apps      apps           apps    apps    apps
+    Total # conversation h.                              93       95       112    300      60      71     171     302
+    Avg. # session k. in conversation h                 27.8     24.7      30.6   27.9     5.0     5.0     5.1    5.0
+    Avg. # utterance j. in session k                    10.8     12.1      11.4   11.4    72.3    73.5    73.3   73.2
+    Avg. # tokens. conversation h                   3323.2 3209.6 3809.9 3468.9 5031.6 5223.1 5196.4 5169.9
+    Avg. # tokens. sessions k                        119.7 130.1 124.4 124.6 1006.3 1041.7 1026.1 1025.8
+    Avg. # tokens. utterance j                        11.1 10.8 10.9       10.9   13.9 14.2 14.0       14.0
+
+
+
+                    30                       OdysseyBench+
+                                             OdysseyBench-Neo
+                    25
+
+                    20
+
+        Frequency   15
+
+                    10
+
+                    5
+
+                    0
+                         0      5    10     15     20     25     30
+                                      Execution Steps
+                                 (a) Execution steps                               (b) Verb-Noun-Apps
+
+Figure 3: (1) Execution steps needed for the tasks in OdysseyBench. (b) Actions, objects, and
+applications of OdysseyBench.
+
+
+Our evaluation integrates exact matching, fuzzy matching, and execution-based methods. Exact
+and fuzzy matching assess whether the agent’s task output aligns with the expected (e.g., keyword
+matching for generated documents and calendar events), while the execution-based method verifies
+if the agent’s task outputs can be successfully evaluated via code snippets (e.g., checking calendar
+conflicts). The output is considered to be successful if all the evaluation criteria are satisfied. We
+report the pass rate as the measure of model performance, where the pass rate is defined as the
+percentage of tasks completed successfully: #successful   tasks
+                                                #total tasks .
+
+
+3.2.2   DATASET A NALYSIS
+As shown in Table 1, our dataset comprises 602 tasks, categorized by the number of applications
+involved: Single App (153 tasks), Two Apps (166 tasks), and Three Apps (283 tasks). Each task
+is documented through multi-day dialogues, with at least five days per task. Dialogues occurring
+within the same day are grouped into a single session, and every dialogue contains a minimum of 10
+utterances, ensuring rich interaction data. OdysseyBench+ contains 300 conversation histories with an
+average of 27.9 sessions per conversation and 11.4 utterances per session, resulting in relatively short
+sessions with an average of 124.6 tokens per session. In contrast, OdysseyBench-Neo comprises 302
+conversations with a more structured format of exactly 5 sessions per conversation (corresponding
+to the 5-day dialogue design) but significantly longer sessions, averaging 1025.8 tokens each and
+73.2 utterances per session. This design difference reflects OdysseyBench-Neo’s focus on creating
+more comprehensive daily interactions, while OdysseyBench+ maintains the original fragmented
+conversation structure from OfficeBench. Overall, OdysseyBench-Neo generates richer conversa-
+tional content with approximately 49% more tokens per conversation (5169.9 vs. 3468.9 tokens),
+demonstrating the enhanced depth and complexity of the newly generated tasks.
+
+
+                                                                      7
+Table 2: Quality verification performance of generated task intent and dialogues for OdysseyBench.
+
+                          Metric            OdysseyBench+ OdysseyBench-Neo
+                          Completeness          81.33            93.71
+                          Appropriateness       88.33            88.08
+                          Both                  72.67            83.77
+
+
+
+
+We further analyze the distribution of execution steps in OdysseyBench+ and OdysseyBench-Neo,
+as illustrated in Figure 3(a). The number of execution steps required to complete a task is consistent
+across both datasets, with the majority of tasks requiring 3-15 execution turns. This demonstrates
+that tasks in OdysseyBench are sufficiently complex, mirroring real-world scenarios where users
+must navigate multi-step workflows across multiple applications. Furthermore, we also analyze
+the diversity of the tasks in OdysseyBench, an overview of actions, objects, and applications in
+OdysseyBench is provided in Figure 3(b). Our OdysseyBench benchmark encompasses a wide range
+of actions, objects, and applications, ensuring that it captures the complexity and variety of real-world
+productivity tasks. This diversity enhances the benchmark’s applicability to various productivity
+scenarios, making it a valuable resource for evaluating long-horizon workflow understanding in
+LLMs.
+
+
+3.2.3     Q UALITY C ONTROL
+
+Automated Validation To ensure the generated tasks are both high-quality and solvable, we
+implement a systematic automated validation pipeline. Our approach consists of two primary
+validation stages. First, we verify task solvability by filtering out tasks whose evaluation criteria E
+fall outside our predefined evaluation function library. This ensures that each task has well-defined,
+measurable success criteria. Second, we conduct a consistency check between the task description T
+and the information available to agents during evaluation. Specifically, we test whether a powerful
+LLM (o3) can solve the task when provided with: (1) the task description T, and (2) only the task
+intent I and subtask instructions K. Tasks are considered valid only if the LLM succeeds in both
+scenarios, ensuring that the dialogue contains sufficient information for task completion while the
+intent appropriately abstracts the core objective. This cross-validation eliminates under-specified tasks
+and confirms that essential information is properly embedded within the conversational context. To
+complement this automated filtering, we employ an LLM-as-a-judge method where five independent
+GPT-4.1 agents evaluate the generated task intent I and dialogues D across two key dimensions:
+        1. Completeness: For any given task description, the combination of task intent and dialogues
+           should provide sufficient information for an agent to solve the task without omitting any
+           necessary details.
+        2. Soundness: The task intent should not leak any specific information from the task descrip-
+           tion; all essential details must be conveyed through the dialogues.
+Each agent provides an independent judgment, and a majority voting mechanism aggregates these
+assessments to determine the overall data quality. The results of this evaluation are presented in
+Table 2. A minimum pass rate of 70% reflects the quality of the data, indicating the effectiveness of
+the automatic generation of H OMER AGENTS.
+
+
+Human Verification and Post-Editing In addition to automated validation, we implement human
+curation to further enhance the quality of the generated task intent and dialogues. A team of
+three native English-speaking annotators manually reviews the generated task intent and dialogues,
+assessing them for completeness, appropriateness, and logical coherence. During this process,
+curators remove any tasks that fail to meet established quality standards. While our cross-checking
+mechanism filters out tasks deemed unsolvable by the LLM, this method is inherently limited by
+the LLM’s problem-solving capabilities. Consequently, human curation intentionally includes tasks
+that satisfy quality standards yet remain unsolvable by the LLM. This human-in-the-loop approach
+ensures that the resulting dataset is both challenging and reflective of real-world use cases.
+
+
+                                                   8
+                            Task      1-apps     2-apps      3-apps     overall
+                            Human     92.31       90.00      91.67       91.43
+
+                     Table 3: Human performance of H OMER AGENTS -N EO
+
+Table 4: Main results given by multiple proprietary models or open-weight models on OdysseyBench+
+and OdysseyBench-Neo tasks under the long-context configuration. We divide the tasks into “1/2/3-
+apps”, specifying the number of applications required by the tasks. The overall performance is
+reported as the macro-average across all tasks.
+
+                                    OdysseyBench+                              OdysseyBench-Neo
+                           1-apps   2-apps     3-apps     overall     1-apps    2-apps   3-apps   overall
+    Proprietary Models
+    o3                     72.83    70.53      30.36      56.19       68.33      60.56   59.06    61.26
+    o3-mini                38.04    20.00      15.18      23.75       71.67      39.44   45.61    49.34
+    GPT-4o-mini            30.11    22.11       7.14      19.00       65.00      33.80   29.83    37.75
+    GPT-4o                 47.31    42.11      15.18      33.67       75.00      47.89   45.61    51.99
+    GPT-4.1                55.91    43.16      12.50      35.67       75.00      63.38   47.37    56.62
+    GPT-5-chat             55.91    48.42      20.54      40.33       75.00      57.75   51.46    57.62
+    GPT-5                  75.27    66.32      25.89      54.00       61.67      56.34   53.80    55.96
+    Open-weight Models
+    DeepSeek-R1            53.76    47.37      20.54      39.33       78.33      60.56   44.44    54.97
+    DS.-Distill-Qwen-32b   30.11    16.84       1.79      15.33       40.00      22.54   10.53    19.21
+    Qwen-3-32b             38.71    33.68      11.61      27.00       41.67      22.54   21.05    25.50
+
+
+
+3.2.4   H UMAN E VALUATION
+We also ask two human annotators to perform a randomly sampled subset of the tasks and report
+the human performance in Table 3. The human annotators are asked to complete the tasks using the
+same productivity applications as those provided to the agents. The human performance is over 90%,
+indicating that the tasks are solvable and coherent.
+
+4   E XPERIMENTAL S ETUP
+
+Long-Context Evaluation We evaluate the agent performance on OdysseyBench using the long-
+context setting, where the entire dialogue history is provided to the agent.
+
+RAG Evaluation We also evaluate agent performance on OdysseyBench under the Retrieval-
+Augmented Generation (RAG) setting, where the agent retrieves relevant context from the dialogue
+history using embedding models to generate responses. We conduct experiments with two types of
+stored context: (1) raw context and (2) summarized context. Furthermore, each type of context is
+organized into two levels of granularity. For raw context: (a) session-level: the entire dialogue of
+each session is stored and embedded as a single document; (b) utterance-level: each user/assistant
+turn is treated as a separate document and embedded independently. For summarized context: (a)
+session-level: the full session is summarized and stored as a single document; (b) chunk-level:
+multiple sessions are concatenated and segmented into coherent chunks, with each chunk summarized
+independently.
+
+Evaluation Metrics As mentioned in Section 3.2.1, we measure the agent performance using the
+pass rate, which is the percentage of successful task completions out of the total number of tasks.
+
+Models We evaluate the long-horizon workflow automation capabilities of the agents of the propri-
+etary LLMs, including o3, o3-mini, GPT-4o, GPT-4o-mini, GPT-4.1, GPT-5, and GPT-5-chat, and
+the open-weight LLMs, including DeepSeek-R1, DeepSeek-R1-Distill-Qwen-32b, and Qwen3-32b,
+as these models are among the highest-ranking LLMs available. And the embedding model used for
+RAG is OpenAI text-embedding-3-large.
+
+
+                                                   9
+Table 5: Performance of RAG-based GPT-4o on the OdysseyBench+. “Long-context prompting
+baseline” represents the results evaluated in the long-context setting. “top-k” means the top-k
+retrieved documents used as the context, and “tokens” indicates the number of tokens in the retrieved
+documents.
+
+             Storage    granularity   top-k    tokens   1-apps   2-apps   3-apps   overall
+             Long-context prompting baseline   8000     47.31    42.11    15.18    33.67
+                                        5       750     40.86    40.00    11.61    29.67
+                          session
+                                       10      1500     39.79    40.00    14.29    30.33
+                                        5       80      29.03    35.79     8.04    23.33
+                raw
+                                       10      155      27.96    33.68     8.93    22.67
+                         utterance
+                                       25      370      39.79    35.79    12.50    28.33
+                                       50      730      57.69    40.00    17.17    29.41
+                                        5       290     29.03    35.79     9.82    24.00
+                          session
+                                       10       650     33.33    36.84     9.82    25.67
+                                        5       290     30.11    29.47    12.50    23.33
+             summary
+                                       10       380     40.86    34.74    16.96    30.00
+                          chunk
+                                       25       600     46.24    36.84    19.64    33.33
+                                       50       670     44.09    40.00    16.96    32.67
+
+Table 6: Performance of RAG-based GPT-4o on the OdysseyBench-Neo. “Long-context prompting
+baseline” represents the results evaluated in the long-context setting. “top-k” means the top-k
+retrieved documents used as the context, and “tokens” indicates the number of tokens in the retrieved
+documents.
+
+             Storage    granularity   top-k    tokens   1-apps   2-apps   3-apps   overall
+             Long-context prompting baseline   6700     75.00    47.89    45.61    51.99
+                                        5        90     30.00    16.90     8.19    14.57
+                                       10       180     31.67    16.90    11.11    16.56
+                raw      utterance
+                                       25       450     35.00    32.39    21.05    26.49
+                                       50       915     56.67    40.85    31.58    38.74
+                          session       5      2200     75.00    46.48    49.12    53.64
+                                        5      1200     30.11    29.47    12.50    23.33
+             summary                   10      1260     40.86    34.74    16.96    30.00
+                          chunk
+                                       25      1360     68.33    59.16    50.88    56.29
+                                       50      1460     68.33    59.16    48.54    54.97
+
+
+5   E XPERIMENTAL R ESULTS
+In this section, we evaluate several LLMs and RAG-based approaches on the OdysseyBench+ and
+OdysseyBench-Neo tasks, focusing on their performance across different configurations. We analyze
+how task complexity, context length, and retrieval strategies impact model effectiveness.
+
+Tasks get increasingly complex with more applications involved, leading to a performance
+drop. As shown in Table 4, we observe a consistent performance degradation across all models as
+the number of applications in a task increases. For OdysseyBench+ tasks, the average performance
+drops from single-app scenarios to three-app scenarios across all models: o3 drops from 72.83 to
+30.36, GPT-4.1 from 55.91 to 12.50, and DeepSeek-R1 from 53.76 to 20.54. This trend is also
+evident in OdysseyBench-Neo tasks, though the degradation is less severe. For instance, o3 maintains
+relatively stable performance (68.33 to 59.06), while GPT-4o shows a decline from 75.00 to 45.61.
+These findings suggest that coordinating information across multiple applications presents significant
+challenges for current LLMs, requiring sophisticated reasoning about inter-application dependencies
+and state management.
+Table 5 and Table 6 present comprehensive results for RAG-based GPT-4o across different storage
+formats, retrieval granularities, and top-k configurations on OdysseyBench+ and OdysseyBench-Neo,
+respectively.
+
+
+                                                 10
+Table 7: The number of execution steps of the task in OdysseyBench+ and OdysseyBench-Neo
+under different configurations indicates how many steps are required to successfully execute the task.
+“configuration” represents the experimental setup used for evaluation.
+
+                                                                      configuration                     1-apps        2-apps              3-apps     overall
+                                                                     long-context                        6.31          11.61               12.70      10.25
+                            OdysseyBench+                           RAG-utterance                        6.85          11.48               14.70      11.05
+                                                                     RAG-chunk                           7.25           8.28               14.86      10.10
+                                                                     long-context                        7.81            9.63              11.74      10.46
+                            OdysseyBench-Neo                        RAG-utterance                        8.17            9.66              12.52      10.92
+                                                                     RAG-chunk                           7.93            9.92              12.54      10.95
+
+
+
+More context typically leads to better performance, but at a cost. Storing raw data without re-
+trieval context (long-context baseline) yields the highest performance (33.67 on OdysseyBench+ with
+8000 tokens; 51.99 on OdysseyBench-Neo with 6700 tokens), but incurs substantial token consump-
+tion. Within RAG approaches using raw storage, utterance-level retrieval demonstrates a nuanced
+balance between performance and efficiency, peaking at 29.41 with 730 tokens on OdysseyBench+
+and 38.74 with 915 tokens on OdysseyBench-Neo. Notably, utterance-level retrieval outperforms
+the long-context baseline for single app and three apps tasks in OdysseyBench+, yet underperforms
+the baseline in OdysseyBench-Neo. This discrepancy likely stems from the shorter dialogues in
+OdysseyBench+, which make utterance-level retrieval more effective. In contrast, the performance
+drop in OdysseyBench-Neo suggests that excessive fragmentation of information undermines context
+integrity. These results underscore the importance of maintaining coherent conversational boundaries,
+as fragmented utterances fail to preserve essential dialogue context.
+
+Summary storage effectively captures task essence. Summarization condenses information while
+retaining key context, consistently improving performance across configurations. For instance,
+session-level summaries surpass the long-context baseline, achieving 53.64 on OdysseyBench-Neo
+with only one third of the token usage. Chunk-level summaries further excel, reaching 56.29 on
+OdysseyBench-Neo with less than 20% of the tokens. The superior performance of summarized
+context can be attributed to its ability to distill key information while removing redundant details,
+allowing models to focus on essential task-relevant content. Additionally, summarized chunks
+provide better semantic density, enabling more effective retrieval of contextually relevant information
+within the same token budget. By aggregating information across sessions and maintaining semantic
+coherence, chunk-level summaries balance context breadth with retrieval precision. Furthermore,
+analysis of execution steps in Table 7 reveals that chunk-level summaries introduce negligible
+computational overhead, and in some cases, even reduce the number of steps required to complete
+tasks. This indicates that summarization not only boosts performance, but also streamlines the
+reasoning process by providing relevant context efficiently, without overwhelming the model. These
+
+
+      Task intent:                                      Task intent:                                      Task intent:                                  Task intent:
+      Send the contents of the converted PDF            Create a folder named report and save             Save the extracted text into two PDF          Extract data from the two invoice PDFs,
+      to Alice via email.                               the analysis results in it.                       files and place them in the appropriate       analyze them, and prepare a financial
+                                                                                                          folders.                                      review in a spreadsheet and a report
+      Dialogues:                                                                                                                                        document.
+      …                                                 Dialogues:                                        Dialogues:
+      Alice: "Hey, I need a favor. Can you              …                                                 …                                             Dialogues:
+      convert a Word document containing                Alice: "Can you analyze the relationship          Bob: "Can you split the extracted text        …
+      employee training manuals to a                    between revenues and regions? "                   into two parts: party and meeting? "          Bob: "I'd like to collect data from
+      PDF?"                                             Assistant: "Will do. How's your day               Assistant: "Noted!"                           Invoice.pdf and Invoice_2.pdf. "
+      Assistant: "Sure, I can help with that. I'll      going?"                                           …                                             Assistant: "Understood."
+      locate the Word document first. Do you            …                                                 Bob: "Can you create a PDF file named         …
+      know the file name or where it's                  Alice: "Can you save the analysis as an           party.pdf with the party text? "              Bob: "Great. I want to create a review
+      stored?"                                          image post named analyze.jpg?"                    Assistant: "Will do! “                        report that summarizes the analysis."
+      Alice: "I think it's named                        Assistant: "Will do. Anything else?“              …                                             Assistant: "Noted. Do you have any
+      'EmployeeTrainingManuals.docx'. It                …                                                                                               advice for keeping reports engaging?“
+      should be in the shared drive."                                                                                                                   …
+      Assistant: "Got it. "                                                                               …
+      …                                                                                                   Action: Switch to PDF: -> Successful
+                                                         Action: Create folder: -> Successful             Action: Create PDF -> Failed                  Action: Switch to Word: -> Successful
+                                                         Action: Save analysis -> Unknown                 ..                                            Action: Write Text -> Failed
+      Action: Read files: -> Failed                      content                                          (# Expected to use Word to write and          ….
+      (# The missed information)                         (# The missed information)                       then convert to PDF)                          (# Expected to read pdf files first)
+
+
+    (a) Fail to find files                           (b) Fail to find actions                           (c) Fail to use tools                       (d) Fail to plan actions
+
+Figure 4: Typical failure cases of the LLM agents when solving office automation tasks in
+OdysseyBench.
+
+
+                                                                                                   11
+findings underscore the critical role of semantic compression and coherent aggregation in enabling
+effective multi-step reasoning.
+
+
+Retrieval volume yields diminishing returns. Increasing top-k from 25 to 50 results in a slight
+performance decrease (from 56.29 to 54.97 on OdysseyBench-Neo), suggesting that longer contexts
+introduce more noise and irrelevant information. This demonstrates that the quality of retrieved
+content is more important than sheer volume, as excessive retrieval can dilute contextual relevance.
+Furthermore, as task complexity increases, the performance gap between storage types widens, with
+summaries maintaining 2-3x higher performance on three-app tasks compared to raw utterances.
+Overall, these results advocate for memory architectures that prioritize semantic aggregation and
+context continuity, which are essential for long-term, multi-step workflow tasks.
+
+
+6    C ASE S TUDY
+
+To elucidate the failure patterns of LLM agents
+in OdysseyBench, we manually examined execution                      Odyssey-Extended Odyssey-Constructed
+traces and systematically categorized failure modes             100
+based on agent behaviors and outcome status. Our
+analysis identifies four primary sources of failure: (1)         80
+Missing required files: Agents overlook references
+
+                                                              Percentage (%)
+                                                                 60
+to input sources mentioned in the dialogues. For ex-
+ample, in Figure 4(a), agents missed the information
+                                                                 40
+about “EmployeeTrainingManuals.docx” and were un-
+able to locate the file for reading. (2) Missing required
+                                                                 20
+actions: Agents fail to generate or modify files as spec-
+ified in the dialogues. As shown in Figure 4(b), agents           0
+missed the instruction to “analyze the relationship,” re-                  . -U.       .   . -U.         .
+                                                                       g-C         G-C g-C           G-C
+sulting in no content for the save action. (3) Incorrect            Lon RAG RA Lon RAG RA
+                                                                            docx     jpg    txt
+tool calls: Agents invoke the wrong function or use in-                     email    pdf    xlsx
+correct arguments. In Figure 4(c), agents used the PDF
+tool to create PDF files, which should have been created Figure 5: Error analysis of various file
+with Word and then converted to PDF. (4) Inaccurate types under three configurations: long-C.
+planning: Agents do not formulate a coherent plan to (long-context) , RAG-U. (Rag-utterance),
+complete the task. For instance, in Figure 4(d), agents and RAG-C. (RAG-chunk).
+should first read the content in PDF files and then write
+in the Word document, rather than writing directly in the Word document. Further quantitative
+analysis based on the file types involved in failed executions (Figure 5) reveals that most errors are
+associated with file creation or writing tasks, particularly for formats such as “docx” and “xlsx”.
+This suggests that agents frequently struggle to execute complex, multi-step workflows that demand
+precise coordination across time, tools, and reasoning.
+
+
+7    C ONCLUSION
+
+In this work, we addressed the critical limitation of existing atomic task benchmarks by introduc-
+ing OdysseyBench, a comprehensive benchmark for evaluating language agents on long-horizon
+workflows across diverse office applications. Our key contribution, H OMER AGENTS, provides a
+scalable multi-agent framework that automates benchmark generation through two complementary
+approaches: H OMER AGENTS + transforms existing atomic tasks into contextually rich scenarios to
+create OdysseyBench+, while H OMER AGENTS -N EO generates entirely new complex tasks from
+scratch to produce OdysseyBench-Neo. Extensive evaluation revealed substantial performance gaps
+between state-of-the-art agents on our benchmark compared to atomic tasks, demonstrating the
+importance of contextual dependencies and multi-interaction coordination in realistic scenarios. This
+work establishes a foundation for more rigorous agent evaluation and provides valuable insights into
+the challenges agents face when deployed in complex, real-world productivity environments.
+
+
+                                                   12
+8   ACKNOWLEDGEMENTS
+
+The authors would like to thank Robert Sim for his contributions in enhancing the tooling and
+infrastructure that supported this work.
+
+R EFERENCES
+Anthropic. Claude 3.7 Sonnet and Claude Code. Online, February 2025a. URL https://www.
+ anthropic.com/news/claude-3-7-sonnet. 5 min read.
+
+Anthropic. Introducing Claude 4: Claude Opus 4 and Claude Sonnet 4. Online, May 2025b. URL
+  https://www.anthropic.com/news/claude-4. 5 min read.
+
+Léo Boisvert, Megh Thakkar, Maxime Gasse, Massimo Caccia, Thibault de Chezelles, Quentin
+   Cappart, Nicolas Chapados, Alexandre Lacoste, and Alexandre Drouin. Workarena++: Towards
+   compositional planning and reasoning-based common knowledge work tasks. Advances in Neural
+   Information Processing Systems, 37:5996–6051, 2024.
+
+Rogerio Bonatti, Dan Zhao, Francesco Bonacci, Dillon Dupont, Sara Abdali, Yinheng Li, Yadong
+  Lu, Justin Wagle, Kazuhito Koishida, Arthur Bucker, et al. Windows agent arena: Evaluating
+  multi-modal os agents at scale. arXiv preprint arXiv:2409.08264, 2024.
+
+Gheorghe Comanici, Eric Bieber, Mike Schaekermann, Ice Pasupat, Noveen Sachdeva, Inderjit
+  Dhillon, Marcel Blistein, Ori Ram, Dan Zhang, Evan Rosen, et al. Gemini 2.5: Pushing the frontier
+ with advanced reasoning, multimodality, long context, and next generation agentic capabilities.
+  arXiv preprint arXiv:2507.06261, 2025.
+
+Marc-Alexandre Côté, Akos Kádár, Xingdi Yuan, Ben Kybartas, Tavian Barnes, Emery Fine, James
+ Moore, Matthew Hausknecht, Layla El Asri, Mahmoud Adada, et al. Textworld: A learning
+ environment for text-based games. In Workshop on Computer Games, pp. 41–75. Springer, 2018.
+
+Xiang Deng, Yu Gu, Boyuan Zheng, Shijie Chen, Sam Stevens, Boshi Wang, Huan Sun, and Yu Su.
+  Mind2web: Towards a generalist agent for the web. Advances in Neural Information Processing
+  Systems, 36:28091–28114, 2023.
+
+Alexandre Drouin, Maxime Gasse, Massimo Caccia, Issam H Laradji, Manuel Del Verme, Tom Marty,
+  Léo Boisvert, Megh Thakkar, Quentin Cappart, David Vazquez, et al. Workarena: How capable are
+  web agents at solving common knowledge work tasks? arXiv preprint arXiv:2403.07718, 2024.
+
+Lutfi Eren Erdogan, Nicholas Lee, Sehoon Kim, Suhong Moon, Hiroki Furuta, Gopala Anu-
+  manchipalli, Kurt Keutzer, and Amir Gholami. Plan-and-act: Improving planning of agents
+  for long-horizon tasks. arXiv preprint arXiv:2503.09572, 2025.
+
+Adam Fourney, Gagan Bansal, Hussein Mozannar, Cheng Tan, Eduardo Salinas, Friederike Niedtner,
+  Grace Proebsting, Griffin Bassman, Jack Gerrits, Jacob Alber, et al. Magentic-one: A generalist
+  multi-agent system for solving complex tasks. arXiv preprint arXiv:2411.04468, 2024.
+
+Apurva Gandhi and Graham Neubig. Go-browse: Training web agents with structured exploration.
+  arXiv preprint arXiv:2506.03533, 2025.
+
+Mengkang Hu, Tianxing Chen, Qiguang Chen, Yao Mu, Wenqi Shao, and Ping Luo. Hiagent: Hier-
+ archical working memory management for solving long-horizon agent tasks with large language
+ model. arXiv preprint arXiv:2408.09559, 2024.
+
+Aaron Hurst, Adam Lerer, Adam P Goucher, Adam Perelman, Aditya Ramesh, Aidan Clark, AJ Os-
+  trow, Akila Welihinda, Alan Hayes, Alec Radford, et al. Gpt-4o system card. arXiv preprint
+  arXiv:2410.21276, 2024.
+
+Aaron Jaech, Adam Kalai, Adam Lerer, Adam Richardson, Ahmed El-Kishky, Aiden Low, Alec
+  Helyar, Aleksander Madry, Alex Beutel, Alex Carney, et al. Openai o1 system card. arXiv preprint
+  arXiv:2412.16720, 2024.
+
+
+                                               13
+Xiang Lisa Li, Farzaan Kaiyom, Evan Zheran Liu, Yifan Mai, Percy Liang, and Tatsunori Hashimoto.
+  Autobencher: Towards declarative benchmark construction. arXiv preprint arXiv:2407.08351,
+  2024.
+Haohan Lin, Zhiqing Sun, Sean Welleck, and Yiming Yang. Lean-star: Learning to interleave thinking
+  and proving. arXiv preprint arXiv:2407.10040, 2024.
+Xing Han Lù, Zdeněk Kasner, and Siva Reddy. Weblinx: Real-world website navigation with
+  multi-turn dialogue. arXiv preprint arXiv:2402.05930, 2024.
+Shikhar Murty, Hao Zhu, Dzmitry Bahdanau, and Christopher D Manning. Nnetnav: Unsuper-
+  vised learning of browser agents through environment interaction in the wild. arXiv preprint
+  arXiv:2410.02907, 2024.
+OpenAI. OpenAI o3 and o4-mini System Card. System card, OpenAI, San Francisco, CA, April
+  2025.   URL https://cdn.openai.com/pdf/2221c875-02dc-4789-800b-e7758f3722c1/
+  o3-and-o4-mini-system-card.pdf. Accessed July 16, 2025.
+Tianyue Ou, Frank F Xu, Aman Madaan, Jiarui Liu, Robert Lo, Abishek Sridhar, Sudipta Sengupta,
+  Dan Roth, Graham Neubig, and Shuyan Zhou. Synatra: Turning indirect knowledge into direct
+  demonstrations for digital agents at scale. Advances in Neural Information Processing Systems, 37:
+  91618–91652, 2024.
+Vardaan Pahuja, Yadong Lu, Corby Rosset, Boyu Gou, Arindam Mitra, Spencer Whitehead, Yu Su,
+  and Ahmed Awadallah. Explorer: Scaling exploration-driven web trajectory synthesis for multi-
+  modal web agents. arXiv preprint arXiv:2502.11357, 2025.
+Jay N Paranjape, Shameema Sikder, Vishal M Patel, and S Swaroop Vedula. Cross-dataset adaptation
+  for instrument classification in cataract surgery videos. In International Conference on Medical
+  Image Computing and Computer-Assisted Intervention, pp. 739–748. Springer, 2023.
+Chen Qian, Wei Liu, Hongzhang Liu, Nuo Chen, Yufan Dang, Jiahao Li, Cheng Yang, Weize Chen,
+  Yusheng Su, Xin Cong, et al. Chatdev: Communicative agents for software development. arXiv
+  preprint arXiv:2307.07924, 2023.
+Yujia Qin, Zihan Cai, Dian Jin, Lan Yan, Shihao Liang, Kunlun Zhu, Yankai Lin, Xu Han, Ning Ding,
+  Huadong Wang, et al. Webcpm: Interactive web search for chinese long-form question answering.
+  arXiv preprint arXiv:2305.06849, 2023a.
+Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin, Xin Cong, Xiangru
+  Tang, Bill Qian, et al. Toolllm: Facilitating large language models to master 16000+ real-world
+  apis. arXiv preprint arXiv:2307.16789, 2023b.
+Timo Schick, Jane Dwivedi-Yu, Roberto Dessı̀, Roberta Raileanu, Maria Lomeli, Eric Hambro, Luke
+  Zettlemoyer, Nicola Cancedda, and Thomas Scialom. Toolformer: Language models can teach
+  themselves to use tools. Advances in Neural Information Processing Systems, 36:68539–68551,
+  2023.
+Haiyang Shen, Yue Li, Desong Meng, Dongqi Cai, Sheng Qi, Li Zhang, Mengwei Xu, and Yun
+  Ma. Shortcutsbench: A large-scale real-world benchmark for api-based agents. arXiv preprint
+  arXiv:2407.00132, 2024.
+Mohit Shridhar, Xingdi Yuan, Marc-Alexandre Côté, Yonatan Bisk, Adam Trischler, and Matthew
+ Hausknecht. Alfworld: Aligning text and embodied environments for interactive learning. arXiv
+ preprint arXiv:2010.03768, 2020.
+Mika Sutela and Nino Lindström. A game theoretic approach to lowering incentives to violate speed
+ limits in finland. arXiv preprint arXiv:2402.09556, 2024.
+Brandon Trabucco, Gunnar Sigurdsson, Robinson Piramuthu, and Ruslan Salakhutdinov. Insta:
+  Towards internet-scale training for agents. arXiv preprint arXiv:2502.06776, 2025.
+Qineng Wang, Zihao Wang, Ying Su, Hanghang Tong, and Yangqiu Song. Rethinking the bounds of
+  llm reasoning: Are multi-agent discussions the key? arXiv preprint arXiv:2402.18272, 2024a.
+
+
+                                                14
+Xingyao Wang, Yangyi Chen, Lifan Yuan, Yizhe Zhang, Yunzhu Li, Hao Peng, and Heng Ji.
+  Executable code actions elicit better llm agents. In Forty-first International Conference on Machine
+  Learning, 2024b.
+Zihao Wang, Shaofei Cai, Anji Liu, Yonggang Jin, Jinbing Hou, Bowei Zhang, Haowei Lin, Zhaofeng
+  He, Zilong Zheng, Yaodong Yang, et al. Jarvis-1: Open-world multi-task agents with memory-
+  augmented multimodal language models. IEEE Transactions on Pattern Analysis and Machine
+  Intelligence, 2024c.
+Zilong Wang, Yuedong Cui, Li Zhong, Zimin Zhang, Da Yin, Bill Yuchen Lin, and Jingbo Shang.
+  Officebench: Benchmarking language agents across multiple applications for office automation.
+  arXiv preprint arXiv:2407.19056, 2024d.
+Junde Wu, Jiayuan Zhu, and Yuyuan Liu. Agentic reasoning: Reasoning llms with tools for the deep
+  research. arXiv preprint arXiv:2502.04644, 2025.
+Jingxu Xie, Dylan Xu, Xuandong Zhao, and Dawn Song. Agentsynth: Scalable task generation for
+   generalist computer-use agents. arXiv preprint arXiv:2506.14205, 2025.
+Frank F Xu, Yufan Song, Boxuan Li, Yuxuan Tang, Kritanjali Jain, Mengxue Bao, Zora Z Wang,
+  Xuhui Zhou, Zhitong Guo, Murong Cao, et al. Theagentcompany: benchmarking llm agents on
+  consequential real world tasks. arXiv preprint arXiv:2412.14161, 2024a.
+Yiheng Xu, Dunjie Lu, Zhennan Shen, Junli Wang, Zekun Wang, Yuchen Mao, Caiming Xiong, and
+  Tao Yu. Agenttrek: Agent trajectory synthesis via guiding replay with web tutorials. arXiv preprint
+  arXiv:2412.09605, 2024b.
+John Yang, Carlos E Jimenez, Alexander Wettig, Kilian Lieret, Shunyu Yao, Karthik Narasimhan,
+  and Ofir Press. Swe-agent: Agent-computer interfaces enable automated software engineering.
+  Advances in Neural Information Processing Systems, 37:50528–50652, 2024.
+Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik Narasimhan. τ -bench: A benchmark for
+  tool-agent-user interaction in real-world domains. arXiv preprint arXiv:2406.12045, 2024.
+Yuxiang Zheng, Dayuan Fu, Xiangkun Hu, Xiaojie Cai, Lyumanshan Ye, Pengrui Lu, and Pengfei
+  Liu. Deepresearcher: Scaling deep research via reinforcement learning in real-world environments.
+  arXiv preprint arXiv:2504.03160, 2025.
+Shuyan Zhou, Frank F Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek Sridhar, Xianyi Cheng,
+  Tianyue Ou, Yonatan Bisk, Daniel Fried, et al. Webarena: A realistic web environment for building
+  autonomous agents. arXiv preprint arXiv:2307.13854, 2023.
+Yuchen Zhuang, Yue Yu, Kuan Wang, Haotian Sun, and Chao Zhang. Toolqa: A dataset for llm
+  question answering with external tools. Advances in Neural Information Processing Systems, 36:
+  50117–50143, 2023.
+
+
+
+
+                                                 15
+A      C RITERIA OF V ERIFIER AGENT
+
+
+
+We provide the criteria used by the verifier agent in H OMER AGENTS + to ensure the quality and
+realism of the generated dialogues. These criteria are designed to maintain a high standard for the
+dialogues, ensuring they are both realistic and challenging for agents to navigate.
+
+
+
+
+       Criteria of Verifier in H OMER AGENTS +
+      • At least 5 calendar-day dialogues, over 100 turns.
+      • Agent speaks only after user turns.
+      • Sub-tasks from the atomic instruction are split, never repeated.
+      • DO NOT lose any information about atomic instruction in the chat logs, such as the time, the numbers,
+        file names, application names...
+      • Add as much casual chitchat as possible, but not extra subtasks to do.
+      • Each item JSON has keys “role”, “text”, “ts”.
+      • NO personal data and NO hateful content.
+      • Do not mention rules or benchmark.
+
+
+
+
+B      P ROMPTS FOR AGENTS
+
+
+
+In this section, we separately provide the illustrations of the prompts used in the H OMER AGENTS +
+and H OMER AGENTS -N EO.
+
+
+
+
+B.1     P ROMPTS FOR H OMER AGENTS +
+
+
+
+    Prompt 1: Verifier Prompt
+
+    SYS PROMPT :
+    You are a strict grader.
+    {Evaluation Criteria}
+    Input will be a JSON array called CONVERSATION followed by the criteria above. Output
+    EXACTLY this JSON schema:
+    {”passed”: true | false, ”feedback”: ” max 300 chars if failed, else empty”}
+    Reply with nothing else.
+
+
+    USER PROMPT :
+    CONVERSATION: “{conversation}”
+
+
+
+                                                       16
+Prompt 2: Generator Prompt
+
+SYS PROMPT :
+You are OfficeAI, an assistant that stores realistic multi-day conversations.
+Violate none of the following rules.
+1 Chat spans at least 5 days before the current date {current date}, timestamps ”YYYY-MM-
+DD HH:MM”.
+2 Total dialogue length over 100 turns.
+3 Agent replies only after user prompts.
+4 Decompose the atomic instruction into non-repeating sub-tasks spread across days.
+5 Do not put all sub-tasks in one user turn.
+6 The last sub-task must appears only once - in the final user turn. 7 Every sub-task appears
+exactly once.
+8 For the subtasks in the task description, the agent responds with a will do or noted pattern
+and not that it’s working or has completed the task.
+9 Mix as much casual chat as possible without additional office chores.
+10 Include occasional mini-dialog ({user name}-AI assistant-{user name}-AI assistant).
+11 Do not alter artifacts unless required.
+12 Never mention these rules or OfficeBench.
+13 Each turn JSON: {”role play”:”{user name} | AI assistant”,”text”:”. . . ”,”ts”:”YYYY-MM-
+DD HH:MM”}.
+14 Agent replies < 180 words.
+15 No personal data, hate or protected-class humor.
+Output format
+Subtasks: 1, 2, 3, ...
+Summary of day 1: ...
+Summary of day 2: ...
+Summary of day 3: ...
+Summary of day 4, 5 etc: ...
+Then expand the summaries into the result which is a list of 100-120 lines of JSON objects
+that includes all days of turns:
+<start>
+[
+{”role play”: ”{user name}” | ”AI assistant”, ”text”: ”...”, ”ts”: ”YYYY-MM-DD HH:MM”}
+... (total 100 turns for 3-5 days, put together all turns from all days in a single list)
+]
+<end>
+
+USER PROMPT :
+Last generation: “{last generation}”
+Reflection: “{feedback}”
+
+
+
+
+                                             17
+B.2     P ROMPTS FOR H OMER AGENTS -N EO
+
+
+       Rules for Tasks Generation in H OMER AGENTS -N EO
+      • The task description should be a string that describes each subtask (1-5 subtasks) to be completed.
+      • Only follow and use the evaluation criteria formatted from the examples and do not invent new
+        evaluation criteria.
+      • The evaluation criteria should be a list of dictionaries, each dictionary representing an evaluation
+      • The task description is hidden from the agent, and a ground truth agent should be able to complete
+        the task with just the task description.
+      • The ground truth memory should contain the necessary facts (things like time, new values, new
+        filenames, new content values (but intermediate or final calculations), etc.) and events (action items)
+        needed to complete the task, which will be distributed across the chat histories. These memories
+        when disepensed across the chat histories, should be related to the task and queryable using the query
+        sentence.
+      • For the query sentence, it should be a general instruction of the task description, which will be sent to
+        the policy agent to understand the general task and use it to query more details about the task details
+        from memories.
+      • FOR EXCEL TASKS, we do not have ground truth reference files, DO NOT USE evaluate ex-
+        act match with a reference excel file. Instead, use the evaluation criteria to check some impor-
+        tant added values to the excel such as {{“function”: “evaluate excel cell value”,“args”: {{“file”:
+        “data/salary.xlsx”,“matches”: [{{“row”: 5,“col”: 2,“value”: “200000”}}]}}}}, etc.
+      • FOR CALENDAR TASKS, the commands for creating calendar events do not contain information
+        such as one hour reminders or locations, so do not use these as task or evaluation criteria. Instead, if
+        you want to evaluate these, use the event’s title, start time and end time as evaluation. If you want to
+        evaluate the event’s details such as location, ask the agent to add these details to the event title, and
+        add this action item note to the ground truth memory for chat generation. Note that when generating
+        a task, you should be precise about what to expect for the calendar’s description as an LLM policy
+        agent may generate events with different names.
+      • FOR QUESTION ANSWERING TASKS, expect the agent to output a the final answer in the
+        answer.txt file, instead of adding a line in an existing file like word or excel file. When evaluating
+        such answers, be precise about the task, ground truth memory such that you can expect what the
+        agent produce so that the correctness of the answer is easily verifiable.
+      • The inference agents can create or modify files such as docx, xlsx, generate pdf files. No powerpoint
+        or txt files are allowed except for the answer.txt file where the policy agent’s final output is logged.
+        11. FOR EMAIL TASKS, there is no draft mode or attachment options. Follow closely the examples
+        given below, and do not create new evaluation criteria formats.
+      • FOR WORD (docx file generation or update) TASKS such as summarization, evaluation on a subset
+        of the most important keywords is sufficient and do not match the exact content or long sentences as
+        the inference agent are not expected to generate the exact matches.
+      • As a general rule, make sure that the facts and values, output file name and action items in the
+        proposed task and memory are precise and clear and matches the evaluation criteria accurately, such
+        that the agent can accurately complete the task. If you leave the task description vague, the agent
+        may write to wrong file names, wrong event details, etc. For example, for setting up a calendar event,
+        make sure you specify the exact start time and end time, and the exact description of the event, so
+        that the agent can create the event with the correct details. For creating new files, make sure you
+        specify the exact file name, etc. And make sure that these important points or action items are clearly
+        described in the ground truth memory so that an inference agent with query sentence and ground
+        truth memory can complete the task as in the task description.
+      • Provide new and complementary information about your proposed new tasks in the ground truth
+        memory, and DO NOT INCLUDE the solution to the task such as the intermediate steps for the
+        solution (such as values read from files or intermediate or final calculated values), but rather a list
+        of facts and action items that are necessary for completing the task complementing the files, such
+        as missing details from the files, important action items or notes missing in the query sentence such
+        as the output filenames, locations to put values, what elements a calendar event description should
+        contain, or new events you propose or new facts. The memory generated will appear in the chat
+        histories. The inference agent has access to all the files, and should be able to query the ground truth
+        memory using the query sentence to find the necessary facts and action items to complete the task,
+        while the query sentence should miss some details such as facts or preferences, which can be found
+        in the memory.
+      • Follow closely the json format and function names in the given examples when generating evaluations
+        and do not invent new evaluation functions, and for keyword checks, split those keywords into
+        different chunks to avoid being too strict (e.g., split and skip the punctuation marks).
+
+
+
+                                                         18
+    Rules for Dialogues Generation in H OMER AGENTS -N EO
+   • The generated chat histories should contain around 100-120 turns per day, spread across 5 days
+     (before today).
+   • To generate the chats, Take the following steps as the orchestrator: #### Break Down Memory per
+     Chat Day: First extract the precise subtask action items or the factual knowledge from the ground
+     truth memory pieces to be covered for each day. #### Chat Generation: For each day (day 0 to day 4),
+     provide the PRECISE memory pieces for the day as the orchestrator, and ask the chat generator agent
+     to write the chat histories day by day using the ChatTool. For example: to generate day N chat history
+     with chat generator agent, first extract and mention the list of ¡EXACT MEMORY CONTENTS¿
+     to be covered on the day and let it generate chats that precisely capture these contents. Make sure
+     that with the memory pieces, the inference agent can find the action items to work on, the correct file
+     names, and the correct content values to complete the task. Beware that sometimes if the description
+     is vague, the agent may write to wrong file names, wrong event details, etc. #### To make the chat
+     histories longer, chitchat with the agent that are not related to the task can be added, but make sure
+     that these do not add noise to the task solving such as new action items that are not covered by the
+     memory or task description. Do not duplicate the memory pieces across the chat days, and if all
+     memories have been covered, the chat history of the next day can be just about chitchat.
+   • Each chat turn being a json object with timestamp, the source (user or agent), and the content.
+   • The chat is between the user and the agent (not human), the user may mention the facts from the
+     memory or action items from the task description, and the agent may respond with answers like will
+     do but not solve the action, so that during inference, the agent can find the action items to work on.
+
+
+
+
+B.2.1   TASK G ENERATOR P ROMPT
+
+
+
+
+   Prompt 3: Task Generator Prompt
+
+   SYS PROMPT :
+  Generate a task description, evaluation criteria, and ground truth memory for the task. Use
+  the TaskTool to log it. The task description should be a string, the evaluation criteria should
+  be a list of dictionaries, each dictionary representing an evaluation criterion, and the ground
+  truth memory should be a list of dictionaries, each dictionary representing a memory item.
+  Use double quotes and not single quotes. The format of the arguments to the tool call to
+  the tool named TaskTool should be: {’task specs’: <the json object with task description,
+  evaluation criteria, query sentence, and ground truth memory’>} where the tool name is
+  TaskTool. NOTE THAT the json object should be valid with double quotes on the keys and
+  values.
+  {Rules for Tasks generation}
+
+
+   USER PROMPT :
+   Context: “{context information}”
+   Instruction: “{instruction from orchestrator}”
+
+
+                                                     19
+B.2.2   O RCHESTRATOR P ROMPT
+
+
+
+
+   Prompt 4: Orchestrator Prompt
+
+   SYS PROMPT :
+  Today is {date} ({weekday}). The current time is {time}. You are an AI assistant for
+  user {username}. Now you’re the orchestrator and your task is to synthesize new tasks to
+  evaluate agents’ memory capability for task solving. To generate this new task, you will
+  need to generate task specifications and chat histories which includes important memory of
+  information for solving the task, please follow the following steps:
+  ###STEP 1: FILE READING: First start by reading some existing files (such as excel, email,
+  calendar, or other files) using the file related task agents, it is possible there are sometimes
+  no files while it is still possible to propose tasks. Gather important information from these
+  files that are related to the task you want to propose, such as where to update a file or to use
+  information from these files. Note that the inference agent will have access to these files, so
+  the ground truth memory and the chat histories to generate is not just about recording specific
+  elements in the files but more about new information or action items relates but not limited to
+  contents already in the file.
+  ###STEP 2: TASK PROPOSAL: then propose a new task which includes information:
+  1. a task description (hidden from agent),
+  2. the task evaluation criteria (hidden from agent),
+  3. a ground truth memory which includes facts and events needed to complete the task (hidden
+  from agent), 4. a query sentence which is a more general instruction of the task description
+  which will be sent to the policy agent to understand the general task and use it to query
+  more details about the task details from memories. 5. for evaluation, txt is not a file format
+  that can be used, so please do not generate tasks that require generating new txt files. For
+  safe evaluation, please follow the task spec examples below to generate possible tasks and
+  evaluations.{task spec examples}
+  ###STEP 3: LOG DOWN THE TASK SPECS: After proposing the task, use the
+  task generator agent to write down these task details using the TaskTool.
+  ###STEP 4: GENERATE DIALOGUES: (DO NOT FORGET) After generating the task,
+  expand the ground truth memory into long chat histories where the ground truth memories are
+  scattered, such that during inference, the agent can be challenged on curating correct pieces
+  of memories from these chats.
+  {Rules for Tasks generation}
+  {Rules for Dialogues generation}
+  As a general note, you can find files, calendar events, emails for your task in ’/testbed/data’,
+  you can use the assistant agents to read, list, the files, do not create new items for this task
+  generation cycle.
+  DO NOT TERMINATE THE TASK IF YOU HAVE NOT FINISHED GENERATING THE
+  TASK SPECS OR THE DIALOGUES. DO NOT STOP TO GET HUMAN FEEDBACK,
+  JUST GENERATE THE TASK SPECS AND DIALOGUES.
+
+   USER PROMPT :
+   Context: “{context information}”
+
+
+                                                20
+B.2.3   C HAT G ENERATOR P ROMPT
+   Prompt 5: Dialogue Generator Prompt
+
+   SYS PROMPT :
+  Today is {date} ({weekday}). The current time is {time}. You are an AI assistant for user
+  username. Now you’re the chat generator assistant helping a task generator orchestrator to
+  synthesize new tasks. Your job is to expand the ground truth memory into chat histories where
+  the memories are scattered in the chat histories. Generate chat histories for the task given the
+  ground truth memory and task description.
+  {Rules for Dialogues generation}
+
+
+   USER PROMPT :
+  Task: “{task}”
+  Subtask Instruction: “{subtask instruction}”
+  Instruction: “{instruction from orchestrator}”
+
+
+
+
+                                                21
+
