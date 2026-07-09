@@ -12,6 +12,8 @@ This file tracks benchmark families relevant to `skill-bench`.
 | OdysseyBench / OfficeBench | Office application workflows | Word/Excel/PDF/email/calendar | Office workflow completion | Programmatic / task-specific evaluation | Directly relevant to office knowledge work | How robust are evaluation functions? |
 | WorkstreamBench / MBABench | End-to-end spreadsheet finance tasks | Finance context and spreadsheet data | Professional spreadsheets | Spreadsheet / finance-specific checks | Useful for artifact testing and spreadsheet grading | Can we make an open finance-lite scenario? |
 | AIDABench | Document analysis agents | Heterogeneous documents | Analysis outputs | End-to-end pipeline checks | Useful for document-heavy source pools | How to evaluate evidence use? |
+| SaaS-Bench | Real deployable SaaS workflows | 23 open-source SaaS systems, multimodal inputs, persistent app state | Cross-application task completion | Weighted verification checkpoints + resolved score | Strong model for professional workflow realism and partial-credit state checks | Can we borrow checkpoint scoring without inheriting heavy environment maintenance? |
+| STRACE / trajectory diagnosis | Long-horizon agent failure optimization | Execution traces and dependency graphs | Root-cause module updates / diagnostic slices | Success-rate lift after localized optimization | Suggests benchmark logs should support causal failure slicing, not just final scoring | What minimal trace schema lets us diagnose planner vs retrieval vs artifact failures? |
 | ClawsBench | Productivity agents + safety | Simulated workspace services | API actions / task completion | State-based task success and safety | Important for productivity-agent risks | How to include safety and prompt injection? |
 | SWE-bench / Terminal-Bench | Coding / terminal tasks | Repos or terminal envs | Patches / terminal outcomes | Tests | Shows value of executable scoring | What analogs exist for decks/spreadsheets/memos? |
 | PaperBench / PresentBench | Research replication / presentations | Papers, specs | Artifacts | Task-specific / judge scoring | Adjacent artifact-generation benchmarks | How mature are methods? |
@@ -48,3 +50,4 @@ This file tracks benchmark families relevant to `skill-bench`.
 - Stakeholder preference
 - Data quality issue
 - “Looks good but wrong” trap
+- Root-cause failure slice

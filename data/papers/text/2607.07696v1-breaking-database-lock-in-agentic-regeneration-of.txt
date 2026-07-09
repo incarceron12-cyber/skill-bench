@@ -1,0 +1,497 @@
+                                                Breaking Database Lock-in: Agentic Regeneration of High
+                                                   Performance Storage Readers for Database Bypass
+                                                                   Victor Giannakouris                                                           Immanuel Trummer
+                                                                       Cornell University                                                            Cornell University
+                                                                        Ithaca, NY, USA                                                               Ithaca, NY, USA
+                                                                       vg292@cornell.edu                                                          itrummer@cornell.edu
+
+                                        ABSTRACT                                                                               1   INTRODUCTION
+                                        Analytical workloads operating on data stored in external database                     The boundary between relational database systems (RDBMSes) and
+                                        systems face a fundamental bottleneck: data access is guarded en-                      analytical query engines has long been guarded by the RDBMS
+                                        tirely by the database driver, like JDBC or ODBC, forcing all reads                    engine itself. When an external system or application, like a GPU-
+                                        through query execution and other driver layers that are not de-                       accelerated framework, a vectorized query engine, or an ML feature
+                                        signed for bulk columnar analytics. Existing approaches, like JDBC                     store, needs data that resides in PostgreSQL or MySQL, it must
+                                        and ODBC connectors, inherit this overhead, resulting in significant                   issue SQL queries via a wire protocol, like JDBC or ODBC, wait for
+                                        latency and throughput limitations for downstream external, ana-                       the server to traverse its storage layer, serialize rows through the
+                                        lytic query engines. We present Jailbreak, an approach that bypasses                   wire protocol, and then deserialize those rows on the client side
+                                        the database engine entirely by reading storage files directly and                     before any useful computation can begin. This architecture made
+
+
+
+
+arXiv:2607.07696v1 [cs.DB] 8 Jul 2026
+                                        materializing data as in-memory columnar buffers. Jailbreak’s key                      sense when databases were monolithic systems that owned both
+                                        insight is that database file formats, while complex, are fully speci-                 storage and compute, but it is increasingly at odds with the modern
+                                        fied by their source code and documentation, artifacts that Large                      data stack, in which a growing ecosystem of specialized engines,
+                                        Language Models (LLMs) can ingest to regenerate operator-specific                      like DuckDB [13], DataFusion [2], cuDF [3], Spark SQL [16] or
+                                        table reading components without human-engineered parsing logic.                       Velox [11], expects data in columnar, zero-copy formats such as
+                                        Jailbreak leverages LLM-assisted code synthesis for database stor-                     Apache Arrow [1].
+                                        age decoding, turning a traditionally opaque format into a directly                       The overhead of this engine-mediated path is well documented.
+                                        queryable artifact. We evaluate Jailbreak on PostgreSQL and MySQL                      ConnectorX [14] showed that more than 85% of the wall-clock time
+                                        storage files, targeting analytical snapshot scenarios common in                       in a typical read_sql call is consumed by client-side deserialization
+                                        read replicas and offline processing pipelines. The generated reader                   and format conversion, not by query execution or network transfer.
+                                        produces Apache Arrow buffers consumable directly by most of the                       Raasveldt and Mühleisen [12] demonstrated that existing wire pro-
+                                        widely known query engines, including DuckDB, Apache Spark,                            tocols carry redundant metadata and impose expensive per-tuple
+                                        and GPU-accelerated frameworks such as cuDF and Spark RAPIDS.                          serialization, proposing protocol-level redesigns to mitigate the cost.
+                                        We validate correctness against JDBC/ODBC-based baselines using                        Federated query systems such as XDB [6], Wayang [4], Dingo [8],
+                                        the TPC-H benchmark across all query results, and demonstrate                          and MuSQLE [7] optimize where different parts of a query should
+                                        significant performance improvements in end-to-end analytical                          be executed, yet they still rely on the wire protocol to external table
+                                        throughput, achieving up to 27× speedups. Our results suggest that                     transfer. In all of these approaches, the database server remains the
+                                        LLM-assisted storage reader synthesis is a viable and generalizable                    sole gatekeeper of its own storage. No matter how aggressively the
+                                        methodology for breaking data lock-in across database systems,                         client or middleware is optimized, every byte of data must still pass
+                                        with applications beyond PostgreSQL and MySQL for any system                           through the wire protocol.
+                                        whose file format is available to the LLM from documentation or                           We observe that this bottleneck is not inherent to the data itself,
+                                        source code.                                                                           but to the access path. Database storage formats, including Post-
+                                                                                                                               greSQL’s heap files, MySQL’s InnoDB .ibd pages, are complex, but
+                                        VLDB Workshop Reference Format:                                                        they are not opaque. Their layouts are fully specified by a com-
+                                        Victor Giannakouris and Immanuel Trummer. Breaking Database Lock-in:                   bination of source code, official documentation, and header files
+                                        Agentic Regeneration of High Performance Storage Readers for Database
+                                                                                                                               that have been stable across major releases. A reader that can parse
+                                        Bypass. VLDB 2026 Workshop: AIDB.
+                                                                                                                               these files directly and emit columnar in-memory byte streams
+                                                                                                                               would remove the server from the critical path entirely, turning
+                                        VLDB Workshop Artifact Availability:                                                   what was an engine-mediated query into a simple file scan.
+                                        The source code, data, and/or other artifacts have been made available at                 The main barrier to building custom table readers is engineer-
+                                        https://github.com/gsvic/Jailbreak.                                                    ing effort: hand-writing a correct parser for even one database’s
+                                                                                                                               on-disk format requires deep knowledge of page layouts, which
+                                        This work is licensed under the Creative Commons BY-NC-ND 4.0 International            might include MVCC visibility rules, type encodings, and TOAST or
+                                        License. Visit https://creativecommons.org/licenses/by-nc-nd/4.0/ to view a copy of
+                                        this license. For any use beyond those covered by this license, obtain permission by   overflow-page handling. Extending that parser to a second database
+                                        emailing info@vldb.org. Copyright is held by the owner/author(s). Publication rights   doubles the effort, and keeping it current across versions adds a
+                                        licensed to the VLDB Endowment.                                                        continuous maintenance burden. We argue that recent advances
+                                        Proceedings of the VLDB Endowment. ISSN 2150-8097.
+                                                                                                                               in Large Language Models (LLMs) change this calculus. An LLM
+can ingest the same documentation and source code that a human                     • We produce Apache Arrow buffers that integrate zero-copy
+developer would consult and generate a format-specific reader in                     with six downstream engines, including GPU-accelerated
+a single automated pass. If the generated code fails to compile or                   frameworks.
+produces incorrect output, an agentic feedback loop can diagnose                   • We evaluate two synthesized readers on TPC-H, demon-
+the error and regenerate the code, reducing what was a weeks-long                    strating end-to-end ETL speedups up to 5.1× over Post-
+systems programming task to a pipeline that completes in minutes.                    greSQL and up to 27× over MySQL wire-protocol baselines,
+   In this paper we explore the ability of LLMs to synthesize custom,                with full correctness validation across all 22 TPC-H queries.
+high-performance table readers for a target database system that
+can read directly their files. First, we evaluate this idea by synthe-       2 OVERVIEW
+sizing two custom readers for Postgres and MySQL. We showcase                2.1 Jailbreak
+that synthesizing custom table readers for already existing database
+system with LLMs is possible, and can achieve up to 27× speedups.            Jailbreak is an agentic approach for synthesizing high-performance
+Second, we present the vision of Jailbreak, an agentic approach              table readers for database system bypass. Jailbreak exploits the
+that automates the synthesis of high-performance table readers               two following insights. First, the storage layer details of a data-
+that bypass the database engine entirely. Jailbreak-generated ta-            base system can be ingested by an LLM both from the source code
+ble readers ingest storage files directly and materialize table data         and documentation. For most of the popular open-source data-
+as Apache Arrow columnar buffers. Jailbreak’s multi-agent LLM                base systems, this information is already included in the already
+pipeline takes a table schema and database type as input, and aims           existing pretrained LLMs. Second, the LLM can utilize this knowl-
+to produce a verified, plug-in-compatible shared library implement-          edge in order to automatically synthesize high-performance code
+ing a pg_to_arrow (or mysql_to_arrow) C interface. The pipeline              that can read the database system storage files directly, by com-
+comprises four specialized agents:                                           pletely bypassing the database system. This approach offers several
+                                                                             performance benefits. First, it eliminates the wire protocol serial-
+     • A Dataset Generator that creates test tables consisting of            ization/deserialization overheads, since the external application or
+       various attributes and data types.                                    query engine can read the storage files directly. Second, it leaves the
+     • An Architect that produces a structured table reader format           target database system intact, since query execution that normally
+       specification.                                                        happens through JDBC/ODBC and adds extra load to the database
+     • A Coder that generates high-performance, C++ reader code.             system is completely eliminated. Third, it gives more control to the
+     • A QA Tester that verifies correctness against known ground            higher application layer on how to read and handle the data (e.g.
+       truth using the target database.                                      partitioning schemes), since the synthesized reader works at the
+   All the above are connected by an iterative feedback loop that            byte-level.
+refines the generated code until all checks pass or a retry budget is
+exhausted.                                                                   2.2     Implementation
+   The resulting reader produces Arrow RecordBatch buffers that              We implement two shared libraries, one for Postgres (pg_arrow.so)
+are consumable in a zero-copy fashion by the majority of analyti-            and one for MySQL (mysql_arrow.so), each compiled from a sin-
+cal query engines, including DuckDB, Apache Spark, DataFusion,               gle self-contained C++17 translation unit (approximately 800 lines
+PyArrow, and GPU-accelerated frameworks such as cuDF and Spark               each) with no external dependencies beyond the standard library.
+RAPIDS. Because the reader operates on storage files rather than             Both export a C-linkage function that reads a database storage
+through the database server, it eliminates the JDBC/ODBC proto-              file directly from disk and returns a fully typed Apache Arrow
+col and query execution overheads from the data path. We vali-               RecordBatch via the Arrow C Data Interface1 without any involve-
+date correctness against JDBC/ODBC-based baselines using the full            ment of the database server, wire protocol or serialization. In the
+TPC-H benchmark and demonstrate speedups of up to 5× for Post-               following sections we present the abstract Arrow C Data Inter-
+greSQL and 27× for MySQL across six analytic query engines. To               face, as well as the implementation details of two synthesized table
+the best of our knowledge, Jailbreak is the first system to leverage         readers, including Postgres and MySQL.
+LLM-assisted code synthesis for database bypass. Our experimental
+evaluation showcase that this methodology is plausible and gener-            2.3     Arrow C Data Interface
+alizable: any database system whose file format is recoverable from
+                                                                             The Arrow C Data Interface defines two plain C structs, ArrowSchema
+documentation or source code is a candidate for automated reader
+                                                                             and ArrowArray, that carry a complete columnar RecordBatch
+generation, opening a path toward breaking data lock-in without
+                                                                             across language and library boundaries without copying the un-
+reverse engineering or vendor cooperation.
+                                                                             derlying buffers. Each library inlines the two struct definitions
+In summary, we make the following contributions:                             verbatim, making the compiled .so independent of any particular
+     • We identify direct storage-file access as a principled alter-         Arrow SDK version. The consumer (Python, DuckDB, DataFusion,
+       native to wire-protocol-based data export, removing the               etc.) imports the batch with a single call:
+       database engine from the analytical data path.                        batch = pa.RecordBatch._import_from_c(
+     • We propose a four-agent LLM pipeline for automated syn-                           ctypes.addressof(array), ctypes.addressof(schema
+       thesis of correct, type-complete C++ readers for PostgreSQL                ))
+       heap files and MySQL InnoDB pages, and demonstrate its
+       viability through LLM-assisted interactive development                1 https://arrow.apache.org/docs/format/CDataInterface.html
+
+                                                                         2
+This zero-copy handoff is the key performance property: the column             datum is in “short” form: the remaining 7 bits of that byte encode the
+buffers allocated by the C++ reader are owned by the ArrowArray                total datum size (including the 1-byte header), giving a maximum
+through a release callback and are freed only when the consumer                inline length of 127 bytes. Otherwise the full 4-byte header is read
+releases the batch.                                                            and the payload length is (header » 2) - 4. Trailing spaces
+   Table 1 summarizes the type mapping used by both readers.                   are stripped from bpchar values before insertion into the Arrow
+Fixed-width types (booleans, integers, floats, dates, timestamps)              character buffer.
+use Arrow’s two-buffer layout: a null bitmap and a packed data                    numeric (arbitrary-precision decimal) is decoded to float64.
+buffer. Variable-width types (strings, binary) use three buffers: a            PostgreSQL’s internal numeric format stores digits in base 10,000
+null bitmap, a 32-bit integer offset array, and a flat byte array for          (NBASE groups), with a 2- or 4-byte header encoding the sign, the
+the character data.                                                            weight (most-significant NBASE group exponent), and the display
+                                                                               scale; the number of digit groups is inferred from the remaining
+   Table 1: Source type to Arrow format string mapping.
+                                                                               payload length. Both short (2-byte header, weight stored as a 6-
+                                                                               bit magnitude with a sign-extension bit) and long (4-byte header,
+ Source type                    Arrow format      Description
+                                                                               explicit 16-bit signed weight) formats are handled. The decode
+ bool                           b                 1-bit boolean
+                                                                               accumulates the digit groups and adjusts by 10,000 weight−ndigits+1 .
+ int2 / smallint                s                 int16
+ int4 / int                     i                 int32
+                                                                               2.4.4 I/O Strategy. The reader buffers I/O in 2 MB batches (256
+ int8 / bigint                  l                 int64
+                                                                               pages per fread call) to amortize system-call overhead. Column
+ float4 / real                  f                 float32
+ float8 / double                g                 float64                      buffers are pre-allocated assuming approximately 6.5 million rows
+ date                           tdD               date32 (Unix epoch)          to avoid repeated reallocation during the scan. Row count is inferred
+ timestamp                      tsu:              timestamp[µs, UTC]           from the first column’s buffer length after the scan, so the caller
+ numeric / decimal              g                 float64 (decoded)            does not need to provide it in advance.
+ bpchar / varchar / text        u                 UTF-8 string
+                                                                        2.4.5 BRIN-Pruned Scan. The pg_to_arrow_brin entry point ac-
+                                                                        cepts a path to the BRIN index file and a predicate of the form
+2.4 PostgreSQL Heap Reader                                              "col:type:min:max", where either bound may be empty to in-
+                                                                        dicate an unbounded range. The BRIN file is loaded entirely into
+2.4.1 Page Layout. PostgreSQL stores each table as one or more
+                                                                        memory (typically a few hundred kilobytes) and parsed as follows.
+heap segment files in $PGDATA/base/dboid/reloid (splitting at
+                                                                        Page 0 is the meta page: it holds the magic number (0xA8109CFA),
+1 GB boundaries with suffixes .1, .2, . . . ). Each file is a sequence
+                                                                        the pagesPerRange value, and the index of the last revmap page.
+of 8 KB pages. A page begins with a 24-byte PageHeaderData that
+                                                                        Pages 1 through lastRevmapPage are revmap pages, each storing
+contains pd_lower, the byte offset of the end of the line pointer
+                                                                        an array of 6-byte ItemPointerData entries at a fixed layout; the
+array; pd_upper, the start of tuple data; and pd_special, the start
+                                                                        capacity of a revmap page is (pd_special − 24)/6 rather than be-
+of any special-purpose area (unused for heap pages). Following the
+                                                                        ing derived from pd_lower, which PostgreSQL does not update on
+header is an array of 4-byte item identifiers (ItemId), each encoding
+                                                                        revmap writes.
+the page-relative offset, flags, and length of one tuple. Tuples are
+                                                                           Each ItemPointer is followed to its BrinTuple. A critical sub-
+stored in reverse order from the top of the page downward.
+                                                                        tlety in the bt_info field: the lower byte encodes two bits per
+2.4.2 MVCC Visibility. Each heap tuple begins with a 23-byte            stored attribute, bit 2𝑖 indicates that attribute 𝑖 is entirely null (no
+HeapTupleHeader. The implementation performs a lightweight              valid min/max), while bit 2𝑖 + 1 indicates the presence of some
+MVCC visibility check before decoding: a tuple is skipped if its        nulls but still valid extrema. A page range is pruned only when its
+t_xmax (delete transaction ID) is non-zero and the infomask flags       summary tuple has valid (non-all-null) min and max values and
+do not indicate that the deletion was rolled back (HEAP_XMAX_INVALID)   the stored [brin_min, brin_max] interval is disjoint from the pred-
+or was only a row-lock rather than a real delete (HEAP_XMAX_LOCK_ONLY). icate range. If either the min or max attribute is marked all-null,
+This correctly excludes deleted and in-progress rows while retain-      the BRIN summary is treated as uninformative and the range is
+ing all committed live tuples, mirroring the visibility semantics of    conservatively scanned. Pruned page ranges are realized as fseek
+a serializable snapshot without requiring access to the transaction     calls in do_heap_scan, providing genuine I/O reduction rather than
+status tables.                                                          merely parse-time filtering.
+2.4.3 Tuple Decoding. Each tuple’s attribute data begins at byte
+offset t_hoff, which accounts for the header and any null bitmap.              2.5    MySQL InnoDB Reader
+Attributes are decoded sequentially. Fixed-width types are aligned             2.5.1 Page Layout. MySQL InnoDB stores each table in a .ibd
+to their natural boundary (1, 2, 4, or 8 bytes) and copied directly from       tablespace file composed of 16 KB pages. Each page begins with
+the page. Two epoch conversions are applied inline: PostgreSQL                 a 38-byte FIL header whose byte offsets 24–25 contain the 2-byte
+date stores days since 2000-01-01, so 10,957 days are added to obtain          big-endian page type; only FIL_PAGE_INDEX pages (0x45BF) are
+the Arrow date32 (days since Unix epoch); similarly, timestamp                 processed. Index pages carry a 36-byte PAGE_HEADER followed by
+values are shifted by 10,957 × 86,400 × 106 microseconds.                      20 bytes of file-segment (FSEG) headers, after which the infimum
+   Variable-length data (bpchar, varchar, text) uses PostgreSQL’s              and supremum system records begin. The high bit of PAGE_N_HEAP
+varlena encoding. When the low-order bit of the first byte is set the          at offset 42 indicates the COMPACT row format. PAGE_LEVEL at
+                                                                           3
+offset 64 distinguishes B-tree leaf pages (level 0) from interior nodes;       2.6    Shared Design Principles
+only leaf pages contain row data.                                              Both readers are intentionally structurally similar. Column speci-
+                                                                               fications are passed as a comma-separated string of "name:type"
+2.5.2 Record Traversal. Within a leaf page, records form a singly
+                                                                               pairs that is parsed at runtime, making the library table-agnostic.
+linked list ordered by primary key. The infimum pseudo-record
+                                                                               All heap or tablespace traversal, type decoding, and Arrow buffer
+at page offset 99 serves as the list head; its 5-byte record header
+                                                                               construction happens in a single sequential pass per file, minimizing
+stores a big-endian signed 16-bit next record offset at bytes 3–4.
+                                                                               memory traffic. Buffers for fixed-width and variable-width columns
+Adding this offset to the current record’s origin pointer (the address
+                                                                               are maintained as std::vector containers and transferred to the
+immediately following the header) gives the next record’s origin.
+                                                                               Arrow structs by pointer without copying. The release callback
+Traversal terminates at the supremum pseudo-record at offset 112
+                                                                               registered on the top-level ArrowArray recursively frees all child
+or when the next-record field is zero. Records flagged deleted (bit 5
+                                                                               ArrowArray/ArrowSchema objects and the owning BatchData al-
+of the header’s info_bits byte) and records whose type field (the
+                                                                               location, so the caller is responsible only for releasing the root
+low 3 bits of the third header byte) is non-zero — that is, any record
+                                                                               struct.
+other than an ordinary leaf row, such as B-tree node pointers or
+the system pseudo-records — are skipped without decoding.
+                                                                               3     AGENTIC C++ READER GENERATION
+2.5.3 Compact Row Format Prefix. Before each record’s origin, Inn-             In order to automate the process of synthesizing a table reader, we
+oDB stores two structures in reverse column order that are essential           present a multi-agent pipeline that takes a table name as input and
+for correct decoding. First, the variable-length prefix array: one or          outputs a verified, plug-in-compatible shared library (pg_arrow_agent.so)
+two bytes per variable-length column (one byte if the maximum                  that implements the same pg_to_arrow C interface as the hand-
+byte length ≤ 255, two bytes otherwise), stored so the entry for               written reader described in Section 2.
+the first variable-length column is closest to the origin. Second,
+the null bitmap: one bit per nullable column, also in reverse order,           3.1    Pipeline Overview
+stored immediately before the 5-byte record header. Because the                The pipeline consists of four specialized agents that execute in se-
+first variable-length column lies nearest the origin, the implemen-            quence, with an iterative feedback loop between the code-generation
+tation reads these lengths by starting just before the null bitmap             and verification stages (Figure 1).
+(adjacent to the record header) and decrementing its cursor back-
+ward through memory for each successive column, rather than
+scanning forward.                                                                                  Dataset Generator
+
+2.5.4 Type Decoding. InnoDB stores all numeric types in big-endian
+byte order with a sign flip applied to enable byte-wise comparison.
+For signed integers the sign bit is XOR’d with 1 (e.g., 0x80000000
+for int4), so that −231 maps to 0x00000000 and +231 − 1 maps to                                        Architect
+0xFFFFFFFF. Floating-point values use a two-case XOR: if the sign
+bit is set (the value is positive in IEEE 754), only the sign bit is
+flipped; otherwise all bits are inverted. After de-mangling the bytes
+are reinterpreted natively via memcpy.                                                             Software Engineer
+    DECIMAL(M,D) is stored in MySQL’s binary decimal format. The
+integer and fractional parts are each split into groups of nine dec-                                                           fail
+imal digits, where each full group occupies 4 bytes and a partial
+group occupies 1–4 bytes according to the lookup table DIG2BYTES[0..9] =
+                                                                                                       QA Tester
+[0, 1, 1, 2, 2, 3, 3, 4, 4, 4]. For the integer part the partial group is the
+most-significant one and is stored first; for the fractional part the
+partial group is the least-significant one and is stored last. The sign       Figure 1: Agentic pipeline. The Coder–QA Tester loop repeats
+is encoded in the high bit of the first byte (1 = positive) and removed       until the reader passes all correctness checks or the retry
+before decoding; negative values additionally require flipping all            budget is exhausted.
+bytes.
+    DATE occupies 3 bytes with the sign encoded in the high bit of
+the first byte (XOR 0x80). The remaining 23 bits pack year (14 bits),            Dataset Generator. Rather than developing against a full bench-
+month (4 bits), and day (5 bits). These are extracted and converted to        mark table, the pipeline first creates a small synthetic test table
+a Julian Day Number, then adjusted to the Unix epoch by subtracting           (≈50 rows) with the same schema as the target table of the database.
+the JDN of 1970-01-01 (2,440,588), yielding an Arrow date32 value.            However, the resulting reader can be used and it’s compatible with
+    InnoDB’s hidden columns — the 6-byte transaction ID (TRX_ID)              any table in the database. Row values are generated deterministi-
+and 7-byte rollback pointer (ROLL_PTR) that separate primary-key              cally, so the exact expected aggregates (min, max, sum for numeric
+data from non-key data in the physical record — are handled via a             columns; distinct count for string columns; min/max for dates) are
+raw:13 skip entry in the column specification, which advances the             known before the reader runs. This makes correctness verification
+data pointer without emitting any output column.                              a simple arithmetic comparison rather than a probabilistic check.
+                                                                           4
+   Architect. Given the database type and table schema (retrieved               truth, complete feedback history, and the last generated source, is
+via information_schema), the Architect agent produces a struc-                  serialized to outputs/table_checkpoint.json. If the retry bud-
+tured JSON format spec that encodes all information the Coder                   get is exhausted without a passing reader, a subsequent invocation
+agent needs: page-level constants (page size, header offsets, magic             with –resume reloads this checkpoint, skips the Dataset Generator
+numbers), per-column type encodings (endianness, decode formu-                  and Architect stages, and starts a fresh 𝑁 max -attempt loop with the
+lae, varlena header layout), Arrow format strings for each column,              accumulated feedback history intact.
+MVCC visibility rules, and a curated list of known non-obvious bugs
+(known_gotchas). The agent’s system prompt is grounded with a                   3.3    Compatibility and Deployment
+project knowledge base (knowledge/pg_format.md) covering the                    The generated library is designed to be a drop-in replacement for
+PostgreSQL heap page layout and the Arrow C Data Interface buffer               the hand-written reader. It exports the identical pg_to_arrow sym-
+requirements.                                                                   bol with the same function signature, the same inline ArrowSchema
+   Coder. The Coder agent receives the format spec and generates                and ArrowArray struct layout, and the same zero-copy Arrow C
+a complete, self-contained C++ source file. The output must com-                Data Interface contract. Upon a successful run the pipeline automat-
+pile with g++ -O3 -std=c++17 -shared -fPIC and export the                       ically copies the winning shared library, e.g. pg_arrow_agent.so,
+following C function:                                                           in the project root, making it immediately usable by all existing
+                                                                                benchmarks.
+int pg_to_arrow(const char* heap_path, const char* col_spec,
+                ArrowSchema* out_schema, ArrowArray*                            3.4    Multi-Provider Support
+     out_array,
+                char* errmsg, int errmsg_len);                                  All agents are invoked through LiteLLM, which provides a unified
+                                                                                interface over OpenAI, Anthropic, AWS Bedrock, and local Ollama
+   The agent is required to (i) parse col_spec at runtime rather than           models. Each of the three LLM-backed agents (Architect, Coder,
+hardcoding column names or types, and (ii) implement all twelve                 QA Tester) can be assigned an independent model via command-
+standard PostgreSQL types (bool, int2/4/8, float4/8, numeric,                   line flags, enabling heterogeneous configurations such as using
+date, timestamp, bpchar, varchar, text) regardless of which sub-                a reasoning-optimized model for code generation while routing
+set appears in the target table. The system prompt explicitly forbids           cheaper calls to a smaller model for diagnosis. All agents run at
+prose output; the first character of the response must be # or / (a pre-        temperature 0 to maximize determinism.
+processor directive or comment), and a post-processing step strips
+any residual natural-language text before the source is written to              4     EXPERIMENTAL EVALUATION
+disk.                                                                           We present an early experimental evaluation of Jailbreak, in which
+   On retry attempts the agent additionally receives the full com-              we benchmark an end-to-end pipeline that extracts a table from
+piler output, the runtime output, and the complete history of prior             a database system and exports it as a local Parquet file. We use
+QA diagnoses. If the same error type recurs across two or more                  Postgres and MySQL as the target database system and multiple
+consecutive attempts, the prompt instructs the agent to discard                 query engines, including DuckDB, DataFusion, PyArrow, Spark
+the current subsystem and rewrite it from scratch using a different             SQL, as well as GPU-accelerated query engines including cuDF and
+strategy. A hash of each generated source is tracked to detect stuck            Spark RAPIDS.
+loops in which the model produces identical code despite receiving
+failure feedback; in such cases an explicit rewrite hint is injected            4.1    Setup
+into the next prompt.                                                           All of our experiments were run on a g4dn.xlarge AWS instance
+   QA Tester. The QA Tester agent compiles the generated source,                with 4 vCPUs, 16 GiB of memory, 1 NVIDIA T4 GPU, and 125
+loads the resulting shared library via ctypes, runs it against the              GB of local NVMe SSD storage. We used TPC-H 1GB as our main
+synthetic heap file, and imports the Arrow output as a PyArrow                  benchmark, and we run an end-to-end extraction the lineitem table
+RecordBatch. Correctness is checked deterministically: row count                from the target database to a local Parquet file. All LLM agents are
+and per-column statistics are compared against the Python-computed              invoked via LiteLLM. Experiments used Sonnet 4.6.
+ground truth with a relative tolerance of 10−3 for floating-point val-
+ues. Only if a mismatch is detected does the agent invoke an LLM to             4.2    ETL Benchmark: Database to Parquet
+interpret the failure; the LLM is shown the raw compiler output, the            We evaluate end-to-end ETL performance by reading the TPC-H
+runtime output, the ground truth, and the history of already-fixed              lineitem table (6,001,215 rows, ≈880 MB on disk) and writing the
+bugs, and is asked to produce a structured JSON diagnosis with                  result to a Parquet file. Each method is run three times in an isolated
+categorized new bugs and confirmed fixes. This design keeps LLM                 subprocess; we report the best wall-clock time. We compare two
+calls on the critical path to a minimum: a correctly functioning                data-access strategies across five analytics engines:
+reader requires no LLM invocation in the QA step at all.                              • Jailbreak — the heap file is read directly via pg_to_arrow /
+                                                                                         mysql_to_arrow, producing an Apache Arrow RecordBatch
+3.2    Retry Loop and Checkpointing                                                      that is handed off zero-copy to the downstream engine.
+The Coder and QA Tester agents alternate for up to 𝑁 max attempts                     • Wire Protocol — the engine reads from the database through
+(default 𝑁 max = 10). After every failed attempt the full pipeline state,                the standard client protocol (PostgreSQL wire protocol or
+including format spec, heap path, column specification, ground                           MySQL JDBC/connector).
+                                                                            5
+4.3    PostgreSQL                                                            query fragments to heterogeneous engines to reduce data move-
+Figure 2 shows results for PostgreSQL. Jailbreak consistently out-           ment and improve performance. These systems optimize where
+performs the wire protocol across all engines. DuckDB is the fastest         computation runs, but still rely on wire protocols for inter-engine
+overall at 5.46 s via Jailbreak, compared to 9.58 s over wire (1.76×         data transport. Jailbreak is complementary: it targets the data in-
+speedup). The largest gains appear with PyArrow and DataFusion,              gestion layer, producing Arrow buffers that federated engines can
+where the wire protocol incurs 23–24 s due to server-side serializa-         consume directly without a wire-protocol hop.
+tion, while Jailbreak reads the same data in under 7 s (3.5× speedup).       Analytical engines and columnar formats. The emergence
+cuDF achieves the best Jailbreak time at 3.98 s, benefiting from GPU-        of embeddable analytical engines such as DuckDB [13], DataFu-
+accelerated Parquet encoding after an Arrow handoff. Spark and               sion [2], Velox [11], Spark SQL [16], and GPU-accelerated frame-
+Spark RAPIDS are the slowest engines in both modes (32–55 s),                works such as cuDF [3] has raised expectations for zero-copy, colum-
+reflecting JVM startup and shuffle overhead rather than I/O cost.            nar data delivery. Apache Arrow [1] has become the de facto in-
+                                                                             memory interchange format for this ecosystem. Jailbreak is de-
+                                                                             signed around this standard: the generated readers emit Arrow
+4.4    MySQL                                                                 RecordBatches via the Arrow C Data Interface, making them im-
+Figure 3 shows results for MySQL. The Jailbreak times are broadly            mediately consumable by any Arrow-native engine without format
+similar to PostgreSQL (5.3–38.7 s), confirming that the bottleneck           conversion.
+is the downstream engine rather than the source database. The                LLM-assisted code synthesis. To the best of our knowledge, Jail-
+wire protocol results, however, diverge dramatically: PyArrow via            break is the first system to apply LLM-assisted code synthesis to
+JDBC takes 228.6 s, 26.9× slower than the 8.5 s Jailbreak path, and          database storage decoding. Concurrent work explores LLM-driven
+this dominates the chart visually. DuckDB wire takes 44.2 s vs. 6.8 s        synthesis more broadly in the database systems context: GenDB [10]
+(6.5×). The disparity is larger than in PostgreSQL because MySQL’s           proposes a vision of synthesizing entire query processing pipelines
+JDBC connector serializes each row individually, whereas the C++             rather than engineering them, and Wehrstein et al. [15] demon-
+reader decodes raw InnoDB pages at memory bandwidth. Only                    strate workload-specific OLAP engine synthesis tailored to indi-
+DataFusion wire (19.5 s) and cuDF wire (16.7 s) are closer to their          vidual query patterns. These works share Jailbreak’s core premise
+C++ counterparts, as both use the ConnectorX driver which batches            that LLMs can generate correct, high-performance systems code
+rows more aggressively.                                                      from specifications, but target query execution rather than storage
+                                                                             decoding. Jailbreak occupies a complementary niche: the storage
+4.5    Speedup Summary                                                       ingestion layer, where a well-defined binary format and a determin-
+                                                                             istic correctness oracle enable automated verification and iterative
+Figure 4 summarizes the speedup of Jailbreak over the wire protocol
+                                                                             refinement.
+for both databases. For PostgreSQL the speedup ranges from 1.3×
+(Spark RAPIDS) to 5.1× (cuDF), reflecting the relatively efficient
+PostgreSQL wire protocol. For MySQL the gains are larger across              6   CONCLUSIONS
+the board, peaking at 26.9× for PyArrow and 6.5× for DuckDB.
+                                                                             We have presented Jailbreak, a system and methodology for break-
+The results demonstrate that bypassing the database server is most
+                                                                             ing database lock-in by synthesizing high-performance storage
+impactful when the wire protocol is the primary bottleneck, as is the
+                                                                             readers that bypass the wire protocol entirely. Our key insight is
+case for row-oriented connectors such as MySQL JDBC, and remains
+                                                                             that database file formats, while complex, are fully recoverable from
+beneficial even for well-optimized protocols such as PostgreSQL’s
+                                                                             source code and documentation, artifacts that LLMs can ingest to
+binary COPY format.
+                                                                             generate format-specific readers without human-authored parsing
+                                                                             logic.
+5     RELATED WORK                                                               We evaluated two LLM-assisted readers for PostgreSQL and
+Wire protocol overhead and data loading. The inefficiency                    MySQL, demonstrating end-to-end ETL speedups of up to 5.1× and
+of engine-mediated data access is well established. Raasveldt and            27× respectively over wire-protocol baselines across six analytical
+Mühleisen [12] demonstrated that existing wire protocols impose              engines, with full correctness validation on all 22 TPC-H queries.
+redundant metadata and expensive per-tuple serialization costs,              These results suggest that LLM-assisted storage layer synthesis is a
+arguing for protocol-level redesigns. ConnectorX [14] identified             viable and generalizable methodology: any database system whose
+client-side deserialization as the dominant bottleneck in database-          file format is recoverable from documentation or source code is a
+to-dataframe transfers, accounting for over 85% of wall-clock time           candidate for automated reader generation.
+in typical read_sql calls, and proposed parallel partitioned reads               Beyond the readers evaluated here, we have implemented the
+as a mitigation. More recently, Karpathiotakis et al. [9] examined           four-agent pipeline described in Section 3 and are actively working
+cross-system data movement in heterogeneous ecosystems, and                  toward a fully automated, push-button workflow. Our immediate
+Palkar et al. [5] explored fast, scalable data transfer across decen-        next steps include a systematic evaluation of the pipeline’s con-
+tralized data systems. These approaches optimize the transfer path           vergence behavior, characterizing retry distributions, success rates,
+but retain the database server as the gatekeeper of storage; Jailbreak       and generation latency across a broader set of schemas and database
+eliminates the server from the data path entirely.                           versions, as well as an ablation study assessing the contribution
+Federated and multi-engine query processing. Federated sys-                  of each agent to final reader correctness. We are also exploring
+tems such as XDB [6], Wayang [4], Dingo [8], and MuSQLE [7] push             extension to additional database systems, including SQLite and
+                                                                         6
+                                                                 PostgreSQL → Parquet           (TPC-H SF=1, 6 M rows)
+                 60
+                       Jailbreak (direct heap)                                                                                   54.9s
+
+                            Wire Protocol                                                                                                           47.3s
+
+                 40
+
+ Best time (s)
+                                                                                                                                            35.2s
+                                                                                                                         32.2s
+
+                                                         23.8s                  23.5s
+                                                                                                            20.1s
+                 20
+                              9.6s
+                       5.5s                       6.9s                   6.6s
+                                                                                                      4s
+                   0
+                       DuckDB                    DataFusion              PyArrow                       cuDF                Spark          Spark RAPIDS
+
+
+Figure 2: PostgreSQL ETL benchmark: time to read lineitem and write Parquet using Jailbreak (direct heap access) vs. wire
+protocol, per analytics engine. Lower is better. Best of 3 runs.
+
+                                                                  MySQL → Parquet             (TPC-H SF=1, 6 M rows)
+
+                       Jailbreak (direct .ibd)                                  228.6s
+
+                 200        Wire Protocol
+
+
+
+
+ Best time (s)
+                 100
+                                                                                                                                 63.4s
+                                                                                                                                                    55.9s
+                              44.2s                                                                                                         38.7s
+                                                                                                                         30.6s
+                                                         19.5s                                              16.7s
+                       6.8s                       8.2s                   8.5s                        5.3s
+                   0
+                       DuckDB                    DataFusion              PyArrow                       cuDF                Spark          Spark RAPIDS
+
+
+Figure 3: MySQL ETL benchmark: direct .ibd heap access vs. wire protocol per engine. PyArrow wire protocol takes 228 s vs.
+8.5 s via the Jailbreak (26.9× speedup), dominating the y-axis. Best of 3 runs.
+
+                                                                    Speedup of Jailbreak over Wire Protocol
+
+                       PostgreSQL                                                27×
+                         MySQL
+
+                 20
+
+ Speedup (×)
+                 10
+                              6.5×
+                                                                                                     5.1×
+                                                 3.5×                    3.6×                               3.2×
+                       1.8×                              2.4×                                                            1.7× 2.1×          1.3× 1.4×
+                  0
+                       DuckDB                    DataFusion              PyArrow                       cuDF                Spark          Spark RAPIDS
+
+
+Figure 4: Speedup of Jailbreak direct heap access over wire protocol per engine. MySQL PyArrow achieves 26.9× because the
+MySQL wire protocol (JDBC/connector) is substantially slower than PostgreSQL’s.
+
+
+MongoDB, where file format specifications are similarly recover-                             heterogeneous database systems can be broken without reverse
+able from documentation and source code. We view Jailbreak as                                engineering or vendor cooperation.
+a first step toward a broader vision in which data lock-in across
+                                                                                         7
+REFERENCES                                                                                       Proceedings of the 2017 Symposium on Cloud Computing. 108–120.
+[1] [n.d.]. Apache Arrow. https://github.com/apache/arrow.                                  [10] Jiale Lao and Immanuel Trummer. 2026. GenDB: The Next Generation of Query
+[2] [n.d.]. Apache DataFusion. https://github.com/apache/datafusion.                             Processing–Synthesized, Not Engineered. arXiv preprint arXiv:2603.02081 (2026).
+[3] [n.d.]. cuDF. https://github.com/rapidsai/cudf.                                         [11] Pedro Pedreira, Orri Erling, Maria Basmanova, Kevin Wilfong, Laith Sakka,
+[4] Kaustubh Beedkar, Bertty Contreras-Rojas, Haralampos Gavriilidis, Zoi Kaoudi,                Krishna Pai, Wei He, and Biswapesh Chattopadhyay. 2022. Velox: Meta’s Unified
+    Volker Markl, Rodrigo Pardo-Meza, and Jorge-Arnulfo Quiané-Ruiz. 2023. Apache                Execution Engine. Proc. VLDB Endow. 15, 12 (2022), 3372–3384.
+    wayang: A unified data analytics framework. ACM SIGMOD Record 52, 3 (2023),             [12] Mark Raasveldt and Hannes Mühleisen. 2017. Don’t hold my data hostage: a
+    30–35.                                                                                       case for client protocol redesign. Proceedings of the VLDB Endowment 10, 10
+[5] Haralampos Gavriilidis, Kaustubh Beedkar, Matthias Boehm, and Volker Markl.                  (2017), 1022–1033.
+    2025. Fast and Scalable Data Transfer Across Data Systems. Proceedings of the           [13] Mark Raasveldt and Hannes Mühleisen. 2019. Duckdb: an embeddable analytical
+    ACM on Management of Data 3, 3 (2025), 1–28.                                                 database. In Proceedings of the 2019 international conference on management of
+[6] Haralampos Gavriilidis, Leonhard Rose, Joel Ziegler, Kaustubh Beedkar, Jorge-                data. 1981–1984.
+    Arnulfo Quiané-Ruiz, and Volker Markl. 2023. XDB in Action: Decentralized               [14] Xiaoying Wang, Weiyuan Wu, Jinze Wu, Yizhou Chen, Nick Zrymiak, Changbo
+    Cross-Database Query Processing for Black-Box DBMSes. Proc. VLDB Endow. 16,                  Qu, Lampros Flokas, George Chow, Jiannan Wang, Tianzheng Wang, et al. 2022.
+    12 (2023), 4078–4081.                                                                        ConnectorX: accelerating data loading from databases to dataframes. Proceedings
+[7] Victor Giannakouris, Nikolaos Papailiou, Dimitrios Tsoumakos, and Nectarios                  of the VLDB Endowment 15, 11 (2022), 2994–3003.
+    Koziris. 2016. MuSQLE: Distributed SQL query execution over multiple engine             [15] Johannes Wehrstein, Timo Eckmann, Matthias Jasny, and Carsten Binnig. 2026.
+    environments. In 2016 IEEE International Conference on Big Data (Big Data). IEEE,            Bespoke OLAP: Synthesizing Workload-Specific One-size-fits-one Database En-
+    452–461.                                                                                     gines. arXiv preprint arXiv:2603.02001 (2026).
+[8] Victor Giannakouris and Immanuel Trummer. [n.d.]. Rethinking Pluggable                  [16] Matei Zaharia, Reynold S Xin, Patrick Wendell, Tathagata Das, Michael Armbrust,
+    Federated Query Optimization: From Laptops to Data Warehouses. Proceedings                   Ankur Dave, Xiangrui Meng, Josh Rosen, Shivaram Venkataraman, Michael J
+    of the VLDB Endowment. ISSN 2150 ([n. d.]), 8097.                                            Franklin, et al. 2016. Apache spark: a unified engine for big data processing.
+[9] Manos Karpathiotakis, Avrilia Floratou, Fatma Özcan, and Anastasia Ailamaki.                 Commun. ACM 59, 11 (2016), 56–65.
+    2017. No data left behind: real-time insights from a complex data ecosystem. In
+
+
+
+
+                                                                                        8
+

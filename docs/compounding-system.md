@@ -70,6 +70,16 @@ Every deep review should answer:
 6. What should be changed in the repo?
 7. What question should Samuel think about next?
 
+## Evaluation layers to preserve
+
+Recent benchmark papers suggest keeping three evaluation layers separate:
+
+1. **Artifact quality:** final deliverables such as spreadsheets, decks, memos, notebooks, and tickets should be graded for correctness, maintainability, and professional presentation.
+2. **Workflow checkpoints:** long-horizon tasks should expose partial-credit state checks so agents can be compared even when they fail before full completion.
+3. **Trace diagnosis:** execution logs should retain enough structure to localize failures to upstream causes such as planning, evidence retrieval, state tracking, tool use, or artifact construction.
+
+This separation lets the project compound in two ways: benchmark scores become more informative for users, and failed runs become training data for improving agents, skills, and task design.
+
 ## How domain expertise becomes a benchmark
 
 A domain expert should not be asked to “make a benchmark.” Instead, extract these primitives:

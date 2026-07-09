@@ -17,6 +17,7 @@ A useful benchmark should be:
 - **Domain-grounded:** reflects what experts actually care about.
 - **Cost-aware:** reports quality per dollar, per minute, per human-review hour.
 - **Legible:** easy for sponsors, researchers, and practitioners to understand.
+- **Diagnosable from traces:** preserves enough intermediate evidence to identify whether failures came from planning, evidence retrieval, tool execution, state tracking, or artifact construction.
 
 ## Core research questions
 
@@ -27,6 +28,7 @@ A useful benchmark should be:
 5. How should benchmark creators prevent leakage while keeping enough public material to build trust?
 6. What incentive systems get experts to contribute domain knowledge for free or nearly free?
 7. What benchmark niches are underserved by current frontier labs and benchmark companies?
+8. How can we design run logs so failures can be causally sliced into root causes instead of only scored at the final artifact level?
 
 ## Current hypothesis
 
