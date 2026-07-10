@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skill-bench.local/schemas/compounding-lessons.schema.json",
+  "title": "skill-bench provenance-gated compounding lesson store",
+  "description": "Append-only candidate lessons, held-out validation, promotion, contradiction resolution, downstream dependency, and rollback records.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "store_id", "version", "policy", "observations", "lessons", "validations", "relations", "contradiction_resolutions", "lifecycle_events", "dependencies", "rollbacks"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "store_id": {"$ref": "#/$defs/identifier"},
+    "version": {"$ref": "#/$defs/nonEmpty"},
+    "policy": {"$ref": "#/$defs/policy"},
+    "observations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/observation"}},
+    "lessons": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/lesson"}},
+    "validations": {"type": "array", "items": {"$ref": "#/$defs/validation"}},
+    "relations": {"type": "array", "items": {"$ref": "#/$defs/relation"}},
+    "contradiction_resolutions": {"type": "array", "items": {"$ref": "#/$defs/resolution"}},
+    "lifecycle_events": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/event"}},
+    "dependencies": {"type": "array", "items": {"$ref": "#/$defs/dependency"}},
+    "rollbacks": {"type": "array", "items": {"$ref": "#/$defs/rollback"}}
+  },
+  "$defs": {
+    "nonEmpty": {"type": "string", "minLength": 1},
+    "identifier": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "idList": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+    "lessonState": {"enum": ["candidate", "validated", "promoted", "quarantined", "deprecated"]},
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["private_feedback_visibilities", "agent_visible_exposures", "promotion_required_dimensions", "history_mode"],
+      "properties": {
+        "private_feedback_visibilities": {"type": "array", "minItems": 1, "items": {"enum": ["private_check", "restricted_reference"]}, "uniqueItems": true},
+        "agent_visible_exposures": {"type": "array", "minItems": 1, "items": {"enum": ["public", "agent_visible"]}, "uniqueItems": true},
+        "promotion_required_dimensions": {"type": "array", "minItems": 4, "items": {"enum": ["declared_criterion", "safety_regression", "contradiction_handling", "distribution_shift"]}, "uniqueItems": true},
+        "history_mode": {"const": "append_only_events"}
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation_id", "authority", "visibility", "support", "locator", "description", "evaluation_split_ids", "scenario_cluster"],
+      "properties": {
+        "observation_id": {"$ref": "#/$defs/identifier"},
+        "authority": {"enum": ["public_task_text", "runtime_output", "deterministic_public_check", "private_check", "reference_answer", "expert_adjudication", "primary_source", "model_self_assessment", "synthetic_calibration"]},
+        "visibility": {"enum": ["public", "agent_observable", "private_check", "restricted_reference", "internal"]},
+        "support": {"enum": ["confirming", "disconfirming", "contextual", "inconclusive"]},
+        "locator": {"$ref": "#/$defs/nonEmpty"},
+        "local_path": {"$ref": "#/$defs/relativePath"},
+        "description": {"$ref": "#/$defs/nonEmpty"},
+        "evaluation_split_ids": {"$ref": "#/$defs/idList"},
+        "scenario_cluster": {"$ref": "#/$defs/identifier"},
+        "feedback_policy_hash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domains", "task_families", "applicability", "exclusions"],
+      "properties": {
+        "domains": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}, "uniqueItems": true},
+        "task_families": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}, "uniqueItems": true},
+        "applicability": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}},
+        "exclusions": {"type": "array", "items": {"$ref": "#/$defs/nonEmpty"}}
+      }
+    },
+    "lesson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lesson_id", "version", "claim_type", "statement", "content_sha256", "proposed_by", "authoring_components", "source_observation_ids", "scope", "confidence", "state"],
+      "properties": {
+        "lesson_id": {"$ref": "#/$defs/identifier"},
+        "version": {"$ref": "#/$defs/nonEmpty"},
+        "claim_type": {"enum": ["strategy", "failure_signature", "tool_fact", "rubric_rule", "safety_rule", "hypothesis"]},
+        "statement": {"$ref": "#/$defs/nonEmpty"},
+        "content_sha256": {"$ref": "#/$defs/sha256"},
+        "proposed_by": {"$ref": "#/$defs/nonEmpty"},
+        "authoring_components": {"type": "object", "additionalProperties": {"$ref": "#/$defs/nonEmpty"}, "minProperties": 1},
+        "source_observation_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "scope": {"$ref": "#/$defs/scope"},
+        "confidence": {"enum": ["low", "medium", "high", "disputed"]},
+        "state": {"$ref": "#/$defs/lessonState"}
+      }
+    },
+    "dimensionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dimension", "status", "evidence_observation_ids"],
+      "properties": {
+        "dimension": {"enum": ["declared_criterion", "safety_regression", "contradiction_handling", "distribution_shift"]},
+        "status": {"enum": ["passed", "failed", "not_run"]},
+        "evidence_observation_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["validation_id", "lesson_id", "validator", "source_observation_ids", "held_out_split_ids", "independence", "dimensions", "status", "evidence_paths"],
+      "properties": {
+        "validation_id": {"$ref": "#/$defs/identifier"},
+        "lesson_id": {"$ref": "#/$defs/identifier"},
+        "validator": {"$ref": "#/$defs/nonEmpty"},
+        "source_observation_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "held_out_split_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "independence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["validator_independent_of_proposer", "source_observations_disjoint", "scenario_cluster_distinct"],
+          "properties": {
+            "validator_independent_of_proposer": {"type": "boolean"},
+            "source_observations_disjoint": {"type": "boolean"},
+            "scenario_cluster_distinct": {"type": "boolean"}
+          }
+        },
+        "dimensions": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/dimensionResult"}},
+        "status": {"enum": ["passed", "failed", "not_run"]},
+        "evidence_paths": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/relativePath"}, "uniqueItems": true}
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relation_id", "from_lesson_id", "to_lesson_id", "type", "rationale", "evidence_observation_ids"],
+      "properties": {
+        "relation_id": {"$ref": "#/$defs/identifier"},
+        "from_lesson_id": {"$ref": "#/$defs/identifier"},
+        "to_lesson_id": {"$ref": "#/$defs/identifier"},
+        "type": {"enum": ["contradicts", "supersedes", "refines", "duplicates"]},
+        "rationale": {"$ref": "#/$defs/nonEmpty"},
+        "evidence_observation_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resolution_id", "lesson_ids", "decision", "status", "rationale", "evidence_observation_ids"],
+      "properties": {
+        "resolution_id": {"$ref": "#/$defs/identifier"},
+        "lesson_ids": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "decision": {"enum": ["preserve_both", "scope_split", "supersede", "unresolved"]},
+        "status": {"enum": ["proposed", "accepted", "rejected"]},
+        "rationale": {"$ref": "#/$defs/nonEmpty"},
+        "evidence_observation_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_id", "lesson_id", "event_type", "from_state", "to_state", "timestamp", "actor", "reason", "observation_ids", "validation_ids"],
+      "properties": {
+        "event_id": {"$ref": "#/$defs/identifier"},
+        "lesson_id": {"$ref": "#/$defs/identifier"},
+        "event_type": {"enum": ["proposed", "validation_recorded", "promoted", "quarantined", "deprecated", "superseded", "rollback"]},
+        "from_state": {"oneOf": [{"$ref": "#/$defs/lessonState"}, {"type": "null"}]},
+        "to_state": {"$ref": "#/$defs/lessonState"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "actor": {"$ref": "#/$defs/nonEmpty"},
+        "reason": {"$ref": "#/$defs/nonEmpty"},
+        "observation_ids": {"$ref": "#/$defs/idList"},
+        "validation_ids": {"$ref": "#/$defs/idList"}
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dependency_id", "lesson_id", "target_type", "target_path", "target_version", "target_sha256", "exposure", "evaluation_split_ids", "introduced_by_event_id", "active"],
+      "properties": {
+        "dependency_id": {"$ref": "#/$defs/identifier"},
+        "lesson_id": {"$ref": "#/$defs/identifier"},
+        "target_type": {"enum": ["internal_guidance", "public_guidance", "agent_visible_skill", "task_template", "rubric", "grader", "schema"]},
+        "target_path": {"$ref": "#/$defs/relativePath"},
+        "target_version": {"$ref": "#/$defs/nonEmpty"},
+        "target_sha256": {"$ref": "#/$defs/sha256"},
+        "exposure": {"enum": ["internal", "public", "agent_visible", "private_evaluation"]},
+        "evaluation_split_ids": {"$ref": "#/$defs/idList"},
+        "introduced_by_event_id": {"$ref": "#/$defs/identifier"},
+        "active": {"type": "boolean"},
+        "retired_by_rollback_id": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rollback_id", "lesson_id", "event_id", "cause_observation_ids", "reverted_dependency_ids", "status", "timestamp", "rationale"],
+      "properties": {
+        "rollback_id": {"$ref": "#/$defs/identifier"},
+        "lesson_id": {"$ref": "#/$defs/identifier"},
+        "event_id": {"$ref": "#/$defs/identifier"},
+        "cause_observation_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "reverted_dependency_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "status": {"enum": ["planned", "applied", "failed"]},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "rationale": {"$ref": "#/$defs/nonEmpty"}
+      }
+    }
+  }
+}
