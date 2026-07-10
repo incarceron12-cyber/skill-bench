@@ -1,0 +1,1611 @@
+                                                 Evaluating Deep Research Agents on Expert Consulting Work:
+                                                  A Benchmark with Verifiers, Rubrics, and Cognitive Traps
+
+                                                                 Tanmay Asthana Aman Saksena Divyansh Sahu
+                                                                               Deccan AI Research
+                                                                        tanmay.asthana@deccan.ai
+
+
+
+                                                               Abstract                              pipelines where the answers feed multi-million-
+                                                                                                     dollar decisions. Most of the benchmarks used
+                                             Frontier deep research agents (DRAs) are be-            to vet these systems were not built for that kind
+
+
+
+
+arXiv:2605.17554v3 [cs.AI] 25 Jun 2026
+                                             ing deployed in enterprise workflows faster             of use. The dominant ones measure factual re-
+                                             than they are being evaluated. Existing bench-          call (MMLU (Hendrycks et al., 2021a)), single-hop
+                                             marks measure factual recall, single-hop QA,
+                                                                                                     question answering (TriviaQA (Joshi et al., 2017)),
+                                             or generic agentic skill, and miss the multi-
+                                             document, decision-grade deliverables DRAs              web navigation (WebArena (Zhou et al., 2024)),
+                                             are asked to produce. We introduce a bench-             or generic agentic skill (GAIA (Mialon et al.,
+                                             mark of 70 SME-authored management con-                 2024), AgentBench (Liu et al., 2024)). The recent
+                                             sulting prompts, each embedding cognitive               wave of professional-domain benchmarks like Fi-
+                                             traps that penalize surface-pattern reasoning.          nanceBench (Islam et al., 2023) for finance, Legal-
+                                             Three frontier agents, namely Claude Opus 4.6,          Bench (Guha et al., 2024) for law, MedQA (Jin
+                                             OpenAI o3-deep-research and Gemini 3.1 Pro              et al., 2021) for medicine, is a step in the right
+                                             deep-research, are scored on two complemen-
+                                                                                                     direction. However, these still frame evaluation
+                                             tary layers: deterministic binary verifiers (mean
+                                             14.9 per task) and a five-criterion 0–3 SME             as question-answering rather than the production
+                                             rubric (Data Integrity, Analytical Rigor, Rele-         of decision-grade structured deliverables. The
+                                             vance & Focus, Execution Precision, Format &            methodological literature on agentic evaluation (Xi
+                                             Deliverability), combined into a Verifier-Rubric        et al., 2023; Gu et al., 2024; Liang et al., 2023; Sri-
+                                             Score (VRS, 0–100).                                     vastava et al., 2023) has flagged exactly this gap.
+                                             Acceptance under a joint threshold (rubric                 The cost of the gap is concrete. One task in our
+                                             mean ≥ 2.5 and verifier pass rate ≥ 80%)                corpus involving an inbound-freight cost program
+                                             is uniformly low: o3 15.7%, Claude 12.9%,               for a packaging firm would commit the company
+                                             Gemini 12.9%. Pairwise differences are sta-             to roughly C4.5 billion of capital expenditure on
+                                             tistically indistinguishable. On the continuous         a defective basis, if a single Year-5 segment rev-
+                                             VRS, o3 leads (61.4 [CI: 55.2, 67.5]), followed
+                                                                                                     enue figure is miscalculated. Modern deep research
+                                             by Gemini (52.6) and Claude (38.5); the o3–
+                                             Claude gap (∆=22.9, p<0.001) survives Bon-              agents have measurable rates of exactly this kind of
+                                             ferroni correction. No agent averages above             miscalculation, and well-documented tendencies to
+                                             the rubric’s “adequate” threshold of 2.0; no            confabulate when the source material is silent (Ji
+                                             agent’s mean verifier pass rate reaches the 80%         et al., 2023; Huang et al., 2023; Kadavath et al.,
+                                             acceptance floor. Each agent fails distinctively:       2022).
+                                             Claude leads on data fabrication and file-access           Our benchmark comprises 70 tasks tested over 3
+                                             failures; o3 propagates cascading computation
+                                                                                                     agents: Claude Opus 4.6 with web search, OpenAI
+                                             errors; Gemini oscillates between the highest
+                                             perfect-verifier rate and the most catastrophic         o3-deep-research, and Google Gemini 3.1 Pro deep-
+                                             collapses. The benchmark, evaluation code,              research. It is built around three design choices
+                                             and full prompt corpus are publicly released.           that distinguish it from prior research-agent bench-
+                                                                                                     marks:
+                                         1   Introduction
+                                                                                                        • The scoring is two-layered: every response
+                                         The companies that sell deep research agents have                is checked by a suite of binary task-specific
+                                         moved faster than the people evaluating them.                    verifiers and then independently scored by a
+                                         DRAs are already being wired into enterprise                     subject-matter expert on a five-criterion 0-3
+
+                                                                                                 1
+     rubric (Data Integrity, Analytical Rigor, Rele-         cognitive-trap design, dual-layer scoring frame-
+     vance & Focus, Execution Precision, Format              work, and multi-agent infrastructure. Section 4
+     & Deliverability), with the two layers com-             reports headline results, per-type performance, fail-
+     bined into a Verifier-Rubric Score (VRS) on             ure signatures, and cross-benchmark validation.
+     0-100. The dual layer exposes agent-distinct            Section 5 discusses caveats; Section 6 concludes.
+     failures that single-metric benchmarks system-          Extended diagnostics, worked examples, and the
+     atically miss (Section 4.5).                            full QC protocol are in the appendices.
+                                                                Reproducibility: All evaluation code can be
+   • The prompt corpus is organized not by topic
+                                                             found here.
+     but by cognitive capability: five classes tar-
+                                                                Code:                  https://anonymous.
+     geting Constrained Research Prompts (CRP),
+                                                             4open.science/status/
+     Relevance Compression Prompts (RCP),
+                                                             dra-response-gen-4288.
+     Structural Compliance Prompts (SCP), Latent
+                                                                Dataset (70-prompt corpus and grading work-
+     Decomposition Prompts (LDP), and Failure-
+                                                             book) will be released publicly on paper publica-
+     Sensitive Prompts (FSP), each isolating a kind
+                                                             tion.
+     of reasoning we wanted to test independently
+     (Sections 4.2–A.1).
+                                                             2   Related Work
+   • Many of the prompts deliberately embed cog-
+     nitive traps in the form of realistic human-            Research agent and domain-specific bench-
+     style errors in the source documents (inconsis-         marks. General-purpose agentic benchmarks
+     tent units, footnote-body contradictions, non-          (GAIA (Mialon et al., 2024), BrowseComp (Ope-
+     standard date formats) and deterministic pre-           nAI, 2025), WebArena (Zhou et al., 2024), Agent-
+     cision failures (averaging where weighting is           Bench (Liu et al., 2024), ToolBench (Qin et al.,
+     required, defaulting to plausible numbers in            2024), ToolEval (Patil et al., 2023)) target tool
+     the absence of an explicit value). These keep           use, browsing, and multi-step reasoning but not
+     the benchmark hard for shallow heuristics; a            domain-expert research. Deep-research bench-
+     benchmark with only clean inputs would sys-             marks (DeepResearch Bench (Du et al., 2025), Re-
+     tematically understate the difficulty of profes-        searcherBench (Xu et al., 2025), SciAgent (Ma
+     sional research work.                                   et al., 2024), SciBench (Wang et al., 2024b)) target
+                                                             scientific QA but do not enforce corpus discipline
+   The framework of our benchmark captures dis-              or test business deliverable production. Domain-
+tinct failure modes besides just providing a compar-         specific benchmarks (Liang et al., 2023; Srivastava
+ison of success rates. At n=70, o3 leads on continu-         et al., 2023) establish the methodology of expert-
+ous VRS (61.4), reasoning mean (1.89), and fewest            graded evaluation in finance (FinanceBench (Is-
+criterion-zeros (35), yet ties the other agents on the       lam et al., 2023), FinQA (Chen et al., 2021b),
+binary ACCEPT threshold at ∼13–16%. Claude                   TAT-QA (Zhu et al., 2021)), economically valu-
+has the highest auto-reject rate (41.4%) driven              able knowledge work (APEX-v1 (Vidgen et al.,
+by 22 Data Integrity zeros and 62 total criterion-           2025), APEX-Agents (Vidgen et al., 2026), Prof-
+zeros. Gemini accumulates the most criterion-zeros           Bench (Wang et al., 2025), GDPval (Patwardhan
+(74) but wins the most per-prompt VRS argmax                 et al., 2025)), medicine (MedQA (Jin et al., 2021),
+matches (26.3 of 70) and leads on two prompt                 PubMedQA (Jin et al., 2019)), and law (Legal-
+types. The continuous and binary views diverge:              Bench (Guha et al., 2024), CaseHOLD (Zheng
+continuous VRS distinguishes agents, but the strin-          et al., 2021)). Of these, the closest in method-
+gent ACCEPT threshold (r̄ ≥ 2.5 and V ≥ 80%)                 ological setup are APEX-v1 (LLM-judged expert
+compresses them into statistical indistinguishabil-          binary rubric on knowledge-work deliverables) and
+ity. These per-agent signatures, the prompt-class-           APEX-Agents (LLM-judged binary criteria over
+conditional effect sizes, and the criterion correla-         environment-state snapshots in multi-application
+tion structure together support this benchmark as            simulations). ResearchRubrics (Sharma et al.,
+a discriminating evaluation framework for frontier           2025) introduces an expert-rubric framework simi-
+deep research agents.                                        lar in spirit. None of these benchmarks combines
+   Section 2 situates the benchmark against related          deterministic SME-graded verifiers with a separate
+work. Section 3 describes the prompt taxonomy,               multi-criterion ordinal rubric on the same response,
+
+                                                         2
+nor embeds cognitive traps as a design choice; Ta-          put structure, and the embedded cognitive traps,
+ble 1 summarizes the key methodological distinc-            are provided in Appendix L.
+tions.
+   LLM-as-Judge and code generation. The                    3.2   Task Corpus and Cognitive Traps
+LLM-as-Judge paradigm (Zheng et al., 2023;                  Our evaluation comprises 70 unique SME-authored
+Li et al., 2023b) has known calibration fail-               prompts in the Management Consulting (MC) do-
+ures including length bias, sycophancy, and self-           main, distributed as: RCP 18, SCP 18, CRP 13,
+preference (Wang et al., 2024a; Gu et al., 2024;            LDP 13, FSP 8.
+Liu et al., 2023b; Dubois et al., 2024; Panickssery            Each prompt is accompanied by 2–4 proprietary
+et al., 2024; Koo et al., 2023); we therefore an-           input files in mixed formats (CSV, XLSX, PDF,
+chor on SME annotation and use binary veri-                 DOCX; 2KB–430KB). A subset requires the agent
+fiers as in HELM-style hybrid evaluation (Liang             to produce structured output files via code genera-
+et al., 2023). Code-generation benchmarks (Hu-              tion. Prompts carry a corpus-discipline annotation
+manEval (Chen et al., 2021a), MBPP (Austin                  (closed, hybrid, or open); enforcement is intrinsi-
+et al., 2021), SWE-bench (Jimenez et al., 2024;             cally limited because the agents are partial black
+OpenAI, 2024), CodeXGLUE (Lu et al., 2021),                 boxes, so corpus adherence is measured rather than
+API-Bank (Li et al., 2023a)) and tool-use leader-           guaranteed.
+boards (Patil et al., 2023) evaluate code or API se-           Cognitive traps. A distinguishing feature of our
+lection in isolation, not the end-to-end research-to-       prompt design is the deliberate embedding of cog-
+deliverable pipeline. The library-specific failures         nitive traps. These serve two purposes: (i) Human-
+we observe (Section 4.5) connect to training-data           error mimicry: Input documents contain realis-
+coverage gaps for niche packages (Zhang et al.,             tic mistakes (misnamed product line, inconsistent
+2023a; Liu et al., 2023a).                                  units between tables, footnote contradicting body,
+   Hallucination, calibration, and statistics. Hal-         non-standard date formats) that penalise agents that
+lucination in long-form generation is well-                 copy surface text without reconciling against con-
+studied (Ji et al., 2023; Huang et al., 2023; Zhang         text. (ii) Deterministic precision traps: At least
+et al., 2023b; Li et al., 2024; Manakul et al.,             one numerical step is constructed so a shallow
+2023), mostly in QA settings; faithfulness in               agent (taking the first plausible number, averaging
+summarization (Maynez et al., 2020; Kryściński            without weighting, applying a default assumption)
+et al., 2020) is methodologically related. Our              yields a confidently wrong answer, while the cor-
+two-layer instrument allows fabrication and struc-          rect path requires reading a footnote or applying
+tural completion failures to be observed in the             an explicit qualifier. A benchmark with only clean
+same response, extending this literature into the           inputs understates professional research difficulty,
+structured-deliverable setting where polished for-          where small source-material ambiguities are the
+matting can mask fabricated content. Our statistical        norm.
+apparatus (paired McNemar tests on agent com-                  All prompt packages, including the embed-
+parisons (McNemar, 1947; Dietterich, 1998) and              ded cognitive traps, verifier specifications, and
+multiple-testing correction (Holm, 1979; Demšar,            authorized-source designations, were indepen-
+2006; Bouthillier et al., 2021)) follows established        dently vetted before annotation by a Principal Ex-
+benchmark-comparison methodology.                           pert with 15+ years of management consulting sec-
+                                                            tor experience to ensure realism and difficulty cali-
+3     Benchmark Design                                      bration. Worked examples illustrating each of the
+                                                            five prompt classes are provided in Appendix L.
+3.1    Task Design and Taxonomy
+                                                               The 70-prompt corpus, including verifier spec-
+The benchmark’s tasks are structured around five            ifications, authorized-source lists, and embedded
+Prompt Types that capture distinct deep-research            cognitive-trap definitions will be released publicly
+capabilities, each designed to test a specific fail-        on paper publication.
+ure mode that surface-level reasoning would not
+catch. The prompt types description is presented in         3.3   Evaluation Framework
+Table 2.                                                    Rubric development. The rubric reported here is
+   Concrete worked out examples for each prompt             the result of a two-phase development process. In
+class, including the input materials, expected out-         the first phase, the authors drafted a hierarchical in-
+
+                                                        3
+Table 1: Methodological comparison with closest prior benchmarks. ✓ = uses feature; ✓a,b,c = partial use (see
+footnotes).
+
+Benchmark           Primary grading instrument              Det. verifiers Multi-criterion rubric SME-graded Cognitive traps
+GDPval              Human pairwise comparison vs. expert        —                  ✓a                 ✓               —
+                    deliverable
+APEX-v1             LLM-judge over expert binary rubric         —                   ✓                 —               —
+APEX-Agents         LLM-judge over env. snapshot, binary        ✓b                  ✓                 —               —
+                    criteria
+ProfBench           LLM-judge over expert rubric, bias-         —                   ✓                 —               —
+                    mitigated
+ResearchRubrics     LLM-judge over expert rubric                —                   ✓                 —               —
+DeepResearch        RACE (4-axis LLM-judge) + FACT              ✓c                  ✓                 —               —
+Bench               (citation accuracy)
+DRBench             LLM-judge across 4 axes (GPT-4o             —                   ✓                 —               —
+                    backbone)
+Ours                Deterministic verifiers + SME 0–3 or-        ✓                  ✓                 ✓               ✓
+                    dinal rubric
+  a
+    GDPval task writers created detailed scoring rubrics that guide pairwise comparison; the rubric supplements rather than
+                                      replaces the primary blinded pairwise instrument.
+     b
+       APEX-Agents uses environment-state snapshots (deterministic) alongside LLM-judged binary criteria for grading.
+c
+  DeepResearch Bench’s FACT framework checks citation factuality against retrieved sources deterministically; the per-criterion
+                                            content judgment uses an LLM judge.
+
+
+strument comprising seven universal meta-criteria                    marized in Table 3. The full SME annotation proto-
+together with prompt-type-specific additional cri-                   col and the detailed 0–3 ordinal scoring rubric (i.e.,
+teria, augmented with a set of binary task-specific                  how the intermediate scores 1 and 2 are awarded
+verifiers. In the second phase, the draft instrument                 for each criterion) are provided in Appendix M.
+was reviewed by a Principal Domain Expert with                       Each (prompt × agent) cell was graded by one
+15+ years of experience in the management con-                       SME from a recruited pool of former MBB and
+sulting sector, with two explicit goals: (i) ensuring                Big Four consultants.
+the meta-criteria were mutually exclusive and col-                      The five rubric scores and the binary verifier
+lectively exhaustive (MECE) over the dimensions                      pass rate are aggregated into a single Verifier-
+of management-consulting deliverable quality, and                    Rubric Score (VRS) on a 0–100 scale. Let ri ∈
+(ii) reducing SME cognitive load during annota-                      {0, 1, 2,P3} denote the SME score for criterion i, let
+tion by avoiding redundant or overlapping judg-                      r̄ = 5 5i=1 ri be the reasoning average, and let
+                                                                           1
+
+ments. The expert review collapsed the two-level                     V ∈ [0, 100] denote the verifier pass rate. VRS has
+structure into the final flat five-criterion rubric (DI,             two variants:
+AR, RF, EP, FD; Table 3) and reorganized prompt-
+                                                                                            r̄
+type-specific signals into the binary verifier layer                   VRS0 = 0.5 · V + 0.5 ·  · 100 (relaxed) (1)
+                                                                                            3
+rather than the rubric layer. The same expert vetted
+                                                                        VRS = VRS0 · 1[min ri > 0] (strict)    (2)
+the prompt corpus, cognitive-trap embeddings, and                                            i
+verifier specifications before annotation began, as
+noted in Section 3.                                                  The strict variant zeros out the score whenever any
+                                                                     criterion is zero. VRS is a descriptive aggregate;
+   Our benchmark uses a dual-layer scoring                           ACCEPT is defined directly on the underlying com-
+scheme: task-specific binary verifiers and a five-                   ponents rather than on a VRS threshold:
+criterion SME rubric. Binary verifiers provide
+automatable, objective pass/fail gates that pre-                     ACCEPT(r, V ) ⇔ min ri > 0 ∧ r̄ ≥ 2.5 ∧ V ≥ 80%.
+                                                                                             i
+vent high-quality-looking but factually incorrect re-                                                                   (3)
+sponses from receiving inflated scores; the verifier                    The choice of equal weights (0.5/0.5) in Equa-
+suite for each task is included in the public code-                  tion 1 is a defensible default rather than the only
+base released alongside this paper (Appendix O).                     possible choice; the verifier layer is in fact the
+Beyond verifiers, each response is scored on five                    second-strongest predictor of binary ACCEPT, not
+ordinal criteria from 0 (absent/seriously flawed) to                 the first, motivating a sensitivity analysis. We show
+3 (excellent). The criteria, what each measures, and                 in Section I.1 that ACCEPT is invariant to VRS
+what a 0 and 3 on each criterion indicates are sum-                  reweighting by construction (the rule is defined on
+
+                                                                4
+Table 2: The five-class capability-targeted prompt taxonomy. Each class targets a distinct cognitive capability rather
+than a topical domain.
+
+ Prompt class                      Capability tested           Description
+ CRP — Constrained Research        Source discipline       Information retrieval from a narrow, explicit source set. Agent
+ Prompt                                                    must restrict itself to authorized sources when tempted by
+                                                           easier external alternatives.
+ RCP — Relevance Compression       Signal extraction       Large noisy corpora where 60–70% of the material is irrele-
+ Prompt                                                    vant. Agent must act as an intelligent filter and locate buried
+                                                           qualifiers, footnotes, or dispersed references.
+ SCP — Structural Compliance       Algorithmic obedience   Multi-layer non-trivial output structure (nested sections, fixed-
+ Prompt                                                    column tables, JSON schemas, cross-references). Agent must
+                                                           hold and faithfully execute a structural specification across a
+                                                           long deliverable.
+ LDP — Latent Decomposition        Problem    decomposi-   Tasks requiring inference of unlisted variables (intermediate
+ Prompt                            tion                    calculations, latent factors, model components not directly
+                                                           given). Agent must identify what needs to be computed before
+                                                           the analysis can proceed.
+ FSP — Failure-Sensitive Prompt    Precision and exact-    Tasks where small factual or logical errors invalidate the en-
+                                   ness                    tire output (a single mis-pulled value cascades to a wrong
+                                                           recommendation). This tests tolerance for the kinds of small
+                                                           mistakes that downstream consumers cannot recover from.
+
+
+
+the raw components r̄ and V , not on the VRS aggre-             4     Empirical Results
+gate), and that mean VRS per agent moves by less
+than one point under four alternative weightings,               We grade all 70 prompts in our benchmark on three
+with the agent ordering Claude > Gemini > o3                    frontier deep research agents (210 responses in
+preserved throughout. The headline conclusions                  total). Verifier-Rubric Scores follow Equations 1–2;
+reported in this paper are therefore robust to the              the strict variant is the default for headline reporting
+weighting choice.                                               unless stated otherwise.
+
+   Each (prompt × agent) cell then undergoes an                 4.1    Main Results
+independent quality-control (QC) pass by a second
+SME from a non-overlapping pool. QC is a verifi-                Table 4 reports aggregate metrics across all 70
+cation rather than a re-annotation; the QC reviewer             graded prompts and three agents. The most
+may Confirm, Edit (with a documented one-line                   decision-relevant view is the ACCEPT rate: all
+reason), or Reject/Return the row, with priority re-            three agents cluster near 13–16%, with overlap-
+derivation on final-answer, trap, citation-dependent,           ping CIs. The strict-VRS ordering is o3 (61.4) >
+and output-file verifiers, and full citation validation         Gemini (52.6) > Claude (38.5), with reasoning-
+for source existence, claim support, and corpus-                mean values spanning 1.55 (Claude) to 1.89 (o3)
+discipline compliance. The full QC protocol is in               out of 3.0. The inversion relative to ACCEPT is
+Appendix N.                                                     not a contradiction: VRS gives partial credit to all-
+                                                                criteria-non-zero responses regardless of whether
+                                                                they reach production quality, while ACCEPT is
+3.4   Multi-Agent Evaluation Infrastructure                     a binary threshold gate. Claude’s profile is domi-
+                                                                nated by catastrophic failures: 41.4% auto-reject
+Our evaluation infrastructure dispatches all agents             rate (vs. 10.0% for o3), driven by 62 criterion-zeros.
+on identical task packages simultaneously through               Gemini accumulates even more zeros (74) but dis-
+agent-specific adapters (Anthropic Messages API                 tributes them across fewer prompts.
+for Claude, OpenAI Responses API with Contain-                     Three patterns are worth flagging in the main re-
+ers for o3, Google Interactions API for Gemini),                sults. The auto-reject rate separates agents sharply.
+with file-format normalization and merge-on-write               Claude (41.4%) and Gemini (30.0%) sit well above
+result storage. All three agents themselves write               o3 (10.0%), with the largest gap for any metric in
+the Python code that produces output files; only the            the table. Claude accumulates 62 criterion-zeros;
+execution environment differs, so file-generation               Gemini accumulates 74 (more than the other two
+failures are attributable to model code quality, not            combined), even though its mean reasoning of 1.68
+infrastructure asymmetries.                                     sits close to o3’s 1.89. o3’s zero distribution is strik-
+
+                                                           5
+Table 3: The five SME-graded ordinal criteria (0–3 scale). Score-0 and Score-3 anchors are shown to clarify the
+dimension being scored; the full ordinal rubric (including the 1 and 2 anchors per criterion) is in Appendix M.
+
+Code Criterion              What is scored                             Score 0 indicates            Score 3 indicates
+DI     Data Integrity       Whether facts, numbers, citations, and Fabricated or seriously          Every quantitative and
+                            references are accurate                     mis-stated data; the re-    source claim verifiable;
+                                                                        sponse asserts something    no fabrication
+                                                                        verifiably false or in-
+                                                                        vented
+AR     Analytical Rigor     Whether the reasoning chain is sound, Reasoning absent, circu-          Steps shown explicitly, in-
+                            sufficiently deep, and free of logical gaps lar, or seriously flawed    dividually correct, suffi-
+                                                                                                    cient depth for the ques-
+                                                                                                    tion
+RF     Relevance & Focus  Whether the response addresses the asked Largely answered a dif-          Wholly on-task; every
+                          question without scope drift or filler      ferent question or padded     section advances the
+                                                                      with off-topic material       asked deliverable
+EP    Execution Precision Whether requested operations like calcu- Right        operation     at-   All requested operations
+                          lations, transformations, filtering, struc- tempted, executed wrong;      performed accurately, in-
+                          tural construction etc are performed cor- numerical or structural         cluding edge cases and
+                          rectly                                      mistake in the output         traps
+FD    Format & Deliver- Whether the output is a usable MC deliv- Unusable artifact: trun-           Drop-in-ready deliverable
+      ability             erable: layout, completeness, readability, cated, malformed, miss-        in the requested format;
+                          professional tone                           ing sections                  all sections present, pol-
+                                                                                                    ished tone
+
+Table 4: Main performance metrics across our evaluation (n = 70 graded prompts × 3 agents = 210 attempts; VRS
+uses the strict variant of Equation 2).
+
+ Metric                                               o3-deep-research         Claude Opus 4.6           Gemini 3.1 Pro
+ Mean reasoning r̄ (0–3)                                      1.89                     1.55                     1.68
+ Mean verifier pass rate V (%)                                60.2                     48.6                     58.2
+ Mean VRS, strict (0–100)                                     61.4                     38.5                     52.6
+ ACCEPT rate (binary)                                        15.7%                    12.9%                    12.9%
+ Auto-reject rate (∃ i : ri = 0)                             10.0%                    41.4%                    30.0%
+ Total criterion-zeros (out of 5 × 70 = 350)                   35                       62                       74
+ Mean verifiers per task                                                              14.9
+
+
+ingly even (exactly 7 on every criterion), consistent           4.3   Discriminating Power
+with a “conservative” failure mode: when o3 fails,              Under the binary ACCEPT criterion, 45 of 70
+it fails proportionally rather than catastrophically            prompts (64.3%) are universally rejected; no
+on one dimension. This high-variance pattern is                 prompt is universally accepted. On VRS argmax,
+examined in Section 4.4.                                        Gemini wins 26.3 prompts (37.6%), o3 24.8
+                                                                (35.5%), Claude 18.8 (26.9%). Full distributions
+                                                                are in Appendix B.
+4.2   Per-Prompt-Type Performance
+                                                                4.4   Robustness: Criterion Zero-Counts
+Per-prompt-type strict VRS (Table 5, Appendix A)                Gemini accumulates 74 criterion-zeros (more than
+reveals agent specialization: o3 wins CRP (55.5),               o3’s 35 and Claude’s 62 combined), concentrated
+FSP (77.1), and RCP (71.6); Claude wins LDP                     on DI, EP, and FD (16 each). Claude has 22 DI-
+(65.0); Gemini wins SCP (68.0). Claude’s extended               zeros. o3’s distribution is strikingly even (exactly 7
+reasoning excels at latent decomposition but col-               per criterion). Full counts are in Appendix C.
+lapses on structural compliance (SCP 12.8, lowest
+cell). o3 leads most strongly on FSP, where preci-              4.5   Agent-Distinct Failure-Mode Signatures
+sion under cascading error is the test. Effect sizes            We complement the quantitative diagnostics with
+confirm: large |d| > 0.8 on FSP, LDP, and SCP;                  an LLM-based failure-tag analysis on SME free-
+small on CRP (Appendix A).                                      text justifications (1,050 cells). An LLM classi-
+
+                                                            6
+fier (Claude Opus 4.5) assigned zero or more tags            rently evaluates management consulting tasks only.
+from an eight-tag taxonomy per cell; a determin-             APEX-v1 covers MC, IB, Law, and Medicine;
+istic regex classifier cross-checks (mean Jaccard            APEX-Agents covers MC, IB, and Law. Cross-
+0.339). Full tag counts are in Appendix D (Table 9).         benchmark comparisons are therefore most directly
+Three agent-distinct signatures emerge.                      valid for the MC subset, though APEX does not
+   Claude — Failure by breadth. Claude leads                 report MC-only scores separately. The full compar-
+on six of eight tags. The 48 fabricated_data                 ison is in Table 17 (Appendix J).
+tags (2.8× o3), 27 no_files_read (9× o3),
+and 24 trap_not_caught (2.4× o3) character-                     DRA’s best-model mean verifier pass rate
+ize an agent that aggressively generates content             (60.2%, o3) sits within the range spanned by the
+when source access fails. On CRP closed-corpus               two APEX benchmarks (APEX-v1 64.2%, APEX-
+tasks, Claude produced citations from real but topi-         Agents 53.9%). The gap with APEX-v1 is con-
+cally unrelated URLs, undetectable without domain            sistent with APEX-v1’s broader domain cover-
+verification.                                                age and LLM-judged rather than SME-graded cri-
+   o3 — Failure by imprecision. o3’s profile                 teria; the proximity to APEX-Agents validates
+is dominated by cascading_math_errors                        that DRA’s verifier difficulty is not an outlier
+(37,       co-highest     with     Claude)      and          relative to published knowledge-work evaluation.
+citation_hallucination (11,                   high-          DRA’s V =100% rate (14.3%, Gemini) is mechani-
+est). o3’s no_files_read count (3) is the                    cally harder than APEX-Agents’ Pass@1 (24.0%)
+lowest, indicating reliable file access; the count           because DRA checks ∼15 verifiers per task vs.
+dropped from 20 (v2) to 3, confirming run-to-run             APEX-Agents’ ∼4 criteria: the probability of pass-
+variance.                                                    ing all checks drops exponentially in the number of
+   Gemini — Failure by system collapse. 11                   checks. APEX does not report paired significance
+tech_failure tags (highest; 2.8× Claude), dis-               tests, bootstrap CIs, or effect sizes; our statistical
+tributed across timeouts, context-window satura-             apparatus is a methodological contribution.
+tion, and python-docx crashes. Combined with
+74 criterion-zeros alongside the highest perfect-
+verifier rate (14.3%), this characterizes an agent
+                                                             4.8   Additional Diagnostics
+with no graceful-degradation regime.
+
+4.6   Pairwise Significance                                  Several additional analyses support the robustness
+Wilcoxon signed-rank tests (paired by prompt)                of the findings above and are reported in the ap-
+with Bonferroni correction: o3–Claude on VRS                 pendices. The five rubric criteria covary at mean
+(∆= + 22.9, pBonf =0.001) and on r̄ (∆= + 0.33,              off-diagonal Spearman ρ = 0.60, with DI–EP the
+pBonf =0.039) both survive correction. All other             strongest pair (ρ = 0.74) and DI–FD the most in-
+VRS pairs and all ACCEPT-rate comparisons (Mc-               dependent (ρ = 0.45), consistent with 2–3 latent
+Nemar, all p > 0.79) are not significant.                    factors (Appendix G). The Spearman r̄-vs-V cor-
+  Concrete code-level and citation-level failure ex-         relation is 0.80 pooled, confirming the two scoring
+amples are in Appendix E.                                    layers are correlated but not redundant. Rubric val-
+                                                             idation via Spearman-ACCEPT correlation shows
+4.7   Cross-Benchmark Comparison                             EP as the strongest predictor (ρ = +0.55) followed
+DRA’s binary verifier layer is structurally compara-         by V (+0.52); sole-cause analysis identifies EP, DI,
+ble to both APEX benchmarks (APEX-v1 (Vidgen                 and FD as the three threshold-blocking criteria (Ap-
+et al., 2025), APEX-Agents (Vidgen et al., 2026)):           pendix H). The strict VRS auto-reject gate costs
+all three measure the fraction of task-specific binary       Claude the most (+11.7 points under relaxed scor-
+checks passed, enabling direct cross-benchmark               ing; Appendix F). The agent ordering o3 > Gemini
+comparison on that axis. DRA’s ordinal rubric layer          > Claude on strict VRS is preserved under all five
+(r̄) and dual-gate ACCEPT have no APEX coun-                 alternative weight schemes tested, with maximum
+terpart. This second evaluation dimension is the             shift < 1.5 points (Appendix I). Per-rubric pass
+methodological contribution that catches “mechan-            rates, per-type ACCEPT rates, and per-class ar-
+ically correct but analytically shallow” responses           chitectural observations are in Appendices H, A,
+invisible to binary-only instruments. DRA cur-               and K respectively.
+
+                                                         7
+5   Limitations and Future Work                              at 61.4. By criterion-zeros, o3 is cleanest (35 vs.
+                                                             Claude’s 62 and Gemini’s 74). By perfect-verifier
+Sample size, inter-rater reliability, and signifi-
+                                                             rate (V =100%), Gemini leads (14.3%). By VRS
+cance (P0). The evaluation comprises 70 graded
+                                                             argmax, Gemini leads with 26.3 of 70 head-to-head
+prompts × 3 agents (210 attempts), with per-class
+                                                             wins. By binary ACCEPT rate, all three are statisti-
+sample sizes of n = 8–18. At these sizes Co-
+                                                             cally indistinguishable at 13–16%. The orderings
+hen’s d > 0.8 thresholds describe magnitude rather
+                                                             are not in conflict: o3 builds its VRS lead on a
+than inferential precision, and paired-comparison
+                                                             lower catastrophic-failure rate rather than on higher
+tests on per-agent ACCEPT outcomes do not reach
+                                                             peak quality, while Gemini’s higher zero count is
+p < 0.05 (Section 4.6). Each (prompt × agent) cell
+                                                             offset by its non-failures more often clearing the
+was graded by one primary SME and independently
+                                                             quality bar. Reporting any one of these views in
+reviewed by a second SME via the QC protocol of
+                                                             isolation would mislead.
+Appendix N. This provides an error-correction pass
+                                                                The per-type VRS decomposition reveals that
+against rubric–evidence mismatches and surfaces
+                                                             agents specialize: Claude leads on LDP (65.0)
+fabricated citations, but does not yield a Cohen’s κ
+                                                             where extended reasoning pays off, while strug-
+inter-rater reliability statistic since QC is an asym-
+                                                             gling catastrophically on SCP (12.8) where struc-
+metric defensibility check rather than a parallel
+                                                             tural obedience is required. Gemini leads on SCP
+re-annotation.
+                                                             (68.0), the inverse of Claude’s profile. o3 leads
+   Planned second release (v2). A formal IRR
+                                                             overall but does not dominate every type.
+study with parallel double-grading on a held-out
+                                                                Across these views, the failure modes are agent-
+subset is in preparation, alongside an expanded
+                                                             specific (Section 4.5), the prompt taxonomy probes
+prompt corpus. The v2 release will roughly dou-
+                                                             capabilities the agents differ meaningfully on (Co-
+ble the prompt count, add Investment Banking (IB)
+                                                             hen’s d > 1.0 on two of five classes), and the
+tasks alongside Management Consulting (MC), and
+                                                             five rubric criteria correlate at mean Spearman
+report bootstrap confidence intervals on every head-
+                                                             0.60, consistent with two to three latent factors
+line metric. We anticipate publishing the expanded
+                                                             rather than five orthogonal traits. Per-class archi-
+results in a companion paper; the rubric, scoring
+                                                             tectural observations—CRP closed-corpus weak-
+formulae, and QC protocol used in v2 will be
+                                                             ness, agent-specific file-generation failure profiles,
+backward-compatible with the v1 instrument re-
+                                                             and file-readability asymmetries—are recorded in
+ported here so cross-release comparison remains
+                                                             Appendix K.
+valid.
+   Rubric dimensionality and other limitations               A     Per-Type Performance and Effect Sizes
+(P1–P2). The mean off-diagonal Spearman cor-
+relation of 0.60 across the five reasoning criteria
+(Appendix G) suggests 2–3 effective latent factors           Table 5: Mean strict VRS by prompt type and agent.
+                                                             Bold marks the per-type winner.
+rather than five orthogonal traits, motivating a fac-
+tor analysis. The evaluation is single-domain (MC);
+                                                                   Type     n     o3    Claude     Gemini
+generalization to other professional domains re-
+quires parallel datasets. The Investment Banking                   CRP     13    55.5     38.1       47.3
+(IB) study mentioned above and additional domains                  FSP      8    77.1     50.3       59.7
+are part of the v2 roadmap.                                        LDP     13    46.7     65.0       19.5
+                                                                   RCP     18    71.6     36.3       61.7
+6   Conclusion                                                     SCP     18    59.1     12.8       68.0
+What our benchmark actually measures is whether
+a frontier deep research agent can do the kind
+of structured, multi-document, decision-grade re-            A.1    Effect Sizes for Per-Type Differences
+search a management consultant gets paid to do.              To check whether the per-type VRS gaps in Table 5
+Across the 70 graded prompts and 210 responses,              reflect real signal or sampling noise from small
+the answer is: not yet, not reliably, and not in a way       per-arm samples (n = 8–18), we compute Cohen’s
+that any single performance metric captures.                 d = (r̄1 − r̄2 )/spooled (Cohen, 1988) on the reason-
+   The agents rank differently depending on which            ing average r̄ for each pair of agents within each
+aggregation you look at. By strict VRS, o3 leads             prompt type (Table 6). Magnitudes follow the con-
+
+                                                         8
+ventional thresholds 0.2 (small), 0.5 (medium), 0.8          C     Per-Criterion Zero Counts
+(large) (Sawilowsky, 2009).
+                                                             C.1    Robustness Diagnostic: Criterion
+   The per-type winners on Table 5 carry |d| >                      Zero-Counts
+1.0 on FSP (o3 vs. Claude d = +1.27), where                  Counting hard zeros per criterion is a robust statis-
+o3 has the strongest reasoning-mean profile, and             tic that does not depend on the rest of the score
+on SCP where Claude is the loser (d = +1.45                  distribution and complements the means analyzed
+o3 over Claude; d = −1.54 Claude vs. Gemini).                in Table 5. Table 8 reports zero counts for each
+LDP shows a large Claude advantage over both                 (criterion, agent) cell, with the corresponding per-
+(d = −0.82 o3 vs. Claude; d = +1.68 Claude                   criterion means.
+vs. Gemini). CRP shows small effect sizes across                Gemini stands out: 74 zeros, more than the other
+all pairs (|d| ≤ 0.45), supporting the conclusion            two combined (o3 35, Claude 62). Gemini’s zeros
+that no agent is meaningfully better on constrained-         concentrate on DI, EP, and FD (16 each), the signa-
+research tasks. We caution that at n = 8 per arm             ture of an agent that either nails the deliverable or
+on FSP, Cohen’s conventional thresholds describe             collapses on source fidelity, calculation, and format
+magnitude but not inferential precision.                     simultaneously. Claude stands out on DI with 22
+                                                             zeros: in nearly a third of prompts the SME judged
+                                                             Claude’s response as containing fabricated or se-
+B     Inter-Agent ACCEPT Distribution                        riously mis-stated data. EP is equally concerning
+                                                             for Claude (16 zeros) and Gemini (16 zeros), indi-
+                                                             cating execution precision as a shared weak point.
+B.1    Discriminating Power and Inter-Agent                  o3’s zero distribution is strikingly even (exactly 7
+       Agreement                                             on every criterion), consistent with a “conservative”
+                                                             failure mode: when o3 fails, it fails proportionally
+We examine the benchmark’s discriminating power              rather than catastrophically on one dimension.
+from two complementary angles: a binary view
+                                                             D     Failure-Mode Tag Counts
+(ACCEPT count per prompt) and a continuous view
+(VRS argmax per prompt).                                     E     Concrete Failure Examples
+   Under the binary ACCEPT criterion of Equa-                We provide code- and citation-level evidence for
+tion 3, 45 of 70 prompts (64.3%) are universally             two of the failure signatures discussed above, to
+rejected and no prompt produces a unanimous AC-              ground the agent-distinct narratives in concrete arte-
+CEPT (Table 7). Under the continuous VRS view,               facts.
+however, we observe meaningful capability differ-               We include code-level and citation-level exam-
+entiation. Gemini wins 26.3 prompts (37.6%), o3              ples of two of the failure signatures discussed
+wins 24.8 prompts (35.5%), and Claude wins 18.8              in Section 4.5, to support reproducibility and to
+prompts (26.9%) on the per-prompt VRS argmax                 ground the agent-distinct narratives in concrete ar-
+(fractional tie-attribution; ties distributed equally        tifacts.
+between tied agents).
+                                                             Gemini — Wrong python-docx API
+   Reconciling the two views, the benchmark is
+binary-hard but continuously discriminating: the             Listing 1: Gemini-generated code with wrong python-
+ACCEPT threshold (r̄ ≥ 2.5 and V ≥ 80%) is                   docx API call
+set tight relative to current frontier-DRA capability,       # Extracted from Gemini response on a
+                                                                 CRP manufacturing task
+so most prompts receive zero ACCEPTs in abso-                table1 = doc.add_table(rows=1, cols=5)
+lute terms, yet the continuous VRS reveals large-            table1.style = ’Table Grid’
+effect-size differential capability among the same           hdr_cells = table1.rows.cells # ERROR:
+                                                                 _Rows has no .cells attribute
+agents on the same prompts. For research-grade               hdr_cells[0].text = ’Line’
+benchmark use, the continuous VRS view is more               hdr_cells[1].text = ’Effective Hours’
+informative; for production-readiness assessment,
+the binary view is decision-relevant. The 90.5%                    Listing 2: Corrected python-docx API usage
+VRS-SME concordance validates VRS as a faithful              # Correct API:
+summary of human expert judgment.                            table1 = doc.add_table(rows=1, cols=5)
+
+
+                                                         9
+Table 6: Cohen’s d effect sizes for per-prompt-type pairwise gaps on the reasoning average r̄. Sign convention:
+positive d favors the first-listed agent. Bold marks |d| > 0.8.
+
+ Type   n/arm   o3 vs Claude   o3 vs Gemini   Claude vs Gemini   Reading
+ CRP     13       +0.45          +0.22             −0.29         all small; no winner
+ FSP      8       +1.27          +0.94             +0.19         large edge for o3 over Claude
+ LDP     13       −0.82          +0.54             +1.68         large edge for Claude over o3; very large Claude over Gemini
+ RCP     18       +0.91          +0.34             −0.43         large edge for o3 over Claude
+ SCP     18       +1.45          −0.36             −1.54         very large edge for o3 over Claude; very large Gemini over Claude
+
+
+Table 7: Inter-agent ACCEPT-count distribution under the binary decision rule of Equation 3, across the 70 graded
+prompts.
+
+                                # agents accepting (out of 3)           # prompts          %
+                                0 (universally rejected)                     45           64.3
+                                1 (one agent accepted)                       21           30.0
+                                2 (two agents accepted)                       4            5.7
+                                3 (universally accepted)                      0            0.0
+
+
+table1.style = ’Table Grid’                                      ysis. All URLs are real pages that exist on the
+hdr_cells = table1.rows[0].cells # rows                          internet, which makes them difficult to identify as
+    [0] returns _Row, which has .cells
+hdr_cells[0].text = ’Line’                                       hallucinated without domain verification. This un-
+hdr_cells[1].text = ’Effective Hours’                            derscores our recommendation that closed-corpus
+                                                                 benchmarks include automated citation domain
+   The table.rows.cells error appears iden-
+                                                                 classification as a binary verifier.
+tically across multiple independent Gemini
+responses, supporting the interpretation that
+the failure is a systematic gap in Gemini’s
+python-docx pre-training coverage rather than                    F     Strict vs. Relaxed VRS
+a one-off slip.
+Claude — Hallucinated Citations on a                             F.1    Strict vs. Relaxed VRS
+Closed-Corpus Task
+The following citations appeared in Claude Opus                  Table 10 compares the two VRS variants of Equa-
+4.6’s response to a closed-corpus CRP task on last-              tions 1–2.
+mile logistics rider reallocation in India:                         The agent ranking Claude > Gemini > o3 holds
+   • https://datasheet.eeworld.com.                              under both variants. The o3-Claude gap shrinks
+     cn/view/85833854.html — Chinese                             from 20.74 points (strict) to 11.89 points (relaxed),
+     electronics datasheet (ZVY11K1210401                        so the ordering is not driven by the auto-reject
+     component)                                                  penalty alone. There is genuine reasoning-quality
+                                                                 separation underneath. o3 gains the most when the
+   • https://stackoverflow.com/                                  strict penalty is removed (+8.85), reflecting that 14
+     questions/13385860 — Stack Over-                            of its 42 attempts had at least one criterion zero, typ-
+     flow: “How can I remove extra whitespace                    ically DI (because the response carried fabricated
+     from strings when parsing a CSV file in                     content), zeroing out an otherwise-respectable com-
+     Pandas?”                                                    posite. The relaxed VRS therefore overstates o3’s
+                                                                 production-readiness while the strict VRS under-
+   • https://stackoverflow.com/
+                                                                 states its reasoning capability; both views together
+     questions/42039629 — Stack Over-
+                                                                 give the full picture. We recommend that for exter-
+     flow: “pandas: Read multiline CSV like input
+                                                                 nal reporting one use strict VRS (decision-faithful
+     with different separators”
+                                                                 with respect to ACCEPT); and for internal archi-
+  None of these sources have any relationship to                 tecture analysis, report both variants alongside the
+the logistics domain or the rider reallocation anal-             auto-reject rate.
+
+                                                            10
+ Table 8: Hard-zero counts per criterion (out of 70 attempts per agent), with per-criterion means in parentheses.
+
+                     Criterion                                  o3          Claude       Gemini
+                     DI — Data Integrity                   7 (1.67)         22 (1.23)    16 (1.63)
+                     AR — Analytical Rigor                 7 (1.73)          8 (1.57)    12 (1.77)
+                     RF — Relevance & Focus                7 (2.37)          5 (2.04)    14 (1.89)
+                     EP — Execution Precision              7 (1.53)         16 (1.17)    16 (1.46)
+                     FD — Format & Deliverability          7 (2.13)         11 (1.74)    16 (1.67)
+                     Total zeros                                35             62           74
+
+Table 9: Per-prompt failure-mode tag counts from LLM classification of SME free-text justifications. Each cell is
+the number of unique (agent, prompt) pairs out of 70 where any of the five criterion-justifications carried that tag;
+bold marks the highest agent for each tag.
+
+                     Failure tag                           o3        Claude      Gemini     Total
+                     fabricated_data                       17          48           16        81
+                     cascading_math_errors                 37          38           21        96
+                     noise_inclusion                       10          28           21        59
+                     missing_section                       16          25           16        57
+                     no_files_read                          3          27            4        34
+                     tech_failure                           7           4           11        22
+                     trap_not_caught                       10          24           13        47
+                     citation_halluc.                      11           7            5        23
+
+
+G     Internal Structure: Criterion                           finding does not, however, imply that any criterion
+      Correlations                                            is dispensable for the ACCEPT decision: the rubric-
+                                                              validation analysis in Section H.1 (specifically the
+G.1    Internal Structure: Criterion                          sole-cause attribution diagnostic) finds that each
+       Correlations                                           criterion contributes distinct information at some
+The five rubric criteria are designed to capture dis-         point along the decision surface, with two criteria
+tinct dimensions, but in practice they covary sub-            contributing primarily through their distributional
+stantially. Table 11 reports the Pearson correlation          correlation and three through threshold-localized
+matrix across the 210 pooled attempts.                        blocking. A formal factor analysis to determine
+   The off-diagonal correlations range from 0.45              the true latent structure is listed as a P1 next step
+(DI × FD) to 0.74 (DI × EP), with mean ρ ≈ 0.60.              (Section 5).
+This indicates the rubric is most likely measuring               We also report the Spearman correlation between
+2-3 underlying latent factors rather than five or-            the verifier pass rate V and the reasoning average
+thogonal traits. DI and EP at ρ = 0.74 are highly             r̄ within each agent: 0.75 (o3), 0.76 (Claude), 0.77
+overlapping implying that data integrity and ex-              (Gemini), pooled 0.80. The two scoring layers are
+ecution correctness are not cleanly separable in              strongly correlated overall but not redundant.
+practice. The lowest correlation, DI × FD at 0.45,
+suggests Data Integrity (whether facts are correct)           H      Rubric Validation
+and Format & Deliverability (whether the output
+                                                              H.1     Rubric Validation: Composite
+is presented usably) are the most independent pair
+                                                                      Calibration and Sole-Cause Analysis
+since fabrication and presentation can vary inde-
+pendently. Methodological implication of this is              A composite scoring rubric must satisfy two
+that the rubric criteria are statistically correlated,        desiderata to be defensible: (i) no single criterion
+so treating them as orthogonal dimensions in an               should dominate the composite outcome, otherwise
+aggregate score overstates the rubric’s effective sta-        the remaining criteria are decorative; (ii) each cri-
+tistical dimensionality. This statistical-correlation         terion should provide non-redundant signal, other-
+
+                                                         11
+      Table 10: Strict vs. relaxed VRS comparison and counts of attempts with at least one criterion zeroed.
+
+        Agent                Strict VRS     Relaxed VRS              ∆       # attempts with mini ri = 0
+        o3-deep-research        61.44            61.51             +0.06                  7 / 70
+        Claude Opus 4.6         38.53            50.18             +11.65                29 / 70
+        Gemini 3.1 Pro          52.56            57.15             +4.59                 21 / 70
+
+Table 11: Pearson correlation matrix among the five reasoning criteria, pooled across all 210 attempts. Bold marks
+the two extremes.
+
+                                           DI     AR          RF     EP     FD
+                                   DI     1.00    0.62    0.54      0.74    0.45
+                                   AR     0.62    1.00    0.58      0.70    0.59
+                                   RF     0.54    0.58    1.00      0.56    0.66
+                                   EP     0.74    0.70    0.56      1.00    0.54
+                                   FD     0.45    0.59    0.66      0.54    1.00
+
+
+wise the rubric is over-specified. We assess both             as gating constraints from those that fail in clusters
+with three diagnostics, applied in the spirit of Krip-        with others.
+pendorff (Krippendorff, 2011) on rubric calibra-                 Of the 59 responses that cleared the V ≥ 80%
+tion and following the analytical structure used by           verifier hurdle, 42 had all five rubrics ≥ 2 (29 of
+Liang et al. (Liang et al., 2023) for the HELM                these ACCEPTed; the remaining 13 fell short of the
+benchmark. Throughout this subsection we use                  r̄ ≥ 2.5 threshold despite no rubric being below
+Spearman rank correlation in preference to Pear-              2). The sole-cause cases were the 12 responses
+son, since the rubric scores are ordinal and not              that had exactly one rubric below 2 with V ≥ 80%.
+interval-spaced (Spearman, 1904).                             Their distribution is shown in Table 13.
+H.1.1    Spearman Correlation of Each Rubric                     Spearman correlation and sole-cause attribution
+         with the Composite ACCEPT Outcome                    measure two complementary aspects of how each
+Table 12 reports the Spearman rank correlation                rubric contributes to ACCEPT. Correlation summa-
+between each rubric score and the binary ACCEPT               rizes how a rubric tracks ACCEPT across the entire
+outcome, both pooled and per-agent.                           score distribution. Sole-cause attribution, on the
+   Every rubric is significantly correlated with AC-          other hand, measures boundary-localized impor-
+CEPT, and the correlations span a moderate range              tance, by which we mean a rubric’s contribution
+(0.31 to 0.55) without a single dominant contributor.         restricted to cases where the decision is genuinely
+This is the empirical signature of a well-calibrated          uncertain. This corresponds to responses sitting
+composite: if any one rubric had a near-perfect               close to the r̄ ≥ 2.5, V ≥ 0.80, or mini ri > 0
+correlation with ACCEPT (e.g., ρ > 0.85), the oth-            thresholds, where a single rubric’s value can tip
+ers would be effectively redundant. The per-agent             the decision either way. The two measures together
+correlations are stable across all three architectures        paint a more complete picture than either alone, and
+(o3/o3/Gemini), indicating the rubric does not be-            the dataset surfaces three points worth recording.
+have differently for any specific agent’s response               First, three rubrics are independent threshold
+style.                                                        blockers. EP, DI, and FD can each single-handedly
+                                                              drop a response below ACCEPT, accounting for
+H.1.2    Sole-Cause Failure Analysis                          all 12 sole-cause rejections in the dataset, with EP
+A sole-cause failure for rubric R is a response that          doing so most often (5 of 12). EP has the highest
+would have ACCEPTed except that R alone scored                sole-cause count and also the strongest Spearman
+below 2 (with V ≥ 80% and all other rubrics ≥ 2).             correlation with ACCEPT (ρ = 0.55), confirming
+This diagnostic, used in similar form by Wang et              its role as the single most informative predictor of
+al. (Wang et al., 2024c) for category-level error             production readiness. The two measures disagree
+attribution, isolates the rubrics that genuinely act          because they ask different questions. Correlation
+
+                                                         12
+Table 12: Spearman correlation between each rubric score and the binary composite ACCEPT outcome (n = 210
+pooled; n = 70 per agent). All overall correlations are highly significant after Bonferroni correction for six tests.
+
+   Rubric                              ρ (overall)             p           ρ (o3)    ρ (Claude)     ρ (Gemini)
+   V (verifier pass rate)                +0.524        3.35 × 10−16       +0.568       +0.534          +0.500
+   AR – Analytical Rigor                 +0.470        5.79 × 10−13       +0.536       +0.468          +0.426
+   EP – Execution Precision              +0.548        7.68 × 10−18       +0.602       +0.546          +0.533
+   DI – Data Integrity                   +0.491        3.80 × 10−14       +0.475       +0.522          +0.490
+   RF – Relevance & Focus                +0.338        5.18 × 10−7        +0.323       +0.375          +0.321
+   FD – Format & Deliverability          +0.354        1.38 × 10−7        +0.379       +0.376          +0.312
+
+Table 13: Sole-cause failure attribution: of the 12 responses where exactly one rubric scored below 2 (with V ≥ 80%
+and all other rubrics ≥ 2), the failing rubric is reported.
+
+              Rubric                               Sole-cause failures       % of sole-cause cases
+              EP – Execution Precision                         5                      41.7%
+              DI – Data Integrity                              4                      33.3%
+              FD – Format & Deliverability                     3                      25.0%
+              AR – Analytical Rigor                            0                       0%
+              RF – Relevance & Focus                           0                       0%
+
+
+is averaged across the whole distribution, so FD’s            gether) are excluded from the sole-cause count for
+signal is diluted by responses far from the decision          all rubrics involved, and the dataset does not sepa-
+boundary. Sole-cause attribution is restricted to             rate their individual contributions in those cases.
+the boundary, where FD’s threshold-blocking role                 Third, the auto-reject rule is a dormant prin-
+is dispositive. Removing EP, DI, and FD from                  cipled safeguard. The rule mini ri > 0 caught
+the composite would have incorrectly accepted 12              zero unique cases. All 57 auto-rejected responses
+currently rejected responses.                                 also failed either r̄ ≥ 2.5 or V ≥ 0.80. This makes
+                                                              the rule empirically inactive in this dataset, but it
+   Second, two rubrics carry distributional in-               is retained as a defensive prior. A single criterion
+formation without driving rejections. RF and                  at zero is, by stipulation, a catastrophic failure that
+AR never single-handedly block ACCEPT, despite                should override an otherwise-passing mean. The
+both carrying moderate-to-strong correlations with            analogy to LLM calibration safeguards in Kada-
+ACCEPT (ρ ≈ 0.39 and 0.55 respectively). When                 vath et al. (Kadavath et al., 2022) is direct. Both
+RF or AR fails, the verifier pass rate or another             are policies that may never fire on the empirical
+rubric is failing alongside, because their failure            evaluation set but exist to block failure modes the
+modes are coupled with those of other criteria. This          current dataset does not yet contain.
+does not make them redundant. Their pairwise
+correlation with ACCEPT reflects substantial in-              H.1.3     Per-Rubric Pass Rates and
+formation about distinguishing higher-quality from                      Agent-Specific Weak Points
+lower-quality accepted responses, even though they            Table 14 reports the share of responses scoring ≥ 2
+do not drive new rejections at the boundary. The              on each rubric, by agent.
+two measures are picking up different facets of the              EP is the weakest rubric at 46.0% pooled pass
+rubric: pairwise correlation captures graded dis-             rate, with o3 (31.0%) far below the others; Gemini
+tinctions across the score range, while sole-cause            achieves a majority pass at 59.5%. This is con-
+attribution captures decisiveness at the rejection            sistent with the broader observation that current
+threshold. Together, every rubric in the composite            deep research agents struggle with multi-step quan-
+is doing distinct work by at least one of the two             titative reasoning (Hendrycks et al., 2021b), man-
+measures. Strictly, this does not establish that any          ifesting as 50 cascading_math_errors tags
+rubric is causally independent of any other; multi-           across the three agents in Section 4.5. DI is o3’s
+cause rejections (where two or more rubrics fail to-          specific weak point (42.9%), the lowest cell in the
+
+                                                         13
+                  Table 14: Per-rubric pass rates (fraction of responses scoring ≥ 2), by agent.
+
+                 Rubric                                 o3         Claude    Gemini     Pooled
+                 EP – Execution Precision             47.1%        30.0%      51.4%     42.9%
+                 DI – Data Integrity                  58.6%        32.9%      62.9%     51.4%
+                 AR – Analytical Rigor                67.1%        52.9%      70.0%     63.3%
+                 RF – Relevance & Focus               84.3%        72.9%      70.0%     75.7%
+                 FD – Format & Deliverability         77.1%        65.7%      62.9%     68.6%
+
+
+table other than EP, consistent with o3’s fabrication        ρ = 0.552 and the remaining rubric criteria (AR,
+signature analyzed in Section 4.5: when input data           DI, RF, FD) all correlating with ACCEPT less
+is fabricated, downstream EP necessarily collapses           strongly (ρ = 0.466, 0.464, 0.375, 0.306 respec-
+too, which explains o3’s low EP despite a lower              tively). The case for downweighting V inside the
+cascading_math_errors count than Claude.                     VRS aggregate is therefore weak, but for complete-
+EP is Gemini’s weakest rubric (59.5%).                       ness we recomputed VRS under four alternative
+                                                             weightings:
+H.1.4    Caveat: Pairwise Significance Testing
+         on the Composite Outcome                            • (A) 0.35V + 0.65r̄scaled — moderate rubric up-
+A natural follow-on question is whether the per-               weighting.
+agent ACCEPT rates (o3 9.5%, Claude 9.5%, Gem-
+ini 21.4%) reflect statistically detectable differ-          • (B) 0.40V + 0.60r̄scaled — mild rubric upweight-
+ences. We apply a paired binomial test on dis-                 ing.
+cordant prompts (the McNemar approach used
+by McNemar (McNemar, 1947) and adopted in                    • (C) 0.25V + 0.75r̄scaled — aggressive rubric up-
+benchmark-comparison contexts by Dietterich (Di-               weighting.
+etterich, 1998)) on the 70 prompts where all three
+agents were graded:                                          • (D) Per-criterion weights set proportional to each
+   No pair shows a statistically detectable dif-               predictor’s Spearman magnitude with ACCEPT
+ference in ACCEPT rates at α = 0.05. Discor-                   (V 0.20, EP 0.21, AR 0.17, DI 0.17, RF 0.14,
+dant prompts are evenly split for every pair. The              FD 0.11).
+headline ordering is therefore a point estimate with-
+                                                                 The analysis is shown in Table 16.
+out paired-test significance support; the continuous
+VRS analysis (Sections 4.1–A.1) is on firmer statis-            Three findings come out of this (Table 16). First,
+tical ground because the underlying gaps are larger          ACCEPT is invariant to VRS reweighting by con-
+relative to the sampling variability. This is consis-        struction: the rule (Equation 3) is defined on the
+tent with the small-n caveat raised in Section 5 and         raw components r̄ and V , not on the VRS aggre-
+reinforces the recommendation that bootstrap CIs             gate, so all four alternatives produce ACCEPT out-
+and paired-comparison adjustments be added be-               comes identical to the headline numbers (o3 15.7%,
+fore any external publication (Efron, 1979; Holm,            Claude 12.9%, Gemini 12.9%). Second, mean
+1979).                                                       strict VRS per agent shifts modestly under rubric
+                                                             upweighting (maximum shift less than 1.5 points
+I     Weight Sensitivity                                     across all variants; o3 ranges from 60.79 to 62.15),
+                                                             and the agent ordering (o3 > Gemini > Claude) is
+I.1    Sensitivity to VRS Weight Choice                      preserved under every variant. Third, the substan-
+The equal weighting of 0.5 on the verifier pass rate         tive conclusions reported elsewhere in this section
+V and 0.5 on the reasoning-mean term r̄/3 · 100              are therefore robust to the weighting choice.
+in Equation 1 is a defensible default but not the
+only possible choice. The rubric validation anal-
+ysis (Section H.1) shows that the verifier layer is          J    Cross-Benchmark Comparison Table
+the second-strongest predictor of binary ACCEPT,
+behind only EP: ρV,ACCEPT = 0.524, with EP at                Please refer Table 17
+
+                                                        14
+Table 15: Paired ACCEPT comparisons across agent pairs (n = 70 prompts where all three were graded). p-values
+from two-sided binomial test on discordant pairs.
+
+                      Pair                           Both ACC            A only          B only        Both REJ               p
+                      o3 vs. Claude                         1               10                 8             51           0.815
+                      o3 vs. Gemini                         3               8                  6             53           0.791
+                      Claude vs. Gemini                     0               9                  9             52           1.000
+
+Table 16: VRS sensitivity to weight choice. Mean VRS per agent (strict variant, with the auto-reject gate enforced)
+under five weighting schemes. The two right-most columns report the result of redefining ACCEPT as “VRS
+≥ T ” for a threshold T calibrated so the total ACCEPT count matches the baseline 17, and the Jaccard similarity
+of the resulting per-response ACCEPT set against the baseline rule r̄ ≥ 2.5 ∧ V ≥ 0.80. The agent ordering
+(Claude > Gemini > o3) on mean VRS is preserved under every variant.
+
+ Variant                          Weights                                                 o3       Claude   Gemini   Cal. T   Split (C/o3/G)   Jaccard
+ Baseline (relaxed)               0.50V + 0.50 r̄sc                                      61.51     50.18    57.15     —           11 / 9 / 9     —
+ (A) moderate rubric upweight     0.35V + 0.65 r̄sc                                      61.87     38.86    52.14     —              —           —
+ (B) mild rubric upweight         0.40V + 0.60 r̄sc                                      61.73     38.75    52.28     —              —           —
+ (C) aggressive rubric upweight   0.25V + 0.75 r̄sc                                      62.15     39.07    51.85     —              —           —
+ (D) Spearman-proportional        V 0.19, EP 0.20, DI 0.18, AR 0.17, FD 0.13, RF 0.12    60.79     38.51    51.27     —              —           —
+
+
+
+K     Architectural Observations                                              L         Worked Examples per Prompt Class
+
+K.1        Architectural Observations on Per-Class                            To illustrate how the abstract prompt-class defini-
+           Capability Differences                                             tions translate into concrete tasks, we provide one
+                                                                              worked example for each of the five prompt classes.
+Two further architectural observations follow from                            Each example reproduces three artefacts from the
+the per-class analysis in Section A.1.                                        underlying corpus: (i) the Prompt delivered to the
+   CRP is universally weak. Effect sizes on                                   agent (with company names anonymized per the
+closed-corpus reasoning satisfy |d| ≤ 0.46 on all                             data-release policy); (ii) the Sanity Check written
+CRP pairs. Current frontier agents do not reli-                               by the SME during task authoring, which lists the
+ably enforce closed-corpus instructions. In particu-                          failure mode a naive solver is expected to fall into
+lar, Claude Opus 4.6 fabricates real-but-topically-                           (Lazy AI Test) versus the reasoning chain a domain-
+unrelated citations on closed-corpus tasks. This is                           aware solver must execute (Expert Test); and (iii)
+a failure invisible from response text alone, since                           the Solution Logic, which is the step-by-step de-
+the cited URLs resolve to legitimate published ma-                            terministic derivation of the golden answer used
+terial. This observation prompted our subsequent                              during grading. A representative set of full prompt
+URL-domain verifier, which checks whether cited                               packages, including the underlying input files, is
+domains point to a task-specified allowed-source                              included in the public codebase (Appendix O).
+list rather than merely checking citation syntactic
+well-formedness.                                                              L.1        CRP — Constrained Research Prompt
+   File-generation performance varies sharply                                            (Market Strategy)
+across agents. o3’s high completion rate is ac-                               CRP tasks require the agent to conduct analysis
+companied by elevated fabrication-tag counts (Sec-                            under explicit operational constraints that limit the
+tion 4.5); Gemini’s research-quality content fre-                             solution space. Constraints are typically method-
+quently succeeds while its code-generation step                               ological (use only provided files, plus a single
+fails on a domain-specific python-docx API er-                                specifically-authorized external source), procedural
+ror (paragraph-style mishandling); Claude occa-                               (a fixed entry method or a fixed accounting conven-
+sionally treats file-output instructions as optional                          tion that the agent must respect), or scope-related
+and returns a structured response inline instead                              (a single binary decision under defined thresholds).
+of as the requested artefact. Future benchmarks
+should test file-formatting code generation as a                              Prompt (anonymized).
+separate dimension rather than conflating it with                                       You are working as a management consultant and
+research quality.                                                                       a client wants to enter a new geographical area
+
+
+                                                                         15
+Table 17: Cross-benchmark comparison of DRA with APEX-v1 and APEX-Agents. “Binary-check pass rate” rows
+are structurally comparable across benchmarks (fraction of per-task binary checks passed). “Unique to DRA” rows
+have no APEX counterpart. Best-model CIs are 95% bootstrap.
+
+                                        DRA (ours)                         APEX-v1                      APEX-Agents
+Design
+  Domains                               MC only                            MC + IB + Law + Med          MC + IB + Law
+  n tasks                               70                                 200                          480
+  Binary checks/task                    ∼15 verifiers                      ∼29 criteria                 ∼4 criteria
+  Ordinal rubric?                       Yes (5 criteria, 0–3)              No                           No
+  Grading                               Human SME                          LLM judge                    LLM judge
+Binary-check pass rate (comparable metric)
+  Definition                         Mean verifier pass rate               Mean Score                   Mean Score
+  Best model                         60.2% [53.3, 66.8]                    64.2% [∼61, ∼67]             53.9% [∼52, ∼56]
+Task-level binary (comparable metric)
+  Definition                          V ≥ threshold                        —                            Pass@1 (all criteria)
+  V =100% / Pass@1                    14.3% [7.1, 22.9]                    —                            24.0% [20.2, 28.0]
+  V ≥80%                              32.9% [22.9, 44.3]                   —                            —
+Unique to DRA
+  Mean r̄ (0–3 ordinal)                 1.89 [1.70, 2.10]                  N/A                          N/A
+  ACCEPT (V ≥80% & r̄≥2.5)              15.7% [7.1, 24.3]                  N/A                          N/A
+  VRS strict (blended)                  61.4 [55.1, 67.5]                  N/A                          N/A
+
+
+
+     and has approached you for the GTM plan. The                           lock-in periods are long and hard to crack within
+     client is a leading Indian automotive component                        a 5-year horizon under an export-only model, so
+     manufacturer and now wants to expand in the                            the OEM contribution can be set to effectively
+     EU. They want to capture 10% of the EU market                          zero. Even on a very optimistic view, an attain-
+     share in 5 years with an initial investment of INR                     able OEM share is 5% of INR 35,000 Cr = INR
+     500 Cr. Give a Yes or No decision to the client for                    1,750 Cr.
+     entering the market using only the files provided
+     by the client; market reports may be used from                         Accessible aftermarket is too small. Aftermar-
+     Mordor Intelligence only, no other market reports,                     ket ≈ 20% (∼INR 8,700 Cr). With aggressive
+     blogs, broker research, or third-party data are                        execution, a 15% share gives INR 1,300 Cr.
+     allowed. Also state any assumptions taken for the
+                                                                            Headline. Total achievable revenue is INR
+     analysis. The client has asked for a PowerPoint
+                                                                            1,300 Cr (no OEM) to INR 3,050 Cr (with 5%
+     slide as a one-pager GTM plan deck; it should
+                                                                            OEM = 1,750 + 1,300 Cr).
+     include Basic company information, Investment
+     goal, Product-Market fit as 2×2 matrices, Value                        Golden range answer. INR 1,300 Cr to INR
+     Proposition, Target Market, and Competitor Anal-                       3,050 Cr, which is below the 10% target of INR
+     ysis.                                                                  4,350 Cr.
+
+Sanity Check.                                                               Final answer. No Go.
+
+     Lazy AI Test. A basic AI will use other ways                       This creates a hybrid information-access pattern:
+     of entry such as a manufacturing setup or a joint
+     venture, ignoring the note in the Excel file that               closed-corpus for the client’s internal data, with a
+     restricts entry to the export-only method which                 single specifically-authorized external source (Mor-
+     flips the Go/No-Go decision to Go, the opposite                 dor Intelligence) for the market sizing. The agent
+     of the correct answer.
+                                                                     must correctly scope its web search and must apply
+     Expert Test. A consultant fetching the Mordor                   the export-only entry method noted in the source
+     report and the Excel data, applying the export-
+     only entry method, and excluding the non-usable                 files rather than considering alternative entry meth-
+     slides would reach a No Go. One correct answer                  ods that change the answer.
+     exists.
+                                                                     L.2       RCP — Relevance Compression Prompt
+Solution Logic.
+                                                                               (Service Operations)
+     USD to INR exchange rate used: spot rate for
+     22/04/2026.                                                     RCP tasks supply a deliberately noisy corpus where
+                                                                     the majority of source material is irrelevant to the
+     Market size (from Mordor Intelligence report).
+     Total EU market in 2031 ≈ INR 43,500 Cr; 10%                    analytical question. The agent must filter, locate the
+     target ≈ INR 4,350 Cr in revenue.                               buried qualifying detail or contradicting footnote,
+     Channel decomposition. The market splits into                   distinguish root drivers from outcome metrics, and
+     OEM (∼80%) and aftermarket (∼20%). OEM                          present only the signal in the deliverable. Reported
+
+                                                                16
+benchmarks may be directionally misleading and                 Solution Logic.
+must be reconstructed using policy-defined correc-                 Decision archetype. Performance benchmarking
+tions.                                                             + gap analysis.
+                                                                    Step 1 - reconstruct the true benchmark. Head-
+Prompt (anonymized).                                                line Top Quartile AHT = 5.5 min (Performance
+    A large Indian telecom company operates a 2,400-                Deck). Policy adjustment (Appendix C, Foot-
+    seat blended contact center. Current performance                note 9): true Top Quartile AHT = 6.2 min, be-
+    shows Service Level at 78% (target 85%), Aver-                  cause the headline excludes training, coaching,
+    age Handle Time (AHT) at 6.8 minutes (target                    and complex call-handling time. Other bench-
+    5.5), First Call Resolution (FCR) at 71%, and                   mark metrics are used as reported.
+    Cost per Call at INR 48. NPS stands at 71 (target
+                                                                   Step 2 - validate current performance. Cur-
+    80). The COO must submit a Performance Bench-
+                                                                   rent AHT (6.8 min), FCR (∼71%), Service Level
+    marking and Gap Analysis before the quarterly
+                                                                   (∼78%), and Cost per Call (∼INR 48) all align
+    operations review in 10 days; a flawed analysis
+                                                                   with cross-site averages in the operational dataset.
+    risks continued cost inefficiency or misallocation
+    of improvement investments.                                     Step 3 - compute true gaps. AHT gap: 6.8 −
+                                                                    6.2 = 0.6 min. FCR gap: 82% − 71% = 11 pp.
+    Task (precise). Using ONLY the four provided
+                                                                    Service Level gap: 88%−78% = 10 pp. Cost per
+    internal files: (1) benchmark performance against
+                                                                    Call gap: INR 48 − 32 = 16 (derived outcome).
+    industry top-quartile and average performers; (2)
+                                                                    NPS gap: 82 − 71 = 11 points.
+    identify and rank the top 3 performance gaps by
+    financial and customer impact; (3) qualitatively                Step 4 - prioritization logic. Rank by customer
+    assess the cost and NPS impact of each gap using                impact (NPS sensitivity) and cost impact (oper-
+    policy-defined relationships; (4) recommend the                 ational efficiency). Primary operational drivers:
+    top 2 priority actions with expected impact and                 FCR → resolution quality → NPS; AHT → effi-
+    timeline.                                                       ciency → cost. Derived outcome metrics: Cost
+                                                                    per Call, NPS. Policy relationships (Appendix D):
+    Important constraints. Use ONLY the provided
+                                                                    FCR strongly influences NPS; AHT strongly in-
+    files. No external data or assumptions. All con-
+                                                                    fluences cost.
+    clusions must reconcile across ALL four files. Re-
+    ported benchmark data may be directionally mis-                Step 5 - top 3 ranked gaps. (i) FCR gap (11 pp)
+    leading. True benchmarks must be reconstructed                 - highest customer impact; primary NPS driver.
+    where required. Non-operational data (marketing,               (ii) AHT gap (0.6 min) - primary cost driver.
+    ESG, unrelated IT projects) must be filtered out.              (iii) Service Level gap (10 pp) - queue perfor-
+                                                                   mance and customer experience. Cost per Call is
+    Output format (strict). Table 1 - Performance
+                                                                   a derived outcome, not a root operational gap.
+    Benchmarking & Gap Analysis, with columns
+    [Metric, Current, Industry Average, Top Quar-                   Step 6 - root-cause diagnosis. Evidence across
+    tile, Gap vs. Top Quartile, Impact (Qualitative)]               policy and operational data indicates lack of ad-
+    for five rows: Service Level, AHT, FCR, Cost per                vanced call routing, limited real-time coaching/a-
+    Call, NPS. Section A - Top 3 Gaps and Impact                    gent enablement, and gaps in agent support sys-
+    Analysis (≤180 words). Section B - Priority Rec-                tems. Top-performing centers exhibit AI-powered
+    ommendations (≤120 words). Mandatory final                      routing, strong agent enablement, and integrated
+    line: “Top Priority: Implement AI-powered call                  self-service.
+    routing and real-time coaching to address AHT
+    and FCR gaps, driving cost efficiency and NPS                  Step 7 - recommendations. Top priority: AI-
+    improvement.”                                                  powered call routing + real-time coaching. Ex-
+                                                                   pected directional impact: reduce AHT, improve
+Sanity Check.                                                      FCR, lower Cost per Call, improve NPS - all con-
+                                                                   sistent with the policy-defined relationships in
+    Lazy AI Test (must fail). A standard model                     Appendix D. Secondary action: strengthen the
+    will use the headline AHT benchmark of 5.5 min,                knowledge base and increase self-service deflec-
+    overstate the AHT gap, treat Cost per Call as a                tion.
+    root gap, and recommend generic fixes like hiring
+    more agents. It will fail to apply the Appendix C              Golden answer. Top gaps: FCR (11 pp), AHT
+    correction, distinguish root drivers from outcome              (0.6 min), Service Level (10 pp). Root cause:
+    metrics, and use the policy-defined relationships.             capability gap in routing and agent enablement.
+                                                                   Recommendation: AI routing + real-time coach-
+    Expert Test (must pass). A domain-aware solver                 ing.
+    will: (1) adjust the AHT benchmark to 6.2 min
+    using policy, (2) identify FCR and AHT as pri-                Verifier checks include whether the agent’s fil-
+    mary drivers, (3) treat Cost per Call as a derived
+    outcome metric, (4) use policy relationships to as-
+                                                               ter produced the correctly scoped subset, whether
+    sess impact, and (5) recommend AI routing plus             out-of-scope filler (marketing, ESG, unrelated IT)
+    real-time coaching.                                        appears in the response, whether the Appendix C
+    Deterministic outcome. Top gaps: FCR (11 pp),              policy correction is applied to the AHT benchmark,
+    AHT (0.6 min), Service Level (10 pp). Root cause:          and whether Cost per Call and NPS are correctly
+    capability gap in routing and agent enablement.
+    Recommendation: AI routing + real-time coach-              characterized as derived outcome metrics rather
+    ing.                                                       than as root gaps to attack directly.
+
+                                                          17
+L.3    SCP — Structural Compliance Prompt                                       "recommendation": "ACCEPT" or "REJECT",
+       (Cost Optimization)                                                      "justification_flag": "MEETS_TARGET" or "DOES_
+                                                                            }
+SCP tasks include explicit schema requirements                          }
+that must be satisfied for the response to be con-                      Formatting rules. All monetary values → INR
+sidered valid. They test the agent’s ability to fol-                    Crores (2 decimal places). Percentages → 2 dec-
+low precise structural instructions while conduct-                      imal places. JSON must be strictly valid and
+                                                                        machine-parseable. Keys must appear in exact
+ing substantive analysis. A correct number inside a                     order. No trailing commas.
+malformed envelope counts as a hard failure on the
+                                                                        Decision rule. If percentage savings ≥ 10% →
+Format & Deliverability criterion; a wrong number                       ACCEPT, else → REJECT.
+inside a valid envelope partially passes FD.
+                                                                        Hidden complexity. A portion of the overhead
+Prompt (anonymized).                                                    cost in the Excel file includes a non-operational
+                                                                        allocation that is explained only in the PDF ap-
+      Context and stakes. A listed Indian consumer-                     pendix; the reported total cost therefore over-
+      durables manufacturer has experienced a 320 bps                   states the true operational cost.
+      margin decline over the last two quarters.
+      The Board has mandated an immediate cost-                   Sanity Check.
+      optimization program focused on manufacturing
+      efficiency. The COO must present a validated                      Lazy AI Test. The model will use INR 110 with-
+      cost-reduction plan within 5 days; the analysis                   out adjustment OR will fail the JSON format
+      will be directly reviewed by the Board Finance                    check.
+      Committee. Critical constraint: the committee
+      will only accept outputs that strictly follow the                 Expert Test. The model will remove the INR 7
+      prescribed reporting structure. Any deviation in                  non-operational overhead, compute correctly, and
+      format will result in outright rejection, regardless              emit strict JSON in the prescribed key order.
+      of analytical correctness.
+
+      Task. Using ONLY the provided data files (Excel,
+                                                                  Solution Logic.
+      PDF, and Assumptions): (1) identify the true oper-
+                                                                        Reported unit cost = INR 110. Remove non-
+      ational manufacturing cost per unit; the reported
+                                                                        operational overhead = INR 7 (cross-referenced
+      cost includes embedded adjustments that must
+                                                                        from the PDF appendix). True operational cost =
+      be identified and excluded, and these adjustments
+                                                                        INR 103.
+      are not explicitly labeled and may appear in notes,
+      footnotes, or appendix sections. (2) Apply a 12%                  Reduced unit cost = 103 × 0.88 = INR 90.64.
+      cost reduction ONLY on the operational cost base.
+      (3) Compute: true operational unit cost, reduced                  Annual cost before = 103 × 1,500,000 =
+      unit cost, annual cost before optimization, annual                INR 154.5 Cr. Annual cost after = 90.64 ×
+      cost after optimization, absolute savings, and per-               1,500,000 = INR 135.96 Cr.
+      centage savings.
+                                                                        Absolute savings = INR 18.54 Cr; percentage
+      Critical analytical requirements. Reconcile in-                   savings ≈ 12%.
+      consistencies across files (Excel vs. PDF vs. As-
+      sumptions). Identify and exclude non-operational                  Decision: ACCEPT (savings ≥ 10% threshold).
+      cost components. Do NOT assume the “Total”
+      value in the Excel file is final. Use ONLY the                 The structural compliance test is independent
+      provided annual production volume. No external
+      assumptions allowed.
+                                                                  of the analytical answer. The verifier layer parses
+                                                                  the response as JSON and checks key ordering and
+      Artifact requirement (strict SCP, hard failure if           datatypes before any numeric value is inspected; a
+      violated). Return ONLY a valid JSON object with
+      the exact structure below. No explanations, no              malformed envelope is graded as a hard FD failure
+      comments, no additional keys, no missing keys, no           even when the underlying analytics are correct.
+      reordered keys.
+                                                                  L.4    LDP — Latent Decomposition Prompt
+      {
+          "cost_analysis": {                                             (Operations Research)
+             "unit_cost_reported": number,
+             "unit_cost_operational": number,
+                                                                  LDP tasks state a final objective but require the
+             "unit_cost_reduced": number                          agent to infer the intermediate variables, coeffi-
+          },                                                      cients, or sub-problems that must be solved before
+          "annual_metrics": {
+             "annual_cost_before": number,                        the final answer can be computed. The decompo-
+             "annual_cost_after": number,                         sition itself is the test: a passing response derives
+             "absolute_savings": number,                          each latent quantity from the provided data, then
+             "percentage_savings": number
+          },                                                      formulates and solves the underlying optimization
+          "decision": {                                           problem before computing the headline number.
+
+                                                             18
+Prompt (anonymized).                                                   maximized contribution that drives the Go/No-Go
+                                                                       decision; (iv) the need for clear stepwise aggrega-
+    An American metal-fabrication firm has four                        tion logic to produce a stress-validation answer.
+    product portfolios catering to four different in-
+    dustries - Aerospace, Automotive, Defense, and                     Expert Test. A single business-logic path leads,
+    Electronics. Each product, regardless of indus-                    step by step, to the unique correct mathematical
+    try, must undergo a standard lifecycle of end-to-                  answer; any incorrect logic or missing step pro-
+    end production across four departments (Drilling,                  duces a wrong answer.
+    Milling, Turning, Assembly), not necessarily in
+    sequence; each department may have under-                    Solution Logic.
+    lying sub-steps. The firm was established in
+    2010 and has four strong vendor relationships                      Decision archetype. Go / No-Go decision.
+    (Vendor_abc, Vendor_def, Vendor_ghi,
+    Vendor_jkl) relied upon to achieve desired                         Let X1 , X2 , X3 , X4 be the integer non-negative
+    production.                                                        number of units to be produced for Aerospace, Au-
+                                                                       tomotive, Defense, and Electronics, respectively.
+    The CEO wants to know the maximum total over-
+    all contribution that can be generated from the                    Objective. Maximize the total 2014 contribution
+    product portfolio in Year 2014, together with a                    X1 c1 +X2 c2 +X3 c3 +X4 c4 , where ci is the aver-
+    clear Go / No-Go decision evaluation.                              age per-unit contribution (USD/unit) for industry
+                                                                       i in 2014, derived as the average of the 2010-
+    Use Product-Vendor Time per Unit                                   2013 per-unit contributions from Historical
+    Details.xlsx to extract the production                             Contribution Per Unit.xlsx.
+    time for each (product-industry, department)
+    combination by choosing the minimum time                           Constraints (department-hour budgets,
+    applicable across vendors. Use Historical                          derived as sums over sub-activities
+    Contribution Per Unit.xlsx to derive                               from       Department Sub-Activity
+    the average contribution (in USD/unit) for                         Constraint.xlsx).
+    each industry bucket for Year 2014, com-                           • Drilling: 3X1 + 7X2 + 4X3 + 0X4 ≤ 70.
+    puted by averaging the per-unit contribution
+    across the past 4 years (2010, 2011, 2012,                         • Milling: 0X1 + 2X2 + 4X3 + 6X4 ≤ 80.
+    2013). Use Department Sub-Activity                                 • Turning: 3X1 + 4X2 + 0X3 + 5X4 ≤ 90.
+    Constraint.xlsx to derive the maximum                              • Assembly: 4X1 + 6X2 + 5X3 + 3X4 ≤ 100.
+    total hours available for each department,                         • X1 , X2 , X3 , X4 ∈ Z≥0 .
+    computed by summing the hours available for
+    each sub-step within that department.                              Solve as a linear integer program. If the maximum
+                                                                       total contribution exceeds USD 200, the decision
+    Create a mathematical model that maximizes to-                     is Go; otherwise No-Go.
+    tal overall contribution for 2014, computed as the
+    sum-product of unit counts and per-unit contribu-                  Golden range answer. A Word document con-
+    tions, by product industry.                                        taining a rounded dollar value; the acceptable
+                                                                       numeric final output is USD 290-310.
+    Strict do-nots. Do NOT browse the web for any in-
+    formation; rely only on the internal files provided.
+    Use the production-time-per-unit only from the                  The decomposition test is whether the agent cor-
+    named Excel file. Use the per-industry 2014 con-             rectly identifies the latent variables (Xi ), derives
+    tribution only from the named Excel file. Use                the per-industry contribution coefficients from the
+    the per-department maximum hours only from the
+    named Excel file. Unit counts for Aerospace, De-             historical-averaging rule, derives the department-
+    fense, Automotive, and Electronics must be inte-             hour right-hand sides from the sub-activity sums,
+    ger and non-negative. The minimum total contri-              formulates the LP with the correct integer/non-
+    bution to qualify as a Go decision is USD 200. Do
+    not hallucinate or fabricate datapoints; strictly            negativity constraints, and only then computes the
+    adhere to the business logic and inputs provided.            headline number. Several frontier agents in our
+    Output. Produce a Word document named                        evaluation correctly identify the LP structure but
+    Maximum Dollar Contribution 2014                             mis-derive at least one coefficient from the source
+    containing a clear Go / No-Go evaluation and
+    the maximum total overall contribution in USD,
+                                                                 files, producing a confident-looking wrong answer.
+    rounded to the nearest dollar.
+                                                                 L.5    FSP — Failure-Sensitive Prompt (Cost
+Sanity Check.                                                           Optimization)
+    Lazy AI Test. The prompt embeds several fail-                FSP tasks construct a precision point where a single
+    ure surfaces that defeat a basic LLM: (i) three              mis-pulled value or mis-applied formula invalidates
+    complex Excel files where the relationships be-
+    tween inputs are not explicit and require strong             the entire recommendation. The trap is deliberately
+    relational reasoning to be discovered; (ii) the pres-        built into the source materials, typically as a stale
+    ence of confusing or side-tracking data points that          or placeholder value that contradicts a live external
+    derail an LLM which does not carefully scope
+    the inputs to use; (iii) the need to invoke a proper         authority, and the verifier layer detects whether the
+    linear-integer-programming library to derive the             agent caught it.
+
+                                                            19
+Prompt (anonymized).                                           Solution Logic.
+    Context. You are a Supply Chain Strategy Consul-                External data required. The agent must search
+    tant advising a global fast-fashion conglomerate.               the live web for the current “VLSFO Global
+    The client is undergoing a Zero-Based Budget-                   20 Ports Average” price (typically published by
+    ing (ZBB) review for FY2026. The CSCO needs                     Ship&Bunker or similar maritime indices). In
+    to make a final procurement decision regarding                  mid-2026 this fluctuates around $600-$650 USD
+    their highest-volume ocean freight lane: Shen-                  per metric ton.
+    zhen (Yantian) to Rotterdam. The client must                    Step-by-step trace.
+    choose between signing a “Fixed Annual Con-
+    tract” with a 3PL carrier, or floating their volume             • Filter lane to Shenzhen → Rotterdam; Annual
+    on the “Spot Market,” which carries a volatile                    volume = 4,500 TEUs.
+    fuel surcharge.                                                 • Fixed Contract Cost: 4,500 × $2,200 =
+                                                                      $9,900,000.
+    Task. Calculate the Total 2026 Projected Freight
+                                                                    • Spot Market Base Cost: 4,500 × $1,100/TEU
+    Cost (in USD) for the Shenzhen-to-Rotterdam
+                                                                      = $4,950,000.
+    lane under both the Fixed Contract and the Spot
+    Market options, and recommend the most cost-                    • Spot Market Fuel Surcharge (the FSP trap):
+    effective routing strategy.                                       fuel per TEU = 1.8 tons; total fuel = 4,500 ×
+                                                                      1.8 = 8,100 tons. The agent must reject
+    Workflow.                      (1)        Review                  the $400 decoy placeholder in the policy file
+    Global_Lane_Volumes_FY26.csv                                      and fetch the live VLSFO average. Assuming
+    and isolate the annual TEU (Twenty-foot                           $620/ton: 8,100 × $620 = $5,022,000.
+    Equivalent Unit) volume specifically for the                    • Spot Market All-In Cost: $4,950,000 +
+    Shenzhen-to-Rotterdam lane.          (2) Review                   $5,022,000 = $9,972,000.
+    Ocean_Carrier_Metrics.csv to de-                                • Compare and decide: $9.90M < $9.97M ⇒
+    termine the Base Spot Rate and the Fuel                           DECISION: SIGN FIXED CONTRACT.
+    Consumption factor (tons of fuel burned
+    per TEU) for this specific lane. (3) Calcu-                     Golden answer range. Fixed Cost: exactly
+    late the Spot Market Fuel Surcharge: read                       $9,900,000. Spot Base Cost: exactly $4,950,000.
+    2026_Freight_Sourcing_Policy.txt                                Total Spot Cost: varies between $9.6M and
+    carefully, determine the correct price per ton for              $10.5M depending on the live VLSFO price
+    Marine Fuel, and multiply by the total tons of fuel             pulled. Decision: assuming VLSFO is trading
+    required for this lane’s annual volume. (4) Add                 above $612/ton (which it historically does), the
+    Base Spot Cost to Fuel Surcharge to obtain the                  decision must be DECISION: SIGN FIXED
+    Total Spot Market Cost. (5) Compare against the                 CONTRACT.
+    Fixed Annual Contract cost.
+                                                                  The trap is whether the agent treats the provided
+    Constraints & deliverables. Web search required:
+    adhere strictly to the fuel pricing policy. If a
+                                                               policy file as authoritative or independently verifies
+    live rate is mandated, you must search the live            the live VLSFO index. Several frontier agents in
+    web for the current USD price of the specified             our evaluation accept the $400 placeholder without
+    fuel index and cite your exact source. Format
+    & decision commit: output a structured ZBB                 checking, which inverts the decision and produces a
+    Memo containing Total Annual TEU Volume                    confident but wrong recommendation. The verifier
+    for the target lane; Total Fixed Contract Cost;            layer checks both the numerical outputs and the
+    Total Spot Market Base Cost (excluding fuel);
+    Total Spot Market Fuel Surcharge Cost; Total               final decision string for an exact-match comparison
+    Spot Market All-In Cost; and a definitive final            against the golden range.
+    recommendation written exactly as DECISION:
+    SIGN FIXED CONTRACT or DECISION:                           M    Detailed SME Rubric Definitions
+    USE SPOT MARKET.
+                                                               Each response is scored on five reasoning crite-
+Sanity Check.
+                                                               ria by a Subject Matter Expert (SME) with rel-
+    Lazy AI Test. A standard LLM will read the                 evant management-consulting expertise. Each
+    policy text file, lazily grab the $400.00 inter-
+    nal marine-fuel placeholder, calculate a deflated          criterion is scored on the integer scale 0 =
+    fuel surcharge of $3,240,000, and arrive at a To-          absent or seriously flawed, 1 = poor, 2 =
+    tal Spot Cost of $8,190,000, causing it to in-             adequate, 3 = excellent. The full ordinal rubric
+    correctly recommend DECISION: USE SPOT
+    MARKET and exposing the client to massive mar-             describing how each of the four scores is awarded
+    ket loss.                                                  for each criterion is provided in Appendix M.1 be-
+    Expert Test. An experienced supply-chain con-              low; the brief dimension definitions that appear
+    sultant would extract the correct 4,500 TEU vol-           in Table 3 of the main paper are reproduced and
+    ume from the noise, correctly sequence the base            elaborated here for completeness:
+    freight and the 1.8× fuel multiplier, adhere to
+    the strict exception policy overriding the $400            • DI — Data Integrity: Whether facts, numbers,
+    baseline, fetch the live VLSFO market rate, and
+    mathematically prove that the volatile Spot Mar-             citations, and references are accurate. A 0 indi-
+    ket exceeds the $9.9M Fixed Contract ceiling.                cates fabricated or seriously mis-stated data i.e.,
+
+                                                          20
+  the response asserts something that is verifiably              should confirm rather than soften. For AR, RF, and
+  false or invented.                                             FD the Score-0 bar is qualitatively stricter (seri-
+                                                                 ously flawed, dominated by noise, unusable); QC
+• AR — Analytical Rigor: Whether the reasoning                   reviewers are instructed to upgrade Score-0 entries
+  chain is sound, sufficiently deep for the question,            to Score-1 when the SME’s free-text justification
+  and free of logical gaps or hand-waving. A 3                   describes Score-1 behaviour, both to save the row
+  means the agent shows the steps and the steps are              from being rejected for the wrong reason and to
+  correct.                                                       surface rubric–justification mismatches.
+• RF — Relevance & Focus: Whether the re-
+                                                                 N     Annotation Quality Control Protocol
+  sponse addresses the asked question without irrel-
+  evant content, scope drift, or filler. A 0 indicates           Every (prompt × agent) cell graded by a primary
+  the response largely answered a different ques-                SME is independently reviewed by a second SME
+  tion or padded itself with off-topic material.                 drawn from a non-overlapping QC pool. The QC
+                                                                 pass is a verification rather than a re-annotation: the
+• EP — Execution Precision: Whether requested
+                                                                 QC reviewer checks whether the primary SME’s
+  operations like calculations, transformations, fil-
+                                                                 scoring is defensible against the rubric and the evi-
+  tering, structural construction, are performed cor-
+                                                                 dence (prompt, solution logic, response text, output
+  rectly. A 0 indicates the agent attempted the right
+                                                                 files, and citations), not whether the QC reviewer
+  operation but executed it wrong.
+                                                                 would have scored the same. Two thoughtful SMEs
+• FD — Format & Deliverability: Whether the                      may defensibly score a 0-3 ordinal differently; QC
+  output is presented as a usable MC deliverable:                intervenes only when the primary score or justifica-
+  appropriate layout, completeness, readability,                 tion contradicts the rubric, contradicts the response
+  professional tone. A 0 indicates an unusable                   or file evidence, or is internally inconsistent.
+  artifact (truncated, malformed, missing sections).
+                                                                 N.1    QC Actions
+   The five criteria are designed to capture dis-                For each verifier and each meta-criterion the QC
+tinct dimensions of reasoning quality, but in prac-              reviewer records one of three actions:
+tice they correlate substantially across our dataset
+(mean off-diagonal ρ ≈ 0.60; see Section G.1).                   • Confirm — the primary SME’s score and jus-
+   The annotation protocol pairs each ordinal score                tification stand. The QC cell is left empty (or
+with a free-text justification guided by keyword                   marked “OK” if the workbook requires).
+prompts. SMEs were drawn from a recruited pool                   • Edit — the primary SME’s entry is incorrect.
+of management consultants (former MBB, Big                         The QC reviewer writes the exact replacement
+Four Strategy, and Tier-2 firm consultants), and                   (corrected 0/1 verifier or 0-3 meta-criterion score,
+each (prompt × agent) cell was graded by exactly                   plus a complete 2-4-sentence replacement justifi-
+one SME. We discuss the implications of this proto-                cation matching the rubric cell for the new score)
+col for inter-rater reliability and statistical inference          along with a one-line auditable reason. The re-
+in Section 5 of the main paper.                                    placement overwrites the primary entry verbatim
+M.1    Ordinal Scoring Rubric per Dimension                        downstream.
+Table 18 reproduces the criterion-by-criterion 0-3               • Reject/Return — the row is not salvageable by
+scoring rubric used by SMEs and QC reviewers                       surgical edit. Triggered by: more than three veri-
+during annotation. Each cell describes the quali-                  fier edits on a single row; any fabricated citation;
+tative bar for the indicated score on the indicated                missing scores on any verifier; output file miss-
+dimension. The rubric is held constant across all                  ing or placeholder when the prompt required one;
+70 prompts and all three agents.                                   or multiple meta-criteria with score–justification
+   The Score-0 cell on every dimension is the                      mismatches.
+canonical auto-reject trigger under the ACCEPT
+rule (Equation 3). For DI and EP the Score-0                     N.2    Verifier QC: Coverage and Depth
+condition is explicit (fabricated data; fundamental              Every verifier on every row receives a coverage
+math errors), so an SME observing those signa-                   check (verify the primary SME’s 0/1 is consistent
+tures should set the score to 0 and a QC reviewer                with the response, file, and citation evidence). A
+
+                                                            21
+Table 18: Per-dimension 0-3 ordinal scoring rubric. Reproduced from the SME Annotation Guideline (Section 5.1).
+
+ Criterion        Score 0 (Fail)            Score 1 (Poor)              Score 2 (Acceptable)   Score 3 (Strong)
+ DI — Data In- Completely           ignores Multiple factual errors; Mostly accurate with mi- 100% adherence to autho-
+ tegrity & Source source constraints; fabri- vague citations; use of 1- nor (1-2) errors; pri- rized sources; all facts
+ Discipline       cated data or sources.     2 unauthorized sources. mary data from permitted verified; no hallucina-
+                                                                        sources; 10-20% sourcing tions.
+                                                                        gaps.
+ AR — Analyti- Illogical     or      self- Gaps in the logic; no Sound reasoning with mi- Strong logic with cause-
+ cal Rigor     contradicting;       fails evidence-backed conclu- nor gaps; identifies most effect; identifies “hidden”
+               to identify the core task; sions; misses interdepen- key variables; clear logic variables; MECE decom-
+               no inference attempted. dencies or key variables. chain but has small leaps. position of the problem.
+ RF — Rele- Response dominated by 50-60% relevant; 10-20% 70-80% relevant and 90%+ relevant; excludes
+ vance & Focus noise; includes forbidden scope creep.               within scope; low tangen- out-of-scope content.
+               content.                                             tial content (<20%).
+ EP — Execution Fundamental math errors; Correct approach but re- Minor computational er- 100% accurate calcula-
+ Precision      wrong units; black-box sults off by 10%+; partial rors (<5%); all units nor- tions; unit discipline;
+                output.                   unit normalization; gaps malized; most calculation complete audit trail.
+                                          in methodology.           steps shown.
+ FD — Format & Ignores format; unusable Partial format compli- Follows format with mi- 100% compliance with
+ Deliverability output; no actionable in- ance; lack of specificity nor (10-20%) deviations; format/constraints;
+                sights.                   in recommendations.       actionable but some inter- actionable and executive-
+                                                                    pretation needed.          ready recommendations.
+
+
+
+subset of verifiers receives full-rigour re-derivation            Reject/Return: fabricated citations are surfaced to
+rather than consistency-checking, in priority order:              the rubric owner rather than silently corrected.
+
+1. Final-answer verifier (always re-derived; veri-                N.4   Meta-Criterion QC: Three Checks
+   fied against the output file when one exists).
+                                                                  For each of the five meta-criteria, the QC reviewer
+2. Trap verifier (the verifier tied to the prompt’s               runs three checks in order. Check A (rubric–
+   embedded cognitive trap; always re-derived).                   justification match): for the score the SME as-
+                                                                  signed, the rubric cell text and the SME’s justi-
+3. Numeric verifiers with tight tolerances (3-5 re-               fication should describe the same outcome; mis-
+   computed per row; more if SME scores look                      matches indicate the justification supports a differ-
+   suspiciously uniform).                                         ent score than the one given. Check B (verifier
+                                                                  coherence): Execution Precision should track the
+4. Citation-dependent verifiers (any verifier whose
+                                                                  numeric-verifier pass rate (a high pass rate paired
+   pass condition names a specific source).
+                                                                  with EP = 0/1 or low pass rate paired with EP =
+5. Output-file verifiers (any verifier requiring the              3 is suspect); Data Integrity & Source Discipline
+   output deliverable; verified inside the file di-               should track the primary-source/trap verifier out-
+   rectly).                                                       come and any citation-validation failures from the
+                                                                  previous subsection. Check C (overall-comment
+N.3    Citation Validation                                        consistency): the SME’s free-text overall comment
+For every citation-dependent verifier, the QC re-                 should be tonally and factually consistent with the
+viewer opens the cited source and confirms three                  five scores; comments that contradict a score (for
+things: the cited URL or document resolves and                    example, “reasoning is aligned” paired with DI =
+matches the named source; the source actually sup-                0) are flagged.
+ports the specific claim attributed to it (not a nearby
+claim or a paraphrase that reshapes the figure);                  N.5   Score-0 Rule
+and the source is within the authorized-source list               Any meta-criterion at 0 triggers automatic REJECT
+named in the prompt. Any failure on these three                   of the response under the ACCEPT rule (Equa-
+checks is recorded as an Edit on the affected veri-               tion 3), so Score-0 entries receive priority QC
+fier with reason “citation invalid: [specific issue]”.            scrutiny. A justification that describes a Score-
+A fabricated citation list (sources that do not exist,            1 outcome (“multiple factual errors”) paired with
+or quotations not present in the sources) triggers                a Score-0 entry (rubric cell: “fabricated data; no
+
+                                                             22
+adherence to sources”) is the canonical edit case:             References
+the correct QC action is Edit to 1, both saving the
+                                                               Jacob Austin, Augustus Odena, Maxwell Nye, Maarten
+row from being rejected for the wrong reason and                  Bosma, Henryk Michalewski, David Dohan, Ellen
+surfacing the rubric–justification mismatch.                      Jiang, Carrie Cai, Michael Terry, Quoc Le, and
+                                                                  Charles Sutton. 2021. Program synthesis with large
+N.6    Star Ratings                                               language models. arXiv preprint arXiv:2108.07732.
+In addition to the item-level QC, the QC reviewer              Xavier Bouthillier, Pierre Delaunay, Mirko Bronzi, As-
+records six holistic star ratings per response: one              sya Trofimov, Brennan Nichyporuk, Justin Szeto,
+combined rating across all verifiers, and one per                Nazanin Mohammadi Sepahvand, Edward Raff,
+meta-criterion. The star ratings are recorded post-              Kanika Madan, Vikram Voleti, Samira Ebrahimi Ka-
+                                                                 hou, and Christopher Pal. 2021. Accounting for vari-
+QC (after any edits) and provide a second, coarser
+                                                                 ance in machine learning benchmarks. Proceedings
+quality signal independent of the underlying ordi-               of Machine Learning and Systems, 3:747–769.
+nal scores. They are not used in the primary VRS
+or ACCEPT computation reported in this paper but               Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan,
+are retained as a per-cell quality covariate for future         Henrique Ponde de Oliveira Pinto, Jared Kaplan,
+                                                                Harri Edwards, Yuri Burda, Nicholas Joseph, Greg
+analysis.                                                       Brockman, and 1 others. 2021a. Evaluating large
+                                                                language models trained on code. arXiv preprint
+O     Evaluation Infrastructure Code                            arXiv:2107.03374.
+The full evaluation infrastructure, including agent            Zhiyu Chen, Wenhu Chen, Charese Smiley, Sameena
+adapters (o3/OpenAI/Gemini), result storage, di-                 Shah, Iana Borber, Jason Gong, Kaiyang Cai, Jiayi
+agnostic tooling, and task specification format, is              Patel, and 1 others. 2021b. FinQA: A dataset of
+available at:                                                    numerical reasoning over financial data. In EMNLP.
+   https://anonymous.
+                                                               Jacob Cohen. 1988. Statistical Power Analysis for the
+4open.science/status/                                            Behavioral Sciences, 2nd edition. Lawrence Erlbaum
+dra-response-gen-4288                                            Associates.
+   The 70-prompt corpus will be released sepa-
+rately.                                                        Janez Demšar. 2006. Statistical comparisons of classi-
+                                                                 fiers over multiple data sets. JMLR, 7:1–30.
+   Key infrastructure components:
+                                                               Thomas G Dietterich. 1998. Approximate statistical
+    • csv_loader.py: Task batch dispatcher
+                                                                 tests for comparing supervised classification learning
+      with file resolution, multi-agent dispatch, and            algorithms. Neural Computation, 10(7):1895–1923.
+      result aggregation.
+                                                               Zhiwei Du and 1 others. 2025. Deepresearch bench:
+    • adapters/claude_adapter.py:                                Benchmarking deep research agents. arXiv.
+      Claude Opus 4.6 adapter with tool-use
+      support.                                                 Yann Dubois, Balázs Galambosi, Percy Liang, and
+                                                                 Collin Burns. 2024. Length-controlled AlpacaEval:
+    • adapters/openai_adapter.py: o3-                            A simple way to debias automatic evaluators. arXiv
+                                                                 preprint arXiv:2404.04475.
+      deep-research adapter with Containers API
+      integration for file output tasks.                       Bradley Efron. 1979. Bootstrap methods: Another look
+                                                                 at the jackknife. The Annals of Statistics, 7(1):1–26.
+    • adapters/gemini_adapter.py:
+      Gemini deep-research adapter with Inter-                 Jiawei Gu, Xuhui Yan, Zhichao Shi, Lingfeng Si,
+      actions API, local code execution, and                      Zhangyue Li, Lixin Qin, Xiang Feng, and Shan-
+      format-aware file generation instructions.                  shan Xia. 2024. A survey on llm-as-a-judge.
+                                                                  arXiv:2411.15594.
+    • results_store.py: Merge-on-write re-
+                                                               Neel Guha, Julian Nyarko, Daniel E Ho, and 1 others.
+      sult storage supporting partial reruns without             2024. Legalbench: A collaboratively built bench-
+      data loss.                                                 mark for measuring legal reasoning in large language
+                                                                 models. NeurIPS.
+    • diagnose_run.py: Automated failure
+      categorization and per-agent cost/success re-            Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou,
+      porting.                                                   Mantas Mazeika, Dawn Song, and Jacob Steinhardt.
+                                                                 2021a. Measuring massive multitask language under-
+                                                                 standing. ICLR.
+
+
+                                                          23
+Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul              Junyi Li, Xiaoxue Cheng, Wayne Xin Zhao, Jian-Yun
+  Arora, Steven Basart, Eric Tang, Dawn Song, and                 Nie, and Ji-Rong Wen. 2024. Dawn of LLM halluci-
+  Jacob Steinhardt. 2021b. Measuring mathematical                 nations. arXiv preprint arXiv:2311.01862.
+  problem solving with the MATH dataset. NeurIPS.
+                                                                Minghao Li, Feifan Song, Bowen Yu, Haiyang Yu,
+Sture Holm. 1979. A simple sequentially rejective mul-            Zhoujun Li, Fei Huang, and Yongbin Li. 2023a.
+   tiple test procedure. Scandinavian Journal of Statis-          API-Bank: A comprehensive benchmark for tool-
+   tics, 6(2):65–70.                                              augmented LLMs. EMNLP.
+
+Lei Huang, Weijiang Yu, Weitao Ma, Weihong Zhong,               Xuechen Li, Tianyi Zhang, Yann Dubois, Rohan Taori,
+  Zhangyin Feng, Haotian Wang, Qianglong Chen,                    Ishaan Gulrajani, Carlos Guestrin, Percy Liang, and
+  Weihua Peng, Xiaocheng Feng, Bing Qin, and 1 oth-               Tatsunori B Hashimoto. 2023b. AlpacaEval: An
+  ers. 2023. A survey on hallucination in large lan-              automatic evaluator of instruction-following models.
+  guage models. arXiv:2311.05232.                                 arXiv preprint arXiv:2305.14387.
+
+Pranab Islam, Anand Kannappan, Rik Goyal, and 1                 Percy Liang, Rishi Bommasani, Tony Lee, Dimitris
+  others. 2023. Financebench: A new benchmark for                 Tsipras, Dilara Soylu, Michihiro Yasunaga, Yian
+  financial question answering. arXiv:2311.11944.                 Zhang, Deepak Narayanan, Yuhuai Wu, Ananya Ku-
+                                                                  mar, and 1 others. 2023. Holistic evaluation of lan-
+Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan              guage models. TMLR.
+  Su, Yan Xu, Etsuko Ishii, Ye Jin Bang, Andrea
+  Madotto, and Pascale Fung. 2023. Survey of halluci-           Jiawei Liu, Chunqiu Steven Xia, Yuyao Wang, and
+  nation in natural language generation. ACM Comput-               Lingming Zhang. 2023a. Is your code generated
+  ing Surveys.                                                     by ChatGPT really correct? rigorous evaluation of
+                                                                   large language models for code generation. NeurIPS.
+Carlos E Jimenez, John Yang, Alexander Wettig,
+  Shunyu Yao, Kexin Pei, Ofir Press, and Karthik                Xiao Liu, Hao Yu, Hanchen Zhang, Yifan Xu, Xuanyu
+  Narasimhan. 2024. SWE-bench: Can language mod-                  Lei, Hanyu Lai, Yu Gu, Hangliang Ding, Kaiwen
+  els resolve real-world GitHub issues? ICLR.                     Men, Kejuan Yang, and 1 others. 2024. Agentbench:
+                                                                  Evaluating llms as agents. ICLR.
+Di Jin, Eileen Pan, Nassim Oufattole, Wei-Hung Weng,
+  Hanyi Fang, and Peter Szolovits. 2021. What disease           Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang,
+  does this patient have? a large-scale open domain               Ruochen Xu, and Chenguang Zhu. 2023b. G-Eval:
+  question answering dataset from medical exams. Ap-              NLG evaluation using GPT-4 with better human
+  plied Sciences.                                                 alignment. EMNLP.
+
+Qiao Jin, Bhuwan Dhingra, Zhengping Liu, William                Shuai Lu, Daya Guo, Shuo Ren, Junjie Huang, Alexey
+  Cohen, and Xinghua Lu. 2019. PubMedQA: A                        Svyatkovskiy, Ambrosio Blanco, Colin Clement,
+  dataset for biomedical research question answering.             Dawn Drain, Daxin Jiang, Duyu Tang, and 1 oth-
+  EMNLP.                                                          ers. 2021. CodeXGLUE: A machine learning bench-
+                                                                  mark dataset for code understanding and generation.
+Mandar Joshi, Eunsol Choi, Daniel S Weld, and Luke                NeurIPS Datasets and Benchmarks.
+ Zettlemoyer. 2017. Triviaqa: A large scale distantly
+ supervised challenge dataset for reading comprehen-            Yubo Ma, Zhibin Cao, Leila Tavabi, and 1 others. 2024.
+ sion. ACL.                                                       SciAgent: Tool-augmented language models for sci-
+                                                                  entific reasoning. arXiv preprint arXiv:2402.11451.
+Saurav Kadavath, Tom Conerly, Amanda Askell, Tom
+  Henighan, Dawn Drain, Ethan Perez, Nicholas                   Potsawee Manakul, Adian Liusie, and Mark JF Gales.
+  Schiefer, Zac Hatfield-Dodds, Nova DasSarma, Eli                2023. SelfCheckGPT: Zero-resource black-box hal-
+  Tran-Johnson, and 1 others. 2022. Language models               lucination detection for generative large language
+  (mostly) know what they know. arXiv:2207.05221.                 models. EMNLP.
+
+Ryan Koo, Minhwa Lee, Vipul Raheja, Jong Inn Park,              Joshua Maynez, Shashi Narayan, Bernd Bohnet, and
+  Zae Myung Kim, and Dongyeop Kang. 2023. Bench-                  Ryan McDonald. 2020. On faithfulness and factual-
+  marking cognitive biases in large language models as            ity in abstractive summarization. In ACL.
+  evaluators. arXiv preprint arXiv:2309.17012.
+                                                                Quinn McNemar. 1947. Note on the sampling error
+Klaus Krippendorff. 2011. Computing Krippendorff’s                of the difference between correlated proportions or
+  alpha-reliability. Departmental Papers (ASC).                   percentages. Psychometrika, 12(2):153–157.
+
+Wojciech Kryściński, Bryan McCann, Caiming Xiong,             Grégoire Mialon, Clémentine Fourrier, Craig Swift,
+ and Richard Socher. 2020. Evaluating the factual                 Thomas Wolf, Yann LeCun, and Thomas Scialom.
+ consistency of abstractive text summarization. In                2024. Gaia: A benchmark for general ai assistants.
+ EMNLP.                                                           ICLR.
+
+
+                                                           24
+OpenAI. 2024. SWE-bench Verified: Resolving real-             Zhiheng Xi, Wenxiang Chen, Xin Guo, Wei He, Yiwen
+  world GitHub issues at scale. OpenAI Technical Re-            Ding, Boyang Hong, Ming Zhang, Junzhe Wang,
+  port.                                                         Senjie Jin, Enyu Zhou, and 1 others. 2023. The rise
+                                                                and potential of large language model based agents:
+OpenAI. 2025. Browsecomp: A simple challenge for                A survey. arXiv:2309.07864.
+  browsing agents. OpenAI Research.
+                                                              Zihao Xu and 1 others. 2025. Researcherbench: Bench-
+Arjun Panickssery, Samuel R Bowman, and Shi Feng.               marking research agents on scientific tasks. arXiv.
+  2024. LLM evaluators recognize and favor their own
+  generations. arXiv preprint arXiv:2404.13076.               Fengji Zhang, Bei Chen, Yue Zhang, Jacky Keung, Jin
+                                                                Liu, Daoguang Zan, Yi Mao, Jian-Guang Chen, and
+Shishir G Patil, Tianjun Zhang, Xin Wang, and Joseph E          Wenqiang Chen. 2023a. RepoCoder: Repository-
+  Gonzalez. 2023. Gorilla: Large language model                 level code completion through iterative retrieval and
+  connected with massive APIs. arXiv preprint                   generation. EMNLP.
+  arXiv:2305.15334.
+                                                              Yue Zhang, Yafu Li, Leyang Cui, and 1 others. 2023b.
+Siddharth Patwardhan and 1 others. 2025. Gdpval: Eval-
+                                                                Siren’s song in the ai ocean: A survey on hallucina-
+   uating llms with expert deliverables. arXiv.
+                                                                tion in large language models. arXiv:2309.01219.
+Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan
+  Yan, Yaxi Lu, Yankai Lin, Xin Cong, Xiangru Tang,           Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan
+  Bill Qian, and 1 others. 2024. ToolLLM: Facilitating          Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin,
+  large language models to master 16000+ real-world             Zhuohan Li, Dacheng Li, Eric Xing, and 1 others.
+  APIs. ICLR.                                                   2023. Judging llm-as-a-judge with mt-bench and
+                                                                chatbot arena. NeurIPS.
+Shlomo S Sawilowsky. 2009. New effect size rules
+  of thumb. Journal of Modern Applied Statistical             Lucia Zheng, Neel Guha, Brandon R Anderson, Peter
+  Methods, 8(2):597–599.                                        Henderson, and Daniel E Ho. 2021. When does
+                                                                pretraining help? assessing self-supervised learning
+Akash Sharma and 1 others. 2025. Researchrubrics:               for law and the CaseHOLD dataset of 53,137+ legal
+  Expert rubric evaluation for research agents. arXiv.          holdings. ICAIL.
+Charles Spearman. 1904. The proof and measurement             Shuyan Zhou, Frank F Xu, Hao Zhu, Xuhui Zhou,
+  of association between two things. The American               Robert Lo, Abishek Sridhar, Xianyi Cheng, Tianyue
+  Journal of Psychology, 15(1):72–101.                          Ou, Yonatan Bisk, Daniel Fried, and 1 others. 2024.
+                                                                Webarena: A realistic web environment for building
+Aarohi Srivastava, Abhinav Rastogi, Abhishek Rao, and           autonomous agents. ICLR.
+  1 others. 2023. Beyond the imitation game: Quanti-
+  fying and extrapolating the capabilities of language        Fengbin Zhu, Wenqiang Lei, Youcheng Huang, Chao
+  models. TMLR.                                                 Wang, Shuo Zhang, Jiancheng Lv, Fuli Feng, and Tat-
+                                                                Seng Chua. 2021. TAT-QA: A question answering
+Bertie Vidgen and 1 others. 2025. Apex: Assessing               benchmark on a hybrid of tabular and textual content
+  professional expertise. Mercor Research.                      in finance. ACL.
+Bertie Vidgen and 1 others. 2026. Apex-agents: Eval-
+  uating deep research agents on professional tasks.
+  Mercor Research.
+Jiarui Wang and 1 others. 2025. Profbench: Benchmark-
+   ing llms on professional knowledge work. arXiv.
+Peiyi Wang, Lei Li, Liang Chen, Dawei Cai, Zefan Niu,
+  and 1 others. 2024a. Large language models are not
+  fair evaluators. ACL.
+Xiaoxuan Wang, Ziniu Hu, Pan Lu, Yanqiao Zhu,
+  Jieyu Zhang, Satyen Subramaniam, Arjun R Loomba,
+  Shichang Zhang, Yizhou Sun, and Wei Wang.
+  2024b. SciBench: Evaluating college-level scientific
+  problem-solving abilities of large language models.
+  ICML.
+Yubo Wang, Xueguang Ma, Ge Zhang, Yuansheng Ni,
+  Abhranil Chandra, Shiguang Guo, Weiming Ren,
+  Aaran Arulraj, Xuan He, Ziyan Jiang, and 1 others.
+  2024c. MMLU-Pro: A more robust and challeng-
+  ing multi-task language understanding benchmark.
+  NeurIPS.
+
+
+                                                         25
+
