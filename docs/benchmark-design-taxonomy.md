@@ -172,7 +172,7 @@ fidelity separately from score calibration [EB, AP].
 | Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
-| Production agent evaluation (Anthropic, AWS) | task/trial/grader/trace separation and operational failure taxonomy | engineering guidance may not establish benchmark construct validity | source map/preliminary only; deep-review queue tasks remain open |
+| Production agent evaluation (Anthropic, AWS) | task/trial/grader/trace separation, task-health lifecycle, and operational failure taxonomy | engineering guidance may not establish benchmark construct validity; repeated-trial estimates may hide dependence | full official Anthropic article and concept review [AN]; AWS deep review remains pending |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -245,8 +245,10 @@ them:
    stream and evolution-event records from Section 4.1, then exercise matched
    reset vs permitted-memory/skill-only vs full-evolution fixtures. Do not use
    longitudinal complexity to bypass the static pilot's failed validity gates.
-6. **Production-method updates:** integrate pending Anthropic/AWS deep reviews
-   only where they add or contradict a canonical object.
+6. **Production-method updates:** the Anthropic review adds a task-health and
+   operational-role lifecycle beyond the static bundle [AN]. Implement it only
+   after the current pilot/validity gates; integrate the pending AWS review only
+   where it adds or contradicts a canonical object.
 
 ## Provenance keys
 
@@ -265,3 +267,6 @@ them:
   local extracted text path is recorded there.
 - **[AP]** `papers/agent-benchmarks/2026-07-09-agent-psychometrics.md`; local
   extracted text path is recorded there.
+- **[AN]** `docs/concepts/anthropic-agent-evaluation-lifecycle.md`; reviewed
+  full official article and provenance paths are recorded there. This is a
+  production experience report, not controlled validation evidence.
