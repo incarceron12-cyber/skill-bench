@@ -49,15 +49,17 @@ rules” executable rather than advisory.
 |---|---|---|
 | Claims retain basis, contributor, locator, confidence, corroboration, and provenance | Builder interpretation must remain distinguishable from expert statements, observed work, and source evidence. | `.hermes.md` evidence standard; `reports/scouting/2026-07-10T030657Z-expert-elicitation-gap.md` |
 | Every primitive maps bidirectionally to scenarios and checks | Tacit expertise only becomes evaluable when it changes scenario evidence and scoring. | `docs/compounding-system.md`, “How domain expertise becomes a benchmark” |
-| Scenarios require a decision and critical incident | Generic job descriptions do not expose difficult cues, judgments, or failure signatures. | `templates/task-metadata.md` §§2–4; CTA note is explicitly triage-only pending full review |
+| Scenarios require a decision and critical incident | Generic job descriptions do not expose difficult cues, judgments, or failure signatures. | `templates/task-metadata.md` §§2–4; `docs/concepts/cognitive-task-analysis-to-benchmark-authoring.md` |
 | Traps require mechanism, source links, failure signature, and fairness basis | “Trick questions” without a professional rationale reduce validity. | `.hermes.md` benchmark-building standard; `templates/task-metadata.md` §§4, 11 |
 | Checks require observable evidence and explicit failure signatures | State transitions and artifact hooks reduce judge degrees of freedom. | `papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md` |
 | Quality and release are staged gates | Schema-valid does not mean expert-valid, leakage-safe, calibrated, or releasable. | LH-Bench review limitations and action items |
 
 The fixture is intentionally at the **rubric** stage and `not_ready`. It is based
 on a full benchmark review, not a domain-expert session, and says so in both the
-contributor record and release limitations. This demonstrates honest provenance
-without claiming that the pending ACTA research task has been completed.
+contributor record and release limitations. The reviewed CTA method and the
+session record at `templates/expertise-elicitation-session.md` define how a future
+real contribution should be captured; neither upgrades the synthetic fixture to
+expert testimony.
 
 ## Validate
 
