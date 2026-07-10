@@ -1,6 +1,6 @@
 # State-of-the-Art Map
 
-This file tracks benchmark families relevant to `skill-bench`.
+This file tracks benchmark families relevant to `skill-bench`. For grouped conclusions and explicit source-relevance tiers, start with [`research-synthesis-index.md`](research-synthesis-index.md).
 
 | Benchmark / Area | What it tests | Inputs | Outputs | Scoring | Why it matters for us | Open questions |
 |---|---|---|---|---|---|---|
