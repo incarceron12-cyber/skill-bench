@@ -30,14 +30,26 @@ The deterministic `evidence-provenance` slice classifies all four planted artifa
 
 The task-only preflight now materializes and validates all four matched conditions with pinned task, skill, rubric, tool, harness, feedback-policy, artifact, and grader-result hashes. It replays one identical builder-authored fixture, not an agent output; therefore `capability_evidence=false` and it cannot estimate either treatment effect. Shared-rubric human checks remain explicitly unexecuted.
 
-The first attempted genuine execution did not pass the environment gate. The
+The original attempted genuine execution did not pass the environment gate. The
 retained traces in `ablation/agent-attempts-20260710/` show that the file-tool
 root remained `/home/sam`, exposing repository graders, calibration fixtures,
 and treatment-adjacent files despite temporary launch directories. The
-concurrent pair also collided in one output directory. The deterministic audit
-therefore keeps every attempt invalid and every capability/treatment flag
-false. Before another paid/model-backed run, a launcher must prove with a
-canary that (a) cwd is task-scoped, (b) only the declared source pack plus the
-condition's skill is visible, (c) outputs resolve inside a unique trial root,
-and (d) the agent cannot discover repository rubric/calibration files. Only
-then should fresh matched execution and qualified human adjudication proceed.
+deterministic audit therefore keeps every original attempt invalid and every
+capability/treatment flag false.
+
+A replacement bubblewrap launcher now passes zero-model-call canaries in both
+conditions (`ablation/launcher-canaries/*/canary-report.json`). Through the
+actual Hermes read/search/write implementations, they observe `/trial` as cwd,
+read only the pinned source pack and assigned condition Skill, deny all probed
+repository/rubric/calibration paths, deny writes outside `outputs/`, and find no
+`skill-bench` path under the isolated home. The launcher exposes only the file
+toolset and deletes ephemeral copied credentials after each probe.
+
+A first post-canary no-skill launch is retained at
+`ablation/isolated-agent-pair-v4/no-skill/`. Its environment preflight passed,
+but the provider stream produced no events before Hermes' 12-second stream
+threshold and no deliverables were written; `complete=false`,
+`capability_evidence=false`, and no matched effect is permitted. A fresh matched
+pair remains blocked on a successful provider execution. Do not weaken the
+stream or evidence gate: retry both arms under one pinned launcher version,
+retain all outcomes, run post-hoc graders, and only then assess comparability.
