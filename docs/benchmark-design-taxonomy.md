@@ -59,6 +59,7 @@ obligation [ET].
 | Safety/compliance | authorization, prohibited action, policy consequence | compliance with declared constraints | task success as a reason to waive safety |
 | Efficiency | cost, latency, retries, human-review time | quality-resource tradeoff for a versioned system | capability independent of provider/harness configuration |
 | Diagnosis | failed check plus causal trace slice | plausible root and surface failure under an explicit attribution method | causal certainty from an unvalidated LLM diagnosis |
+| Evolution trajectory | ordered trials, state deltas, retention/transfer probes, and cost/safety drift | adaptation, retention, selective forgetting, and policy drift under one frozen stream protocol | independent-task competence or improvement caused by one changed component |
 
 Store these score families separately. Aggregation is a versioned policy, not a
 natural property of the task. LH-Bench supports observable-boundary rubric
@@ -109,7 +110,37 @@ disclosure only as an explicit leakage/compliance condition [LH].
 For adaptive systems, also pin stream order/seed, warmup, similarity groups,
 reset cadence, update budget, and which feedback may enter memory. Once one test
 item changes behavior on the next, the estimand is ordered-stream learning, not
-independent pass@1 [ACE].
+independent pass@1 [ACE, SE].
+
+### 4.1 Keep three change planes separate
+
+“The system improved” is ambiguous because three different systems can change.
+They need different atomic records, evidence gates, and claims:
+
+| Change plane | Atomic record | What may change | Defensible claim | Required boundary |
+|---|---|---|---|---|
+| Evaluated agent system | **evolution event** between parent and child configured-system hashes | model, prompt/skill, memory, tools/code, topology, or update policy | adaptation, retention, transfer, forgetting, cost, or safety drift over a declared stream | only policy-permitted public/runtime feedback may enter agent-visible state; private checks and references remain firewalled |
+| Benchmark-design knowledge | **candidate-lesson lifecycle event** | an evidence-backed authoring, grading, or operating claim | the lesson was proposed, independently tested, promoted, quarantined, superseded, or rolled back | a score gain on the source task is not independent validation; retain provenance, contradictions, scope, and downstream dependencies |
+| Released benchmark instrument | **benchmark version/change record** | tasks, sources, environments, rubrics, graders, panels, or aggregation policy | the instrument changed, with an audited compatibility or recalibration result | freeze the instrument inside a matched longitudinal comparison; bridge old/new versions before interpreting score trends |
+
+An evolution event records changed loci, trigger and timing, typed feedback
+authority/visibility, update mechanism and seed, before/after hashes, resource
+use, validation, and rollback. These are multi-label causal coordinates, not one
+“self-evolving” category. Longitudinal reporting separates initial competence,
+held-out adaptation gain, retention/regression, and cost/safety compliance; it
+does not collapse them into a final average [SE].
+
+The minimum causal protocol is a static baseline followed by a versioned task
+stream with multiple orders where feasible, equivalent-form retention and
+selective-forgetting probes, and matched reset vs permitted-memory/skill-only vs
+full-evolution conditions. Observable actions, artifacts, state deltas, and
+verifier evidence are sufficient; faithful hidden chain-of-thought is neither
+required nor assumed [SE].
+
+If the agent and benchmark instrument change in the same comparison window,
+ability change and difficulty drift are not identified. Record both events, but
+do not call their joint score movement self-improvement without a frozen anchor
+panel or a calibrated bridge design.
 
 ## 5. Operating layer: task bank to living instrument
 
@@ -122,6 +153,8 @@ independent pass@1 [ACE].
 | Private calibration layer | references, grader internals, difficulty/features, adjudications | access control, provenance, non-leakage into agent-visible context |
 | Drift/saturation monitor | detect stale difficulty and changed task behavior | periodic full runs, score/rank separation, missingness and invalid-run audit |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
+| Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
+| Benchmark change log | distinguish instrument drift from agent evolution | old/new component hashes, rationale, affected claims, bridge panel, compatibility/calibration decision, rollback |
 
 A reduced panel serves **ranking efficiency**, not automatically diagnostic
 coverage or absolute professional-quality estimation. Mid-range checks often
@@ -138,7 +171,7 @@ fidelity separately from score calibration [EB, AP].
 | Skill-grounded long-horizon evaluation (LH-Bench) | expert procedure → observable boundary → artifact/check crosswalk | intervention/instrument contamination; agreement mistaken for validity | full immutable v2 PDF/text and deep review [LH] |
 | Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
-| Continual/context adaptation (ACE) | immutable local delta and candidate-lesson lifecycle | order dependence, weak-feedback pollution, private-test contamination | full immutable v3 PDF/text and deep review [ACE] |
+| Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
 | Production agent evaluation (Anthropic, AWS) | task/trial/grader/trace separation and operational failure taxonomy | engineering guidance may not establish benchmark construct validity | source map/preliminary only; deep-review queue tasks remain open |
 
 “Deep review” above means the cited local full text was read in the corresponding
@@ -168,6 +201,9 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
    an agent-visible skill or lesson on the same split.
 10. **Promotion requires independent evidence:** schema completeness or improved
     training-set score is not enough to change durable benchmark doctrine.
+11. **Freeze or bridge the instrument:** do not attribute longitudinal score
+    movement to agent evolution while tasks, graders, or panels change without
+    a frozen anchor or explicit recalibration design.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -179,29 +215,38 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Workflow compliance vs latent expertise | Observable transitions are more judgeable, but exact procedure following can substitute for judgment [LH]. | Include at least two expert-approved procedures and held-out consequence variants. |
 | Learning from failures vs benchmark contamination | STRACE/ACE support localized lessons; ACE also degrades under weak feedback and changes the online estimand [ST, ACE]. | Quarantine lessons, validate on held-out scenario clusters, and audit private-evidence flow before promotion. |
 | Aggregate leaderboard vs diagnostic instrument | Reduced rankings are cheaper, while root-cause layers produce more actionable but uncertain claims [EB, ST]. | Report both without one composite; evaluate whether diagnoses predict expert-prescribed remediations on repeat trials. |
+| Evolving agent vs evolving benchmark | Longitudinal guidance requires persistent state, while living benchmarks must also revise tasks and graders; changing both makes ability and difficulty jointly endogenous [SE]. | Freeze an anchor instrument within each stream; when the benchmark changes, run a bridge panel and report version effects before resuming evolution claims. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
 leaderboard posture.
 
-## 9. Prioritized build sequence
+## 9. Current build sequence and dependency gates
 
 This sequence consolidates existing queue work rather than creating duplicate
-requests:
+requests. Completed foundations remain listed so later workers do not rebuild
+them:
 
-1. **`build-procedural-skill-eval-contract`:** add typed intervention/instrument
-   versions, leakage boundary declarations, score tiers, and recovery edges.
-2. **`build-pilot-scenario`:** instantiate the existing expertise-transfer and
-   benchmark-bundle contracts with two valid procedures and explicit difficulty
-   knobs; mark it non-releasable until expert/pilot gates pass.
-3. **Pilot execution slice:** after the skeleton exists, add fixtures/runs for the
-   four skill × rubric conditions and two-expert threshold calibration. Create a
-   separate queue task only when the pilot exposes the exact runner/grader need.
-4. **`build-compounding-lesson-contract`:** keep lesson evolution downstream of
-   trustworthy trial/adjudication evidence; do not optimize doctrine against an
-   unvalidated pilot.
-5. **Production-method updates:** integrate pending Anthropic/AWS deep reviews
-   into this taxonomy only where they add or contradict a canonical object.
+1. **Completed — `build-procedural-skill-eval-contract`:** the bundle now types
+   intervention/instrument versions, leakage boundaries, ablation conditions,
+   and recovery edges.
+2. **Completed, not release-valid — `build-pilot-scenario`:** the static LH
+   adoption pilot instantiates both contracts, but intentionally fails expert
+   validity and release gates.
+3. **Next execution gate — `build-lh-pilot-grader-ablation`:** implement and test
+   the evidence-link grader on planted failures, then run feasible static
+   no-skill/public-skill × independent/shared-rubric conditions. This precedes
+   claims that the pilot measures expertise or that any lesson improved it.
+4. **Parallel infrastructure — `build-compounding-lesson-contract`:** implement
+   candidate lesson provenance, independent promotion, contradiction, firewall,
+   and rollback semantics. Building the contract is safe; promoting pilot-derived
+   doctrine remains gated on trustworthy trial/adjudication evidence.
+5. **After static execution — `build-longitudinal-evolution-protocol`:** add the
+   stream and evolution-event records from Section 4.1, then exercise matched
+   reset vs permitted-memory/skill-only vs full-evolution fixtures. Do not use
+   longitudinal complexity to bypass the static pilot's failed validity gates.
+6. **Production-method updates:** integrate pending Anthropic/AWS deep reviews
+   only where they add or contradict a canonical object.
 
 ## Provenance keys
 
@@ -211,6 +256,9 @@ requests:
   reviewed full text/PDF paths and hash are recorded there.
 - **[ACE]** `papers/agent-benchmarks/2026-07-10-agentic-context-engineering.md`;
   reviewed full text/PDF paths and hash are recorded there.
+- **[SE]** `papers/agent-benchmarks/2026-07-10-self-evolving-agents-survey.md`;
+  reviewed immutable v4 full text/PDF paths and hash are recorded there. Its
+  protocol is prescriptive synthesis, not an empirically validated benchmark.
 - **[ST]** `papers/agent-benchmarks/2026-07-09-strace.md`; local extracted text
   path is recorded there.
 - **[EB]** `papers/agent-benchmarks/2026-07-09-efficient-benchmarking-ai-agents.md`;
