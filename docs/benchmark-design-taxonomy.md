@@ -123,6 +123,94 @@ truth. Its example ablation suggests examples can improve judge agreement while
 also anchoring answers; rubric transformations therefore need before/after hashes,
 semantic review, and held-out tests of both agreement and construct breadth [RR].
 
+### 2.4 Evolving evidence is a typed state transition, not a changed answer key
+
+A task's private basis must not collapse every event, source statement, and
+professional inference into one omniscient `hidden_truth`. Preserve at least six
+separable layers:
+
+1. **world or workflow state:** an event, file, record, policy, or decision and
+   the interval in which it holds;
+2. **source claim:** who or what asserted a proposition, when, through which
+   channel, and with what evidence locator and confidence;
+3. **applicability rule:** authority, population/scope, valid time, jurisdiction,
+   condition, and whether another claim contradicts, corrects, retracts, or
+   supersedes it;
+4. **evidence emission and availability:** which task event made the claim
+   available to the configured system, without assuming that it was accessed;
+5. **access, adoption, and belief delta:** what the trace supports about reading,
+   citing, incorporating, retaining, or revising the claim; and
+6. **consequential state:** the decision, artifact field, workflow action, or
+   check that should change—and the predicates that should remain unchanged.
+
+An authored assumption, motive attribution, expert judgment, policy rule,
+objective event, unresolved dispute, and permissible conclusion therefore have
+different evidence types. This prevents an author-declared interpretation from
+being laundered into objective state while still permitting deterministic
+internal calibration cases [CA]. It also refines the retrieval chain in §4.2:
+`available`, `accessed`, `visible`, `adopted`, and `effect-estimated` remain
+distinct whether evidence arrives over the network, through a message, or as a
+workspace mutation.
+
+Use typed update events rather than a generic context append. At minimum,
+distinguish an underlying world/workspace mutation, a newly emitted claim about
+unchanged state, a correction, a retraction, a temporal supersession, a
+policy-version change, and a condition becoming applicable. Static
+contradiction, temporal supersession, conditional compatibility, authority
+conflict, and non-conflict synthesis are different relations. An update-to-check
+crosswalk should bind the prior conclusion, new evidence, changed predicate,
+expected belief delta, affected artifact/check, and invariant predicates.
+Matched unchanged checks are needed to detect indiscriminate revision.
+
+ClawArena makes persistent evidence emission and workspace updates unusually
+inspectable across 337 released rounds, but its truth is internally authored,
+its 14-category taxonomy is absent from round records, every round supplies
+answer-bearing feedback, preferences are mostly explicit, and most artifact
+checks are syntactic. Its one-run, order-sensitive results therefore motivate
+this transition contract; they do not validate professional truth, implicit
+preference learning, stochastic reliability, or causal skill effects [CA].
+
+### 2.5 A task IR needs independently tested projection obligations
+
+For generated or templated tasks, preserve a versioned compiler lineage:
+
+```text
+expert/source evidence → requirement-bearing task IR → sampled instance
+  → public instruction + source/environment affordance
+  + valid witness consequence + checker predicate
+  → cross-projection conformance evidence
+```
+
+Shared ancestry is insufficient. Require bidirectional coverage: each public
+requirement atom maps to an evidence-backed affordance, at least one valid
+witness consequence, and one or more checks; each scored/private predicate maps
+back to a fair public basis; each score-relevant environment variable is
+disclosed or intentionally discoverable; and legitimate alternative
+representations are named as invariances. Hash the IR, sampler, projectors,
+dependencies, and rendered outputs separately so drift is localizable rather
+than hidden by a shared task ID.
+
+Conformance evidence should include end-to-end witnesses, negative contrasts,
+requirement/affordance/witness/check mutations, metamorphic tests for legitimate
+equivalence, and adversarial verifier cases. Keep the claims in this chain
+separate:
+
+```text
+formal feasibility/optimum ≠ executable witness
+  ≠ instruction-equivalent witness ≠ verifier completeness
+  ≠ professional correctness or deployment readiness
+```
+
+Anchor demonstrates a substantial shared-lineage compiler and 300 released ERP
+packages, but its CP-SAT model, templates, setup, replay, and large generated
+checkers remain distinct hand-maintained translators. No-op and oracle replay
+exercise two states, not verifier soundness/completeness; its small expert study
+does not adjudicate expert, instruction, UI, and checker failures [AK]. The
+implemented optional `task.projection_manifest` therefore treats the IR as an
+evidence-backed hypothesis, recomputes projection hashes, enforces four-way
+coverage and public basis, and keeps capability/readiness evidence false in its
+internal conformance fixture.
+
 ## 3. Measurement stack: trial to defensible claim
 
 | Layer | Unit observed | Appropriate claim | Do not infer |
@@ -428,6 +516,8 @@ panel or a calibrated bridge design.
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
 | Benchmark change log | distinguish instrument drift from agent evolution | old/new component hashes, rationale, affected claims, bridge panel, compatibility/calibration decision, rollback |
+| Evidence-state transition record | separate evolving world state, emitted claims, applicability, access/adoption, belief revision, and artifact consequence | authority/scope/valid-time, contradiction/supersession, update-to-check crosswalk, changed and invariant predicates |
+| Task projection manifest | detect drift among public requirements, affordances, witnesses, and checks | evidence-backed requirement atoms, IR/sampler/projector/output hashes, bidirectional coverage, declared invariances, solver/validity separation, conformance tests |
 
 A reduced panel serves **ranking efficiency**, not automatically diagnostic
 coverage or absolute professional-quality estimation. Mid-range checks often
@@ -453,6 +543,8 @@ fidelity separately from score calibration [EB, AP].
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
 | Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
+| Evolving-information workspace evaluation (ClawArena) | evidence-emission/update map, persistent workspace state, and update-to-check crosswalk | authored omniscience, untyped claim transitions, answer-bearing feedback, explicit preferences, mostly syntactic checks, unsafe shell execution, one-run order effects | full immutable v2 paper plus inspected official v1.0.0 and later release with timing boundaries; 337 rounds and 327 checker scripts audited, not professional-truth or reliability evidence [CA] |
+| Single-specification task generation (Anchor) | versioned task IR, four projection types, solver witness, and cross-projection conformance tests | omitted professional rules propagate consistently; translator drift; canonical witness mistaken for completeness; public oracle/check leakage; mutable environment | full immutable v1 paper plus inspected one-day-post-v1 official release; all 300 packages statically audited and two lineages traced, not semantic-equivalence or professional-validity proof [AK] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -511,6 +603,14 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     accessed, matched, visible, adopted, and effect-estimated states, and keep
     legitimate domain retrieval separate from pretraining, evaluator-cue,
     local-private-file, cross-trial, and search-time leakage.
+20. **Hidden truth is decomposed and defeasible:** objective state, source claims,
+    authority/scope/valid-time rules, authored assumptions, expert judgments, and
+    unresolved disputes remain distinct; an update changes only the predicates
+    supported by its typed relation and evidence.
+21. **Shared generation lineage is not conformance:** every requirement,
+    affordance, witness consequence, and check has bidirectional coverage and
+    independently hashed/tested projections; solver or oracle success does not
+    license verifier completeness, professional correctness, or readiness.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -531,6 +631,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
 | Open retrieval realism vs shortcut-free causal measurement | Search-time contamination finds strong post-exposure associations for exact answer-bearing pages, but weak detectors, self-selected access, mutable search, and non-equivalent traces do not identify a clean counterfactual [SC]. | Pair ecological open-retrieval audits with replayable snapshots and randomized masking of protected answer artifacts while holding legitimate sources, configured system, task, and budget fixed; report exposure prevalence separately from effect. |
+| Stable belief vs justified revision under evolving evidence | ClawArena operationalizes staged messages/files and reversals, but authored truth, detailed forward feedback, fixed order, and absent claim-level transition records confound retrieval, adoption, revision, and transfer [CA]. | Plant typed correction, supersession, conditional-applicability, and irrelevant-update cases; log availability/access/adoption; require changed and invariant checks; cross feedback policy with reset and held-out equivalent forms. |
+| Single-source coherence vs propagated specification error | Anchor's compiler aligns generated identifiers and accepts its oracle, but omitted rules and translator/checker assumptions can remain consistently wrong [AK]. | Mutation-test each projection edge, include legitimate alternate witnesses and adversarial partial-credit states, obtain independent expert adjudication, and report formal, executable, instruction-equivalent, verifier, and professional-validity gates separately. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -594,7 +696,7 @@ them:
    windows, thresholds, audits, and actions. Its exact planted-fixture metric is
    an internal regression check, not production representativeness [AM, ARB].
 10. **Completed artifact-view admissibility slice —
-   `build-artifact-view-admissibility-contract`:** task checks now declare
+   `build-artifact-view-admissibility-slice`:** task checks now declare
    authoritative representations, required views and controls, permitted
    invariances, evidence sufficiency, and fail-closed outcomes. The synthetic
    cross-artifact fixture validates the contract, not cross-domain construct
@@ -602,6 +704,19 @@ them:
 11. **Evidence-gated elicitation contract — `build-elicitation-session-contract`:**
     wait for one consented real contribution before encoding session evidence
     types; do not simulate testimony to satisfy a schema dependency.
+12. **Completed projection-conformance slice —
+    `build-task-projection-conformance-slice`:** the optional task projection
+    manifest now hashes requirement atoms, IR, sampler, four projector/output
+    pairs, and enforces bidirectional coverage, public basis, declared
+    invariances, selection history, and typed conformance evidence. Its Anchor-
+    grounded fixture and mutation tests establish internal contract behavior
+    only, not expert validity, verifier completeness, capability, or readiness
+    [AK].
+13. **Pending cross-record application — `build-lh-ecbd-cross-record-audit`:**
+    after this canonical consolidation, link the existing LH pilot records into
+    one fail-closed intended-use→construct→requirement/affordance→response-view→
+    grader→metric→claim argument. Keep the one-task suite, expert validity,
+    matched Skill effect, cross-domain generalization, and readiness unsupported.
 
 ## Provenance keys
 
@@ -662,3 +777,16 @@ them:
   immutable v1 PDF/text paths and hashes are recorded there. Its medical-QA
   audit provides association and partial detector-validation evidence, not a
   reproducible causal inflation estimate or general knowledge-work prevalence.
+- **[CA]**
+  `papers/agent-benchmarks/2026-07-10-clawarena-evolving-information.md`;
+  reviewed immutable v2 PDF/text and inspected official v1.0.0 plus later
+  release paths/hashes are recorded there with explicit timing boundaries. The
+  review audited all 337 round records and 327 checker scripts; this is
+  instrument evidence, not expert validation of its authored hidden truth.
+- **[AK]**
+  `papers/agent-benchmarks/2026-07-10-anchor-artifact-drift-generation.md`;
+  reviewed immutable v1 PDF/text and inspected one-day-post-v1 official release
+  paths/hashes are recorded there. All 300 task packages were statically audited
+  and two projection lineages traced; shared lineage and oracle replay do not
+  establish semantic equivalence, verifier completeness, or professional
+  validity.
