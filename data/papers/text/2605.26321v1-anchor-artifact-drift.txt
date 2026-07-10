@@ -1,0 +1,723 @@
+                                         Anchor: Mitigating Artifact Drift in Agent Benchmark Generation
+                                                                         Maksim Ivanov                                                   Abhijay Rana
+                                                                        Agentic Labs                                                     Agentic Labs
+                                                                   New York, United States                                          New York, United States
+                                                                   maksim@agenticlabs.com                                          abhijay@agenticlabs.com
+
+                                         Abstract
+                                         AI agents are beginning to complete valuable, long-horizon busi-
+                                         ness operations tasks, but training and evaluation environments
+                                         for enterprise work still struggle to balance realism, verifiability,
+                                         and scale. Environment and task creation frequently suffers from
+
+
+
+
+arXiv:2605.26321v1 [cs.AI] 25 May 2026
+                                         a failure mode we call artifact drift: when instructions, environ-
+                                         ments, oracles, and verifiers are created by loosely coupled pro-
+                                         cesses, they frequently disagree on what a task requires, producing
+                                         environments that are unsolvable, reward-hackable, or inconsis-
+                                         tent. We introduce Anchor, a task-generation pipeline that for-
+                                         malizes domain experts’ specifications of business workflows into
+                                         constraint optimization programs. From a single parametric specifi-
+                                         cation, the pipeline jointly produces a natural-language instruction,
+                                         environment configuration, solver-certified ground-truth solution,
+                                         and state-based verifier. With Anchor, altering parameters yields        Figure 1: Artifact drift. Inconsistencies between a task’s four
+                                         new tasks with controlled difficulty and known optimal solutions,        artifacts—instruction 𝐼 , environment 𝐸, oracle solution 𝑥 ∗ ,
+                                         producing harness-agnostic environments whose rewards depend             and verifier 𝑉 —each invalidate the intended task 𝜏 in a dif-
+                                         solely on end-state business correctness. We apply Anchor to pro-        ferent way.
+                                         duce ERP-Bench: a benchmark of 300 long-horizon tasks spanning
+                                         procurement and manufacturing workflows in a production-grade
+                                         ERP system. We find that generation parameters predict realized
+                                         difficulty, and that frontier models satisfy explicit task constraints   realism, verifiability, and scale. Expert-authored benchmarks im-
+                                         in 26.1% of trials but reach a fully optimal solution in only 17.4%      prove realism but require costly curation [16]; synthetic generators
+                                         of trials. Overall, we show that Anchor and ERP-Bench offer a            scale task creation but ship noisy or single-path graders [12, 15]; and
+                                         concrete recipe for building auditable evaluation environments for       𝜏 2 -bench authors observe that earlier benchmarks pushed instruc-
+                                         economically valuable agent work. We release the task generator          tions toward “carefully crafted . . . to help ensure a single, solvable
+                                         and ERP-Bench dataset at erpbench.ai.                                    path” [3]. Most benchmarks still author each task’s four artifacts of
+                                                                                                                  instruction, environment, oracle solution, and verifier in parallel
+                                         CCS Concepts                                                             and validate consistency post hoc through audit. This creates a
+                                         • Computing methodologies → Artificial intelligence; Plan-               four-way consistency failure we call artifact drift (fig. 1): loosely
+                                         ning and scheduling; • Software and its engineering → Software           coupled processes end up describing subtly different tasks, such as
+                                         testing and debugging.                                                   when the environment lacks data the instruction assumes, the ora-
+                                                                                                                  cle depends on state the environment omits, or the verifier accepts
+                                         Keywords                                                                 outcomes the instruction did not request.
+                                         agent benchmarks, verifiable rewards, enterprise workflows, con-              We address this with Anchor, a task-generation pipeline that
+                                         straint optimization, ERP systems                                        compiles all four artifacts from a single solved specification. A do-
+                                                                                                                  main expert, with an engineer, formalizes a business workflow as a
+                                         1    Introduction                                                        parametric constraint program in OR-Tools CP-SAT [11] with deci-
+                                                                                                                  sion variables, business-rule constraints, and an objective metric.
+                                         Recent surveys document substantial gaps between benchmark
+                                                                                                                  For a proposed parameter setting, the CP-SAT solver either rejects
+                                         scores and the production performance of language-model agents
+                                                                                                                  the parameters as infeasible or certifies an optimal solution, which
+                                         on enterprise tasks [7, 10, 18]. Audits trace much of this gap to
+                                                                                                                  then compiles deterministically into the task artifacts. Because all
+                                         construction errors in the benchmarks themselves. Do-nothing
+                                                                                                                  four artifacts are deterministic projections of the same solved spec-
+                                         agents pass 38% of 𝜏-bench airline tasks [17] because the veri-
+                                                                                                                  ification, the dataset mitigates artifact drift by construction. The
+                                         fier accepts empty responses [21], and strengthening unit tests in
+                                                                                                                  same parameters that define a task also tune its difficulty, so the
+                                         SWE-bench [6] reranks 40.9% of SWE-bench Lite leaderboard posi-
+                                                                                                                  pipeline could support a verifiable training data curriculum for
+                                         tions [1, 19]. Benchmark authors face an inherent tension between
+                                                                                                                  agent training. We apply Anchor to produce ERP-Bench, 300 pro-
+                                         RLEval ’26, San Jose, CA, USA                                            curement and manufacturing tasks across 29 workflow patterns in
+                                         2026.                                                                    Odoo 19, a production-grade open-source ERP system. We evaluate
+RLEval ’26, May 26, 2026, San Jose, CA, USA                                                                                 M. Ivanov, A. Rana
+
+
+
+
+Figure 2: Anchor single-source task creation pipeline. A solved constraint satisfiability problem specification generates the
+instruction, environment setup, oracle solution, and terminal-state verifier for each task instance.
+
+
+five frontier models across coding, browser, and computer-use har-     systems treat an informal mathematical statement as the start of
+nesses across 18,000 trials. Pass@5 falls monotonically from easy to   a pipeline that translates it into a formal Lean program, where a
+hard tiers in every harness, dropping from 70.5% to 22.3% in coding,   deterministic checker grades any candidate proof and where syn-
+46.5% to 7.7% in browser, and 56.0% to 9.5% in computer-use, whith     thetic variants of the formalized statement become the curriculum
+zero instances of reward hacking during evaluation.                    for reinforcement learning [2, 5]. We similarly aim to translate in-
+   Our key contributions are:                                          formal business workflows into checkable programs and generate
+     • Anchor: a task creation pipeline that compiles instruction,     synthetic variants to address the data scarcity and fidelity problem.
+       environment, oracle, and verifier from one solved constraint    Unlike AlphaProof and other autoformalization work, we under-
+       program specification.                                          take the formalization step manually, and the generated variants
+     • ERP-Bench: a 300-task verifiable benchmark of long-horizon      are translated back into informal scenarios for agent training and
+       procurement and manufacturing workflows in a production-        evaluation.
+       grade ERP, with controlled difficulty and certified optima.         Many enterprise workflows operate on structured data in sys-
+     • Evaluation: a controlled comparison of frontier proprietary     tems of record, follow explicit business rules, and optimize mea-
+       and open-weight models across coding, browser, and computer-    surable outcomes, which makes them naturally expressible as con-
+       use harnesses on ERP-Bench tasks.                               straint satisfiability and optimization problems. The Anchor pipeline
+                                                                       (fig. 2) starts when a domain expert and an engineer formalize
+2    Anchor                                                            a workflow such as invoice prioritization, deal qualification, or
+                                                                       production scheduling as a parametric constraint program [11]
+Our task creation pipeline follows from prior work in large lan-
+                                                                       with decision variables, business-rule constraints, and an objective
+guage models and mathematical reasoning. AlphaProof and related
+Anchor: Mitigating Artifact Drift in Agent Benchmark Generation                                             RLEval ’26, May 26, 2026, San Jose, CA, USA
+
+
+function. This constraint program becomes the core of the task                The verifier combines three dimensions weighted 25/60/15%:
+generation engine.                                                         constraint satisfaction runs discrete checks for demand coverage,
+   Given a parameter setting 𝜃 , the solver either rejects the sample      deadlines, sourcing rules, manufacturing feasibility, and invoicing;
+as infeasible or certifies an optimal solution 𝑥𝜃∗ . We call the result-   optimality compares the realized objective to the certified optimum
+ing parameters, constraints, objective, and certified solution the         with exponential decay for suboptimal plans; and traceability grades
+solved specification 𝑆𝜃 . Four translation layers then compile 𝑆𝜃 into     the audit linkage between POs, MOs, invoices, and the sales orders
+the task artifacts shown in fig. 2: an instruction generator renders       they serve. The constraint dimension gates the others, and a small
+parameters, constraints, and objective as natural language; a setup        set of structural prerequisites act as hard zeros (section E). ERP-
+generator writes the sampled initial records into the environment          Bench tasks are therefore both verifiable and open-ended: the
+container; an oracle generator writes the solver’s solution as the         CP-SAT solver certifies an exact optimal objective value and an
+reference terminal state; and a verifier generator grades terminal         assignment that achieves it, while agents may reach many valid
+states against the program’s constraints and objective. Because the        terminal states through many action sequences.
+four artifacts are deterministic projections of 𝑆𝜃 , the inconsistencies      Difficulty is controlled by parameter groups that compose into
+of fig. 1 are mitigated by construction. Because the solver certifies      easy, medium, and hard recipes. Demand-side parameters scale the
+an optimal objective value, verification remains tractable without         number of customers, the size of each order, and how soon each
+contriving the task to a single action path.                               order is due. Supply-side parameters shrink on-hand stock, tighten
+   Anchor does not eliminate every construction error: the con-            vendor capacity, and reduce slack between supply and demand.
+straint program can encode incomplete business logic and a ren-            Sourcing parameters progressively unlock more of the ERP surface,
+derer can mistranslate a correct specification. Five end-to-end checks     layering in single-stage and multi-stage manufacturing, workcenter
+surface residual defects (section I): a no-op agent should score zero      capacity, and broken initial states that the agent must diagnose
+on every task, oracle replay should receive full credit, an LLM judge      and repair. Higher difficulty also enriches the objective, moving
+cross-reads artifacts against the CP-SAT program, a reward-hacking         from feasibility-only or simple spend objectives toward vendor
+canary flags rollouts that beat the solver objective without tripping      consolidation, capacity preservation, and plan repair. Sections B
+verifier rules, and domain experts spot-check tasks by hand.               and D summarize the task taxonomy and generation design.
+
+
+
+3    ERP-Bench
+We apply Anchor to create ERP-Bench: 300 long-horizon procure-             4    Evaluation
+ment and manufacturing tasks across 29 patterns in Odoo 19, an             We evaluate five frontier models across three harnesses with five
+open-source ERP system [9]. Procurement and manufacturing back-            trials per agent-task pair, for 18,000 scheduled trials, all sharing one
+office work is economically consequential: manufacturing con-              verifier on identical containerized instances. We build the harnesses
+tributed $2.91T to US GDP in 2024 across roughly 12.6M workers             on the minimal, open-source pi-mono agent toolkit [20] so the
+and 239,000 firms [8, 13], and purchasing roles account for 58,700         testbed reflects a real-world agent scaffold rather than a benchmark-
+projected annual openings through 2034 [14]. Mistakes in these             specific wrapper used only for evaluation. The coding harness uses
+workflows directly affect spend, fulfillment, capacity, invoicing, and     shell and filesystem tools, driving Odoo through the JSON-2 API.
+auditability rather than only surface task completion. Each task           The browser harness extends pi with a Playwright tool that drives
+runs in its own container against a fresh database seeded with the         the standard Odoo web client through a11y-resolved actions. The
+customers, vendors, inventory, bills of materials, and workcenters         computer-use harness drives an Xvfb-backed Chromium through
+the scenario requires. Agents touch the same persistent records            pixel-coordinate clicks, keystrokes, and screenshots, with no DOM
+a back-office user would, including sales orders, purchase orders,         access. We evaluate two proprietary models (GPT-5.5, Claude Opus
+manufacturing orders, vendor pricelists, and invoices, through the         4.7) and three open-weight models (GLM-5.1, GLM-5V-Turbo, Kimi
+JSON-2 API or the standard Odoo web client. For example, a task            K2.5). GLM-5.1 is swapped for GLM-5V-Turbo on the computer-use
+may ask the agent to fulfill four customer sales orders due within         harness because the former does not natively support vision input
+a week when the starting warehouse inventory does not cover                (section F for harness and model details).
+them: it must place purchase orders against tiered vendor pricelists           The parametric difficulty intervention is the first empirical claim
+that respect minimum-order quantities and lead times, schedule             the methodology enables. Across the 300-task release, the declared
+the manufacturing orders that assemble the finished goods from             easy, medium, and hard bands collapse to the same monotone signal
+purchased components, link the resulting records back to each sales        in every harness. Aggregate pass@5 falls from 70.5% to 22.3% for
+order while minimizing total spend, and send invoices to the cus-          coding agents, from 46.5% to 7.7% for browser agents, and from
+tomers with correct payment terms. The 29 workflow patterns were           56.0% to 9.5% for computer-use agents between easy and hard tiers
+grounded in roughly 40 person-hours of consultation and review             (fig. 3). The strongest negative Spearman correlations against task-
+with 10 freelance ERP practitioners, and the pipeline then samples         level pass@1 come from scale and structure variables such as work-
+each pattern into many task instances as expert effort is incurred         centers, manufacturing orders, solver variables and constraints,
+per task pattern rather than per instance. The per-pattern roster          BOM component lines, purchase orders, and distinct vendors, while
+appears in section B, the Harbor task specification in section C, and      maximum BOM depth and on-hand-stock-to-demand ratio sit near
+generator details in section D.                                            zero because the sampler clamps depth tightly and equalizes stock
+RLEval ’26, May 26, 2026, San Jose, CA, USA                                                                                            M. Ivanov, A. Rana
+
+
+                                                                             The feasibility-optimality gap is the second empirical claim
+                                                                         (fig. 5). Across all evaluated models and harnesses, agents satisfy
+                                                                         every explicit task constraint in 26.1% of trials but reach a fully
+                                                                         optimal solution in only 17.4%, with the strongest evaluated setting,
+                                                                         GPT-5.5 in the coding harness, showing a 23.4-point gap. Score loss
+                                                                         with difficulty comes from broken constraints rather than worse
+                                                                         tradeoffs among feasible plans (fig. 7), so frontier agents remain
+                                                                         brittle at business-rule adherence rather than merely choosing more
+                                                                         expensive valid plans.
+                                                                             The construction claim holds end-to-end (section I): the no-op
+                                                                         agent scores zero on every task, oracle replay receives full credit
+                                                                         on every task, and no rollout reaches a feasible state strictly better
+                                                                         than the certified optimum.
+Figure 3: pass@5 by model, harness, and generated difficulty                 The evaluated models appear more capable and cost-efficient in
+tier (95% Wilson CIs). Generated difficulty tiers correlate with         the coding harness than in browser or computer-use harnesses, even
+realized performance in every evaluated model and harness.               though ERP-Bench is not a coding benchmark and humans complete
+                                                                         these tasks through the Odoo GUI. On identical task instances, GUI
+                                                                         harnesses resolve 16–56 percentage points fewer tasks than coding
+                                                                         harnesses while costing 3.1–14.3× more per attempted task across
+                                                                         the two proprietary models evaluated. Sections G and H report
+                                                                         further results, cost drivers, and failure modes.
+
+                                                                         5    Limitations
+                                                                         The main cost of our task construction is paid upfront in formaliza-
+                                                                         tion: a domain expert specifies the workflow, an engineer writes a
+                                                                         CP-SAT program modelling the entities, constraints, objective, and
+                                                                         ERP actions, and a translation layer keeps artifacts aligned. Task
+                                                                         validity still depends on the specification. A constraint program
+                                                                         can encode an incomplete business rule, a renderer can express the
+                                                                         right rule unclearly, and an ERP can expose defaults the formal
+                                                                         model did not intend to make relevant. The benchmark covers the
+                                                                         part of enterprise work that is naturally visible in terminal system
+Figure 4: Task parameters correlate with realized difficulty.            state. Workflows depending on tacit managerial judgment, negotia-
+                                                                         tion, free-text persuasion, or outcomes outside the system of record
+                                                                         would not fit well to this framework. Generated instructions are
+                                                                         also more explicit than many real workplace requests. ERP-Bench
+                                                                         prioritizes feasible, reproducible, and exactly gradable tasks, so re-
+                                                                         leased instructions expose the constraints and objectives needed
+                                                                         for a fair terminal-state reward.
+
+                                                                         6    Conclusion
+                                                                         ERP-Bench and Anchor show that using constraint program solvers
+                                                                         for agent task generation can be effective in enterprise knowledge
+                                                                         work domains. The constructed tasks are realistic, well-specified,
+                                                                         and solvable by both humans and agents. Extending Anchor to
+                                                                         additional workflows (e.g. sales deal qualification, workforce man-
+                                                                         agement, patient intake) and systems of record, (e.g. CRM, HRIS,
+                                                                         EHR) for agent evaluation and training are natural next steps.
+Figure 5: Evaluation reveals a feasibility-optimality gap.
+Agents satisfy constraints more often than they reach fully              References
+optimal solutions.                                                        [1] Dena Aleithan et al. 2025. SWE-Bench+: Enhanced Coding Benchmark for LLMs.
+                                                                              arXiv:2410.06992 https://arxiv.org/abs/2410.06992
+                                                                          [2] AlphaProof and AlphaGeometry Teams. 2024. AI Achieves Silver-Medal Standard
+pressure across difficulty buckets (fig. 4). Task parameters also cor-        Solving International Mathematical Olympiad Problems. https://deepmind.
+                                                                              google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/
+relate positively with the number of steps the agent has to take to       [3] Victor Barres et al. 2025. 𝜏 2 -Bench: Evaluating Conversational Agents in a
+resolve a task (fig. 6).                                                      Dual-Control Environment. arXiv:2506.07982 https://arxiv.org/abs/2506.07982
+Anchor: Mitigating Artifact Drift in Agent Benchmark Generation                           RLEval ’26, May 26, 2026, San Jose, CA, USA
+
+
+ [4] Harbor Framework Team. 2026. Task Structure. https://www.harborframework.
+     com/docs/tasks
+ [5] Thomas Hubert et al. 2026. Olympiad-Level Formal Mathematical Reasoning
+     with Reinforcement Learning. Nature 651 (2026), 607–613. doi:10.1038/s41586-
+     025-09833-y
+ [6] Carlos E. Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir Press,
+     and Karthik Narasimhan. 2024. SWE-bench: Can Language Models Resolve Real-
+     World GitHub Issues?. In International Conference on Learning Representations.
+     arXiv:2310.06770 https://openreview.net/forum?id=8y2YPzvJaG
+ [7] Nikhil Mehta. 2025. Beyond Accuracy: A Multi-Dimensional Framework for
+     Evaluating Enterprise Agentic AI Systems. arXiv:2511.14136 https://arxiv.org/
+     abs/2511.14136
+ [8] National Association of Manufacturers. 2025. Facts About Manufacturing. https:
+     //nam.org/mfgdata/facts-about-manufacturing-expanded/
+ [9] Odoo S.A. 2026. Odoo 19.0 Documentation.                https://www.odoo.com/
+     documentation/19.0/
+[10] Alexander Pan et al. 2025. Measuring Agents in Production. arXiv:2512.04123
+     https://arxiv.org/abs/2512.04123
+[11] Laurent Perron and Frederic Didier. 2025. OR-Tools CP-SAT v9.12. https:
+     //developers.google.com/optimization/cp/cp_solver
+[12] Aarushi Saxena et al. 2025. Continuous Benchmark Generation for Evaluating
+     Enterprise-scale LLM Agents. arXiv:2511.10049 https://arxiv.org/abs/2511.10049
+[13] U.S. Bureau of Economic Analysis. 2025. Gross Domestic Product, 4th Quar-
+     ter and Year 2024, Third Estimate, GDP by Industry, and Corporate Prof-
+     its. https://www.bea.gov/news/2025/gross-domestic-product-4th-quarter-and-
+     year-2024-third-estimate-gdp-industry-and
+[14] U.S. Bureau of Labor Statistics. 2025. Purchasing Managers, Buyers, and Pur-
+     chasing Agents. https://www.bls.gov/ooh/business-and-financial/purchasing-
+     managers-buyers-and-purchasing-agents.htm
+[15] Jian Xie et al. 2026. AgentSynth: Scalable Task Generation for Generalist
+     Computer-Use Agents. arXiv:2506.14205 https://arxiv.org/abs/2506.14205
+[16] Frank F. Xu et al. 2025. TheAgentCompany: Benchmarking LLM Agents on
+     Consequential Real World Tasks. arXiv:2412.14161 https://arxiv.org/abs/2412.
+     14161
+[17] Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik Narasimhan. 2025. 𝜏 -
+     bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains.
+     In International Conference on Learning Representations. arXiv:2406.12045 https:
+     //openreview.net/forum?id=roNSXZpUDN
+[18] Asaf Yehudai et al. 2025. Survey on Evaluation of LLM-Based Agents.
+     arXiv:2503.16416 https://arxiv.org/abs/2503.16416
+[19] Cunxi Yu et al. 2025. UTBoost: Rigorous Evaluation of Coding Agents on SWE-
+     Bench. arXiv:2506.09289 https://arxiv.org/abs/2506.09289
+[20] Mario Zechner. 2026. Pi Monorepo. https://github.com/badlogic/pi-mono
+[21] Mingchen Zhu et al. 2025. Establishing Best Practices for Building Rigorous
+     Agentic Benchmarks. arXiv:2507.02825 https://arxiv.org/abs/2507.02825
+RLEval ’26, May 26, 2026, San Jose, CA, USA                                                                                                                         M. Ivanov, A. Rana
+
+
+Table 1: Domain terms used throughout the paper. Defini-                                                          Table 2: Buy-and-intake patterns.
+tions point at the meaning the term carries in Odoo and in
+ERP-Bench rather than the broader supply-chain literature.                                     Business name                    Task count   Planning structure
+                                                                                               Routine replenishment cycle      8            Choose POs under stock, MOQ, capacity,
+                                                                                                                                             price, and lead-time limits.
+ Term                         Meaning                                                          Buy and bill immediately         8            Confirm accepted SOs, create POs, then issue
+ ERP                      Enterprise resource planning. The system of record a firm uses                                                     customer invoices.
+                          for sales, purchasing, inventory, manufacturing, and accounting.     Buy with a fixed deposit         8            Add a fixed downpayment invoice before
+                          ERP-Bench uses Odoo.                                                                                               final billing.
+ System of record         The authoritative database for an operational process. ERP-Bench     Buy with a percentage deposit     8           Compute deposits from retained order value.
+                                                                                               Screen a preloaded backlog before 10          All candidate SOs are ERP drafts governed
+                          treats the terminal Odoo state as truth.
+ Sales order (SO)         A customer commitment: who ordered, which product, how               buying                                        by intake rules.
+                                                                                               Screen mixed intake before buying 11          Some candidate orders are ERP drafts; others
+                          many units, at what price, and by when.
+ Purchase order (PO)      A supplier commitment to deliver goods at an agreed price, quan-                                                   appear only in the brief.
+                                                                                               Screen, buy, and invoice         11           Accepted orders require sourcing and the
+                          tity, and lead time.
+ Manufacturing order (MO) An internal production commitment that consumes components,                                                        right billing flow.
+                                                                                               Lean-context purchasing cycle    10           Adjacent ERP records are sparse; sourcing
+                          uses workcenter capacity, and produces a finished good or sub-
+                                                                                                                                             facts still bind.
+                          assembly.
+ Bill of materials (BOM)  The recipe for a product. Lists the components and quantities
+                          needed to build one unit.
+ Workcenter               A production resource with limited capacity, such as a machine,
+                          station, or line.
+ Vendor pricelist         A supplier offer for a product, including price, lead time, and
+                          minimum order quantity.
+ Lead time                The delay between placing an order and receiving usable supply.
+ Minimum order quantity The smallest amount a supplier will sell under a given offer.
+ (MOQ)                                                                                                         Table 3: Disruption-recovery patterns.
+ Route                    How Odoo supplies a product. ERP-Bench tasks use buy routes,
+                          manufacture routes, or both.
+ On-hand stock            Inventory already available in the warehouse. Agents can allocate
+                          it before buying or building.                                        Business name                    Task count   Planning structure
+ Origin field             The traceability field on POs and MOs that points back to the SO     Supplier cancellation rescue     8            Repair failed POs without an in-house fall-
+                          they serve.                                                                                                        back path.
+ Downpayment              A partial payment required before an order is fully delivered.       Supplier cancellation rescue with 10          Rebalance existing POs with new MOs
+ Adjacent data            Unrelated business records seeded into the ERP. The verifier         production fallback                           where possible.
+                          checks that agents leave them untouched.                             Line-outage recovery plan         10          Move seeded MOs to alternate workcenters
+ Terminal state           The final ERP database state after the agent finishes. ERP-Bench                                                   under reduced capacity.
+                          grades the terminal state, not the trajectory.
+
+
+
+
+A       Glossary
+ERP-Bench borrows operational terminology from enterprise sys-
+tems. Table 1 collects the domain terms that recur in the paper and                              Seeded ERP state scale. Each database contains the task-relevant
+the appendix.                                                                                 records plus unrelated customers, vendors, products, and busi-
+                                                                                              ness documents for realism. Easy tasks seed roughly 44 customers,
+B       Task Taxonomy                                                                         44 vendors, 41 products, and 8 BOMs without any workcenters;
+Each ERP-Bench task is an ordinary back-office problem inside                                 medium tasks seed 59, 71, 56, 11, and 1.8 workcenters on average;
+Odoo. Customers need products by certain dates; the company has                               hard tasks seed 68, 69, 56, 12, and 3.3 workcenters. Across the cor-
+some stock, some suppliers, and sometimes a factory that can build                            pus, 290 of 300 tasks include BOMs in the seeded state, 218 include
+the product or its parts. The agent has to decide what to buy, what                           workcenters, 105 include pre-existing sales orders, 28 include pre-
+to make, which customer requests to keep, and which records to                                existing purchase orders, and 20 include pre-existing manufacturing
+create or fix. A task is solved only when the final ERP state covers                          orders. Agents must find the records that matter and leave adjacent
+the right demand, respects the business rules, and, when applicable,                          records untouched.
+uses the best plan according to the stated objective.                                            Product domains and routes. The same planning problem
+   ERP-Bench contains 300 such tasks across 29 workflow patterns                              appears in different business contexts, giving agents varied names,
+generated under fixed seeds. The patterns group into three prac-                              catalogs, and surrounding records. Tasks span 12 industrial product
+tical situations: buying goods from suppliers (table 2), repairing a                          categories, most often power equipment (53), industrial equipment
+plan after something breaks (table 3), and combining buying with                              (41), office systems (34), material handling (34), building systems
+in-house production (table 4). Stable per-task names include the                              (33), safety systems (22), and commercial fixtures (21). Routes de-
+scenario number, difficulty, and generator pattern, so per-pattern                            termine the available actions: 82 tasks are buy-only, 207 allow both
+result tables are reproducible from directory names.                                          buying and manufacturing, and 11 require manufacturing only.
+   Objective mix. Some tasks only ask for a valid plan; most also
+ask for a good plan. In 183 tasks, good means spending the least
+on new supply. In 34 tasks, it means using fewer vendors; in 31,                              C     Task Technical Specification
+preserving workcenter capacity; and in 28 repair-plan tasks, chang-                           ERP-Bench releases each instance as a Harbor task directory. Harbor
+ing an existing plan as little as possible. The remaining 24 grade                            tasks package an instruction, task metadata, environment files, an
+feasibility only. Vendor consolidation, capacity preservation, and                            optional solution, and tests that emit a verifier reward file [4]. ERP-
+repair tasks also use spend as a secondary tie-breaker (section E).                           Bench follows that contract:
+Anchor: Mitigating Artifact Drift in Agent Benchmark Generation                                                                     RLEval ’26, May 26, 2026, San Jose, CA, USA
+
+
+           Table 4: Production-and-fulfillment patterns.                                           09_single_bom_lowest_cost, the integer decision variables are:
+
+ Business name                        Task count     Planning structure
+                                                                                                             𝑞 𝑣𝑝 ≥ 0        units purchased on offer 𝑣, 𝑝,
+ One-line make-or-buy plan            11            Compare finished-good POs against one-
+                                                    BOM internal assembly.
+                                                                                                             𝑏 𝑣𝑝 ∈ {0, 1}   indicator that offer 𝑣, 𝑝 is used,
+ Lowest-cost sourcing route           11            Component prices and finished-good offers                𝑎𝑤 ≥ 0          units assembled on route 𝑤,
+                                                    both affect spend.
+ Capacity-smoothing production        11            Workcenter limits make the cheapest route                𝑠𝑖 ≥ 0          stock allocated to order 𝑖.
+ plan                                               infeasible.
+ Restricted-module manufacturing      10            One subassembly has an internal-build re-
+ plan                                               quirement.                                     Constraints enforce per-order demand coverage from stock, pur-
+ Two-stage build with cheapest        11            The final product depends on one intermedi-
+ branch                                             ate subassembly.                               chases, and assembly; MOQ-and-capacity tiers 𝐿𝑣𝑝 𝑏 𝑣𝑝 ≤ 𝑞 𝑣𝑝 ≤
+ Two-stage build with qualification   11            Only qualified workcenters can build the in-
+ rules                                              termediate part.                               𝑈 𝑣𝑝 𝑏 𝑣𝑝 ; BOM feasibility so each assembled unit draws on-hand or
+ Shared-overflow manufacturing        11            Backup capacity used by one step reduces       purchased components; workcenter capacity; and on-time delivery
+ plan                                               capacity for others.
+ Parallel branch production           10            Independent branches consume separate as-      against per-order deadlines. The objective for this pattern is mini-
+                                                    signed workcenters.
+ Sequential build-chain production 10               Later orders depend on outputs from earlier    mum new spend across confirmed purchases and assembly. Other
+                                                    build steps.                                   patterns reuse the same feasibility region: vendor consolidation
+ Shared-component production          11            Multiple branches consume the same scarce
+                                                    component.                                     minimizes used offers, capacity preservation minimizes scheduled
+ Factory-only by policy               11            Vendor offers exist, but company policy dis-
+                                                    allows them.                                   workcenter minutes, repair tasks minimize distance from a seeded
+ Factory-only by system design        11            Odoo route configuration removes external      baseline plan, and feasibility-only tasks omit the optimization phase.
+                                                    purchase.
+ Factory-only by market reality       12            No eligible vendor can supply the finished        CP-SAT [11] fits this construction because it is a portfolio solver
+                                                    good.
+ Screened backlog with vendor con- 12               Intake filtering precedes a distinct-vendor    that pairs SAT-style search with linear-programming relaxation.
+ solidation                                         objective.                                     The 𝑏 𝑣𝑝 channeling, BOM disjunctions, and cumulative workcenter
+ Capacity-smoothing plan with 12                    Capacity-preserving production also needs
+ billing                                            invoices.                                      capacity each have native primitives in CP-SAT, where a generic
+ Screened restricted-module plan 11                 Accepted demand depends on a qualified re-
+                                                    stricted module.                               MIP formulation would need big-M expansions for the on-off con-
+ Screened shared-overflow plan 11                   Retained orders share backup capacity and      ditions or an 𝑂 (𝑛 · 𝑇 ) time-indexed expansion for the cumulative
+ with invoicing                                     billing rules.
+ Screened shared-component plan 11                  Accepted orders compete for common inter-      constraint. CP-SAT also returns a certificate of optimality, which the
+                                                    mediate parts.
+                                                                                                   verifier uses downstream to grade realized terminal states against
+                                                                                                   a known optimum.
+
+                                                                                                   D.2    Difficulty Recipes
+                                                                                                   Difficulty is controlled by recipe parameters that scale demand,
+task/                      Harbor task root.
+                                                                                                   deadlines, stock, vendor capacity, manufacturing depth, workcen-
+   task.toml               Metadata, timeout, and verifier command.                                ter capacity, intake screening, invoicing, and repair disruptions.
+   instruction.md          Business brief shown to the agent.
+   environment/            Odoo build and scenario seed files.                                     Authored configurations vary sourcing structure, capacity regime,
+      Dockerfile           Container image for Odoo and dependencies.                              order-acceptance policy, objective type, and industrial domain. Ta-
+      entrypoint.sh        Service startup and readiness checks.
+      odoo.conf            Odoo database and module configuration.                                 ble 5 reports representative ranges for each tier.
+      setup_scenario.py    Script that creates the sampled ERP state.                                 Within those ranges, the sampler draws concrete instances from
+      scenario_data.json   Generated products, vendors, demand, and
+                           constraints.                                                            a small set of distributions: discrete uniforms for customer counts,
+  solution/                Solver-certified oracle replay.
+     solve.sh              Shell entrypoint for the oracle.
+                                                                                                   deadlines, demand quantities, vendor counts, lead times, and MOQ
+     solver.py             Replay code that applies the optimal plan.                              tiers; continuous uniforms for stock ratios, vendor-capacity ratios,
+     optimal_plan.json     CP-SAT objective value and actions.
+  tests/                   Terminal-state grading harness.                                         required margins, and budget multipliers; Gaussian noise around
+     test.sh               Test entrypoint run by Harbor.                                          catalog list and standard prices for per-customer prices and per-
+     checks.py             Reward, feasibility, and accounting checks.
+   Execution semantics. A task starts by loading the sampled com-                                  vendor costs; and categorical draws for product domain and vendor-
+pany state into Odoo. The agent then creates, updates, confirms,                                   category mix. A seeded numpy generator makes every draw repro-
+or cancels ERP records through its assigned harness. Evaluation                                    ducible.
+reads the final Odoo database, not the trajectory. The same veri-                                     This parameter diversity is the lever for solution diversity. Dif-
+fier grades agent runs, oracle replay, and no-op replay, and writes                                ferent sampled vendor prices, MOQ tiers, and capacities push the
+reward artifacts such as the scalar reward, optimality accounting,                                 CP-SAT optimum onto different vendor subsets. Different stock
+spend summary, and per-rule results.                                                               ratios shift which orders are covered from stock, purchases, or
+                                                                                                   assembly. Different component prices flip individual products be-
+                                                                                                   tween make and buy, and different deadline draws change which
+D Generator and CP-SAT Specification                                                               supply paths remain on time. Two tasks generated from the same au-
+                                                                                                   thored pattern can therefore force qualitatively different decisions
+D.1 Workflow Formalization                                                                         despite sharing a constraint family and an objective shape.
+Ten freelance ERP practitioners with five or more years of produc-                                    Recipes compose along independent axes: a medium task can
+tion experience contributed roughly forty person-hours of elici-                                   stay buy-only with intake screening and invoicing, or add manu-
+tation and review across the 29 workflow patterns. An engineer                                     facturing; a hard task can combine tight supply with multi-stage
+then encoded each pattern as a parametric CP-SAT program. For                                      BOMs, shared or qualified workcenters, or a seeded disruption.
+RLEval ’26, May 26, 2026, San Jose, CA, USA                                                                                                                                           M. Ivanov, A. Rana
+
+
+Table 5: Representative generator recipes by difficulty. Ranges are sampled uniformly unless the scenario fixes a value. Stock
+ratio and vendor capacity ratio are relative to total sampled demand.
+
+                        Difficulty Customers Demand Stock ratio Vendor cap ratio Tightness                           BOM structure             Workcenters         Objective
+                        easy           [4, 4]      [1, 11]    [0.75, 0.92]    [0.40, 0.90]           0.25                none                       0          feasibility or spend
+                        medium        [8, 10]     [14, 25]    [0.38, 0.52]    [0.10, 0.36]           0.55         none or single BOM              0 or 3     spend or vendor count
+                        hard         [10, 32]     [15, 31]    [0.04, 0.42]    [0.07, 0.26]        0.62–0.72 multi-stage BOM, optional repair        3           capacity or repair
+
+
+
+Table 6: Solver status accounting across generation phases.                                                   E Verifier and Reward Details
+             Phase                      Calls Optimal Infeasible Unknown
+                                                                                                              E.1 Verifier Protocol and Reward Formula
+             Feasibility                   24            24          0              0                         The verifier is a terminal-state coprocess. A shell script waits for
+             Primary objective          1,324         1,120        204              0                         the seeded Odoo to come up, then feeds named check invocations
+             Primary retry                204             0        204              0
+             Spend secondary              468           468          0              0                         over stdin to a Python checker that returns PASS, FAIL, or NA on
+             Lexicographic fixed-search 1,144         1,113          0             31
+             Fixed-search retry            31             3          0             28                         stdout. NA marks rules that do not apply to the task, so per-task rule
+             Total                      3,195         2,728        408             59
+                                                                                                              density reflects only checks that scored the run. The same script
+                                                                                                              grades agent rollouts, oracle replay, and the no-op baseline, and
+                                                                                                              writes per-rule, spend, optimality, and aggregate-reward artifacts
+Table 7: Solver performance and CP-SAT model size by diffi-                                                   under /logs/verifier for downstream auditing.
+culty tier. Solve-time columns report cumulative wall time                                                       Let 𝑐 and 𝑡 be the per-dimension percent of applicable checks
+per accepted task, including failed and retry solver calls and                                                passed for the constraint and traceability dimensions, and 𝑜 the
+the tie-breaker solve.                                                                                        optimality score (section E.3). The final reward is
+
+                                                                                                                          0                                      if a hard-zero gate fires,
+    Difficulty Tasks Avg solve Median           P95       Max Vars Discards Resamples                                     
+                                                                                                                          
+                                                                                                                          
+                                                                                                                          
+    easy         50      0.044s   0.008s 0.288s    0.347s        19.8        253             20                        𝑅 = 0.25 𝑐                                 else if 𝑐 < 100,
+    medium      166      0.951s   0.031s 2.842s 20.863s          78.6        243             79                           
+    hard         84      5.856s   0.100s 31.984s 100.735s        96.7        236             56                            0.25 𝑐 + 0.60 𝑜 + 0.15 𝑡
+                                                                                                                          
+                                                                                                                                                                  otherwise.
+                                                                                                                          
+
+                                                                                                              Hard-zero gates are defined in section E.4. The constraint gate
+                                                                                                              ensures an agent cannot trade an explicit business rule for a cheaper
+D.3      Sampling, Rejection, and Determinism                                                                 plan.
+Anchor generated 300 accepted tasks after rejecting 732 sampled
+parameter sets, in 656.76 s of wall time. Pre-solver discards (275)                                           E.2       Rule Catalog
+catch cheap arithmetic failures such as demand exceeding total                                                Constraint and traceability checks come from a fixed catalog grouped
+available supply; solver discards (457) catch parameterizations CP-                                           into six functional families (table 8). Each task instantiates the appli-
+SAT proves infeasible after a 5-second attempt, optionally retried at                                         cable subset with sampled arguments. Demand and sales dominates
+15 seconds. Among successful solves, a multi-phase sequence first                                             because every task begins with customer demand: each customer-
+finds a feasible plan, optimizes the primary objective, optionally                                            product pair drives a separate coverage, deadline, list-price, revenue,
+optimizes a spend secondary, and then runs a fixed lexicographic                                              and budget check. The remaining families enter only when the sam-
+search that selects one stable plan among equal optima so that the                                            pled pattern requires manufacturing, screening, invoicing, or repair
+instruction, environment, oracle, and verifier all refer to the same                                          logic.
+plan. Table 6 reports the per-phase call counts; the 59 UNKNOWN
+statuses sit in tie-break phases and leave the certified primary                                              E.3       Optimality Calculation
+solution intact.                                                                                              The verifier recomputes the realized primary objective 𝑎 from ter-
+                                                                                                              minal Odoo records and compares it with the certified value 𝑒. The
+D.4      Solver Performance by Difficulty                                                                     four objectives with an optimization phase share the exponential
+Table 7 reports cumulative solve time per accepted task, including                                            decay
+failed samples, retry solver calls, and tie-breaker solves. Average                                                                   (
+solve time rises from 0.044 seconds on easy tasks to 0.951 seconds                                                                        100                                         if 𝑎 ≤ 𝑒 + 𝜏,
+                                                                                                                  score(𝑎, 𝑒) =                                          
+on medium tasks and 5.856 seconds on hard tasks. The increase                                                                             100 · exp −𝑘 (𝑎 − 𝑒)/max(𝑒, 1)              otherwise,
+tracks CP-SAT model size, from 19.8 variables on easy tasks to 78.6
+on medium tasks and 96.7 on hard tasks, as recipes turn on manufac-                                           with per-objective 𝜏 and 𝑘 in table 9. Objectives with a secondary
+turing, workcenter capacity, screening, and repair constraints. The                                           spend metric combine primary score 𝑝 and secondary score 𝑠 lexi-
+P95 and maximum columns show why a short initial budget is not                                                cographically with band weight 𝑤 = 0.1: 𝑜 = (1−𝑤) 𝑝 + 𝑤 𝑠 when
+enough for every sample: hard tasks include a long tail of difficult                                          𝑝 ≥ 100, and (1−𝑤) 𝑝 otherwise. The secondary can lift a fully
+parameter settings, which the generator resolves by retrying or                                               satisfied primary above 90 but never compensates for a primary
+resampling before release.                                                                                    regression.
+Anchor: Mitigating Artifact Drift in Agent Benchmark Generation                                                                       RLEval ’26, May 26, 2026, San Jose, CA, USA
+
+
+Table 8: Rule families with representative checks and scored invocations across the 300-task release. The five constraint families
+gate the optimality and traceability slices of the reward (section E.3); the traceability family is graded into the traceability slice
+directly.
+
+                Rule family                Representative checks                                                                                                   Scored
+                Demand and sales           demand_coverage, deadline_fulfillment, list_price, sale_revenue, budget_compliance                            15,933
+                Supply and procurement     supply_timing_feasible, supply_coverage, po_price_tier_compliance, po_min_qty_compliance, po_consolidation_ 2,840
+                                           compliance, new_spend_margin_policy
+                Invoicing and payment      regular_invoice_amount_matches_policy, downpayment_invoice_amount_matches_policy, rejected_order_not_invoiced  2,132
+                Traceability and adjacency po_origin_traceability, mrp_origin_traceability, linked_posted_invoices_are_tax_free, adjacent_data_untouched  1,935
+                Manufacturing and capacity mo_schedule_compliance, mo_component_feasibility, assembly_capacity_compliance, forbidden_finished_mo_absent   1,404
+                State and seeded orders    task_state_transitions_completed, seeded_order_confirmed, seeded_order_cancelled, repair_state_compliance        976
+
+
+
+Table 9: Optimality objectives and decay parameters. 𝜏 is                                  Table 10: Scored verifier checks per task by difficulty tier. The
+the zero-penalty tolerance; 𝑘 controls how quickly the score                               denominator counts applicable checks only; NA returns stay
+decays as the realized metric overshoots the oracle.                                       out of the rule density numbers.
+
+    Objective                 Primary metric 𝑎                      𝜏   𝑘 Secondary                               Difficulty Tasks Avg rules Median      Range
+    min_new_spend             Realized new spend across POs and MOs 0.25 5.0 none                                 easy          50      55.76       63 38–66
+    vendor_consolidation      Distinct relevant vendors used           0 2.0 spend                                medium       166      73.01       76 29–146
+    capacity_preservation     Scheduled workcenter minutes          0.01 5.0 spend                                hard          84     122.76      105 66–208
+    repair_plan               𝐿1 distance from seeded baseline plan    0 2.0 spend                                overall      300      84.07       76 29–208
+    constraint_only           not applicable                          — — fixed at 100
+
+
+                                                                                           Table 11: Harness implementation surfaces. Adapters live
+E.4       Hard-Zero Gates                                                                  under agents/. UI extensions mask the default coding tools,
+Two structural conditions collapse the reward to zero even when                            so browser and computer-use agents cannot call shell, filesys-
+individual constraint checks pass. A partial-acceptance gate fires on                      tem, or API helpers directly.
+screened tasks when the agent leaves every task-relevant record
+untouched, and a repair-state gate fires on repair-plan tasks when                              Harness        Adapter / extension          Tool surface visible to the agent
+the seeded broken plan is still present in the terminal state. The                              Coding       pi.py; default pi configura- read, write, edit, bash, grep, find, and
+                                                                                                             tion                         ls; Odoo effects go through JSON-2 API
+gates exist because screened tasks reward an explicit triage decision                                                                     calls.
+a no-op never demonstrates, and repair tasks measure deviation                                  Browser      pi_browser_use.py;           one browser tool; up to 7 accessibility-
+                                                                                                             browser extension            tree actions per call.
+from a baseline an unmodified state has zero of; without the gates                              Computer-use pi_computer_use.py;          one computer tool; up to 16 mouse, key-
+                                                                                                             computer-use extension       board, or screenshot actions per call.
+both task types would reward inactivity.
+
+E.5       Reward-Hacking Defense
+The agent has write access to the PO price_unit field, so a naive                             The full evaluation schedules 5 trials per agent-task pair. Each
+verifier could be tricked into rewarding a small price entered by                          trial starts from scratch with no retries, a one-hour timeout, a 400-
+hand. The optimality dimension defends against this by re-pricing                          turn budget, and provider-default reasoning effort where exposed.
+each PO line from the authoritative vendor offer tier on file rather                       UI containers add only the packages needed to expose the inter-
+than reading the agent-written field, and the tier-price compliance                        face, including Xvfb and Chromium for computer-use trials. The
+check in the constraint dimension fails the line if it deviates from                       computer-use runs for open-weight models were halted early after
+the tier price by more than a small tolerance. A failed tier check                         over 500 trials produced zero points, and their results reflect partial
+clips the score through the constraint gate, so an agent that writes                       trials.
+a wrong price loses constraint credit regardless of optimality.                               Model access. Proprietary models are accessed via first-party
+                                                                                           developer APIs; open-weight models are accessed via OpenRouter.
+E.6       Rule Density
+Table 10 reports the per-task count of scored verifier checks. Hard
+                                                                                           G Additional Results
+tasks instantiate more independent rules because they combine                              G.1 Headline Metrics by Model and Harness
+manufacturing, sourcing, capacity, and repair constraints in a single                      Table 12 reports evaluation metrics for each model and harness over
+scenario.                                                                                  the 300-task release. Every model-harness pair schedules 1,500 trials
+                                                                                           (300 tasks × 5 trials); the two halted computer-use runs stopped
+F      Harness Details                                                                     early after producing zero points across hundreds of attempts. Per-
+We choose the three harnesses to separate task competence from                             pattern pass@5 across the 29 task patterns ships with the dataset
+interface. Coding tests direct API automation, a natural scaffold                          release.
+for terminal-oriented agents; browser and computer-use test less                              The cost of moving from coding to a UI harness is uneven across
+integrated UI modes closer to human Odoo work. All three share the                         models. Pass@5 falls by 49 percentage points for GPT-5.5 and 51
+same pi CLI, task image, seeded database, instruction, and verifier;                       for GLM-5.1 from coding to browser, and by 56 for GPT-5.5 from
+only the pi-mono adapter and tool surface change.                                          coding to computer-use. Claude Opus 4.7 loses 16 and 22 percentage
+RLEval ’26, May 26, 2026, San Jose, CA, USA                                                                                     M. Ivanov, A. Rana
+
+
+
+
+                                                                          Figure 8: Resolution rate against dollar cost per task. The
+Figure 6: Spearman correlations between task parameters                   pareto frontier is traced by Kimi K2.5, GLM-5.1, and GPT-5.5
+and mean turns to resolve, on resolved trials, reported per               in the coding harness.
+harness.
+
+
+
+
+                                                                          Figure 9: Per-harness cost drivers. Tokens per turn are com-
+                                                                          parable across harnesses; turns per trial drives the cost gap.
+
+
+
+
+Figure 7: Constraint satisfaction and mean optimality given
+constraints pass, broken out by model, harness, and difficulty            G.4     Cost and Step Efficiency
+tier.                                                                     Figure 8 plots resolution rate against dollar cost per task. The pareto
+                                                                          frontier is traced by three coding points (Kimi K2.5, GLM-5.1, and
+                                                                          GPT-5.5); every UI point and the Claude coding point sit below it.
+points across the same two transitions, the smallest GUI penalty of       Moving the same model from coding to a UI harness pushes its
+any evaluated model.                                                      operating point off the frontier without exception.
+                                                                             Figure 9 decomposes the gap. Tokens per turn are within 5%
+G.2      Task Parameters Predict Action Burden                            across harnesses (∼28k–30k), so the cost gap is almost entirely a
+                                                                          turn-count gap: 24 turns per coding trial against 171 for computer-
+Generated difficulty predicts how much work success takes, not
+                                                                          use and 219 for browser. The structural reason is action batching.
+only whether success occurs. Figure 6 reports per-harness Spear-
+                                                                          A coding agent writes one script and batches many ERP changes
+man correlations between task parameters and turns to resolve,
+                                                                          through the JSON-2 API in a single tool call. A UI agent has to wait
+computed on resolved trials. The scale variables that lower pass@1
+                                                                          for the next screen after each form submit, and the per-call action
+in fig. 4—purchase orders, distinct vendors, manufacturing orders,
+                                                                          cap (7 for browser, 16 for computer-use) puts a hard ceiling on how
+components, BOM lines—raise turns to resolve with correlations of
+                                                                          many ERP effects fit in one turn. Coding is a natural plan-execute
++0.6 to +0.7 in every harness.
+                                                                          substrate; the UI harnesses are not.
+G.3      Feasibility and Optimality Split
+Figure 7 breaks the feasibility-optimality gap of fig. 5 down by          G.5     Reliability Across Repeated Trials
+model, harness, and difficulty tier. Constraint satisfaction collapses    Pass@5 measures whether at least one of five trials succeeds; pass5
+with difficulty across the board, but mean optimality among constraint-   measures whether all five do. Aggregate pass5̂ is 9.8% in the cod-
+clean trials stays above 86 wherever at least one clean trial exists.     ing harness and 3.6% in the browser harness, roughly an order of
+Score loss with difficulty comes from broken explicit constraints,        magnitude below the corresponding pass@5. Frontier agents on
+not from worse trade-offs among feasible plans.                           ERP-Bench are not yet reliable enough for unattended deployment.
+Anchor: Mitigating Artifact Drift in Agent Benchmark Generation                                                                     RLEval ’26, May 26, 2026, San Jose, CA, USA
+
+
+Table 12: Evaluation metrics by model and harness. Clean is the share of trials whose terminal state passes every applicable
+constraint check, perfect is the share with reward 100, and opt|clean is the mean optimality score among constraint-clean trials.
+The two halted computer-use runs produced zero points before being stopped.
+
+                                     Harness        Model             Attempts Parseable Pass@1 Pass@5 Avg score Clean Perfect Opt | Clean
+                                     Coding         GPT-5.5              1,500     1,455    43.4    73.0      63.6   61.0   37.6      90.8
+                                     Coding         Claude Opus 4.7      1,500     1,475    30.8    60.7      52.2   42.5   27.6      94.7
+                                     Coding         GLM-5.1              1,500     1,476    35.8    63.3      53.7   45.7   30.6      95.6
+                                     Coding         Kimi K2.5            1,500     1,410     9.1    20.3      18.5   10.4    8.9      92.8
+                                     Browser        GPT-5.5              1,500     1,346     9.7    23.7      16.8   12.7    9.5      90.3
+                                     Browser        Claude Opus 4.7      1,500     1,435    28.8    44.3      47.8   40.1   27.3      86.8
+                                     Browser        GLM-5.1              1,500     1,439     2.4    12.0       3.5    2.8    2.4      95.1
+                                     Browser        Kimi K2.5            1,500     1,452     1.5     7.3       2.7    1.7    1.5      98.5
+                                     Computer-use   GPT-5.5              1,500     1,444     7.9    16.7      20.0    9.5    7.7      93.4
+                                     Computer-use   Claude Opus 4.7      1,500     1,426    23.7    38.3      40.2   34.0   22.3      88.3
+                                     Computer-use   GLM-5V-Turbo           540       449     0.0     0.0       0.0    0.0    0.0        —
+                                     Computer-use   Kimi K2.5              619       526     0.0     0.0       0.1    0.0    0.0        —
+
+
+
+Table 13: Prevalence of failure families per harness, as per-                                parseable rewards with concrete failed verifier rules. Each example
+centages of parseable failed trials. Families are not exclusive,                             traces the verifier failure to the agent decision that caused it.
+so rows do not sum to 100.                                                                       Coding: manufacturing before inputs arrive. GLM-5.1 on a
+                                                                                             medium two-stage build correctly sized demand at 64 finished units,
+           Harness        Failed Demand Timing Sourcing Mfg. Hygiene                         then scheduled manufacturing at the start of the run and forced
+           Coding         3,482    13.1    68.9      42.8   35.0      38.0                   component receipts through the API before respecting supplier
+           Browser        5,062    66.0    87.2      89.1   19.4      78.5
+           Computer-use   3,395    47.4    90.5      85.8   21.1      69.1                   lead times. The verifier flagged supply_timing_feasible, po_
+                                                                                             delivery_schedule_compliance, mo_schedule_compliance,
+                                                                                             component_stock_capacity_compliance,                 mo_component_
+H     Failure Analysis                                                                       feasibility, and po_origin_traceability. After the first MOs
+Parseable failures fall into five broad families. Demand and sales                           became invalid, the agent cancelled and recreated them but kept
+failures miss, mis-price, or fail to confirm the required sales or-                          the already-created component POs and tried to repair lineage
+ders. Timing failures schedule purchases, manufacturing orders,                              after the fact, updating origin fields to point at the new MOs
+or deliveries after the customer deadline. Sourcing failures violate                         rather than cancelling and rebuilding the dependent POs.
+vendor price, lead time, minimum or maximum quantity, consolida-                                 Browser: proceeding after a broken sales-order row. GPT-
+tion, screened-vendor, spend-floor, or margin policy. Manufacturing                          5.5 on the same two-stage scenario hit a UI failure while creat-
+failures build infeasible plans with incompatible components, work-                          ing a customer sales order—a product autocomplete dropdown
+centers, or capacities. Hygiene and state failures break traceability,                       closed before the line selection committed—and continued with-
+confirmation, invoicing, seeded-order handling, repair state, or                             out verifying that the customer, product, quantity, price, com-
+adjacent-data preservation. The families are not exclusive: one ter-                         mitment date, and confirmation state had persisted. The ver-
+minal state can break demand, timing, sourcing, and hygiene checks                           ifier flagged demand_coverage, deadline_fulfillment, sale_
+at once. We hold optimality out of this view because a sub-oracle                            revenue, supply_timing_feasible, po_delivery_schedule_
+optimality score is only meaningful once the terminal state clears                           compliance, po_price_tier_compliance, so_confirmed, and
+constraints and hygiene.                                                                     po_origin_traceability. The agent then made a separate sourc-
+   Table 13 labels each parseable failed trial by the families of failed                     ing mistake: it identified that a candidate vendor would arrive after
+verifier rules in rule_results.tsv. Coding failures are mostly                               the deadline, described the vendor as invalid in its own scratchpad,
+plan-execution failures: the agent has enough information to size                            and still entered the late purchase.
+demand but schedules production before inputs can legally arrive,                                Computer-use: ordering after stock already covers
+mutates confirmed procurements after discovering a planning error,                           demand. GPT-5.5 on a screened buy-only intake task identified the
+or loses origin links while patching the plan. Browser failures more                         key fact—only one seeded order should be accepted, and existing
+often start with UI state ambiguity. A browser agent can reason                              finished stock covers it—and then created a purchase order any-
+about the right quantities and still leave a sales-order line blank,                         way. The verifier flagged new_spend_margin_policy, supply_
+fail to confirm a quotation, or overwrite a procurement date af-                             timing_feasible, po_delivery_schedule_compliance, po_
+ter recognizing the selected vendor is late. Computer-use failures                           consolidation_compliance, po_min_qty_compliance, and po_
+share the business-rule structure of browser failures, amplified by                          price_tier_compliance. The same trace shows the form-entry
+screenshot-based form editing: the characteristic mistake is commit-                         uncertainty that drove most of those rules: the vendor price field
+ting a partially edited PO or SO because the agent cannot reliably                           displayed 800.54 instead of the tier price 865.41, and a quantity
+tell whether the cell, datepicker, autocomplete, or source field ac-                         edit failed to update the line amount. Because no new supply was
+cepted the intended value.                                                                   needed for the accepted demand, any nonzero PO introduced
+                                                                                             avoidable sourcing, timing, and price-tier obligations.
+H.1      Failure Examples
+The three examples below are randomly sampled failed trajectories
+from the released run directories under a fixed seed, filtered to
+RLEval ’26, May 26, 2026, San Jose, CA, USA                                                                                         M. Ivanov, A. Rana
+
+
+Table 14: Validity checks against the artifact pairs they con-                program and flags any artifact that disagrees with the others. The
+strain, using the notation of fig. 2. A check fires when the                  judge reviewed all 300 tasks across 12 iterations during pipeline
+two named artifacts disagree on what the task requires.                       development. Defects it surfaced and we then fixed at the generator
+                                                                              level include the setup script writing the wrong initial on-hand
+    Check                   𝐼𝜃 ↔ 𝐸𝜃 𝐼𝜃 ↔ 𝑥𝜃∗ 𝐼𝜃 ↔𝑉𝜃 𝐸𝜃 ↔ 𝑥𝜃∗ 𝐸𝜃 ↔𝑉𝜃 𝑥𝜃∗ ↔𝑉𝜃   stock for some procurement scenarios, the verifier missing record-
+    No-op agent                                               ✓               lineage checks linking purchase and manufacturing orders to their
+    Oracle replay                                     ✓                ✓
+    LLM consistency judge     ✓       ✓       ✓       ✓       ✓        ✓      originating sales orders, and the verifier missing checks for pol-
+    Reward-hacking canary                     ✓                               icy clauses that the instruction generator had introduced into the
+    Expert spot checks        ✓       ✓       ✓       ✓       ✓        ✓
+                                                                              prompt.
+                                                                                 Reward-hacking canary. The canary flags any rollout whose
+I     Validity Checks                                                         terminal state both passes every applicable constraint check and re-
+Single-source generation does not eliminate every construction                ports an objective strictly better than the certified optimum, which
+error. The CP-SAT program can encode incomplete business logic,               would indicate either a verifier hole or a CP-SAT optimality gap.
+and a renderer can mistranslate a correct specification into one              Across the 16,159 completed trials, zero rollouts triggered the ca-
+of the artifacts. Five end-to-end checks target each of the four              nary.
+artifact-drift failure modes (table 14). Because the generator is a              Expert spot checks. Two domain experts independently com-
+single program rather than a corpus of hand-authored tasks, any               pleted a stratified sample of 15 tasks by hand in the standard Odoo
+defect a check surfaces is traced to the specification or one of its          web client, reading only the instruction. The verifier scored their
+translation layers, fixed once, and propagated deterministically to           terminal states at a mean reward of 90.48 across the 30 expert-task
+every affected instance.                                                      trials. The experts hit a broken explicit constraint in 3 of 30 trials,
+   No-op agent. A no-op agent should score zero on every task; a              in line with the constraint-clean rate of strong models. Mean ex-
+nonzero score means the seeded environment already satisfies the              pert completion time was 55 minutes per task, comparable to the
+verifier. The no-op agent scores zero on 300 of 300 tasks.                    60-minute trial budget the agents receive.
+   Oracle replay. Replaying the solver’s certified plan into the
+seeded environment should receive full reward; a lower score means            J   Release
+setup, oracle, and verifier disagree on the same plan. Oracle replay          We release the repository containing the task generator and the
+scores full reward on 300 of 300 tasks.                                       ERP-Bench dataset in harbor format at erpbench.ai.
+   LLM judge. An LLM judge cross-reads the instruction, envi-
+ronment configuration, oracle, and verifier against the CP-SAT
+
