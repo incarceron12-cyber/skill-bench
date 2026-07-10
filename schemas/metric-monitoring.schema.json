@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skill-bench.local/schemas/metric-monitoring.schema.json",
+  "title": "skill-bench metric specification and monitoring package",
+  "description": "Operating-layer contract that turns immutable trial observations into population estimands and governed monitoring actions without licensing broader capability claims.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "package_id", "version", "artifacts", "evidence", "metrics", "monitoring_policies"],
+  "properties": {
+    "schema_version": {"const": "0.1.0"},
+    "package_id": {"$ref": "#/$defs/id"},
+    "version": {"$ref": "#/$defs/text"},
+    "artifacts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}},
+    "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "metrics": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/metric"}},
+    "monitoring_policies": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/monitoringPolicy"}}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "ids": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+    "texts": {"type": "array", "items": {"$ref": "#/$defs/text"}, "uniqueItems": true},
+    "artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifact_id", "artifact_type", "path", "version", "sha256"],
+      "properties": {
+        "artifact_id": {"$ref": "#/$defs/id"},
+        "artifact_type": {"enum": ["task", "bundle", "check", "grader", "configured_system", "validity_argument", "measurement", "candidate_catalog", "baseline_measurement", "source_population", "fidelity_study"]},
+        "path": {"$ref": "#/$defs/path"}, "version": {"$ref": "#/$defs/text"}, "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidence_id", "evidence_type", "artifact_ref_ids", "locator", "description", "limitations"],
+      "properties": {
+        "evidence_id": {"$ref": "#/$defs/id"},
+        "evidence_type": {"enum": ["executed_measurement", "population_manifest", "fidelity_evaluation", "threshold_study", "audit_result", "intervention_record"]},
+        "artifact_ref_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "locator": {"$ref": "#/$defs/text"}, "description": {"$ref": "#/$defs/text"},
+        "limitations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}}
+      }
+    },
+    "window": {
+      "type": "object", "additionalProperties": false,
+      "required": ["window_id", "start", "end", "timezone", "instrument_version_policy", "interventions"],
+      "properties": {
+        "window_id": {"$ref": "#/$defs/id"}, "start": {"type": "string", "format": "date-time"}, "end": {"type": "string", "format": "date-time"},
+        "timezone": {"$ref": "#/$defs/text"},
+        "instrument_version_policy": {"enum": ["exact_versions_only", "stratify_by_version", "bridge_validated_versions"]},
+        "interventions": {"$ref": "#/$defs/texts"}
+      }
+    },
+    "population": {
+      "type": "object", "additionalProperties": false,
+      "required": ["unit", "eligible_event", "inclusion", "exclusion", "sampling", "window", "cluster_keys", "population_kind", "target_population"],
+      "properties": {
+        "unit": {"enum": ["check_observation", "trial", "task", "artifact", "trajectory", "incident", "user_session"]},
+        "eligible_event": {"$ref": "#/$defs/text"}, "inclusion": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}},
+        "exclusion": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}}, "sampling": {"$ref": "#/$defs/text"},
+        "window": {"$ref": "#/$defs/window"}, "cluster_keys": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}, "uniqueItems": true},
+        "population_kind": {"enum": ["observed", "synthetic", "simulated", "mixed"]}, "target_population": {"$ref": "#/$defs/text"}
+      }
+    },
+    "candidatePolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["applicability", "catalog_ref_id", "availability_rule", "equivalence_rule", "unknown_alternative_policy"],
+      "properties": {
+        "applicability": {"enum": ["required", "not_applicable"]}, "catalog_ref_id": {"type": ["string", "null"], "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "availability_rule": {"$ref": "#/$defs/text"}, "equivalence_rule": {"$ref": "#/$defs/text"},
+        "unknown_alternative_policy": {"enum": ["invalid", "adjudicate", "incorrect", "not_applicable"]}
+      }
+    },
+    "handling": {
+      "type": "object", "additionalProperties": false,
+      "required": ["missing", "invalid", "delayed_label", "retry", "duplicate_event"],
+      "properties": {
+        "missing": {"enum": ["exclude_and_report", "include_as_failure", "censor_and_report", "invalid_metric"]},
+        "invalid": {"enum": ["exclude_and_report", "include_as_failure", "invalid_metric"]},
+        "delayed_label": {"enum": ["freeze_at_cutoff", "revise_versioned_window", "censor_and_report", "not_applicable"]},
+        "retry": {"enum": ["first_attempt", "last_attempt", "all_attempts_clustered", "declared_canonical_attempt", "not_applicable"]},
+        "duplicate_event": {"enum": ["deduplicate_by_event_id", "all_events_clustered", "invalid_metric"]}
+      }
+    },
+    "computation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "numerator", "denominator_or_scale", "aggregation", "weighting", "dependence_policy", "uncertainty", "slices", "minimum_support"],
+      "properties": {
+        "kind": {"enum": ["rate", "mean", "quantile", "confusion_matrix", "count", "cost_quality_frontier"]},
+        "numerator": {"$ref": "#/$defs/text"}, "denominator_or_scale": {"$ref": "#/$defs/text"},
+        "aggregation": {"$ref": "#/$defs/text"}, "weighting": {"$ref": "#/$defs/text"}, "dependence_policy": {"$ref": "#/$defs/text"},
+        "uncertainty": {
+          "type": "object", "additionalProperties": false, "required": ["method", "confidence_level", "resampling_unit", "justification"],
+          "properties": {"method": {"enum": ["exact_enumeration", "cluster_bootstrap", "hierarchical_model", "design_based", "not_estimated"]}, "confidence_level": {"type": ["number", "null"], "exclusiveMinimum": 0, "exclusiveMaximum": 1}, "resampling_unit": {"$ref": "#/$defs/text"}, "justification": {"$ref": "#/$defs/text"}}
+        },
+        "slices": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}, "uniqueItems": true},
+        "minimum_support": {"type": "integer", "minimum": 1}
+      }
+    },
+    "fidelity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["representativeness_claim", "target_population", "dimensions", "evidence_ids", "status"],
+      "properties": {
+        "representativeness_claim": {"enum": ["none", "bounded", "representative"]}, "target_population": {"$ref": "#/$defs/text"},
+        "dimensions": {"$ref": "#/$defs/texts"}, "evidence_ids": {"$ref": "#/$defs/ids"},
+        "status": {"enum": ["not_claimed", "unsupported", "provisional", "supported"]}
+      }
+    },
+    "observedEstimate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["measurement_ref_id", "window_id", "numerator", "denominator", "value", "missing_count", "invalid_count", "delayed_count", "interpretation"],
+      "properties": {
+        "measurement_ref_id": {"$ref": "#/$defs/id"}, "window_id": {"$ref": "#/$defs/id"},
+        "numerator": {"type": "integer", "minimum": 0}, "denominator": {"type": "integer", "minimum": 1}, "value": {"type": "number"},
+        "missing_count": {"type": "integer", "minimum": 0}, "invalid_count": {"type": "integer", "minimum": 0}, "delayed_count": {"type": "integer", "minimum": 0},
+        "interpretation": {"$ref": "#/$defs/text"}
+      }
+    },
+    "metric": {
+      "type": "object", "additionalProperties": false,
+      "required": ["metric_id", "version", "construct", "score_family", "intended_decision", "prohibited_interpretations", "task_ref_ids", "check_ref_ids", "grader_ref_ids", "system_ref_ids", "validity_ref_ids", "observable", "candidate_policy", "population", "handling", "computation", "fidelity", "observed_estimates", "owner", "expiry_triggers"],
+      "properties": {
+        "metric_id": {"$ref": "#/$defs/id"}, "version": {"$ref": "#/$defs/text"}, "construct": {"$ref": "#/$defs/text"},
+        "score_family": {"enum": ["correctness", "process", "artifact_quality", "judgment", "safety", "efficiency", "cost", "grader_reliability", "calibration"]},
+        "intended_decision": {"$ref": "#/$defs/text"}, "prohibited_interpretations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}},
+        "task_ref_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "check_ref_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "grader_ref_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "system_ref_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "validity_ref_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+        "observable": {
+          "type": "object", "additionalProperties": false, "required": ["predicate", "evidence_locators", "outcome_mapping", "insufficient_evidence_state"],
+          "properties": {"predicate": {"$ref": "#/$defs/text"}, "evidence_locators": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}}, "outcome_mapping": {"$ref": "#/$defs/text"}, "insufficient_evidence_state": {"$ref": "#/$defs/text"}}
+        },
+        "candidate_policy": {"$ref": "#/$defs/candidatePolicy"}, "population": {"$ref": "#/$defs/population"},
+        "handling": {"$ref": "#/$defs/handling"}, "computation": {"$ref": "#/$defs/computation"}, "fidelity": {"$ref": "#/$defs/fidelity"},
+        "observed_estimates": {"type": "array", "items": {"$ref": "#/$defs/observedEstimate"}},
+        "owner": {"$ref": "#/$defs/text"}, "expiry_triggers": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}}
+      }
+    },
+    "monitoringPolicy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policy_id", "version", "metric_id", "metric_version", "scope", "baseline", "threshold", "loss_basis", "alert", "audit", "remediation", "rollback", "owner", "expires_at"],
+      "properties": {
+        "policy_id": {"$ref": "#/$defs/id"}, "version": {"$ref": "#/$defs/text"}, "metric_id": {"$ref": "#/$defs/id"}, "metric_version": {"$ref": "#/$defs/text"},
+        "scope": {"enum": ["calibration_only", "offline_benchmark", "staging", "production"]},
+        "baseline": {
+          "type": "object", "additionalProperties": false, "required": ["type", "metric_version", "window_id", "artifact_ref_id", "comparability_rule"],
+          "properties": {"type": {"enum": ["fixed", "rolling", "none_calibration"]}, "metric_version": {"$ref": "#/$defs/text"}, "window_id": {"$ref": "#/$defs/id"}, "artifact_ref_id": {"type": ["string", "null"], "pattern": "^[a-z0-9][a-z0-9._-]*$"}, "comparability_rule": {"$ref": "#/$defs/text"}}
+        },
+        "threshold": {
+          "type": "object", "additionalProperties": false, "required": ["direction", "value", "basis", "minimum_support", "detection_target"],
+          "properties": {"direction": {"enum": ["below", "above", "outside_interval", "any_change"]}, "value": {"type": ["number", "null"]}, "basis": {"enum": ["planted_regression", "empirical_loss", "expert_standard", "provisional_policy"]}, "minimum_support": {"type": "integer", "minimum": 1}, "detection_target": {"$ref": "#/$defs/text"}}
+        },
+        "loss_basis": {"$ref": "#/$defs/text"},
+        "alert": {"type": "object", "additionalProperties": false, "required": ["route", "deduplication", "status_values"], "properties": {"route": {"$ref": "#/$defs/text"}, "deduplication": {"$ref": "#/$defs/text"}, "status_values": {"type": "array", "minItems": 1, "items": {"enum": ["not_evaluated", "triggered", "not_triggered", "invalid"]}, "uniqueItems": true}}},
+        "audit": {"type": "object", "additionalProperties": false, "required": ["selection", "reviewer", "outcomes", "burden_measure"], "properties": {"selection": {"$ref": "#/$defs/text"}, "reviewer": {"$ref": "#/$defs/text"}, "outcomes": {"$ref": "#/$defs/texts"}, "burden_measure": {"$ref": "#/$defs/text"}}},
+        "remediation": {"type": "object", "additionalProperties": false, "required": ["actions", "deadline", "success_evidence"], "properties": {"actions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}}, "deadline": {"$ref": "#/$defs/text"}, "success_evidence": {"$ref": "#/$defs/text"}}},
+        "rollback": {"type": "object", "additionalProperties": false, "required": ["trigger", "target", "verification"], "properties": {"trigger": {"$ref": "#/$defs/text"}, "target": {"$ref": "#/$defs/text"}, "verification": {"$ref": "#/$defs/text"}}},
+        "owner": {"$ref": "#/$defs/text"}, "expires_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  }
+}
