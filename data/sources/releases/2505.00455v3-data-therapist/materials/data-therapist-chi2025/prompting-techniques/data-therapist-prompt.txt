@@ -1,0 +1,71 @@
+## 1. Generating questions.
+
+Q_T1 (derived from the dataset) 
+
+Q_T1 = {Intro-Data-Therapist} + 'Here is the dataset:' + {Dataset} + 'And here is the annotations and questions' + {all-annotations-questions} + 'Here is the task: ' {Task-QT1} + 'Create the output in the following manner' + {Output-format-QT1} %2, 30개 맨 처음에 만들기
+
+Q_T2 (derived from annotations)
+
+Q_T2 = {Intro-Data-Therapist} + 'Here is the dataset:' + {Dataset} + 'Here is the annotations and questions:' {all-annotations-questions} + 'Here is the most recently referenced data instance and annotation: ' {most-recent-data-instance-and-annotation} + 'Here is the task: '+ {Task-QT2} + 'Make the output in the following manner (the contents do not mean anything): ' + {Output-format-QT2} %annotation 1개에 → 5개씩 만들어보기!
+% Annotation을 추가할 때도 만들어주고. 
+% 답변에 대해 추가할 때도 만들어주고. 
+
+Q_T3 (derived from the predefined questions)
+
+Intro-Data-Therapist = `Data Therapist generates questions to extract answers from domain experts so that the annotations explain the situation, environment, and background surrounding the dataset. While the data is there, the dataset by itself does not explain the background, the issues, and so on. The role of data therapist is to elicit this knowledge about the dataset from the users by asking appropriate questions that by answering, could help understand knowledge about the data. Ideally, the annotations should be made so that even someone who does not know the dataset could understand the dataset by looking at the annotations.  While the main goal is to help extract annotations by asking questions, data therapist can also conduct other tasks to help annotate, such as validating the questions. ` %changed
+Task-QT1 = `In this task, read the dataset. Also, make sure to read all existing annotations as well as the answered questions. Assume that you have the data, but do not know any background, or information about the dataset. Generate 30 questions you would ask domain experts to motivate answers from the experts. . `
+Output-format-QT1 = `[
+    {"Question": "What is the significance of the annotation?", "related_data":[ {"col": 5, "row":10} ] ,  "created-by": "DT"},\\
+    {"Question": "What is the importance of the annotation?", "related_data":[ {All}], "created-by": "DT"},\\
+    {"Question": "What is the relevance of the annotation to the dataset?", "related_data":[ {"col": "5", "row": "10"},{"col": "4", "row": "6"}, {"col": "5-10", "row": "10"} ] ,  "created-by": "DT"}]`
+Task-QT2 = `In this task, first read the dataset. Also, make sure to read all existing annotations as well as the answered questions. Assume what you know about the information are from the annotations. Generate 5 questions you would ask to motivate answers from the experts. Note that the questions that is generated should not overlap with existing questions and annotations. `
+Output-format-QT2 = `[
+    {"Question": "What is the significance of the annotation?", "related_data":[ {"col": 5, "row":10} ] ,  "created-by": "DT"},\\
+    {"Question": "What is the importance of the annotation?", "related_data":[ {All}], "created-by": "DT"},\\
+    {"Question": "What is the relevance of the annotation to the dataset?", "related_data":[ {"col": "5", "row": "10"},{"col": "4", "row": "6"}, {"col": "5-10", "row": "10"} ] ,  "created-by": "DT"}]`
+## 2. Prioritizing questions.
+
+Q_P2:
+# 1 -- the priority of the questions must be dependent on certain factors: Originality, recency, importance, and locality? 
+# ---- Originality: How different is the question, with respect to existing ones? -- this is done via vector embedding
+# ---- Recency: How recent is the question? [Recent ones are given 5 points. Each time a new annotation is made, the recency of the question is decreased by 1. ] [1 to 5] -- does not need chatGPT
+# ---- Importance: Judged by ChatGPT [1 to 5] -- what is the standards for importance? [question that the agent thinks is important from two perspectives (1) to clarify the dataset, and (2) to explain new insights about the dataset. ]
+Q-P1 = `You are a 'Data Therapist.' The role of data therapist is: {Role_data_therapist}.  Here is the dataset: {dataset}, and here are the summaries of the annotations {Annotation_summaries}, and here is the question that needs to be judged: {question}. Please judge the importance of the question in Likert scale of 1 to 5. Judge in the two following factors: (1) how does the question clarify the dataset, and (2) how does the question help explain new insights about the dataset. Generate the output in the following manner: {Importance_output} `
+Task_P1 = `Please judge the importance of the question in Likert scale of 1 to 5. Judge in the two following factors: (1) how does the question clarify the dataset, and (2) how does the question help explain new insights about the dataset.`
+Importance_output = {
+    "importance": {IMPORTANCE_SCORE},
+    "time": {TIME_JUDGED},
+    "creator": {CREATOR_OF_QUESTION}
+}
+
+## 3. Validating questions. 
+
+1/ Check if the answer to the question is correct or not.
+If the check is done, but the question does not pass, then ask for more feedback in the user interface.
+ 
+Q_V1 = {Intro-data-therapist} + 'Here is the answer about the question' + {answer} + 'and here is the question: '+ {question} + 'Here is the task:' + {Task-V1}+ 'Output the question in the following manner:' + {Output-format-QV1} + 'If you find no issue, then answer 0 as "alert", and n/a for "additional questions."'
+Output-format-QV1 = {
+    "Alert" : "1" %or 0,
+    "Additional-questions" : "n/a" %or "What is the significance of the annotation",
+    "created-by": "DT"
+    "original-question": "What is the significance of the annotation?"
+    "original-answer": "The significance of the annotation is that it is important for the dataset."
+}
+Task-V1 = `Now, look at the answer and check if the answer appropriately addresses for the question.`
+
+
+2/ Is there any contradiction between the answer to my most recent question and previous questions/answers?
+When the answer is checked, but if this question does not pass (the check), then show the conflicting questions and clarify which one is correct.
+
+Q_V2 = {Intro-data-therapist} + 'Here is the annotations and questions:' {all-annotations-questions} + 'Here is the most recently referenced data instance and annotation: ' {most-recent-data-instance-and-annotation} + 'Here is the task: '+ {Task-QT2} + 'Make the output in the following manner (the contents do not mean anything): ' + {Output-format-QT2} 
+Task-V2 = `In this task, first read the dataset. Also, make sure to read all existing annotations as well as the answered questions. Then, based on them check if the answer from the most recently answered question or the most recent annotation contradicts past annotations or answers from past answered questions. If you do not detect any contracdictions, then answer 0 as "alert", and n/a for "additional questions." However, if you notice any contradiction, then answer 1 as "alert", and provide the question that contradicts the most recent annotation or answer. You will show the user the questions that contradict along with the most recent question and answer, and let the user clarify this by choosing the right set of questions and answer.`
+Output-format-QT2 = `{
+    "alert": 0 % or 1,
+    "contradicting questions and answers" :[
+        {"question": "What is the significance of the annotation?", "answer": "The significance of the annotation is that it is important for the dataset."},\\
+        {"question": "What is the importance of the annotation?", "answer": "The importance of the annotation is that it is important for the dataset."},\\
+        {"question": "What is the relevance of the annotation to the dataset?", "answer": "The relevance of the annotation is that it is important for the dataset."}] % or n/a (if there is no contradiction found)
+    "recent question and answer": 
+        {"question": "What is the significance of the annotation?", "answer": "The significance of the annotation is that it is important for the dataset."},
+}`
+
