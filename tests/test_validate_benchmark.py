@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "valid-benchmark-bundle.json"
 ADMISSIBILITY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-artifact-admissibility-bundle.json"
 PROJECTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-task-projection-manifest.json"
+WORKSPACE_FIXTURE = ROOT / "tests" / "fixtures" / "valid-persistent-workspace-conformance.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
@@ -20,10 +21,18 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         cls.valid = json.loads(FIXTURE.read_text(encoding="utf-8"))
         cls.admissibility = json.loads(ADMISSIBILITY_FIXTURE.read_text(encoding="utf-8"))
         cls.projection_manifest = json.loads(PROJECTION_FIXTURE.read_text(encoding="utf-8"))
+        cls.workspace = json.loads(WORKSPACE_FIXTURE.read_text(encoding="utf-8"))
 
     def projection_bundle(self):
         bundle = copy.deepcopy(self.valid)
         bundle["task"]["projection_manifest"] = copy.deepcopy(self.projection_manifest)
+        return bundle
+
+    def workspace_bundle(self):
+        bundle = copy.deepcopy(self.valid)
+        bundle["task"]["workspace"] = copy.deepcopy(self.workspace["task_workspace"])
+        bundle["trials"][0]["workspace"] = copy.deepcopy(self.workspace["trial_workspace"])
+        bundle["trials"][0]["trace"]["events"].extend(copy.deepcopy(self.workspace["synthetic_trace_events"]))
         return bundle
 
     def validate_mutation(self, mutation) -> None:
@@ -247,6 +256,49 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         instruction = next(item for item in bundle["task"]["projection_manifest"]["projections"] if item["kind"] == "instruction")
         instruction["applied_invariances"] = ["unreviewed-paraphrase"]
         self.assertTrue(any("invariance was not declared" in error for error in semantic_errors(bundle)))
+
+    def test_valid_persistent_workspace_conformance_and_alternate_path(self) -> None:
+        bundle = self.workspace_bundle()
+        self.assertEqual([], semantic_errors(bundle))
+        self.assertEqual("workspace/alternate/current-policy.md", bundle["trials"][0]["workspace"]["relations"][0]["from_path"])
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_workspace_rejects_graph_manifest_and_placement_drift(self) -> None:
+        bundle = self.workspace_bundle()
+        bundle["task"]["workspace"]["overlay_placements"][0]["workspace_path"] = "workspace/missing/current-policy.md"
+        self.assertTrue(any("graph/manifest placement drift" in error for error in semantic_errors(bundle)))
+        bundle = self.workspace_bundle()
+        bundle["trials"][0]["workspace"]["placements"][0]["state"] = "missing"
+        self.assertTrue(any("missing or mismatched placement locator" in error for error in semantic_errors(bundle)))
+        bundle = self.workspace_bundle()
+        bundle["task"]["workspace"]["dependency_relations"] = [item for item in bundle["task"]["workspace"]["dependency_relations"] if item["relation_id"] != "relevance-alternate"]
+        self.assertTrue(any("not a declared relevance alternative" in error for error in semantic_errors(bundle)))
+
+    def test_workspace_rejects_protected_and_unauthorized_mutations(self) -> None:
+        for path, operation in (("workspace/protected/secrets.env", "delete"), ("workspace/rogue.tmp", "create")):
+            with self.subTest(path=path):
+                bundle = self.workspace_bundle()
+                mutation = {"path": path, "operation": operation, "authorized": True}
+                mutation["before_sha256" if operation == "delete" else "after_sha256"] = "9" * 64
+                bundle["trials"][0]["workspace"]["mutations"].append(mutation)
+                self.assertTrue(any("unsafe or incorrectly authorized" in error for error in semantic_errors(bundle)))
+
+    def test_workspace_rejects_unsupported_causal_use_promotion(self) -> None:
+        bundle = self.workspace_bundle()
+        causal = bundle["trials"][0]["workspace"]["relations"][2]
+        causal.update({"claim_status": "supported", "evidence_sufficiency": "sufficient"})
+        self.assertTrue(any("unsupported causal-use promotion" in error for error in semantic_errors(bundle)))
+
+    def test_workspace_rejects_insufficient_process_evidence_and_cleanup(self) -> None:
+        bundle = self.workspace_bundle()
+        bundle["trials"][0]["workspace"]["relations"][0]["event_ids"] = []
+        self.assertTrue(any("insufficient process evidence" in error for error in semantic_errors(bundle)))
+        bundle = self.workspace_bundle()
+        bundle["trials"][0]["workspace"]["cleanup"]["status"] = "not_run"
+        self.assertTrue(any("cleanup verification failed" in error for error in semantic_errors(bundle)))
 
 
 if __name__ == "__main__":

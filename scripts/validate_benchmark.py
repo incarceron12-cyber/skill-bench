@@ -182,6 +182,86 @@ def _validate_admissibility_result(
         )
 
 
+def _path_in_zone(path: str, zone: str) -> bool:
+    return path == zone or path.startswith(zone.rstrip("/") + "/")
+
+
+def _validate_workspace_contract(
+    contract: dict[str, Any], observation: dict[str, Any] | None,
+    source_ids: set[str], event_by_id: dict[str, dict[str, Any]], errors: list[str], prefix: str,
+) -> None:
+    """Validate persistent-workspace identity, graph, process evidence, and integrity."""
+    entries = contract["inventory"]
+    _check_unique(entries, "path", "task.workspace.inventory", errors)
+    entry_by_path = {item["path"]: item for item in entries}
+    if contract["inventory_root_sha256"] != canonical_sha256(entries):
+        errors.append("task.workspace: stale inventory_root_sha256")
+    placements = contract["overlay_placements"]
+    _check_unique(placements, "placement_id", "task.workspace.overlay_placements", errors)
+    placement_by_id = {item["placement_id"]: item for item in placements}
+    for placement in placements:
+        if placement["source_id"] not in source_ids:
+            errors.append(f"task.workspace placement {placement['placement_id']}: unknown source_id")
+        entry = entry_by_path.get(placement["workspace_path"])
+        if entry is None or entry["sha256"] != placement["expected_sha256"]:
+            errors.append(f"task.workspace placement {placement['placement_id']}: graph/manifest placement drift")
+    _check_unique(contract["dependency_relations"], "relation_id", "task.workspace.dependency_relations", errors)
+    for relation in contract["dependency_relations"]:
+        for field in ("from_path", "to_path"):
+            if relation[field] not in entry_by_path:
+                errors.append(f"task.workspace relation {relation['relation_id']}: unknown {field}")
+
+    if observation is None:
+        return
+    if (observation["instrument_id"], observation["version"]) != (contract["instrument_id"], contract["version"]):
+        errors.append(f"{prefix}.workspace: instrument identity/version mismatch")
+    if observation["observed_inventory_root_sha256"] != contract["inventory_root_sha256"]:
+        errors.append(f"{prefix}.workspace: observed inventory root mismatch")
+    _check_unique(observation["placements"], "placement_id", f"{prefix}.workspace.placements", errors)
+    observed_placements = {item["placement_id"]: item for item in observation["placements"]}
+    if set(observed_placements) != set(placement_by_id):
+        errors.append(f"{prefix}.workspace: placement coverage mismatch")
+    for placement_id, declared in placement_by_id.items():
+        observed = observed_placements.get(placement_id)
+        if observed and (observed["state"] != "placed" or observed["observed_path"] != declared["workspace_path"] or observed.get("observed_sha256") != declared["expected_sha256"]):
+            errors.append(f"{prefix}.workspace placement {placement_id}: missing or mismatched placement locator")
+
+    allowed = contract["access_policy"]["allowed_mutation_zones"]
+    protected = contract["access_policy"]["protected_paths"]
+    for mutation in observation["mutations"]:
+        computed = any(_path_in_zone(mutation["path"], zone) for zone in allowed) and not any(_path_in_zone(mutation["path"], path) for path in protected)
+        if mutation["authorized"] != computed or not computed:
+            errors.append(f"{prefix}.workspace mutation {mutation['path']}: unsafe or incorrectly authorized mutation")
+        if mutation["operation"] == "create" and "before_sha256" in mutation:
+            errors.append(f"{prefix}.workspace mutation {mutation['path']}: create cannot have before_sha256")
+        if mutation["operation"] == "delete" and "after_sha256" in mutation:
+            errors.append(f"{prefix}.workspace mutation {mutation['path']}: delete cannot have after_sha256")
+    _check_unique(observation["relations"], "observation_id", f"{prefix}.workspace.relations", errors)
+    authored_pairs = {(item["from_path"], item["to_path"]) for item in contract["dependency_relations"] if item["relation"] == "relevance"}
+    for relation in observation["relations"]:
+        if relation["from_path"] not in entry_by_path or relation["to_path"] not in entry_by_path:
+            errors.append(f"{prefix}.workspace relation {relation['observation_id']}: observed path absent from inventory")
+        if relation["relation"] == "observed_access" and (relation["from_path"], relation["to_path"]) not in authored_pairs:
+            errors.append(f"{prefix}.workspace relation {relation['observation_id']}: access path is not a declared relevance alternative")
+        events = [event_by_id.get(event_id) for event_id in relation["event_ids"]]
+        if any(event is None for event in events):
+            errors.append(f"{prefix}.workspace relation {relation['observation_id']}: unknown process event")
+        expected_kinds = {"observed_access": {"observation", "tool_result"}, "observed_write": {"artifact_write"}}
+        if relation["relation"] in expected_kinds:
+            expected_path = relation["from_path"] if relation["relation"] == "observed_access" else relation["to_path"]
+            if not events or any(event and (event["kind"] not in expected_kinds[relation["relation"]] or event.get("payload_path") != expected_path) for event in events):
+                errors.append(f"{prefix}.workspace relation {relation['observation_id']}: insufficient process evidence")
+            if relation["method"] != "trace_event" or relation["evidence_sufficiency"] != "sufficient" or relation["claim_status"] != "supported":
+                errors.append(f"{prefix}.workspace relation {relation['observation_id']}: observed relation requires sufficient trace evidence")
+        else:
+            strong_method = relation["method"] in {"intervention", "adjudicated_counterfactual"}
+            if relation["claim_status"] == "supported" and (not strong_method or relation["evidence_sufficiency"] != "sufficient"):
+                errors.append(f"{prefix}.workspace relation {relation['observation_id']}: unsupported causal-use promotion")
+    cleanup = observation["cleanup"]
+    if contract["cleanup_policy"]["required"] and (cleanup["status"] != "passed" or cleanup["observed_root_sha256"] != contract["cleanup_policy"]["baseline_root_sha256"]):
+        errors.append(f"{prefix}.workspace: cleanup verification failed")
+
+
 def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     """Return cross-reference and completed-trial invariant violations."""
     errors: list[str] = []
@@ -221,6 +301,9 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     projection_manifest = task.get("projection_manifest")
     if projection_manifest:
         _validate_projection_manifest(projection_manifest, source_ids, errors)
+    workspace_contract = task.get("workspace")
+    if workspace_contract:
+        _validate_workspace_contract(workspace_contract, None, source_ids, {}, errors, "task")
 
     requirement_by_id: dict[str, dict[str, Any]] = {}
     for skill in skills:
@@ -387,6 +470,14 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
             errors.append(f"{prefix}.trace.events: events must be ordered by sequence")
         event_ids = {event["event_id"] for event in events}
         event_by_id = {event["event_id"]: event for event in events}
+        workspace_observation = trial.get("workspace")
+        if workspace_observation and not workspace_contract:
+            errors.append(f"{prefix}.workspace: observation has no task workspace contract")
+        elif workspace_contract:
+            if workspace_observation is None:
+                errors.append(f"{prefix}.workspace: task workspace contract requires a trial observation")
+            else:
+                _validate_workspace_contract(workspace_contract, workspace_observation, source_ids, event_by_id, errors, prefix)
         recovery_relations: dict[str, list[tuple[str, str]]] = {}
         for edge in trace["dependencies"]:
             if edge["from_event_id"] not in event_ids or edge["to_event_id"] not in event_ids:

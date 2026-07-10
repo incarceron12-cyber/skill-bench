@@ -39,6 +39,7 @@ Version 0.2 also recomputes each local procedural skill's SHA-256 when
 | Recovery is an explicit error → verifier feedback → repair → verification chain | Error count is uninterpretable without feedback specificity and verified recovery. | LH-Bench review §§ Unique insight, Transferable design patterns 5 |
 | Artifact views and transforms are typed separately from artifacts | A screenshot, structured state, executable source, and export establish different predicates; derived views require pinned transformations. | `papers/agent-benchmarks/2026-07-10-scivisagentbench-multimodal-artifact-evaluation.md` §§ Unique insight, Transferable design patterns 1–3 |
 | Checks can fail closed through an admissibility envelope | Missing views, invalid exports, control/renderer mismatches, and inapplicable criteria are not ordinary zero scores. | SciVisAgentBench review, Sections 5.2–5.5 (pp. 5–6) and Concrete changes 1, 5 |
+| Persistent workspace identity, placement, dependency hypotheses, process observations, mutations, and cleanup are separate | File existence, authored relevance, observed access/write, and causal use are different claims; a correct deliverable can coexist with destructive workspace state. | `papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md` §§ Representative task trace, Unique insight, Transferable benchmark design lessons 1–8 |
 
 The fixture `tests/fixtures/valid-benchmark-bundle.json` is deliberately a
 failed completed trial. It demonstrates that a score of zero can still preserve
@@ -102,6 +103,27 @@ checker predicate; test stale digests and checker-only obligations; accept one
 declared equivalent wording; and assert that unrelated projection digests stay
 stable. These tests establish internal contract behavior only—no expert,
 professional, capability, or release-readiness claim.
+
+## Persistent-workspace conformance
+
+Optional `task.workspace` and `trial.workspace` records pin a canonical inventory
+root, file roles and valid time, network/permission policy, overlay placement,
+protected and mutable zones, authored availability/relevance/provenance
+relations, trace-grounded observed access/write, mutations, and cleanup. The
+validator recomputes the inventory digest, checks graph endpoints and placement
+hashes, derives mutation authorization rather than trusting the recorded flag,
+requires event-kind-appropriate process evidence, and rejects causal-use
+promotion from path co-occurrence. Alternative source paths remain explicit
+authored hypotheses rather than forced canonical routes.
+
+`tests/fixtures/valid-persistent-workspace-conformance.json` is an inert internal
+calibration slice grounded in the full Workspace-Bench review and its pinned
+task-3 trace. It includes current, obsolete, distractor, alternate, protected,
+and output roles; a declared equivalent path; and an unsupported causal-use
+record. Mutation tests plant graph/placement drift, protected deletion,
+unauthorized creation, missing process evidence, causal overclaim, and failed
+cleanup. The fixture establishes contract behavior only: expert validity,
+capability, workspace learning, causal use, and readiness remain false.
 
 ## Required 2×2 ablation
 
