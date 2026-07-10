@@ -28,7 +28,7 @@ list causes schema drift and overclaiming.
 | 3. Expose | Critical-incident scenario | role, stakeholder decision, stakes, difficulty knob, alternative valid procedure | What situation makes the primitive observable rather than merely described? | expertise-transfer scenarios; `templates/task-metadata.md` |
 | 4. Ground | Source pack and trap | source authority, evidence locator, contradiction mechanism, fairness basis | Can success be justified from supplied/allowed evidence, and is the trap professionally legitimate? | expertise-transfer source pack and traps |
 | 5. Contract | Artifact and workflow expectation | artifact interface, state transition, workflow ordering, completion threshold | What inspectable state or work product would a professional produce? | expertise-transfer artifact/check crosswalk; benchmark bundle task/artifact contracts |
-| 6. Instrument | Check and grader | observable evidence, pass boundary, visibility, root-cause labels | Does each check test a disclosed professional requirement or a fair held-out consequence? | benchmark bundle checks and graders |
+| 6. Instrument | Criterion/check and grader | criterion provenance, applicability, evidence access, pass boundary, dependence, gate/scored semantics, visibility, root-cause labels | Does each check test a disclosed professional requirement or fair held-out consequence, and can the grader observe the predicate? | benchmark bundle checks and graders |
 | 7. Pilot | Trial and adjudication evidence | counterfactual variant, expert rating, disagreement, invalid-run reason | Does the task discriminate real quality without rewarding leakage or harness accidents? | benchmark bundle trials/traces; expertise-transfer pilot gates |
 | 8. Release | Versioned public/private package | public basis, held-out consequence, calibration-only metadata, known limitation | Is the package expert-valid, leakage-reviewed, reproducible, and explicit about its claims? | expertise-transfer release gates; bundle hashes/provenance |
 
@@ -94,6 +94,35 @@ paper reports useful task patterns and results, but its task corpus, verifier
 specifications, grading artifacts, and response matrix were absent from the
 inspected release; use it as design evidence, not calibration ground truth [CT].
 
+### 2.3 A rubric is a dependency-aware evidence model
+
+Rubric decomposition makes expert attention inspectable, but does not make it
+neutral or independent. Treat each criterion as a versioned evidence object:
+
+- stable ID and immutable text/hash; polarity; provenance claim and evidence
+  locators; public basis; author/reviewer authority scope;
+- `hard_gate`, `required_scored`, `optional_preference`, `penalty`, or
+  `diagnostic_only` semantics rather than encoding “mandatory” as a large weight;
+- applicability predicate and an `insufficient_evidence` outcome distinct from
+  failure, including the artifact/source/trace access the grader requires;
+- one observable and decision rule, with a split review for multiple independently
+  falsifiable predicates;
+- prerequisite, overlap, exclusion, and shared-evidence links so aggregation does
+  not silently double-count one fact; and
+- typed examples (`boundary_case`, `non_exhaustive_instance`, `counterexample`,
+  or `reference_answer_fragment`) with disclosure and exhaustiveness metadata.
+
+ResearchRubrics provides unusually inspectable evidence for a three-role
+draft/review/final-review pipeline and criterion-level judging, but not for
+criterion atomicity, domain-professional authority, independence, or calibrated
+artifact sufficiency. Its released corpus includes long example-rich criteria,
+implicit requirements as the largest category, and small schema-integrity defects;
+its additive score lets a nominally mandatory miss be compensated [RR]. Preserve
+the authoring pattern, not the inference that expert-written criteria are ground
+truth. Its example ablation suggests examples can improve judge agreement while
+also anchoring answers; rubric transformations therefore need before/after hashes,
+semantic review, and held-out tests of both agreement and construct breadth [RR].
+
 ## 3. Measurement stack: trial to defensible claim
 
 | Layer | Unit observed | Appropriate claim | Do not infer |
@@ -147,6 +176,39 @@ observation; “professional judgment caused the failure” is a broader causal 
 construct claim requiring a warrant and tests of alternatives. Validity
 arguments supplement rather than replace raw scores, expert dispositions, and
 trace evidence.
+
+### 3.2 A grader observation is not a population metric
+
+Keep four records separate:
+
+```text
+criterion/check definition
+  → grader observation on one trial
+    → metric specification over an eligible population
+      → monitoring decision and action record
+```
+
+A grader observation binds evidence locators, artifact/rubric/grader versions,
+predicate outcome, insufficiency or execution failure, and uncertainty to one
+attempt. A **metric specification** additionally declares the construct and
+prohibited interpretations; unit and eligible event population; inclusion,
+sampling, clustering, duplicate/retry, missing/invalid/delayed-label policy;
+numerator/denominator or scale; aggregation/dependence/weighting and uncertainty;
+slices and minimum support; comparator/window; and source-population fidelity.
+A **monitoring action** then binds a versioned metric to a threshold and loss
+basis, alert/audit policy, owner, remediation, rollback, and expiry.
+
+Amazon's production architecture usefully connects offline/online traces,
+component and end-to-end evaluators, dashboards, alerts, human audits, and
+business effects. It does not publish formulas, denominators, uncertainty,
+threshold performance, synthetic-fidelity evidence, human reliability, or
+quantitative framework effects [AM]. Its metric names and cases therefore motivate
+contracts and failure hypotheses, not validated estimands. Component scores are
+diagnostic candidates rather than proven root causes, and business outcomes must
+remain separate until an explicit causal/validity bridge supports them. Likewise,
+ResearchRubrics' criterion-label macro-F1 does not calibrate its weighted aggregate
+or a professional threshold; criterion dependence and grader failures must remain
+visible rather than being converted to ordinary zeros [RR].
 
 ### Failure attribution vocabulary
 
@@ -284,6 +346,7 @@ panel or a calibrated bridge design.
 | Validity argument register | bind measurements to bounded interpretations and uses | claim ladder, warrants/rebuttals, facet evidence, excluded interpretations, threshold/loss basis, expiry |
 | Participation/authority ledger | govern expert contribution and transformed artifacts | purpose/consent, reciprocal value, decision rights, transformation lineage, reconsent, approval that never propagates implicitly |
 | Execution validity record | establish whether a trial had the declared boundary and opportunity | tool-scoped canary probes, adapter/launcher/environment hashes, fixture identity, service health, mandatory evidence, invalid/unscorable reason |
+| Metric specification and monitoring record | turn trial observations into a reproducible population estimand and governed trigger | eligible population/unit, versions, missingness, clustering/dependence, aggregation/uncertainty, slices, baseline/window, threshold/loss, alert/audit/remediation/rollback |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
 | Benchmark change log | distinguish instrument drift from agent evolution | old/new component hashes, rationale, affected claims, bridge panel, compatibility/calibration decision, rollback |
@@ -304,7 +367,8 @@ fidelity separately from score calibration [EB, AP].
 | Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
-| Production agent evaluation (Anthropic, AWS) | task/trial/grader/trace separation, task-health lifecycle, and operational failure taxonomy | engineering guidance may not establish benchmark construct validity; repeated-trial estimates may hide dependence | full official Anthropic article and concept review [AN]; AWS deep review remains pending |
+| Production agent evaluation (Anthropic, Amazon) | task/trial/grader/trace separation, task-health lifecycle, metric/monitoring contract, and operational failure taxonomy | engineering guidance may not establish construct validity; named metrics omit populations/estimands; synthetic and online samples drift | full official Anthropic and Amazon articles and concept reviews; experience/prescription evidence, not controlled effectiveness studies [AN, AM] |
+| Expert-authored criterion evaluation (ResearchRubrics) | reviewed criterion inventory, criterion-level judge observation, rubric transformation lineage | task-design authority mistaken for domain authority; bundled/dependent or hidden criteria; artifact-only source checks; uncalibrated additive score | full immutable v1 paper plus inspected post-paper official code/dataset releases; authoring and agreement evidence, not professional-readiness validation [RR] |
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
@@ -352,6 +416,13 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     exposed tool interface before a trial; missing service, trace, artifact,
     security, or attribution evidence blocks the corresponding capability or
     contrast claim rather than defaulting to success.
+16. **Criterion provenance does not imply atomicity:** type authority,
+    applicability, evidence access, gate/scored semantics, and dependencies; an
+    expert-written or high-weight criterion is not automatically fair, independent,
+    observable, or decisive.
+17. **Observations do not define metrics:** population, denominator, missingness,
+    dependence, uncertainty, threshold, and action semantics must be versioned
+    before a per-trial score becomes a monitoring statistic or decision trigger.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -368,6 +439,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Useful narrow result vs broad capability/readiness claim | Claim-centered validity allows a criterion result to remain useful while rejecting wider construct or decision claims, but reviewer reliability is untested [VA]. | Have independent reviewers construct claim ladders for the same pilot trials; measure disagreement and test whether the contract rejects planted claim upgrades. |
 | Realistic trap vs benchmark gotcha | Decision-boundary traps can expose expert judgment, but the reviewed consulting corpus and graders are not auditable and live values can drift [CT]. | Instantiate the same critical-incident record in two structurally different domains; plant naive/correct variants and test fairness, typed evidence checks, threshold flips, and predicted failure localization. |
 | Ecological harness comparison vs valid common envelope | Native harness behavior is a legitimate bundled treatment, but Harness-Bench's later runner and the LH pilot show that fresh directories and shared prompts do not establish equivalent filesystem, network, service, or measurement opportunity [HB, PX]. | Run tool-level denial/allow canaries and adapter conformance checks before each cell; retain service failures; repeat matched cells; estimate a contrast only when both arms satisfy one hashed envelope and mandatory-evidence policy. |
+| Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
+| Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -397,25 +470,39 @@ them:
    shared-rubric and expert adjudication. SkillsBench and Harness-Bench refine
    selection, uncertainty, and isolation requirements but are not pilot
    execution evidence [HB, PX].
-4. **Parallel infrastructure — `build-compounding-lesson-contract`:** implement
-   candidate lesson provenance, independent promotion, contradiction, firewall,
-   and rollback semantics. Building the contract is safe; promoting pilot-derived
-   doctrine remains gated on trustworthy trial/adjudication evidence.
-5. **After static execution — `build-longitudinal-evolution-protocol`:** add the
-   stream and evolution-event records from Section 4.2, then exercise matched
-   reset vs permitted-memory/skill-only vs full-evolution fixtures. Do not use
-   longitudinal complexity to bypass the static pilot's failed validity gates.
-6. **Claim gate — `build-validity-argument-contract`:** after real static pilot
-   measurements, bind them to narrow supported and explicitly unsupported claim
-   rungs before any professional-capability or readiness statement [VA].
-7. **Participation gate — `build-expert-participation-contract`:** after the
-   validity contract, govern real contribution purpose, reciprocity, authority,
-   transformation, and reconsent separately from ACTA elicitation content. An
-   internal fixture cannot validate consent, motivation, or expert fidelity [EP].
-8. **Production-method updates:** the Anthropic review adds a task-health and
-   operational-role lifecycle beyond the static bundle [AN]. Implement it only
-   after the current pilot/validity gates; integrate the pending AWS review only
-   where it adds or contradicts a canonical object.
+4. **Completed contract, not demonstrated improvement —
+   `build-compounding-lesson-contract`:** immutable candidate lessons now have
+   feedback authority, contradiction/supersession, held-out promotion, firewall,
+   dependency, and rollback semantics. The synthetic fixture calibrates the
+   contract only; no pilot-derived doctrine has passed an empirical promotion
+   gate.
+5. **Completed contract, not demonstrated learning —
+   `build-longitudinal-evolution-protocol`:** the bundle now represents frozen
+   streams, matched reset/lesson-only/full-evolution arms, state transitions,
+   retention/transfer probes, budgets, and rollback. Its synthetic three-arm
+   fixture makes no adaptation, transfer, safety, or readiness claim and must not
+   bypass the static pilot's failed contrast gate.
+6. **Completed claim contract — `build-validity-argument-contract`:** immutable
+   instrument/measurement references, claim rungs, facet ledgers, warrants,
+   rebuttals, thresholds, and prohibited upgrades are executable. The planted
+   fixture licenses only a narrow regression-behavior claim; real professional
+   capability/readiness remains unsupported pending pilot evidence [VA].
+7. **Next participation gate — `build-expert-participation-contract`:** govern
+   real contribution purpose, reciprocity, authority, transformation, and
+   reconsent separately from ACTA elicitation content. An internal fixture cannot
+   validate consent, motivation, or expert fidelity [EP, RR].
+8. **Then task-health gate — `build-task-health-lifecycle-contract`:** implement
+   origin, reference-witness, contrast-set, replicate, adjudication, role-change,
+   revision, and retirement evidence. Include rubric health checks for duplicated
+   or bundled criteria, undeclared/range-invalid weights, dynamic-source expiry,
+   evidence-access mismatch, and judge-error slices [AN, RR].
+9. **Then metric/monitoring bridge — `build-metric-monitoring-contract`:** bind
+   immutable observations to eligible populations, missingness/dependence,
+   aggregation/uncertainty, windows, thresholds, audits, and actions [AM]. Do not
+   infer production representativeness from the planned synthetic LH fixture.
+10. **Evidence-gated elicitation contract — `build-elicitation-session-contract`:**
+    wait for one consented real contribution before encoding session evidence
+    types; do not simulate testimony to satisfy a schema dependency.
 
 ## Provenance keys
 
@@ -437,6 +524,16 @@ them:
 - **[AN]** `docs/concepts/anthropic-agent-evaluation-lifecycle.md`; reviewed
   full official article and provenance paths are recorded there. This is a
   production experience report, not controlled validation evidence.
+- **[AM]** `docs/concepts/amazon-production-agent-evaluation.md`; reviewed full
+  official article, local extraction, and provenance paths are recorded there.
+  This is production experience and prescription without released quantitative
+  effectiveness or metric-validation evidence.
+- **[RR]**
+  `papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md`;
+  reviewed immutable v1 PDF/text and inspected official post-paper code/dataset
+  release paths and hashes are recorded there. The releases make authoring
+  artifacts inspectable but do not supply the manuscript's responses, expert
+  labels, or a calibrated professional-quality threshold.
 - **[VA]** `papers/agent-benchmarks/2026-07-10-validity-centered-ai-evaluation.md`;
   reviewed immutable v4 PDF/text paths and hashes are recorded there. The source
   is a conceptual synthesis with retrospective cases, not a validated protocol.
