@@ -21,50 +21,19 @@ This file tracks benchmark families relevant to `skill-bench`.
 | SWE-bench / Terminal-Bench | Coding / terminal tasks | Repos or terminal envs | Patches / terminal outcomes | Tests | Shows value of executable scoring | What analogs exist for decks/spreadsheets/memos? |
 | PaperBench / PresentBench | Research replication / presentations | Papers, specs | Artifacts | Task-specific / judge scoring | Adjacent artifact-generation benchmarks | How mature are methods? |
 
-## Emerging taxonomy
+## How to use this landscape
 
-### Task horizon
+This table is an external benchmark-family index, not the project's canonical
+schema. The consolidated internal taxonomy lives in
+[`benchmark-design-taxonomy.md`](benchmark-design-taxonomy.md), which separates:
 
-- Single-turn Q&A
-- Short tool-use task
-- Multi-step workflow
-- Multi-day / multi-week scenario
-- Persistent institutional context
+1. the expertise-to-task authoring lifecycle;
+2. the trial measurement stack;
+3. intervention, instrument, and configured-system identity; and
+4. task-bank calibration and compounding operation.
 
-### Evaluation target
-
-- Answer correctness
-- Tool-call correctness
-- Environment state change
-- Artifact correctness
-- Analytical quality
-- Presentation quality
-- Safety / policy compliance
-- Cost/time efficiency
-- Rank fidelity vs absolute score calibration
-- Task difficulty / discrimination
-
-### Domain knowledge conversion primitives
-
-- Hidden requirement
-- Contradictory evidence
-- Expert caveat
-- Decision threshold
-- Artifact convention
-- Regulatory/compliance constraint
-- Stakeholder preference
-- Data quality issue
-- “Looks good but wrong” trap
-- Root-cause failure slice
-- Mid-range difficulty panel
-- Scaffold / skill-package confound
-
-### Benchmark operation layer
-
-Recent psychometric benchmark papers suggest treating evaluation as an operating system, not only a dataset release:
-
-- **Full task bank:** broad coverage, used for cold-start calibration and periodic drift checks.
-- **Routine evaluation panel:** smaller set of historically mid-difficulty tasks or rubric checks, selected to preserve rank fidelity at lower cost.
-- **Private calibration metadata:** reference solutions, verifier internals, task-feature labels, and difficulty estimates kept separate from public prompts to avoid leakage.
-- **Response matrix:** one row per agent-task/check attempt with model, scaffold, skills, outcome, timestamp, cost, and benchmark version.
-- **Drift/saturation monitor:** trigger full re-evaluation when formerly discriminative tasks become too easy or too hard.
+New sources should be added above only when they contribute a distinct benchmark
+pattern or materially change the evidence for one already listed. Repeated
+primitive lists, scoring-layer definitions, and operating rules should update
+the canonical taxonomy instead of accumulating in this landscape file. Source-
+specific methodology, limitations, and disagreements remain in paper reviews.
