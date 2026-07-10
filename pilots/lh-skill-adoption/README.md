@@ -55,6 +55,33 @@ This materializes the same cautious builder-authored fixture under all four no-s
 
 This is a **plumbing preflight, not an agent trial**. All four conditions replay identical authored artifacts, `capability_evidence` is fixed to `false`, and no condition effect may be inferred. Its reusable contribution is a hash-pinned, machine-validated 2×2 run manifest that a later agent harness can populate with genuine matched outputs without confusing fixtures with capability evidence.
 
+## Retained invalid agent attempts
+
+Two sequential no-skill/public-skill model executions and one unattributable
+concurrent launch are retained under
+`ablation/agent-attempts-20260710/`. Run:
+
+```bash
+python scripts/audit_lh_agent_attempts.py
+```
+
+The attempts are **not valid trials**. Hermes v0.18.2 was launched from
+temporary trial directories with only file tools, but its trace records
+`/home/sam/skill-bench` as the effective cwd. Repository-wide searches exposed
+private grader/calibration filenames and treatment-adjacent documentation; the
+no-skill trace was even shown the pilot README's `public-skill.md` inventory and
+professional-trap descriptions. Artifacts also resolved to the shared
+`/home/sam/outputs` directory. A first concurrent pair therefore collided, and
+the later sequential artifacts required post-hoc relocation.
+
+The audit preserves redacted session traces, usage, exact matched prompts,
+outputs, hashes, and grader results while fixing `capability_evidence=false`.
+Both sequential outputs pass the unvalidated internal claim-boundary calibrator
+and fail the deterministic evidence-link convention; these are useful grader
+diagnostics, not a treatment comparison. A future launcher must pass a zero-cost
+cwd/input/output canary before another model run and must make repository files
+unreachable, not merely instruct the agent to ignore them.
+
 ## Difficulty knobs
 
 | Knob | Easier | Harder | Construct guarded |

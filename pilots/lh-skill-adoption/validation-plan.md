@@ -28,4 +28,16 @@ Until then, `expert_validity_review` is `failed`, release status is `not_ready`,
 
 The deterministic `evidence-provenance` slice classifies all four planted artifacts as intended. An independently versioned internal rubric and calibrator also make the two private boundaries executable: the cautious fixture passes both; agreement-overclaim fails contradiction reconciliation; tiny-ablation-overclaim fails causal scope and claim strength. This is fixture classification, not population precision/recall or expert validity. The rubric was implemented independently from pinned evidence but was not blindly authored by an independent human.
 
-The task-only preflight now materializes and validates all four matched conditions with pinned task, skill, rubric, tool, harness, feedback-policy, artifact, and grader-result hashes. It replays one identical builder-authored fixture, not an agent output; therefore `capability_evidence=false` and it cannot estimate either treatment effect. Shared-rubric human checks remain explicitly unexecuted. The next continuation is genuine matched agent execution plus qualified human adjudication—not more fixture replay—and no expert or release gate advances from this preflight.
+The task-only preflight now materializes and validates all four matched conditions with pinned task, skill, rubric, tool, harness, feedback-policy, artifact, and grader-result hashes. It replays one identical builder-authored fixture, not an agent output; therefore `capability_evidence=false` and it cannot estimate either treatment effect. Shared-rubric human checks remain explicitly unexecuted.
+
+The first attempted genuine execution did not pass the environment gate. The
+retained traces in `ablation/agent-attempts-20260710/` show that the file-tool
+root remained `/home/sam`, exposing repository graders, calibration fixtures,
+and treatment-adjacent files despite temporary launch directories. The
+concurrent pair also collided in one output directory. The deterministic audit
+therefore keeps every attempt invalid and every capability/treatment flag
+false. Before another paid/model-backed run, a launcher must prove with a
+canary that (a) cwd is task-scoped, (b) only the declared source pack plus the
+condition's skill is visible, (c) outputs resolve inside a unique trial root,
+and (d) the agent cannot discover repository rubric/calibration files. Only
+then should fresh matched execution and qualified human adjudication proceed.
