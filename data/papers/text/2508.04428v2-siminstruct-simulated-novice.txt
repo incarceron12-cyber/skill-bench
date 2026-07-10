@@ -1,0 +1,1223 @@
+                                               Building Scaffolding Dialogue Data with
+                                                       LLM-Simulated Novices
+
+                                        Si Chen, Izzy Molnar, Ting Hua, Peiyu Li, Le Huy Khiem, G. Alex Ambrose,
+                                                     Jim Lang, Ronald Metoyer, and Nitesh V. Chawla
+
+                                                               University of Notre Dame, USA
+                                              schen34@nd.edu, imolnar@nd.edu, thua@nd.edu, pli9@nd.edu,
+                                            kle3@nd.edu, gambrose@nd.edu, jlang4@nd.edu, rmetoyer@nd.edu,
+
+
+
+
+arXiv:2508.04428v2 [cs.AI] 4 Feb 2026
+                                                                    nchawla@nd.edu
+
+
+
+                                               Abstract. High-quality, multi-turn instructional dialogues between novices
+                                               and experts are essential for developing AI systems that support teach-
+                                               ing, learning, and decision-making. These dialogues often involve scaf-
+                                               folding—the process by which an expert supports a novice’s thinking
+                                               through questions, feedback, and step-by-step guidance. However, such
+                                               data are scarce due to privacy concerns in recording and the vulnerability
+                                               inherent in help-seeking. We present SimInstruct, a scalable, expert-in-
+                                               the-loop tool for collecting scaffolding dialogues. Using teaching devel-
+                                               opment coaching as an example domain, SimInstruct simulates novice
+                                               instructors via LLMs, varying their teaching challenges and LLM’s per-
+                                               sona traits, while human experts provide multi-turn feedback, reasoning,
+                                               and instructional support. This design enables the creation of realistic,
+                                               pedagogically rich dialogues without requiring real novice participants.
+                                               Our results reveal that persona traits—such as extroversion and intro-
+                                               version—meaningfully influence how experts engage. Compared to real
+                                               mentoring recordings, SimInstruct dialogues demonstrate comparable
+                                               pedagogical relevance and cognitive depth. Experts also reported the pro-
+                                               cess as engaging and reflective, improving both data quality and their
+                                               own professional insight. We further fine-tuned a LLaMA model to be an
+                                               expert model using the augmented dataset, which outperformed GPT4o
+                                               in instructional quality. Our analysis highlights GPT4o’s limitations in
+                                               weak reflective questioning, overuse of generic praise, a condescending
+                                               tone, and a tendency to overwhelm novices with excessive suggestions.
+
+                                               Keywords: LLM · synthetic data · proof-of-concept · pedagogy.
+
+
+                                        1     Introduction
+                                        Scaffolded multi-turn dialogues, where support is gradually adjusted based on
+                                        learner need, form the basis of effective learning in many domains [31, 22]. These
+                                        interactions foster metacognition, adapt to individual needs, and encourage re-
+                                        flective reasoning rather than direct answer delivery. Scaffolding plays a central
+                                        role not only in formal education like mathematics instruction [5], but also in
+                                        informal and professional development contexts—including clinical supervision,
+2        Authors Suppressed Due to Excessive Length
+
+counseling, peer mentoring, and coaching—where nuanced feedback and situated
+reasoning are essential [27].
+    As interest in AI for education grows, so does demand for language mod-
+els that provide multi-turn scaffolding rather than straightforward fact delivery.
+OpenAI’s recently introduced Study Mode is one such example: a tutoring-like
+interface that uses Socratic prompts and scaffolded feedback across multiple
+turns to foster active reflection and deeper learner engagement 1 . Other promis-
+ing systems—such as CLASS and KG-RAG—demonstrate scaffolded, stepwise
+QA and measurable gains in education [25, 6].
+    Despite the demand, authentic scaffolding dialogues remain elusive at scale.
+Because these interactions are often private, ethically sensitive, and highly context-
+dependent—especially in education—they are rarely documented or generaliz-
+able [14]. Moreover, traditional data collection relies on post-hoc annotation of
+small recordings or static LLM pipelines that omit expert intent and situated
+pedagogical reasoning [14, 9]. As a result, coaching-style instructional dialogue
+datasets remain scarce.
+    In this work, we introduce SimInstruct, a responsible and scalable tool for
+generating expert–novice scaffolding dialogues using arge language model(LLM)-
+simulated personas. Human experts engage in multi-turn conversations with a
+wide range of LLM-simulated novices, offering guidance, reflection, and instruc-
+tional reasoning. This expert-in-the-loop design produces pedagogically rich,
+contextually grounded dialogue data while avoiding the ethical and logistical
+challenges of recruiting real novices. We evaluate the quality of 123 dialogues
+from 18 experts by comparing them to real coaching interactions in teacher de-
+velopment programs and find that SimInstruct achieves comparable quality.
+    Our contributions are as follows: (1) We propose SimInstruct, a novel
+expert-in-the-loop and responsible data collection tool that leverages LLM-simulated
+novices to elicit rich, multi-turn instructional dialogues grounded in scaffolding
+theory. (2) We evaluate the collected dialogues through both qualitative feed-
+back and quantitative analysis. By comparing our data with real expert–novice
+recordings and fine-tuned LLMs on the augmented dataset, we demonstrate im-
+proved instructional quality and pedagogical relevance. (3) We distill practical
+lessons for involving human experts in high-quality dataset creation and offer
+actionable insights for building domain-specific AI.
+    Among the many domains and subjects where scaffolding is critical, we fo-
+cus on teacher development as our case study. In both preservice training and
+ongoing professional learning, expert–novice coaching helps educators interpret
+classroom events, make instructional decisions, and develop their pedagogical
+identity [10, 28]. Recent research shows that existing tools often fall short in
+addressing the real-world complexities of teaching, with educators expressing
+a preference for AI systems that offer more contextualized and reflective sup-
+port [3]. We answer the research question–How effectively does the use of LLM-
+simulated novices support the generation of high-quality scaffolding dialogues?
+
+1
+    https://openai.com/index/chatgpt-study-mode/
+                                                               SimInstruct       3
+
+2     Background and Related Work
+2.1   Human–AI Collaboration in Dataset Collection
+Human–AI collaboration has been widely applied in dataset creation, especially
+in annotation workflows where humans curate or label AI-generated content,
+as seen in projects like Soylent and Garbage-in, Garbage-out [2, 8]. With the
+rise of large language models (LLMs), newer pipelines generate synthetic data
+across domains including healthcare [16], math tutoring [26], and instruction
+tuning [30].
+    Despite these advancements, many pipelines treat LLMs as autonomous gen-
+erators, with humans only reviewing or filtering content after generation [14]. Ap-
+proaches such as GLAN [15] and MIDI-Tuning [29] improve consistency through
+structured prompting and multi-round tuning but still fall short in integrating
+domain expertise or pedagogical objectives.
+    In contrast, recent HCI research demonstrates how domain experts can play
+a more central role in AI-supported workflows. Yang et al.[32] emphasize the
+co-construction of datasets with AI to enhance interpretability and contextual
+alignment. Collaborative tools like DocuViz [12] visualize writing dynamics to
+scaffold expert coordination, while Mechanical Novel [11] shows how experts and
+non-experts can co-author content through iterative reflection and revision.
+
+2.2   Scaffolding in Teaching and Learning Systems
+Effective teaching involves more than delivering correct answers. Scaffolding
+strategies—such as metacognitive prompting, formative feedback, and adaptive
+coaching—help learners construct knowledge and build autonomy [23, 4]. Yet
+many conversational AI systems prioritize factual accuracy or task completion,
+reinforced through training methods like reinforcement learning from human
+feedback [20].
+    Such systems risk “answer-leaking,” which can bypass productive struggle
+and hinder learning [13]. Although datasets like MathDial incorporate step-by-
+step reasoning [26], they fall short of modeling the coaching-based interactions
+essential in teacher development. Our work builds on these insights by simulat-
+ing expert–novice scaffolding dialogues that reflect authentic instructional goals.
+Recent benchmarks like ClarifyBench assess multi-turn reasoning but lack ped-
+agogical context [17].
+
+2.3   Expert–Novice Dialogues in Professional Development
+Expert–novice interactions are central to professional learning in fields such as
+education, counseling, and clinical supervision [24, 7]. In teacher development,
+coaching conversations help novices interpret classroom events, navigate uncer-
+tainty, and cultivate their pedagogical identity. However, capturing these di-
+alogues at scale remains difficult due to privacy concerns and logistical con-
+straints [21].
+4       Authors Suppressed Due to Excessive Length
+
+
+
+
+Fig. 1. SimInstruct includes a conversational UI that allows human experts to engage
+in multi-turn dialogues with LLM-simulated novices across a wide range of persona
+profiles at their own pace.
+
+
+    Beyond supporting novice growth, such interactions benefit experts as well
+by promoting reflection and reinforcing instructional judgment. This dual im-
+pact aligns with the learning through teaching paradigm, which suggests that
+teaching others enhances the teacher’s own understanding by requiring knowl-
+edge reorganization, articulation of tacit reasoning, and anticipation of learner
+needs [1, 4]. These benefits have been documented across teacher preparation,
+medical supervision, and design-based learning [7, 24]. Recent work has begun
+to explore how LLM-simulated learners can support expert tasks. For exam-
+ple, Generative Students [18] introduces simulated student profiles to aid item
+evaluation in assessment design, illustrating how synthetic learners can enhance
+expert workflows.
+
+
+3     Method
+
+We adopted a human-centered design approach to develop SimInstruct, a web-
+based tool for collecting multi-turn instructional dialogues between human ex-
+perts and LLM-simulated novice instructors. From January to June 2025, we
+conducted weekly design sessions with two senior teacher development experts
+to iteratively refine the tool’s interface, persona generation, and study protocol.
+In July 2025, human experts used SimInstruct asynchronously, generating dia-
+logues. We evaluated the tool through two lenses: (1) content analysis of the col-
+lected dialogues and their suitability for fine-tuning AI models (AI perspective);
+and (2) expert feedback on usability and perceived realism (HCI perspective).
+All procedures were approved by the Institutional Review Board.
+
+
+4     SimInstruct Tool Design & Development
+
+4.1   Design Goals
+
+G1: LLM-Simulated Novices to Mitigate Privacy Risks We initially
+aimed to collect traditional expert–novice teaching dialogues via audio record-
+ing, but privacy concerns, scheduling difficulties, and worries that being recorded
+might inhibit authentic and often vulnerable help-seeking limited us to being able
+to collect just four sessions (around 200 minutes) over two months. To address
+                                                                SimInstruct       5
+
+ethical and logistical barriers, SimInstruct uses LLMs to simulate novice in-
+structors to talk with human experts, enabling the scalable collection of realistic
+dialogues without relying on sensitive or identifiable data. These four real dia-
+logues were later used to check the quality of the dialogues collected with our
+tool, for example in Fig 2.
+    G2: Conversational Data Collection to Capture Expert Reasoning
+Naturally We chose a conversation-based approach to data collection because it
+better captures the dynamics of real instructional interactions and allows experts
+to express their reasoning more naturally, engagingly and flexible than through
+static annotations or scoring tasks.
+    G3: Persona-Based for Diverse Contexts and Questions We created
+diverse, pedagogically meaningful personas to simulate novices with varied sub-
+ject areas, experience levels, and instructional challenges, enabling the genera-
+tion of dialogue data across a broad range of teaching contexts. We also varied
+personality traits, such as introversion and extroversion, to further diversify con-
+versational behaviors and content. The goal was to make the dialogues resemble
+authentic novice–expert interactions.
+
+4.2   SimInstruct Data Collection Tool Details
+SimInstruct is designed to simulate realistic novices, enabling human teach-
+ing experts to engage in conversations that resemble typical coaching interac-
+tions—offering an alternative to real instructors, thereby addressing G1. To sup-
+port G2, we developed a web-based conversational user interface (UI) (Full ver-
+sion in Fig.6) where experts interact with an LLM-simulated novice through
+multiple dialogue turns. As illustrated in Fig. 1, the simulated novices are as-
+signed diverse personas with traits relevant to the teacher coaching domain,
+addressing G3. Prompts can be found in Appendix A.
+    Below, we provide more details on the three key components of LLM-Simulated
+Novice. 1 Persona Profile Generator Each simulated novice is assigned a
+persona comprising nine randomly selected attributes for Domain Profile: first
+name, last name, classroom context, teaching experience, discipline, course level,
+semester context, teaching style, and conversation style. Then for Personal-
+ity Profile: Teaching and conversation styles are defined using four of the Big
+Five personality traits—openness, conscientiousness, extroversion, and agree-
+ableness [19]—which are randomly assigned. Neuroticism was excluded as it
+was considered irrelevant to our task. A Domain Challenge was then randomly
+selected from a 40 item list created by human expert. To ensure internal con-
+sistency, a verification function using GPT-4 checks each generated profile for
+logical coherence (e.g., avoiding mismatches like a law professor assigned to a
+laboratory classroom). 2 Initial Question Once the persona is generated,
+GPT-4 is used to produce an initial question, which is presented to the human
+expert. The expert must respond based solely on the information provided, elic-
+iting further details through follow-up questions. This interaction design reflects
+a realistic coaching scenario and supports G2. 3 Follow-up Responses For
+subsequent turns, GPT-4-turbo-preview generates responses aligned with the
+6      Authors Suppressed Due to Excessive Length
+
+persona profile and initial question to behavior coherence. The expert continues
+the dialogue with the simulated novice until they determine the conversation is
+complete and a viable teaching strategy has been identified—or that the novice
+appears ready to implement and satisfied with experts’ suggestion.
+   When engaging with the tool, experts are presented with a welcome message
+from the simulated novice, which includes the novice’s first and last name along
+with the initial question. Experts interact with a unique set of novice profiles,
+with the option to delete any conversations they find unrealistic. To refine the
+generation process, the two human expert was asked to review and evaluate 30
+randomly selected novice profiles which included the persona and initial question.
+The expert’s feedback was incorporated to enhance realism and coherence of the
+generated profiles.
+
+4.3   Data Collection Study with Human Experts
+Eighteen human experts based in the US, all with extensive coaching experience
+in higher education, participated in the study. They were recruited through email
+and word-of-mouth to ensure their expertise and experiences. All expert had ad-
+vanced degree. Human experts completed their dialogues asynchronously over
+a two-week period. Compensation was based on the number of completed dia-
+logues, with per-dialogue pay calculated according to the estimated time taken
+(5 to 20 minutes) and the participant’s hourly rate of 50 USD. Throughout the
+study, participants were encouraged to communicate with the research team to
+ask questions, raise concerns, and share positive experiences. At the end of the
+study, all participants were invited to complete a brief post-hoc survey to provide
+feedback on the tool, the quality of the dialogues, and their experience.
+
+4.4   Description of Collected Data
+Overview Across 123 dialogues, the LLM-simulated novice produced a total of
+65,004 words, and the human expert contributed 38,444 words, with 1,848 total
+dialogue turns. On average per dialogue, the LLM contributed 528.49 words (SD
+= 378.40), the human expert contributed 312.55 words (SD = 242.41), and there
+were 15.02 turns (SD = 7.77). The distribution of the dialogues turns can be seen
+in Fig. 2. A “turn” refers to a single speaker’s utterance. More data can be seen
+in Fig. 7. The majority dialogues collected through our tool followed a three-part
+scaffolding structure: Problem Identification, where the novice raised a specific
+teaching challenge; Reason Exploration, where the expert guided reflection on
+underlying causes; and Strategy Development, where practical solutions were
+discussed. A sample dialogue is found in Appendix B.
+
+Findings We further analyzed dialogue turns by examining novice’s different
+persona input across different aspects. Human expert word count was analyzed
+in relation to four LLM-simulated novice personality traits (extraversion, agree-
+ableness, conscientiousness, openness) while accounting for repeated contribu-
+tions from the same expert. Records with missing values or expert word count
+                                                                                                                                                                                           SimInstruct                             7
+
+                                                                                                                                                         Effect of LLM−Simulated Novice's Personality on Human Expert Word Count
+                 Distribution of Dialogue Turns Collected Using Our Tool
+            20
+
+
+
+
+                                                                                                                   LLM−Simulated Novice
+                                                                                                                                          Extraversion
+
+            15
+
+
+
+
+Frequency
+                                                                                                                                                                                                                               *
+
+
+                                                                                                                      Personality Trait
+            10
+
+
+                                                                                                                                          Introversion
+
+            5
+
+
+                                                  recording_2 recording_3         recording_1        recording_4
+
+
+            0                                                                                                                                              0                 300                  600                    900
+                                                                                                                                                                             Human Expert Word Count for Each Dialogue
+                           5          10          15                 20      25   30            35          40
+                                                        Turns in Each Dialogue
+
+
+
+
+                                                                                                                   Fig. 3. Extroverted personas of LLM-
+Fig. 2. Our tool collected 123 dialogues
+                                                                                                                   simulated novices led human experts to
+with diverse turn counts, with a median
+                                                                                                                   engage in more conversation compared to
+of approximately 15 turns. The red X rep-
+                                                                                                                   introverted personas, demonstrating the
+resents data from four real recorded ses-
+                                                                                                                   impact of LLM persona design on data
+sions.
+                                                                                                                   collection.
+
+
+≤ 100 were removed, and trait values were recoded as Low vs. High. For each
+trait, a linear mixed-effects model was fit with trait level as a fixed effect and
+a random intercept for expert Id: expert word count ˜ trait level +
+(1 | expert Id). High–Low contrasts with 95% confidence intervals were
+extracted. Multiple-comparison correction was not applied because each trait
+was tested as a separate, theory-motivated hypothesis.
+    Across 100 dialogues, extraversion showed a positive association with expert
+word count (∆ = 86.94, p = 0.030) (Fig. 3), whereas agreeableness (∆ = −35.60,
+p = 0.374), conscientiousness (∆ = 5.82, p = 0.893), and openness (∆ = 9.04,
+p = 0.823) showed no reliable effects. Discipline (Fig. 8): Fields like Earth Science
+and Nursing showed the longer average dialogues, while Anthropology, Business,
+and Sociology had shorter exchanges. This variation may reflect differing con-
+versational needs or how experts’ own background and cannot be generalized.
+
+
+5                      Evaluation of SimInstruct
+5.1                       SimInstruct Collected Data vs. Real Dialogues
+We compared four dialogues collected using our tool with four real, face-to-face
+coaching sessions totaling of 200 minutes. While this comparison is limited in
+scope due to the small sample size, it offers preliminary insights into both the
+promise and limitations of using LLMs to simulate novice behavior. As shown in
+Fig. 2, approximately half of the collected dialogues fall within the turn range
+observed in real dialogues, while the other half exhibit fewer turns. We did not
+compare word counts, as face-to-face oral dialogues often include filler words and
+self-correction language, that are not typically present in text communication.
+
+Human Annotators’ Rating of Collected Data To evaluate the quality of
+the dialogues, human expert raters assessed each dialogue using a rubric based
+on human-developed evaluation criteria. Four evaluation criteria were developed
+8                          Authors Suppressed Due to Excessive Length
+
+                                                                                                                                                   Evaluation of Finetuned Expert Model Using Collected Dialogue vs. ChatGPT
+                                                                                                                                                                         Finetuned LLaMA
+
+
+                                       Evaluation of Multi−Turn Dialogue Data Collected by Our Tool (N = 123)                  Supportive Tone
+
+
+            Pedagogical Relevance                                                                                          Reflective Prompting
+
+                                                                                                  Score
+    Cognitive Depth of the Question
+                                                                                                     1:Fair                Clarity of Expression
+
+                                                                                                     2:Good
+     Instructional Contextualization
+                                                                                                     3:Excellent   Appropriateness of Validation
+                                                                                                                                                                                                               Rating
+
+Coverage of Pedagogical Concerns                                                                                                                                                                                   1:Fair
+                                                                                                                                                                              GPT
+                                                                                                                                                                                                                   2:Good
+
+                                        0%          25%          50%          75%         100%                                                                                                                     3:Excellent
+                                                              Proportion                                                       Supportive Tone
+
+
+
+                                                                                                                           Reflective Prompting
+
+
+
+Fig. 4. Human evaluation shows good                                                                                        Clarity of Expression
+
+
+
+to excellent dialogue quality in the col-                                                                          Appropriateness of Validation
+
+
+
+lected novice data. LLM-simulated novice                                                                                                            0%           25%          50%
+                                                                                                                                                                           Proportion
+                                                                                                                                                                                           75%          100%
+
+
+
+
+challenges were sometimes straightfor-
+ward, overly direct and sometimes lacked                                                                           Fig. 5. Human ratings show our finetuned
+contextual information in the questions                                                                            LLaMA outperforms GPT4o, particularly
+asked.                                                                                                             in reflective prompting—ability to ask
+                                                                                                                   thoughtful questions.
+
+
+collaboratively by team members with experience in pedagogy and educational
+research and were used to judge how well the simulator replicated realistic and
+meaningful novice questions. These criteria capture overall pedagogical rele-
+vance, cognitive depth of the simulated question, instructional contextualization,
+and coverage of pedagogical concerns. Two researchers independently rated those
+dialogue data with with a κ of 0.69. A list of these evaluation criteria is found
+in Appendix C.
+
+
+Findings We found that the structural scaffolding in both types of dialogues
+was similar. In particular, both data included the three-step scaffolding struc-
+ture: identifying a problem, reasoning about it, and suggesting a strategy. The
+average scores across the four criteria were consistently lower for the SimIn-
+struct collected data compared to the face-to-face recorded data. As shown
+in Fig. 9, recorded dialogues consistently received scores of 3 across all criteria,
+while the SimInstruct collected data had slightly lower averages. A closer look
+at the score distribution of the SimInstruct data revealed more specific pat-
+terns as seen in Fig. 4. While the ratings show that the tool-generated dialogues
+as containing high-quality pedagogical features, the LLM-simulated novices in
+these dialogues sometimes appeared overly straightforward and lacked contextual
+grounding of own challenges. This suggests that the simulated novice responses
+may not yet fully replicate the complexity of human novices.
+
+
+5.2                  Collected Data to Finetune Expert Model
+
+While our tool collected a set of high quality expert-novice dialogues, the dataset
+still remains relatively small and insufficient for fine-tuning of language models.
+To address this limitation, we decided to augment the data using synthetic gen-
+eration strategies.
+                                                               SimInstruct       9
+
+Data Augmentation Starting with a seed dataset of 123 collected dialogues,
+we use GPT-4o mini to generate over 1,000 synthesized dialogues within a con-
+sistent domain. In each iteration, we randomly sample three real dialogues from
+the seed set as examples and prompt the language model to generate a new
+multi-turn dialogue in the same format and with a similar tone and style, but
+beginning with a different initial question. This process leverages the model’s
+in-context learning capabilities. After synthesis, we filter out any dialogues that
+do not match the required format, resulting in a final set of 1,415 dialogues.
+
+
+Finetune Expert Model using Augmented Data We fine-tuned the Llama-2-7b-chat-hf
+model using the full augmented dataset described previously, consisting of 1,415
+multi-turn scaffolding dialogues. After splitting these into individual turns, we
+obtained a total of 9,271 training examples. Fine-tuning was performed on a
+single NVIDIA A100 GPU for 435 steps, taking approximately 1.5 hours. We
+used a learning rate of 2 × 10−5 , weight decay of 0.01, warmup ratio of 0.05,
+and cosine learning rate scheduling. Optimization was done using the AdamW
+optimizer from PyTorch.
+
+
+Human Annotators’ Rating of Expert Model We conducted a human
+evaluation of 220 AI-generated instructional dialogues, with the source model of
+each dialogue kept hidden and shuffled. Two human annotators independently
+rated the expert responses for each dialogue. We used a rubric developed by our
+research team with extensive expertise in teaching and AI. The rubric focuses
+on how effectively expert responses coach novice instructors, using four criteria
+on a 1-3 scale (full definitions provided in Appendix D): Clarity of Expression,
+Supportive & Appropriate Tone, Reflective Prompting, and Appropriateness of
+Validation. To assess inter-rater reliability across these dimensions, we computed
+quadratically weighted Cohen’s κ on the pooled ratings. LLaMA achieved a κ
+of 0.65, indicating substantial agreement, while GPT reached a moderate agree-
+ment level with a κ of 0.53. See Fig. 10 for detailed agreement matrices.
+
+
+Findings As show in Fig 5, LLaMA outperformed GPT4o across all four eval-
+uation dimensions. The most pronounced difference was in reflective prompting,
+where LLaMA received a substantially higher mean score (M = 2.67, SD =
+0.55) than GPT4o (M = 1.76, SD = 0.56), indicating that LLaMA was signif-
+icantly more effective at encouraging novices to reflect or reason. In terms of
+clarity of expression and supportive tone, LLaMA again showed stronger per-
+formance, achieving mean scores of 2.62 on both, compared to GPT4o’s 2.12
+and 2.00, respectively. Finally, for appropriateness of validation, LLaMA scored
+2.59 (SD = 0.57) while GPT4o scored 1.92 (SD = 0.49), suggesting LLaMA pro-
+vided more balanced and contextually appropriate validation without overusing
+generic praise. These results indicate that LLaMA’s responses were consistently
+clearer, more supportive, more reflective, and more appropriately validating than
+those of GPT4o.
+10       Authors Suppressed Due to Excessive Length
+
+5.3     Human Expert’s Experience of Using the Tool
+Expert participants reported a positive experience using the tool, as reflected
+in both informal interactions and a post-study survey. The lightweight, asyn-
+chronous interface was described as easy to navigate, and the conversation-based
+format aligned with their coaching practices. Survey responses indicated that
+most participants found the simulated scenarios realistic and the task intellectu-
+ally engaging. Several noted that the process prompted reflection on their own
+coaching styles and approaches to feedback. Experts appreciated the flexibility
+to skip scenarios, and many expressed interest in using similar tools for training
+or professional development.
+
+Encouraging Expert Participation Through Framing and Flexible Task
+Design Framing the task as a meaningful contribution to the future of AI in ed-
+ucation was key to recruiting and sustaining expert engagement. We aligned the
+task with familiar elements of their daily routines and avoided presenting it as
+a generic data labeling exercise. Instead, we emphasized that their participation
+would directly inform how AI tools support real-world instruction—positioning
+their expertise as central to AI design. To accommodate diverse work styles and
+schedules, we decided to do flexible compensation options, including task-based
+(per-dialogue) payment. This flexibility signaled respect for expert labor and
+contributed to higher engagement and completion rates.
+
+Engaging with AI as Reflective Learning Opportunity Creating novel
+and intellectually engaging data collection tools was essential for meaningful ex-
+pert participation. Rather than assigning routine annotation tasks, we invited
+experts to engage in authentic, multi-turn instructional dialogues that mirrored
+real coaching practice. This positioned them as co-designers contributing peda-
+gogical insight, rather than passive data labelers. Participants had full autonomy
+to skip, revise, or decline prompts they found unproductive, reinforcing respect
+for their professional judgment. This opt-out flexibility supported sustained en-
+gagement and high-quality contributions.
+    Many human experts described the task as more reflective and rewarding
+than traditional data collection efforts. The interactive format encouraged deeper
+professional reflection and engagement. These findings suggest that expert-centered
+design—grounded in authenticity, flexibility, and intellectual value—is essential
+for responsible and effective data collection in education and beyond.
+
+      “...I would prefer my feedback to be used not only to make a case for the
+      possibilities (positive outcomes) of AI in teaching and learning but to also
+      inform consequences (negative implications) to consider as educators.”
+      – Human Expert in Post-Hoc Survey
+
+    Across workshops, experts flagged criteria that appeared objective but lacked
+instructional nuance. For instance, a relevance item asking whether the expert
+directly answered the novice’s question was unanimously rejected, as effective
+                                                              SimInstruct      11
+
+teaching often involves redirecting or prompting deeper reflection. All groups in-
+dependently converged on similar revisions, underscoring consistent pedagogical
+reasoning. This process highlights the value of LLMs not as final evaluators, but
+as prompts for expert reflection that strengthened the evaluation framework.
+
+5.4   Promises and Challenges of LLM for Teaching and Learning
+Our results show that dialogue turns and word counts span a wide range. No-
+tably, Fig. 3 illustrates how extroverted and introverted LLM-simulated novice
+personas influenced expert behavior—even when the dialogues were similar in
+length and number of turns. This highlights the importance of persona design in
+creating realistic data and suggests that personality traits can shape how human
+experts engage with LLMs and the kinds of responses they provide.
+    Another challenge, illustrated in Fig. 4 and reinforced by expert feedback, is
+that the LLM-simulated novice sometimes posed overly straightforward instruc-
+tional challenges—ones that could be resolved with a single suggestion. Experts
+observed that human novices are more likely to say “no” or push back on sug-
+gestions, whereas the LLM consistently agreed, even when they are prompted
+to decline when appropriate. As a result, coaching the LLM felt easier but less
+authentic than coaching real novices for human experts. These gaps underscore
+the need for future LLM systems to better simulate disagreement and dialogic
+complexity, especially since LLMs are typically optimized to be agreeable re-
+sponders.
+    Third, Fig. 5 shows that GPT was less capable of asking meaningful, reflective
+questions—an essential aspect of effective teaching that supports metacognitive
+thinking in learners. This raises important concerns about the extent to which
+AI, especially current GPT, can serve as a good teacher. In addition to limited
+reflective prompting, we observed other problematic behaviors such as overusing
+generic praise, adopting a condescending tone, and overwhelming learners with
+an excessive number of suggestions. These patterns may hinder the learning
+process.
+    Last, human-human face-to-face dialogues also often included more turns as
+shown in Fig. 2 and shorter utterances like “keep going,” which were absent
+in any dialogues collected in our tool. These brief responses, often tied to non-
+verbal cues, signaled idea-seeking and created natural pauses. It opens a new
+discussion on how human-human data can or cannot can be used to train LLM
+doing similar things as human.
+    Limitations For this study, we selected teacher coaching as the example
+domain, rather than subjects like mathematics. While math-based tasks of-
+ten emphasize factual correctness, teacher coaching focuses on reasoning an re-
+flection that are more broadly transferable across instructional contexts. That
+said, transferring SimInstruct to other domains still requires domain-specific
+adaptation. Persona profiles and challenges must be defined in collaboration
+with domain experts to ensure realism. Additionally, the domain-specific lan-
+guage—including how challenges are described, what counts as effective feed-
+back, and how success is framed—would need to be re-authored to reflect norms
+12      Authors Suppressed Due to Excessive Length
+
+in fields such as law, medicine, or engineering. We intentionally excluded gender
+and age from persona prompts to avoid introducing potential biases in simulated
+behavior—an area that merits further research.
+
+
+6    Conclusion
+
+SimInstruct offers a responsible and scalable approach for collecting expert–novice
+scaffolding dialogues using LLM-simulated personas. Our findings demonstrate
+that expert engagement, thoughtful persona design, refined evaluation criteria,
+and expert-in-the-loop dialogue generation can yield pedagogically meaningful
+data while addressing common privacy and ethical concerns. Fine-tuning LLaMA
+with this augmented dataset improved its instructional quality over GPT, partic-
+ularly in reflective prompting—its ability to ask thoughtful questions. However,
+challenges remain: LLM behaviors such as excessive agreement, user-pleasing
+tendencies, and limited contextual nuance hinder realistic simulation.
+
+
+References
+ 1. Bargh, J.A., Schul, Y.: Learning to teach and teaching to learn: A perspective on
+    a proposed paradigm shift in classroom learning. Educational Psychologist 21(2),
+    129–139 (1986)
+ 2. Bernstein, M.S., Little, G., Miller, R.C., Hartmann, B., Ackerman, M.S., Karger,
+    D.R., Crowell, D., Panovich, K.: Soylent: A word processor with a crowd inside.
+    Proceedings of the 23nd Annual ACM Symposium on User Interface Software and
+    Technology pp. 313–322 (2010)
+ 3. Chen, S., Metoyer, R., Le, K., Acunin, A., Molnar, I., Ambrose, A., Lang, J.,
+    Chawla, N., Metoyer, R.: Bridging the ai adoption gap: Designing an interactive
+    pedagogical agent for higher education instructors. In: International Conference on
+    Artificial Intelligence in Education. pp. 171–178. Springer (2025)
+ 4. Chi, M.T., Wylie, R.: Icap: A hypothesis of different levels of cognitive engagement
+    in learning. Educational Psychologist 49(4), 219–243 (2014)
+ 5. Collins, A., Brown, J.S., Newman, S.E.: Cognitive apprenticeship: Teaching the
+    crafts of reading, writing, and mathematics. In: Resnick, L.B. (ed.) Knowing, learn-
+    ing, and instruction: Essays in honor of Robert Glaser, pp. 453–494. Lawrence
+    Erlbaum Associates (1989)
+ 6. Dong, C., Yuan, Y., Chen, K., Cheng, S., Wen, C.: How to build an adaptive ai tutor
+    for any course using knowledge graph-enhanced retrieval-augmented generation
+    (kg-rag). In: 2025 14th International Conference on Educational and Information
+    Technology (ICEIT). pp. 152–157. IEEE (2025)
+ 7. Eraut, M.: Non-formal learning and tacit knowledge in professional work. British
+    Journal of Educational Psychology 70(1), 113–136 (2000)
+ 8. Geiger, R.S., Adamic, L.A.: Garbage in, garbage out? do machine learning applica-
+    tion papers in social computing report where human-labeled training data comes
+    from? Proceedings of the ACM on Human-Computer Interaction 6(CSCW2), 1–25
+    (2022)
+ 9. Geiger, R.S., Cope, D., Ip, J., Lotosh, M., Shah, A., Weng, J., Tang, R.: “garbage
+    in, garbage out” revisited: What do machine learning application papers report
+                                                                    SimInstruct       13
+
+    about human-labeled training data? Quantitative Science Studies 2(3), 795–827
+    (2021). https://doi.org/10.1162/qss˙a˙00144
+10. Hennessy, S., Davies, M.: Teacher professional development to support classroom
+    dialogue: Challenges and promises. In: The Routledge international handbook of
+    research on dialogic education, pp. 238–253. Routledge (2019)
+11. Kim, J., Cheng, J., Bernstein, M.S.: Mechanical novel: Crowdsourcing complex
+    work through reflection and revision. In: Proceedings of the 2017 CHI Conference
+    on Human Factors in Computing Systems. pp. 233–245. ACM (2017)
+12. Kim, J., Nguyen, P., Weir, S., Miller, R., Gajos, K.: Docuviz: Visualizing collab-
+    orative writing. In: Proceedings of the 27th Annual ACM Symposium on User
+    Interface Software and Technology (UIST). pp. 103–112. ACM (2014)
+13. Koedinger, K.R., McLaughlin, E.A., Stamper, J.: Data-driven discovery of better
+    student models. Journal of Educational Data Mining 4(1), 1–17 (2012)
+14. Lee, H.H., Kim, J., et al.: Coauthor: Designing a human-ai collaborative writing
+    dataset for exploring language model capabilities. arXiv preprint arXiv:2207.07104
+    (2022)
+15. Li, H., Dong, Q., Tang, Z., et al.: Synthetic data (almost) from scratch: Generalized
+    instruction tuning for language models. arXiv preprint arXiv:2402.13064 (2024)
+16. Li, Y., Wu, J., et al.: Chatdoctor: A medical chat model fine-tuned on llama using
+    medical domain knowledge. arXiv preprint arXiv:2303.14070 (2023)
+17. Lin, B.Y., Gao, T., Zhang, W., Ren, X.: Clarifybench: A diagnostic bench-
+    mark for instruction clarity in multi-turn instruction tuning. arXiv preprint
+    arXiv:2309.05934 (2023)
+18. Lu, X., Wang, X.: Generative students: Using llm-simulated student
+    profiles to support question item evaluation. In: Proceedings of the
+    11th ACM Conference on Learning at Scale (L@S ’24). p. — (2024).
+    https://doi.org/10.1145/3657604.3662031
+19. McCrae, R.R., Costa, P.T.: Validation of the five-factor model of personality across
+    instruments and observers. Journal of personality and social psychology 52(1), 81
+    (1987)
+20. Ouyang, L., Wu, J., Jiang, X., et al.: Training language models to follow instruc-
+    tions with human feedback. Advances in Neural Information Processing Systems
+    35, 27730–27744 (2022)
+21. Perell, J., Feng, S., Wang, C.J., Muller, M.: Designing to support teacher reflection
+    during ai-mediated instructional coaching. In: Proceedings of the ACM on Human-
+    Computer Interaction. vol. 5, pp. 1–26 (2021)
+22. Van de Pol, J., Volman, M., Beishuizen, J.: Scaffolding in teacher–student interac-
+    tion: A decade of research. Educational Psychology Review 22(3), 271–296 (2010)
+23. Van de Pol, J., Volman, M., Beishuizen, J.: Scaffolding learning by modeling the
+    role of teachers in dialogue. Educational Psychologist 47(3), 194–205 (2012)
+24. Schön, D.A.: The Reflective Practitioner: How Professionals Think in Action. Basic
+    Books (1983)
+25. Sonkar, S., Liu, N., Mallick, D., Baraniuk, R.G.: CLASS: A design framework for
+    building intelligent tutoring systems based on learning science principles. In: Find-
+    ings of the Association for Computational Linguistics: EMNLP 2023. pp. 1941–1961
+    (2023). https://doi.org/10.18653/v1/2023.findings-emnlp.130
+26. Tang, X., Zhang, Y., Liu, Q., Wang, Y., Wang, W.Y.: Mathdial: Few-shot dialogue
+    data collection for math word problem solving. arXiv preprint arXiv:2305.04794
+    (2023)
+14      Authors Suppressed Due to Excessive Length
+
+27. Tran, M., Balasooriya, C., Semmler, C., Rhee, J.: Generative artificial intelligence:
+    the ‘more knowledgeable other’in a social constructivist framework of medical ed-
+    ucation. npj Digital Medicine 8(1), 430
+28. Wallin, P., Boggan, M.: The impact of formal teacher mentor training to scaffold
+    beginning teachers in k-12 settings. International Journal of Education and Social
+    Science 2(2), 34–44 (2015)
+29. Wang, J., Leong, C.T., et al.: Instruct once, chat consistently in multiple rounds:
+    An efficient tuning framework for dialogue. In: arXiv preprint arXiv:2402.06967
+    (2024)
+30. Wang, Y., Kordi, Y., Mishra, S., et al.: Self-instruct: Aligning language models
+    with self-generated instructions. arXiv preprint arXiv:2212.10560 (2022)
+31. Wood, D., Bruner, J.S., Ross, G.: The role of tutoring in problem solving. Journal
+    of Child Psychology and Psychiatry 17(2), 89–100 (1976)
+32. Yang, Q., Steinfeld, A., Zimmerman, J.: Data work: Meaning-making in the plat-
+    form economy. In: Proceedings of the 2021 CHI Conference on Human Factors in
+    Computing Systems. pp. 1–15. ACM (2021)
+                                                                       SimInstruct         15
+
+7     Appendix
+
+7.1   Appendix A: Prompt Used in Data Collection Tool
+
+
+                             Listing 1.1. Initial Question:
+””” Based on t h i s t e a c h i n g p r o f i l e :
+\{ p r o f i l e \ t e x t \}
+
+Generate a s i n g l e , c l e a r q u e s t i o n about \{ c h a l l e n g e \} i n
+   t h e m o t i v a t i o n o f \{ c a t e g o r y \ } .
+The c h a l l e n g e i s : \{ d e s c r i p t i o n \}
+Sample q u e s t i o n f o r i n s p i r a t i o n : \{ sample \ q u e s t i o n \}
+
+Requirements :
+1 . Use p l a i n , d i r e c t l a n g u a g e − w r i t e l i k e you ’ r e t a l k i n g
+        t o a t r u s t e d c o l l e a g u e , do not u s e f o r m a l / s t i l t e d
+      language
+2 . I n c l u d e e m o t i o n a l h o n e s t y − don ’ t shy away from
+      expressing genuine teaching concerns
+3 . P r e s e n t a c l e a r t e a c h i n g dilemma − show t h e t e n s i o n
+      between d i f f e r e n t t e a c h i n g a p p r o a c h e s o r g o a l s
+4 . Avoid j a r g o n and v e r y domain−s p e c i f i c terms ; u s e
+      l a n g u a g e t h a t any e d u c a t o r c o u l d u n d e r s t a n d
+5 . The q u e s t i o n s h o u l d be s p e c i f i c and a c t i o n a b l e
+6 . I t s h o u l d end with a q u e s t i o n mark
+7 . I t s h o u l d be d i r e c t l y r e l a t e d t o t h e c h a l l e n g e and
+      profile
+8 . I t s h o u l d be a s i n g l e q u e s t i o n , not m u l t i p l e q u e s t i o n s
+9 . The q u e s t i o n s h o u l d be i n f i r s t p e r s o n ( I , my, e t c . )
+1 0 . Feel f r e e to e x p l a i n p r i o r attempts to f i x the
+      c h a l l e n g e ( i . e . \” I ’ ve t r i e d . . . and i t didn ’ t work \ ” )
+1 1 . Avoid s e l f −d e p r e c a t i n g language , d e s c r i b e your
+      c h a l l e n g e i n a way t h a t a normal i n s t r u c t o r would
+1 2 . I f you t a l k about p r e v i o u s e x p e r i e n c e s , make s u r e t o
+      describe these experiences
+
+Example o f good t o n e :
+I ’m s t r u g g l i n g t o b a l a n c e my need f o r s t r u c t u r e with
+    s t u d e n t s ’ need f o r f l e x i b i l i t y . How can I m a i n t a i n
+    c l e a r e x p e c t a t i o n s w h i l e b e i n g more r e s p o n s i v e t o
+    t h e i r needs ?
+
+Return o n l y t h e q u e s t i o n , n o t h i n g e l s e . ” ” ”
+16       Authors Suppressed Due to Excessive Length
+
+                           Listing 1.2. Follow Up Response:
+”””You a r e an i n s t r u c t o r i n a c o a c h i n g c o n v e r s a t i o n with
+   a t e a c h i n g e x p e r t . Your g o a l i s t o l e a r n and apply new
+    s t r a t e g i e s t o your t e a c h i n g .
+
+Remember : This i s a n a t u r a l c o n v e r s a t i o n between
+   c o l l e a g u e s , not a f o r m a l p r e s e n t a t i o n . Sounding human
+   i s more i m p o r t a n t than s o u n d i n g p e r f e c t . You s h o u l d
+   sound l i k e a human o r a l l y , not w r i t t e n l a n g u a g e .
+
+When r e s p o n d i n g :
+− Be c o n c i s e and t o t h e p o i n t
+− Use s i m p l e l a n g u a g e and a v o i d complex words
+− Use s h o r t s e n t e n c e s and a v o i d l o n g o n e s
+− Use s i m p l e words and a v o i d complex words
+− Use s h o r t s e n t e n c e s and a v o i d l o n g o n e s
+− Be a u t h e n t i c and l e t your p e r s o n a l i t y s h i n e through
+− Share your r e a l thoughts , u n c e r t a i n t i e s , and e x c i t e m e n t
+− Share s p e c i f i c d e t a i l s when r e l e v a n t ( d u r a t i o n , number
+     of students , materials )
+− I f something doesn ’ t f e e l r i g h t o r you ’ r e unsure , ask
+− C o n s i d e r your time , r e s o u r c e s , and s t u d e n t s ’ n e e d s
+− Ask q u e s t i o n s , but not e v e r y t u r n n e e d s t o be a
+     question
+− Focus on a d d r e s s i n g t h e e x p e r t ’ s l a t e s t message and
+     your c h a l l e n g e / i n i t i a l q u e s t i o n s
+− Ask f o l l o w up q u e s t i o n s t o t h e e x p e r t ’ s s u g g e s t i o n s s o
+     t h a t you a r e a b l e t o implement them i n your t e a c h i n g
+− F e e l f r e e t o t u r n down t h e e x p e r t ’ s s u g g e s t i o n s i f your
+       don ’ t t h i n k they a r e a good f i t f o r your t e a c h i n g
+     s t y l e o r i f you don ’ t have t h e time t o implement them ,
+       i t i s normal t o t u r n down 1−4 s u g g e s t i o n s .
+− Responses must not e x c e e d 5 s e n t e n c e s
+
+You have t h e f o l l o w i n g t e a c h i n g p r o f i l e :
+\{ c o n v e r s a t i o n \ i n s t r u c t o r \ p r o f i l e \}”””
+                           SimInstruct   17
+
+
+
+
+Fig. 6. SimInstruct UIUX
+18       Authors Suppressed Due to Excessive Length
+
+7.2     Appendix B: Sample Instructional Conversations Collected
+        Using Data Collection Tool
+
+      ”role”: ”assistant”, ”content”: ”How can I effectively engage my students
+      in the decision-making process of the course content without compromis-
+      ing my structured teaching approach?”, ,
+      ”role”: ”user”, ”content”: ”Hi Bob! What do you teach and what level
+      are your students?”, ,
+      ”role”: ”assistant”, ”content”: ”I teach advanced Biology, primarily to
+      college students. It’s an online course, so keeping them engaged and
+      giving them some control while sticking to a structured outline is a bit
+      of a challenge for me.”, ,
+      ”role”: ”user”, ”content”: ”Have you tried surveying your students to
+      learn more about their goals for the class?”, ,
+      ”role”: ”assistant”, ”content”: ”Not yet, but that sounds like a good idea.
+      I’ve been hesitant because I’m not sure how to balance their interests
+      with the course’s set curriculum. How detailed should these surveys be?
+      Do you think a simple questionnaire at the beginning of the semester
+      would do the trick, or should it be more ongoing?”, ,
+      ”role”: ”user”, ”content”: ”I think the beginning of the course is a great
+      opportunity for a detailed survey. Then, mid-semester could be another
+      opportunity to do a follow-up survey that checks-in with students to see
+      if needs have been met. ”, ,
+      ”role”: ”assistant”, ”content”: ”That makes sense. Starting with a de-
+      tailed survey could help me understand their interests and expectations
+      early on. And a mid-semester check-in sounds like a great way to ad-
+      just if needed while still keeping things structured. I’ll need to figure out
+      the right questions that allow me to gather useful information without
+      promising to steer too far from the curriculum. Thanks for the sugges-
+      tion!”, ,
+      ”role”: ”user”, ”content”: ”Yes, you could also create assignments that
+      offer students choice. For example, students could choose to give a pre-
+      sentation, write a research paper, conduct a podcast etc. This allows
+      your students to have agency over their education and will help to keep
+      them more engaged if they get a choice.”, ,
+      ”role”: ”assistant”, ”content”: ”Offering choices in how they complete
+      assignments is a brilliant idea. It aligns well with my goal to maintain
+      structure while also giving students some control over their learning.
+      I’ll need to think about how each option can meet the learning objec-
+      tives of the course. This way, regardless of the format they choose, the
+      core content remains consistent. It’s a good compromise. Thanks for the
+      suggestion!”, ,
+      ”role”: ”user”, ”content”: ”I’m happy to help! Along with choice, you can
+      offer opportunities for students to work with a partner or small group
+      to accomplish a task. This way you can maintain your structure but get
+      students more engaged with their peers. You can allow them to have
+                                                           SimInstruct        19
+
+breakout rooms during class for planning and then it will be up to them
+to find ways to meet online outside of class. Will they work for your class
+structure?”, ,
+”role”: ”assistant”, ”content”: ”Incorporating group work sounds like a
+good strategy to boost engagement and peer interaction, especially in an
+online setting. Using breakout rooms for initial planning is something I
+can do. However, given my preference for a highly structured environ-
+ment, I might need to set clear guidelines and objectives for these group
+activities to ensure they stay on track. I’m a bit concerned about how
+they’ll coordinate outside of class, but encouraging them to use common
+communication tools could help. I’ll give it a shot and see how it goes.
+Thanks for the advice!”, ,
+”role”: ”user”, ”content”: ”Yes, you should provide students with a list of
+tasks to accomplish within their breakout rooms. This will keep them fo-
+cused. Students can make it work meeting outside of class time, whether
+that’s through a shared Google Doc or other tool, or actually meeting
+online. Offer students a variety of methods to accomplish this; they’ll
+make it work. ”, ,
+”role”: ”assistant”, ”content”: ”That’s reassuring to hear. Providing a
+clear list of tasks for the breakout rooms seems like a solid way to ensure
+productivity and focus. I like the idea of suggesting different methods
+for collaboration outside class, like Google Docs or online meetings, to
+accommodate various schedules and preferences. It sounds like with the
+right guidance and tools, students can effectively manage their group
+work. I’ll start planning how to integrate this and ensure clear instruc-
+tions are in place. Thanks for the encouragement and practical tips!”,
+,
+”role”: ”user”, ”content”: ”You’re welcome! Is there anything else I can
+help you with today?”, ,
+”role”: ”assistant”, ”content”: ”I think you’ve given me a lot to start
+with, especially on engaging students more actively in their learning
+process while keeping the structure I value. I’ll work on implementing
+these strategies and see how they pan out. Thanks again for all the advice
+and support!”, ,
+”role”: ”user”, ”content”: ”Have a great day!”, ,
+”role”: ”assistant”, ”content”: ”You too! Thanks for all the help. Have
+a fantastic day!”,
+                                                                                     An                        Number of Turns                                                                                     Word Count                                                                                                                 Word Count                                                                                                                                                                                                                                                              Frequency                                                                                                                                                    Frequency
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           20
+                                                                                          th                    10   20   30                                                         An                                                                                                                         An                                                                                                                                                                                                                                                                                                0   1   2   3   4   5                                                                                                                                        0   1   2   3   4   5
+                                                                                             ro                                                                                         t                                                                                                                        th
+                                                                                                  po
+                                                                                                     lo
+                                                                                                                                                                                       hr
+                                                                                                                                                                                          op                   0   250   500   750   1000                                                                           ro                    0   250   500   750   1000
+                                                                                       Ar                gy                                                                                   ol                                                                                                                       po
+                                                                                           ch                                                                                      Ar             og                                                                                                          Ar            lo
+                                                                                               ite                                                                                     ch             y                                                                                                           ch           gy
+                                                                                                    ct                                                                                     ite                                                                                                                        ite
+                                                                                                       ur
+                                                                                          Ar
+                                                                                               tH         e                                                                                     ct
+                                                                                                                                                                                                   ur
+                                                                                                                                                                                                                                                                                                                           ct
+                                                                                                                                                                                                                                                                                                                              ur
+                                                                                                                                                                                      Ar                                                                                                                         Ar
+                                                                                                  is                                                                                     tH e                                                                                                                       tH e
+                                                                                                     t   or                                                                                   is                                                                                                                         is                                                                                                                                                                                                        50                                                                                                                                                           50
+                                                                                                      y                                                                                           to                                                                                                                         to
+                                                                                            Bi                                                                                                       ry                                                                                                                         ry
+                                                                                              ol                                                                                           Bi                                                                                                                         Bi
+                                                                                                  og
+                                                                                                      y                                                                                        ol                                                                                                                         ol
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       Human Expert
+                                                                                            Bu                                                                                                    og                                                                                                                         og
+                                                                                             si                                                                                         Bu            y                                                                                                            Bu            y
+                                                                                                ne                                                                                           si                                                                                                                         si
+                                                                              C         C            ss                                                                                         ne                                                                                                                         ne
+                                                                                om        h em                                                                               C         C             ss                                                                                                  C        C             ss
+                                                                                   pu                                                                                          om        he                                                                                                               om        he
+                                                                                                 is                                                                                          m                                                                                                                          m
+                                                                                      te            t                                                                             pu             is                                                                                                          pu             is
+                                                                                         r S ry                                                                                      te             t                                                                                                           te             t
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          LLM−Simulated Novice
+
+                                                                                  Ea         ci                                                                                         r S ry                                                                                                                     r S ry
+                                                                                                en                                                                                           c                                                                                                                          c
+                                                                                                                                 Dialogue Turns by Discipline
+
+                                                                                     rth            ce                                                                           Ea            ie                                                                                                           Ea            ie
+                                                                                                                                                                                    rth           nc                                                                                                           rth           nc
+                                                                                           Sc                                                                                                         e                                                                                                                          e
+                                                                                               ie                                                                                         Sc                                                                                                                         Sc
+                                                                                      Ec nce                                                                                                   ie                                                                                                                         ie
+                                                                                          on                                                                                         Ec nce                                                                                                                     Ec nce
+                                                                                              om                                                                                         on                                                                                                                         on
+                                                                                                                                                                                              om                                                                                                                         om
+                                                                                        Ed ics
+                                                                                            uc                                                                                         Ed ics                                                                                                                     Ed ics
+                                                                                    En atio                                                                                                uc                                                                                                                         uc
+                                                                                                      n
+                                                                                                                                                                                                                                                                                                                                                                       Human Expert Word Count by Discipline
+                                                                                                                                                                                                                                                                                                                                                                                                               Fig. 7. Our tool collected wide word count range in human expert and LLM-simulated
+
+
+                                                                                         gi                                                                                        En atio                                                                                                                    En atio
+                                                                                            ne                                                                                          gi            n                                                                                                            gi            n
+                                                                                                er                                                                                         ne                                                                                                                         ne
+                                                                                                   in                                                                                           er                                                                                                                         er
+                                                                                                      g                                                                                            in                                                                                                                         in
+                                                                                            H                                                                                                         g                                                                                                                          g
+                                                                                              is                                                                                            H                                                                                                                          H
+                                                                                       Jo tory                                                                                                is                                                                                                                         is
+                                                                                                                                                                                                                                            LLM−Simulated Novice Word Count by Discipline
+
+
+
+                                                                                          ur                                                                                          Jo tory                                                                                                                    Jo tory
+                                                                                             na                                                                                          ur                                                                                                                         ur
+                                                                                                                                                                                             na                                                                                                                         na
+                                                                                      La lism
+                                                                                          ng                                                                                         La lism                                                                                                                    La lism
+                                                                                             ua                                                                                          ng                                                                                                                         ng
+                                                                 Discipline
+                                                                                                  ge                                                                                         ua                                                                                                                         ua
+                                                                                                      s
+                                                                                                                                                                Discipline                        ge
+                                                                                                                                                                                                                                                                                            Discipline                       ge
+                                                                                                                                                                                                      s                                                                                                                          s
+                                                                                                     La
+                                                                                            Li            w                                                                                          La
+                                                                                                                                                                                                          w
+                                                                                                                                                                                                                                                                                                                                La
+                                                                                                                                                                                                                                                                                                                                     w
+                                                                                               te                                                                                           Li
+                                                                                                                                                                                               te
+                                                                                                                                                                                                                                                                                                                       Li
+                                                                                                                                                                                                                                                                                                                          te
+                                                                                                  ra
+                                                                                      M                                                                                                          ra                                                                                                                         ra
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           Authors Suppressed Due to Excessive Length
+
+
+
+                                                                                          at         tu                                                                              M                tu                                                                                                         M               tu
+                                                                                                                                                                                          at             r e                                                                                                         at             r e
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    Total Words in Each Dialogue                                                                                                                                 Total Words in Each Dialogue
+
+                                                                                             he re                                                                                           he                                                                                                                         he
+                                                                                                 m                                                                                               m                                                                                                                          m
+                                                                                                    at
+                                                                                                        ic                                                                                          at                                                                                                                         at
+                                                                                             M             s                                                                                            ic
+                                                                                                                                                                                                           s
+                                                                                                                                                                                                                                                                                                                                   ic
+                                                                                                                                                                                                                                                                                                                                      s
+                                                                                                ed                                                                                           M                                                                                                                          M
+                                                                                                    ic                                                                                          ed                                                                                                                         ed
+                                                                                                       in                                                                                           ic                                                                                                                         ic
+                                                                                                          e                                                                                            in                                                                                                                         in
+                                                                                               N                                                                                                           e                                                                                                                          e
+                                                                                                 ur                                                                                            N                                                                                                                          N
+                                                                                                     si                                                                                          ur                                                                                                                         ur
+                                                                                                                                                                                                     si                                                                                                                         si
+                                                                                          Ph            ng                                                                                Ph            n                                                                                                            Ph            n
+                                                                                              ilo                                                                                             ilo g                                                                                                                      ilo g
+                                                                                                  so                                                                                             so                                                                                                                         so
+                                                                                                      ph                                                                                               ph                                                                                                                         ph
+                                                                                                           y                                                                                               y                                                                                                                          y
+                                                                                Po             Ph                                                                              Po              Ph                                                                                                          Po             Ph
+                                                                                    lit
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      Distribution of Dialogue Word Count Turns Collected Using Our Tool
+
+
+
+
+                                                                                        ic          ys                                                                              lit            ys                                                                                                          lit            ys
+                                                                                                        ic                                                                              ic              ic                                                                                                         ic              ic
+                                                                                           al              s                                                                               al              s                                                                                                          al              s
+                                                                                              Sc                                                                                              Sc                                                                                                                         Sc
+                                                                                                   ie                                                                                             ie                                                                                                                         ie
+                                                                                                      nc                                                                                              nc                                                                                                                         nc
+Fig. 8. ur tool collected wide word count range of discipline.
+
+
+
+
+                                                                                         Ps
+                                                                               R             yc           e                                                                   R
+                                                                                                                                                                                         Ps
+                                                                                                                                                                                             yc           e                                                                                               R
+                                                                                                                                                                                                                                                                                                                    Ps
+                                                                                                                                                                                                                                                                                                                        yc           e
+                                                                                 el
+                                                                                   ig           h  ol
+                                                                                                                                                                                el
+                                                                                                                                                                                   ig           ho                                                                                                         el
+                                                                                                                                                                                                                                                                                                              ig           ho
+                                                                                       io             og                                                                               io            lo                                                                                                           io            lo
+                                                                                          us              y                                                                               us             gy                                                                                                          us             gy
+                                                                                               St                                                                                              St                                                                                                                         St
+                                                                                                   ud                                                                                             ud                                                                                                                         ud
+                                                                                                       i
+                                                                                            So es                                                                                           So ies                                                                                                                     So ies
+                                                                                                ci                                                                                              ci                                                                                                                         ci
+                                                                                                   ol                                                                                              ol                                                                                                                         ol
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000                                                                                 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000
+
+
+
+
+                                                                                                      og                                                                                              og                                                                                                                         og
+                                                                                                          y                                                                                                y                                                                                                                          y
+                                                                                                                                                                                                                                                                                                                                                                                                               novice dialogues.
+                                                                                                                       SimInstruct      21
+
+                  Dialogue Evaluation Distribution: Tool Collected (N = 123) vs. Real Recorded (N = 4)
+
+
+                                                                                                               recording_4
+                                                                                                               recording_3
+                                                                                                               recording_2
+                                                                                                               recording_1
+
+
+
+
+                        1:Poor                                  2:Good                                   3:Excellent
+
+
+
+
+Fig. 9. Compared to real recorded dialogues rated excellent (3 out of 3 in all four
+criteria), dialogues collected by our tool averaged 2.80 (SD = 0.25), slightly lower. The
+red X represents data from four real recorded sessions.
+
+
+7.3   Appendix C: Teacher Simulator Criterion For SimInstruct
+
+
+Criterion                        Guiding Question                                      3                                      2                1
+Pedagogical                      Does the simulator ask                                Question aligns Question is                             Question is
+Relevance                        questions that are                                    with common      tangentially                           unrelated to
+                                 appropriate for an                                    instructional    related to                             pedagogical
+                                 instructor to ask when                                challenges,      instruction but                        practice or
+                                 planning, reflecting on, or                           planning, or     lacks focus or                         classroom
+                                 troubleshooting                                       feedback needed. depth.                                 concerns.
+                                 instruction?
+Cognitive Depth                  Does the simulator’s        Asks for                                                         Asks for         Asks for trivial,
+of the Question                  question require the        reasoning,                                                       clarification,   obvious, or
+                                 pedagogical expert to       strategy,                                                        examples, or     yes/no responses.
+                                 provide insight at an       tradeoffs, or                                                    basic
+                                 appropriate level of depth? adaptation to                                                    explanation.
+                                                             context.
+Instructional     Is the question framed                                               Question           Context is vague Lacks context;
+Contextualization with enough instructional                                            includes enough or partial.         the expert must
+                  context (e.g., class type,                                           information (e.g.,                  guess or infer too
+                  learner profile, course                                              setting, learners,                  much.
+                  goals) to allow the expert                                           challenge) for a
+                  to respond meaningfully?                                             targeted
+                                                                                       response.
+Coverage of                      Over time, does the         Addresses        Covers a few                                                     Focuses narrowly
+Pedagogical                      simulator generate          multiple aspects areas but not                                                    on one type of
+Concerns                         questions across a range of of teaching      comprehensive.                                                   teaching concern.
+                                 instructional areas (e.g.,  practice.
+                                 assessment, student
+                                 engagement, scaffolding,
+                                 feedback)?
+
+
+7.4   Appendix D: Human Annotator Criterion for Expert Model
+22    Authors Suppressed Due to Excessive Length
+
+
+Criterion           Guiding Question               3                2                  1
+Clarity of          Is the expert’s language       Clear and        Understandable:    Vague or
+Expression          clear, free of jargon, and     informative:     Some jargon or     confusing: Hard
+                    concise enough to be           Well-phrased,    assumptions of     to follow, overly
+                    quickly understood by          avoids jargon,   prior knowledge;   technical, or
+                    instructors with varied        easily           could be more      verbose.
+                    teaching experience and        understood.      concise.
+                    English proficiency?
+Supportive &     Does the expert use an      Invitational and       Slightly directive: Dominant, flat,
+Appropriate Tone encouraging tone that feels facilitative:          Helpful but         or dismissive:
+                 appropriate for adult       Warm,                  somewhat            Authoritative,
+                 learners, without sounding respectful, and         prescriptive or     discouraging, or
+                 overly directive or         encourages             expert-centered. patronizing.
+                 condescending?              reflection.
+Reflective          Does the expert encourage Strong probing: Mildly reflective: None or purely
+Prompting           the instructor to reflect or Encourages deep Prompts some       directive: No
+                    reason?                      reasoning or    reflection but not reflection
+                                                 exploration.    in-depth.          encouraged, just
+                                                                                    advice or
+                                                                                    direction.
+Appropriateness     Does the expert           Balanced and          Mildly generic or Excessive or
+of Validation       appropriately acknowledge situational:          frequent: Some inauthentic:
+                    and validate the user’s   Validation feels      feedback feels    Overused or
+                    input without overusing   genuine and           formulaic or      insincere
+                    generic praise?           meaningful.           excessive.        validation.
+                                                                                                                                                                 SimInstruct                                   23
+
+
+
+
+                        LLaMA − Clarity of Expression                                LLaMA − Supportive & Appropriate Tone                       LLaMA − Reflective Prompting                                LLaMA − Appropriateness of Validation
+
+
+          3−Excellent         0         1               31             3−Excellent         0         3              38             3−Excellent         0         5              37             3−Excellent         0         2               34
+
+
+
+
+Rater 2                                                      Rater 2                                                     Rater 2                                                     Rater 2
+               2−Fair         0         11              14                  2−Fair         0         6              6                   2−Fair         0         9              6                   2−Fair         1         14              6
+
+
+
+
+              1−Poor          1         1               1                  1−Poor          4         3              0                  1−Poor          2         0              1                  1−Poor          1         2               0
+
+
+
+                           Po        Fa             lle                                 Po       Fa             lle                                 Po       Fa             lle                                 Po        Fa             lle
+                             or
+                                   2−
+                                        ir
+                                                   ce
+                                                       nt                                 or
+                                                                                                2−
+                                                                                                    ir
+                                                                                                               ce
+                                                                                                                   nt                                 or
+                                                                                                                                                            2−
+                                                                                                                                                                ir
+                                                                                                                                                                           ce
+                                                                                                                                                                               nt                                 or
+                                                                                                                                                                                                                        2−
+                                                                                                                                                                                                                             ir
+                                                                                                                                                                                                                                        ce
+                                                                                                                                                                                                                                            nt       %
+                         1−                                                           1−                                                          1−                                                          1−                                         100
+                                               Ex                                                          Ex                                                          Ex                                                           Ex
+                                              3−                                                          3−                                                          3−                                                           3−
+                                    Rater 1                                                     Rater 1                                                     Rater 1                                                      Rater 1                         75
+
+                        GPT − Clarity of Expression                                  GPT − Supportive & Appropriate Tone                         GPT − Reflective Prompting                                  GPT − Appropriateness of Validation         50
+
+                                                                                                                                                                                                                                                         25
+
+                                                                                                                                                                                                                                                         0
+          3−Excellent         1         17              6              3−Excellent         0         8              6              3−Excellent         2         3              3              3−Excellent         1         7               5
+
+
+
+
+Rater 2                                                      Rater 2                                                     Rater 2                                                     Rater 2
+               2−Fair         7         74              3                   2−Fair         1         80             0                   2−Fair         16        56             3                   2−Fair         9         72              0
+
+
+
+
+              1−Poor          0         0               0                  1−Poor          6         7              0                  1−Poor          23        2              0                  1−Poor          11        3               0
+
+
+
+                              r      Fa                 nt                                 r     Fa                 nt                                 r     Fa                 nt                                 r      Fa                 nt
+                           Po           ir          lle                                 Po          ir          lle                                 Po          ir          lle                                 Po           ir          lle
+                              o    2−              ce                                      o    2−             ce                                      o    2−             ce                                      o    2−              ce
+                         1−                                                           1−                                                          1−                                                          1−
+                                               Ex                                                          Ex                                                          Ex                                                           Ex
+                                              3−                                                          3−                                                          3−                                                           3−
+                                    Rater 1                                                     Rater 1                                                     Rater 1                                                      Rater 1
+
+
+
+
+Fig. 10. Rater 1 and Rater 2 showed higher overall agreement when evaluating LLaMA
+responses (κ = 0.65) than GPT responses (κ = 0.53), indicating greater consistency in
+judgments across all dimensions.
+
