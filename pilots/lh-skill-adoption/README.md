@@ -43,6 +43,18 @@ python scripts/grade_lh_claims.py \
 
 It emits separate `contradiction-reconciliation` and `causal-claim-strength` check results. Its independently versioned rubric was derived afresh from the pinned evidence groups and review claims, but this is **not blinded independent human authorship**: the builder had repository access to the shared rubric. Evidence-group membership and regex boundaries correctly classify the planted cases; they do not establish entailment, accept alternative professional reasoning, or advance the failed expert/release gates.
 
+## Matched-condition task-only preflight
+
+Run the reproducible packaging preflight with:
+
+```bash
+python scripts/run_lh_ablation_preflight.py
+```
+
+This materializes the same cautious builder-authored fixture under all four no-skill/public-skill × independent/shared-rubric conditions, pins task, skill, rubric, tool, harness, and feedback-policy hashes, and executes only graders valid for each rubric boundary. The report is `ablation/preflight-report.json`, validated by `schemas/ablation-preflight.schema.json`. Independent-rubric conditions execute the provenance and internal claim calibrators; shared-rubric conditions execute only the rubric-independent provenance layer and explicitly leave human claim checks unexecuted.
+
+This is a **plumbing preflight, not an agent trial**. All four conditions replay identical authored artifacts, `capability_evidence` is fixed to `false`, and no condition effect may be inferred. Its reusable contribution is a hash-pinned, machine-validated 2×2 run manifest that a later agent harness can populate with genuine matched outputs without confusing fixtures with capability evidence.
+
 ## Difficulty knobs
 
 | Knob | Easier | Harder | Construct guarded |

@@ -91,3 +91,7 @@ repository.
   execution and grader-output ingestion remain separate infrastructure work.
 - SHA-256 values are required for observed artifacts, but this validator does
   not resolve external run storage or recompute them.
+
+## Task-only ablation preflight contract
+
+`ablation-preflight.schema.json` is a deliberately separate calibration contract for a matched four-condition packaging replay. It requires all 2×2 condition records, typed component and artifact hashes, explicit unexecuted checks, and `capability_evidence: false`. This prevents builder-authored fixtures from being laundered into benchmark trials while still exercising the machinery needed before genuine agent runs. The LH pilot runner and fixture are `scripts/run_lh_ablation_preflight.py` and `pilots/lh-skill-adoption/ablation/preflight-report.json`.
