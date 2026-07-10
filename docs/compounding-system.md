@@ -14,37 +14,25 @@ The system should not merely send paper summaries. It should:
 6. commit/push changes to GitHub,
 7. send concise Telegram updates that develop Samuel's thinking.
 
-## Daily cadence
+## Charter relationship
 
-### Morning — discovery and triage
+The system serves [`PROJECT_CHARTER.md`](../PROJECT_CHARTER.md). It is infrastructure for researching, learning, building, validating, and consolidating the knowledge-work benchmark—not a separate self-improvement project. Its cadence and tools may evolve, but its priorities must remain charter-aligned.
 
-Purpose: identify what is new and worth attention.
+## 24/7 compounding cadence
 
-Output:
-- 5–10 candidate papers/releases;
-- why each might matter;
-- top 2–3 to read deeply.
+Work runs continuously in staggered, role-separated cycles:
 
-### Midday — deep paper review
+1. **Orchestrate:** inspect the queue, recent evidence, workstream balance, and charter alignment.
+2. **Scout:** expand into high-value primary sources and alternative benchmark approaches.
+3. **Acquire/extract:** preserve full text, artifacts, metadata, and provenance.
+4. **Research/review:** read deeply and convert evidence into concepts and design implications.
+5. **Build/validate:** create schemas, validators, graders, tasks, fixtures, trials, and tests.
+6. **Consolidate:** merge findings into canonical documents, remove duplication, and prevent premature narrowing.
+7. **Brief:** explain learning, implementation, benchmark impact, system health, and decisions to Samuel four times daily.
 
-Purpose: read actual downloaded papers and write structured reviews.
+A 15-minute heartbeat is a coordination frequency, not an output quota. Workers may perform no-ops when the queue is healthy or when additional activity would be duplicative. Research/build work continues overnight; human-facing updates are consolidated.
 
-Output:
-- 1–3 comprehensive paper reviews;
-- methodology breakdown;
-- unique insight;
-- transfer into `skill-bench`.
-
-### Evening — synthesis and benchmark design
-
-Purpose: convert the day's learning into project direction.
-
-Output:
-- updated SOTA map;
-- new benchmark primitives;
-- scenario ideas;
-- questions for Samuel;
-- repo commit/push summary.
+Every cycle should be evaluated by whether it advances a charter objective and produces useful evidence, understanding, or benchmark infrastructure—not by source count, commits, or run frequency.
 
 ## Compounding artifacts
 

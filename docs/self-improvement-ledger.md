@@ -5,6 +5,7 @@ This ledger tracks changes to the research/build system itself. The goal is evid
 | Date | Hypothesis | Change / experiment | Evidence to observe | Outcome | Decision |
 |---|---|---|---|---|---|
 | 2026-07-10 | A shared queue and role-separated cron workers will reduce duplicated work while increasing useful output cadence. | Introduce `data/work_queue.json`, queue CLI, project rules, review checker, and 24/7 staggered workers. | Duplicate-task rate, queue throughput, review quality failures, meaningful commits, benchmark artifacts produced, Samuel's assessment. | Pending first 24-hour run. | Evaluate after 24 hours. |
+| 2026-07-10 | A canonical charter and explicit document hierarchy will reduce mission drift and premature narrowing while allowing working methods to evolve. | Add `PROJECT_CHARTER.md`; make `.hermes.md`, the research agenda, README, and compounding system subordinate to it; require charter alignment checks for task selection and consolidation. | Queue balance across charter objectives, diversity of pilots/research, fewer scope-conflicting artifacts, and Samuel's assessment of clarity. | Pending observation. | Preserve founding intent; adapt working sections with evidence. |
 
 ## Evaluation dimensions
 

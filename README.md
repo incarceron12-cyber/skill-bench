@@ -17,6 +17,7 @@ If you are new to the repository, these are the most useful entry points:
 
 | Read this | Why it matters |
 |---|---|
+| [`PROJECT_CHARTER.md`](PROJECT_CHARTER.md) | **Master source of truth:** founding intent, broad cross-domain scope, objectives, success criteria, anti-drift rules, and document hierarchy |
 | [`docs/benchmark-design-taxonomy.md`](docs/benchmark-design-taxonomy.md) | The canonical design map: expertise-to-task authoring, measurement layers, system identity, failure attribution, and benchmark operation |
 | [`schemas/README.md`](schemas/README.md) | The executable benchmark contract and how task, trial, grader, artifact, trace, and diagnosis records fit together |
 | [`schemas/EXPERTISE_TRANSFER.md`](schemas/EXPERTISE_TRANSFER.md) | The authoring contract for converting expert claims into primitives, scenarios, source packs, traps, artifacts, checks, and release gates |
@@ -169,7 +170,7 @@ The JSON validators require `jsonschema`.
 
 ## Current design stance
 
-`skill-bench` aims to be an **expertise-to-evaluation engine**, not merely another leaderboard.
+`skill-bench` aims to be an **expertise-to-evaluation engine**, not merely another leaderboard. Its scope is broad knowledge work across domains; pilots are bounded probes of general principles rather than permanent choices of profession or use case.
 
 The strongest benchmark should help answer:
 

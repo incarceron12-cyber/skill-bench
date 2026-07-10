@@ -1,5 +1,7 @@
 # Research Agenda
 
+> This is the active research agenda under the canonical [`PROJECT_CHARTER.md`](../PROJECT_CHARTER.md). It may evolve with evidence but must not narrow the benchmark to one use case without an explicit charter-level decision.
+
 ## North star
 
 Build a benchmark/research program that helps people answer:
