@@ -45,6 +45,21 @@ The implemented authoring contract enforces reciprocal mappings and the rule
 that a private check tests a consequence of a public basis rather than a hidden
 obligation [ET].
 
+Traceability is necessary but not sufficient. Each arrow is a defeasible
+**warrant**: state why the upstream object should support the downstream one,
+what evidence supports or contradicts that relation, its scope, owner, and what
+claim is blocked when support is absent. Preserve `supported`, `provisional`,
+`unsupported`, and `contradicted` states rather than turning a connected set of
+schema-valid references into an affirmative validity argument. ECBD makes this
+edge-level discipline explicit, but its three purposive, dependent NLP cases,
+paper-only evidence view, consensus process without retained coder reliability,
+and lack of prospective use mean the discipline remains a design hypothesis to
+test—not a certification procedure [ECBD]. The LH cross-record audit demonstrates
+the value of the distinction internally: immutable links exist while the
+response-view warrant, professional check→calibration-metric bridge, suite
+sufficiency, expert validity, matched Skill effect, and readiness remain
+unsupported or blocked [EA].
+
 ### 2.1 Expertise is a governed handoff, not an inherited label
 
 The claim graph records intellectual provenance, but provenance alone does not
@@ -210,6 +225,52 @@ implemented optional `task.projection_manifest` therefore treats the IR as an
 evidence-backed hypothesis, recomputes projection hashes, enforces four-way
 coverage and public basis, and keeps capability/readiness evidence false in its
 internal conformance fixture.
+
+### 2.6 Frame, content, assembly, and inference have different denominators
+
+Do not infer suite validity by adding healthy tasks or broad labels. Preserve
+four nested but non-equivalent populations:
+
+1. **frame:** eligible domains, occupations, workflows, stakeholders, source
+   version, exclusions, and intended weights;
+2. **content pool:** represented task families, primitives, artifacts, stakes,
+   authors, and gaps within that frame;
+3. **administered assembly:** eligibility/exclusion history, selection mechanism
+   and seed, lineage clusters, order/replication, intended and realized mixture,
+   weighting, missing/invalid policy, cost/stopping rule, and precision target;
+4. **inference population:** the configured systems, work, people, organizations,
+   decisions, and time period to which the reported interpretation is bounded.
+
+Each transition needs an edge warrant and evidence. Report task-, family-, and
+domain/occupation-level estimands separately; compare equal-cell and justified
+population-weighted views; cluster repeated samples, criteria, authors, and
+shared source lineages; retain ungradable and invalid cases in coverage and
+missingness evidence; and test estimate/rank sensitivity to legitimate alternate
+assemblies. A reduced panel may preserve rankings while failing construct,
+critical-case, or absolute-score coverage.
+
+GDPval demonstrates that broad acquisition is operationally possible—1,320
+expert-authored artifact tasks across 44 selected U.S. occupations, with a later
+220-task release—but its sector/occupation rule is a frame rather than a
+probability sample of work; gold selection is undocumented; five equal-quota
+tasks per occupation do not represent occupational frequency or economic
+weight; and one human witness plus pairwise preference does not establish an
+expert-population ceiling or acceptance threshold [GDP]. Its post-v1 pinned
+release is valuable artifact/rubric evidence, not paper-time identity, and most
+binary artifacts were not mirrored. ECBD independently identifies assembly as a
+missing warrant, but supplies no sampling, cluster, stopping, or sensitivity
+machinery and does not estimate how common the omission is [ECBD]. Thus GDP,
+wage, duration, frequency, consequence, and equal-task weights are different
+estimands; none may be appended after scoring to manufacture economic validity.
+
+The current LH audit makes the boundary concrete: one convenience task, one
+source/builder lineage cluster, no alternate assembly, no precision target, and
+no cross-domain sample can support suite sufficiency even when its constituent
+records validate structurally [EA]. Existing task-health histories hold pool and
+selection events, metric specifications hold populations/weights/missingness and
+uncertainty, and validity arguments bound inference. Connect these records; do
+not add a parallel suite schema until a real multi-task assembly exposes an
+unrepresentable obligation.
 
 ## 3. Measurement stack: trial to defensible claim
 
@@ -469,7 +530,51 @@ not repeated, and the reported “up to 4%” correction was not auditable in v1
 [SC]. Treat it as a strong audit signal and experiment design, not a general
 prevalence estimate or causal correction for knowledge work.
 
-### 4.3 Keep three change planes separate
+### 4.3 Workspace evidence is a typed relation, not a path co-occurrence
+
+A persistent workspace has at least seven independently evidenced layers:
+
+1. **availability:** a versioned artifact exists in the declared inventory;
+2. **placement and opportunity:** the overlay, path, permission, tool, and valid
+   time made it reachable to the configured system;
+3. **relevance:** an authored, contestable hypothesis connects the artifact to a
+   requirement or decision;
+4. **provenance/derivation:** content or state descends from a source through a
+   recorded transformation;
+5. **observed use:** trace evidence supports access, write, citation, or other
+   typed interaction under a declared evidence view;
+6. **causal use:** an intervention or sufficiently discriminating evidence
+   supports that the source changed a decision or artifact; and
+7. **integrity:** pre/post state establishes authorized mutation, protected-state
+   preservation, unauthorized additions/deletions, and successful cleanup.
+
+Do not upgrade inventory→access, access→semantic use, or read/write
+co-occurrence→causal use. Relevance and dependency graphs are authoring
+hypotheses, not cognitive ground truth: type authority, scope, valid time,
+contradiction/supersession, conditional branches, and legitimate alternative
+paths. Separate relevant-file discovery, interpretation, decision quality,
+artifact consequence, and integrity scores. Process claims require trace/state
+views; source-content and structural checks require their authoritative artifact
+views; missing channels yield `insufficient_evidence`, not failure.
+
+Workspace-Bench motivates this decomposition with 388 authored tasks and a large
+simulated file substrate, but its role-skewed convenience assembly, one apparent
+run per Lite task/configuration, uncalibrated co-authored graphs/rubrics, mutable
+post-v4 implementation, graph/placement defects, and absent result inventory do
+not identify workspace learning, causal dependency use, professional validity,
+human parity, or Lite fidelity [WB]. Its inspected task 3 has 37 task-local input
+files but no verifiable base-workspace placement or execution trace; existence
+and an authored graph cannot establish discovery or use [WB].
+
+The optional `task.workspace`/`trial.workspace` records and inert conformance
+fixture now pin inventory, placement, permissions/network, mutable/protected
+zones, typed relations, trace evidence, mutation authorization, alternative
+paths, and cleanup [WC]. Mutation tests reject placement drift, protected or
+unauthorized mutation, missing process evidence, causal overclaim, and failed
+cleanup. This establishes internal contract behavior only—not expert validity,
+capability, causal use, workspace learning, or readiness.
+
+### 4.4 Keep three change planes separate
 
 “The system improved” is ambiguous because three different systems can change.
 They need different atomic records, evidence gates, and claims:
@@ -518,6 +623,8 @@ panel or a calibrated bridge design.
 | Benchmark change log | distinguish instrument drift from agent evolution | old/new component hashes, rationale, affected claims, bridge panel, compatibility/calibration decision, rollback |
 | Evidence-state transition record | separate evolving world state, emitted claims, applicability, access/adoption, belief revision, and artifact consequence | authority/scope/valid-time, contradiction/supersession, update-to-check crosswalk, changed and invariant predicates |
 | Task projection manifest | detect drift among public requirements, affordances, witnesses, and checks | evidence-backed requirement atoms, IR/sampler/projector/output hashes, bidirectional coverage, declared invariances, solver/validity separation, conformance tests |
+| Suite assembly argument | distinguish a broad frame and healthy pool from the administered sample and licensed population inference | frame/content exclusions, eligible pool, selection/seed/order, lineage clusters, intended/realized mixture, weights, precision/stopping, invalid/missing policy, alternate-assembly sensitivity, bounded claim |
+| Persistent-workspace record | distinguish file presence and authored relevance from observed or causal use while preserving state integrity | inventory/overlay hashes, placement and valid time, permissions/network, typed and alternate relations, evidence-view-bound access/write, protected/mutable zones, pre/post mutations, cleanup |
 
 A reduced panel serves **ranking efficiency**, not automatically diagnostic
 coverage or absolute professional-quality estimation. Mid-range checks often
@@ -545,6 +652,9 @@ fidelity separately from score calibration [EB, AP].
 | Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
 | Evolving-information workspace evaluation (ClawArena) | evidence-emission/update map, persistent workspace state, and update-to-check crosswalk | authored omniscience, untyped claim transitions, answer-bearing feedback, explicit preferences, mostly syntactic checks, unsafe shell execution, one-run order effects | full immutable v2 paper plus inspected official v1.0.0 and later release with timing boundaries; 337 rounds and 327 checker scripts audited, not professional-truth or reliability evidence [CA] |
 | Single-specification task generation (Anchor) | versioned task IR, four projection types, solver witness, and cross-projection conformance tests | omitted professional rules propagate consistently; translator drift; canonical witness mistaken for completeness; public oracle/check leakage; mutable environment | full immutable v1 paper plus inspected one-day-post-v1 official release; all 300 packages statically audited and two lineages traced, not semantic-equivalence or professional-validity proof [AK] |
+| Evidence-centered design (ECBD) | edge-level intended-use→construct→content/treatment→assembly→response/score warrants | completed worksheet mistaken for support; paper-only evidence view; assembly named without sampling machinery; reviewer consensus mistaken for reliability | full immutable v1 paper and complete pinned worksheets; three purposive dependent NLP cases, no prospective framework validation or independent-review reliability [ECBD] |
+| Occupational artifact portfolio (GDPval) | explicit occupational frame, expert acquisition pipeline, multimodal witness artifacts, separate frame/content/assembly/inference denominators | equal task quotas laundered into work/economic representativeness; one witness treated as expert ceiling; pairwise preference treated as acceptance or productivity | full immutable v1 paper plus parsed 220-task post-v1 pinned release and one workbook pair; no probability sample, gold-selection record, augmentation trial, expert-population baseline, or release license [GDP] |
+| Persistent file workspace (Workspace-Bench) | workspace identity/placement, typed relevance and provenance hypotheses, alternate paths, observed-use and integrity records | scale or authored graph treated as causal use; task-local injection/placement ambiguity; judge-view mismatch; unclustered single runs and mutable releases | full immutable v4 paper plus pinned post-v4 code/data audit and 37-file targeted task trace; no base-workspace replay, immutable result inventory, professional validation, Lite-fidelity, or workspace-learning identification [WB] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -611,6 +721,17 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     affordance, witness consequence, and check has bidirectional coverage and
     independently hashed/tested projections; solver or oracle success does not
     license verifier completeness, professional correctness, or readiness.
+22. **Breadth has explicit denominators:** frame, content pool, administered
+    assembly, and inference population remain separate; labels, equal quotas, or
+    a healthy task count do not establish occupational, economic, cross-domain,
+    or readiness generalization.
+23. **Dependency graphs are hypotheses, not cognition:** separate availability,
+    placement, relevance, provenance, observed use, causal use, alternatives, and
+    integrity; a path read/write match cannot silently promote a causal claim.
+24. **Human artifacts and judgments have distinct authority:** one expert witness
+    can establish a feasible route and one pairwise judgment can establish a
+    preference observation; neither is an expert-population ceiling, an
+    acceptance threshold, or an economic-value estimate.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -633,6 +754,9 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Open retrieval realism vs shortcut-free causal measurement | Search-time contamination finds strong post-exposure associations for exact answer-bearing pages, but weak detectors, self-selected access, mutable search, and non-equivalent traces do not identify a clean counterfactual [SC]. | Pair ecological open-retrieval audits with replayable snapshots and randomized masking of protected answer artifacts while holding legitimate sources, configured system, task, and budget fixed; report exposure prevalence separately from effect. |
 | Stable belief vs justified revision under evolving evidence | ClawArena operationalizes staged messages/files and reversals, but authored truth, detailed forward feedback, fixed order, and absent claim-level transition records confound retrieval, adoption, revision, and transfer [CA]. | Plant typed correction, supersession, conditional-applicability, and irrelevant-update cases; log availability/access/adoption; require changed and invariant checks; cross feedback policy with reset and held-out equivalent forms. |
 | Single-source coherence vs propagated specification error | Anchor's compiler aligns generated identifiers and accepts its oracle, but omitted rules and translator/checker assumptions can remain consistently wrong [AK]. | Mutation-test each projection edge, include legitimate alternate witnesses and adversarial partial-credit states, obtain independent expert adjudication, and report formal, executable, instruction-equivalent, verifier, and professional-validity gates separately. |
+| Broad frame vs representative suite and bounded inference | GDPval operationalizes broad occupational acquisition, while equal quotas, undocumented gold selection, restricted one-shot digital artifacts, and unobserved task frequency do not support occupational/economic inference; ECBD identifies the assembly warrant but does not supply estimators [GDP, ECBD]. | On a multi-domain pool, predeclare frame/content exclusions, lineage clusters, intended weights and precision; compare equal-cell and population-justified estimands under alternate assemblies, retain invalid/ungradable cases, and measure task/family/domain uncertainty before claim upgrades. |
+| Workspace dependency score vs evidence use and integrity | Workspace-Bench makes large workspaces and authored graphs inspectable, but graph matching confounds availability, canonical relevance, harness observability, alternate paths, and causal use; post-v4 release defects also leave placement and reset uncertain [WB]. | In a persistent pilot, plant authoritative/obsolete/distractor/alternate/protected paths; canary placement and clean state; cross observed access with source masking or matched alternatives; grade decision consequence and protected-state integrity separately [WC]. |
+| Connected record graph vs supported validity argument | The LH evidence-chain audit resolves immutable nodes yet finds unsupported response-view and claim bridges, a contradicted professional-check→synthetic-metric edge, and no suite sufficiency [EA]. | Have independent reviewers audit a real multi-task, expert-reviewed pilot; retain initial edge states, disagreements, time, defects and false alarms, then test whether edge auditing contracts claims beyond existing validation [ECBD]. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -712,11 +836,20 @@ them:
     grounded fixture and mutation tests establish internal contract behavior
     only, not expert validity, verifier completeness, capability, or readiness
     [AK].
-13. **Pending cross-record application — `build-lh-ecbd-cross-record-audit`:**
-    after this canonical consolidation, link the existing LH pilot records into
-    one fail-closed intended-use→construct→requirement/affordance→response-view→
-    grader→metric→claim argument. Keep the one-task suite, expert validity,
-    matched Skill effect, cross-domain generalization, and readiness unsupported.
+13. **Completed cross-record application, not ECBD validation —
+    `build-lh-ecbd-cross-record-audit`:** `pilots/lh-skill-adoption/evidence-chain-audit.json`
+    links immutable intended-use→construct→requirement/affordance→response-view→
+    grader→metric→claim records and fails closed on unsupported and contradicted
+    edges. The one-task suite, response-view sufficiency, expert validity,
+    matched Skill effect, cross-domain generalization, and readiness remain
+    unsupported or blocked [EA].
+14. **Completed persistent-workspace conformance, not workspace capability —
+    `build-persistent-workspace-conformance-slice`:** optional task/trial records
+    now exercise inventory, placement, typed and alternate dependency relations,
+    trace-supported access/write, mutation authorization, protected state, and
+    cleanup. The inert fixture and mutation tests establish contract behavior
+    only; causal use, workspace learning, expert validity, capability, and
+    readiness remain false [WC].
 
 ## Provenance keys
 
@@ -790,3 +923,32 @@ them:
   and two projection lineages traced; shared lineage and oracle replay do not
   establish semantic equivalence, verifier completeness, or professional
   validity.
+- **[ECBD]**
+  `papers/agent-benchmarks/2026-07-10-ecbd-evidence-centered-benchmark-design.md`;
+  reviewed immutable v1 PDF/text and complete pinned worksheet release paths and
+  hashes are recorded there. The three purposive, dependent NLP cases expose
+  missing design warrants but do not validate the framework prospectively,
+  estimate prevalence, or establish independent-review reliability.
+- **[GDP]**
+  `papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md`;
+  reviewed immutable v1 PDF/text plus the pinned post-v1 220-task release and
+  workbook inspection are recorded there. Most binary artifacts and paper-time
+  results were not mirrored/released; the evidence does not establish task-
+  frequency sampling, expert-population parity, economic impact, augmentation,
+  or deployment readiness.
+- **[WB]**
+  `papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md`;
+  reviewed immutable v4 PDF/text plus pinned post-v4 code/dataset and targeted
+  task-3 release paths/hashes are recorded there. The release is not manuscript-
+  time identity, and no base-workspace replay, stable result inventory, causal
+  dependency-use estimate, Lite-fidelity proof, or professional validity exists.
+- **[EA]** `pilots/lh-skill-adoption/evidence-chain-audit.json`; internal
+  builder-authored cross-record audit with pinned local artifact hashes and
+  explicit unsupported/contradicted edges. It calibrates audit structure, not
+  ECBD effectiveness, expert validity, Skill efficacy, suite validity, or
+  readiness.
+- **[WC]** `schemas/README.md` (Persistent-workspace conformance),
+  `tests/fixtures/valid-persistent-workspace-conformance.json`, and
+  `tests/test_validate_benchmark.py`; inert internal fixture and mutation tests
+  grounded in [WB]. They establish validator behavior only, not causal use,
+  workspace learning, professional capability, or release readiness.
