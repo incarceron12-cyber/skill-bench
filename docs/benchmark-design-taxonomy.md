@@ -82,6 +82,27 @@ reviewed ethnography motivates this design from one compensated university
 case; it does not establish a free/near-zero-cost participation model or that
 developer/model substitution preserved expert judgment [EP].
 
+### 2.1a Elicitation is an instrumented intervention, not a neutral transcript
+
+An expert statement is conditioned by what the elicitor made salient. Preserve
+an unprompted opportunity window before structured or model-generated probes,
+then retain an event lineage for candidate generation, priority/randomization,
+display, answer, skip/rejection, revision, withdrawal, and follow-up context.
+Bind each statement to the source view and stable target shown, question origin,
+prompt/model/context identity, contributor confirmation, and correction or
+supersession lineage. `responsive_to_question`, textual consistency, contributor
+capture approval, source corroboration, scope review, transformation review, and
+downstream benchmark utility are separate states [DT].
+
+Data Therapist makes this selection process unusually visible, but its one
+expert per condition in three reported domains, internally inconsistent
+participant/totals inventory, non-runnable release, and knowledge-difficulty
+measure do not identify a tool effect, tacit-knowledge capture, burden reduction,
+or downstream validity. Annotation count, topic overlap, specialist scope, and
+professionally consequential yield therefore remain separate estimands. A model
+may assist dialogue management; it does not inherit authority to verify truth or
+approve a benchmark primitive [DT].
+
 ### 2.2 A legitimate trap is a decision-boundary critical incident
 
 Do not equate realistic messiness with arbitrary obscurity. For each trap,
@@ -423,6 +444,34 @@ its pooled results omit intervals and task-cluster adjustment, and its rare
 side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
+
+### 3.2a Disagreement can be evidence about the instrument or the construct
+
+Before averaging or forcing consensus, follow an identification ladder:
+
+```text
+item/evidence defect → rubric comprehension → within-rater stability
+  → prospectively declared framework and replicated framework-by-item effect
+    → stakeholder decision rule → licensed claim
+```
+
+Keep observer judgments, framework-conditioned rationales, aggregation policy,
+and professional/readiness claims as different objects. Aggregation must declare
+stakeholders, intended use, weights or vetoes, error-loss basis, dissent, and
+whether any observer endorses the result. Distinguish resolved specification or
+evidence defects from `unresolved_systematic_disagreement`,
+`framework_stratified`, `policy_selected_with_dissent`, and
+`unresolved_value_conflict`; call disagreement irreducible only after repeat,
+framework, context/rubric, and outcome tests fail to explain it [ED].
+
+The reviewed mental-health study is a useful existence proof: three fully
+crossed psychiatrists produced very low agreement and coherent directional
+patterns on 360 synthetic responses. Three purposively different people, no
+repeat ratings, post-hoc framework interviews, a novel mixed rubric, and one
+clinical setting cannot identify framework causality or general prevalence.
+The synthetic plural-judgment fixture validates policy/lineage machinery only;
+it does not establish professional consensus, construct validity, or readiness
+[ED, PJ].
 
 Amazon's production architecture usefully connects offline/online traces,
 component and end-to-end evaluators, dashboards, alerts, human audits, and
@@ -826,6 +875,16 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     adoption, attempt, interception, realization, recovery, and benign completion
     remain separate; refusal, non-exposure, blocked action, and invalid execution
     are not interchangeable evidence of safe useful work.
+28. **Elicitation provenance is part of the evidence:** spontaneous testimony,
+    human/model/framework probes, revisions, rejections, and withdrawals remain
+    distinguishable; responsiveness or annotation volume is not corroboration.
+29. **Consensus is not the default truth operation:** test evidence, rubric,
+    stability, and framework explanations before aggregation; any policy-selected
+    result retains dissent, stakeholders, loss basis, and claim limits.
+30. **Memory QA is not action transfer:** separate storage, retrieval,
+    representation, reader, and grader effects from held-out behavioral benefit;
+    stale or failed-run lessons require scope, contradiction, harm, and rollback
+    evidence before promotion.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -854,6 +913,9 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Static artifact fidelity vs counterfactual integrity | MBABench catches formula and structural defects that value-only grading misses, but its judge does not systematically perturb/recalculate workbooks or observe charts and print layout; references and engines also contain residue and differ [MB]. | For one editable artifact, predeclare authoritative mutations and invariant regions; execute them under pinned engines; compare native, dependency, recalculated, and rendered views; include equivalent formulas/layouts and fallible-reference cases. |
 | Final-state success vs valid professional transition | Workflow-GYM supplies long expert witness paths but no released task/check package, and its official showcases expose a pre-existing required object and ambiguous input placement [WG]. | Canary initial absence, unique placement, and clean output; define sparse stage pre/postconditions and alternative paths; compare stage evidence with final consequences while quarantining invalid environments. |
 | Binary attack success vs safe useful completion | ClawSafety measures completed harm without benign utility and its partial post-v2 release lacks an executable ASR scorer while retaining live/mutable side-effect paths [CS]. The internal action fixture proves only inert contract behavior [AC]. | Cross source authority and exposure with mock-only action opportunities; retain attempt/interception/realization/recovery and utility separately; repeat under agent-facing containment canaries and expert-reviewed consequence thresholds. |
+| Elicitation yield vs valid expertise transfer | Data Therapist increases inspectable candidate production, but expert identity, probe/interface treatment, unsupported model checks, and absent downstream tests confound quality and utility [DT]. | In one consented session, preserve unprompted then probed phases and the full event ledger; compare corroborated, scope-valid, consequence-bearing primitives and correction/review burden rather than annotation count. |
+| Consensus label vs plural professional judgment | One three-psychiatrist panel shows strong systematic disagreement but cannot separate person, framework, rubric, or context effects; the internal fixture proves only aggregation-contract behavior [ED, PJ]. | Repeat held-out ratings, prospectively declare frameworks, replicate experts within framework, vary context/rubric evidence, and compare explicit stakeholder policies while preserving dissent and claim blocks. |
+| Retrospective memory QA vs consequential action transfer | LongMemEval-V2 cleanly evaluates bounded evidence delivery but representation/reader/grader effects remain treatment components and no acting agent uses the memory [LM]. | Compare no-memory, evidence-only, and provenance-gated lessons on equivalent-form QA and held-out artifact/state action; plant stale, failed-attempt, contradiction, safe-alternative, harmful-transfer, and rollback cases. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -964,6 +1026,15 @@ them:
     professional validity, treatment effect, real-world safety, or readiness.
     Preserve the original score and use the queued versioned adjudication/retest
     rather than interpreting the behavior as capability evidence.
+17. **Completed plural-judgment conformance, not professional consensus —
+    `build-plural-judgment-conformance-slice`:** framework-indexed observations,
+    explicit policy aggregation, dissent, and blocked claim upgrades are
+    executable. The synthetic cases establish validator behavior only [ED, PJ].
+18. **Pending evidence-to-action bridge —
+    `build-experience-memory-transfer-conformance`:** connect trajectory-derived
+    evidence to both equivalent-form QA and held-out action while testing stale
+    or harmful transfer and rollback. Reuse existing contracts; LongMemEval-V2
+    does not itself supply action-transfer evidence [LM].
 
 ## Provenance keys
 
@@ -1090,3 +1161,21 @@ them:
   synthetic cases and static preflight grounded in [CS]. They establish internal
   contract behavior only, not a live sandbox, expert validity, agent capability,
   real-world safety, or release readiness.
+- **[DT]**
+  `papers/agent-benchmarks/2026-07-11-data-therapist-tacit-knowledge-elicitation.md`;
+  reviewed immutable v3 PDF/text and inspected paper-linked OSF materials are
+  recorded there. The source exposes mixed-initiative elicitation mechanics but
+  does not identify capture fidelity, burden reduction, or benchmark utility.
+- **[ED]**
+  `papers/agent-benchmarks/2026-07-11-expert-disagreement-human-feedback-validity.md`;
+  reviewed immutable v3 PDF/text and complete pinned rating release are recorded
+  there. The three-rater clinical panel establishes bounded instrument
+  instability, not universal or irreducible expert disagreement.
+- **[PJ]** `schemas/PLURAL_JUDGMENT.md`,
+  `schemas/fixtures/plural-judgment-conformance.json`, and
+  `tests/test_plural_judgment.py`; internal synthetic conformance evidence only.
+- **[LM]**
+  `papers/agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md`;
+  reviewed immutable v1 PDF/text plus pinned code and dataset release are
+  recorded there. Results concern retrospective evidence QA, not held-out action
+  benefit, stale-memory safety, professional competence, or readiness.
