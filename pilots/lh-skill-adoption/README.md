@@ -17,7 +17,37 @@ This scenario tests evidence reconciliation and decision calibration, not recall
 - `rubric-skeleton.json`: public requirements and private held-out consequences.
 - `expertise-transfer.json`: authoring/evidence graph fixture.
 - `benchmark-bundle.json`: executable-contract task skeleton with zero fabricated trials.
+- `evidence-chain-audit.json`: hash- and pointer-bound cross-record ECBD audit with explicit unsupported links and suite limits.
 - `validation-plan.md`: evidence required to move beyond schema validity.
+
+## Cross-record evidence-chain audit
+
+Run the fail-closed composition check with:
+
+```bash
+python scripts/audit_evidence_chain.py --check-paths \
+  pilots/lh-skill-adoption/evidence-chain-audit.json
+```
+
+The audit connects existing expertise-transfer, benchmark-bundle, execution,
+metric, and validity records rather than defining another ECBD schema. Each
+adjacent intended-use → construct/criterion → item requirement → response view
+→ check → metric → validity-claim edge retains a warrant, support state,
+evidence/counterevidence locators, scope, and claim consequence. The checker
+recomputes artifact hashes, resolves every JSON Pointer, requires the complete
+ordered chain, and rejects claim upgrades across non-supported edges or explicit
+blockers.
+
+This first application finds substantive gaps rather than certifying the pilot:
+the artifact paths are predeclared but their professional and workflow evidence
+sufficiency is unreviewed; the authoritative human check remains interface-only;
+the executable 8/8 metric is synthetic grader-regression evidence rather than a
+professional criterion; the matched no-skill arm is absent after provider
+failure; and one convenience task supplies no suite assembly, precision, or
+cross-domain evidence. Expert validity, matched Skill effect, suite validity,
+cross-domain generalization, and release readiness therefore remain false. The
+audit itself is builder-authored checker calibration, not evidence that ECBD
+improves benchmark quality.
 
 ## Executable evidence-link slice
 
