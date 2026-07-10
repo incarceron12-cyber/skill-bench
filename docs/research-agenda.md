@@ -32,7 +32,7 @@ A useful benchmark should be:
 7. What benchmark niches are underserved by current frontier labs and benchmark companies?
 8. How can we design run logs so failures can be causally sliced into root causes instead of only scored at the final artifact level?
 
-## Current hypothesis
+## Current project hypothesis (not yet validated)
 
 The highest-leverage wedge is a **public methodology + small public pilot + private expansion packs** model:
 
@@ -41,3 +41,13 @@ The highest-leverage wedge is a **public methodology + small public pilot + priv
 - Private or semi-private scenario packs preserve evaluation value.
 - Sponsors fund domain-specific packs.
 - Experts contribute because they receive visibility, attribution, benchmark access, and structured artifacts they can reuse.
+
+The expert-participation mechanism is currently a hypothesis, not an observed
+low-cost result. The reviewed 12-week ethnography used compensated experts in a
+single mission-aligned institution and did not report rates, total cost,
+recruitment conversion, or whether developer/model substitutions preserved
+expert judgment. Early pilots must therefore measure expert and coordination
+time, reciprocal value, comprehension, transformation fidelity, disagreement,
+withdrawal/reconsent, and claim-blocking behavior before asserting that this
+model is feasible for free or near-zero cost. See
+`papers/agent-benchmarks/2026-07-10-domain-expert-participation-ethnography.md`.
