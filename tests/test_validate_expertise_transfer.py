@@ -15,12 +15,20 @@ from scripts.validate_expertise_transfer import (
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "valid-expertise-transfer.json"
+PROJECTION_FIXTURE = ROOT / "tests" / "fixtures" / "session-projection-conformance.json"
 
 
 class ExpertiseTransferValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.valid = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        cls.projection_case = json.loads(PROJECTION_FIXTURE.read_text(encoding="utf-8"))
+
+    def packet_with_projection_case(self) -> dict:
+        packet = copy.deepcopy(self.valid)
+        packet["session_projections"] = [copy.deepcopy(self.projection_case["session_projection"])]
+        packet["rubric_dimensions"] = copy.deepcopy(self.projection_case["rubric_dimensions"])
+        return packet
 
     def validate_mutation(self, mutation) -> None:
         packet = copy.deepcopy(self.valid)
@@ -71,6 +79,48 @@ class ExpertiseTransferValidationTests(unittest.TestCase):
         errors = semantic_errors(packet)
         self.assertTrue(any("every quality gate" in error for error in errors))
         self.assertTrue(any("leakage and expert-validity" in error for error in errors))
+
+    def test_demand_inspired_license_allows_material_omissions(self) -> None:
+        packet = self.packet_with_projection_case()
+        packet.pop("rubric_dimensions")
+        self.assertEqual([], semantic_errors(packet))
+
+    def test_projection_case_conforms_to_schema_when_rubric_is_holistic(self) -> None:
+        packet = self.packet_with_projection_case()
+        for dimension in packet["rubric_dimensions"]:
+            dimension["scoring_mode"] = "holistic"
+            dimension["holistic_group"] = "overall-artifact-quality"
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(packet, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA)
+
+    def test_replay_license_rejects_omitted_failure_and_answer_hindsight(self) -> None:
+        packet = self.packet_with_projection_case()
+        packet.pop("rubric_dimensions")
+        packet["session_projections"][0]["licensed_use"] = "session_replay_fidelity"
+        errors = semantic_errors(packet)
+        self.assertTrue(any("independent equivalent review" in error for error in errors))
+        self.assertTrue(any("every omission" in error for error in errors))
+        self.assertTrue(any("answer-bearing hindsight" in error for error in errors))
+
+    def test_identical_dimension_guidance_requires_holistic_declaration(self) -> None:
+        packet = self.packet_with_projection_case()
+        errors = semantic_errors(packet)
+        self.assertTrue(any("identical guidance" in error for error in errors))
+
+    def test_identical_guidance_allowed_for_one_holistic_group(self) -> None:
+        packet = self.packet_with_projection_case()
+        for dimension in packet["rubric_dimensions"]:
+            dimension["scoring_mode"] = "holistic"
+            dimension["holistic_group"] = "overall-artifact-quality"
+        self.assertEqual([], semantic_errors(packet))
+
+    def test_internal_synthetic_authorization_cannot_expand(self) -> None:
+        packet = self.packet_with_projection_case()
+        packet.pop("rubric_dimensions")
+        packet["session_projections"][0]["authorization"] = "authorized_release"
+        self.assertTrue(any("internal_synthetic_only" in error for error in semantic_errors(packet)))
 
 
 if __name__ == "__main__":

@@ -35,6 +35,22 @@ The validator requires every stage before `current_stage` to have passed and
 requires evidence paths for passed gates. `releasable` is impossible until all
 seven gates plus leakage and expert-validity review pass.
 
+## Session-derived projection validity
+
+Optional `session_projections` make the transformation from an observed episode
+to a benchmark counterfactual inspectable. They preserve the episode and
+resolution, typed and hashed transformations, omissions, answer-bearing hindsight,
+target, independent equivalence evidence, authorization, and the exact claim the
+record licenses. Real demand may license `demand_inspired_task`; it does not by
+itself license `session_replay_fidelity`. Replay additionally requires an
+independent equivalent review, evidence for every omission's irrelevance, and no
+answer-bearing hindsight used to author the task or rubric. `internal_synthetic`
+records remain licensed only for internal conformance tests.
+
+Optional `rubric_dimensions` reject identical task-specific guidance copied across
+nominally distinct dimensions. Shared guidance is valid only when every affected
+score is explicitly `holistic` and names the same `holistic_group`.
+
 ## Anti-surprise-check invariant
 
 Private and hidden checks must name at least one **public** basis primitive. They
@@ -53,6 +69,7 @@ rules” executable rather than advisory.
 | Traps require mechanism, source links, failure signature, and fairness basis | “Trick questions” without a professional rationale reduce validity. | `.hermes.md` benchmark-building standard; `templates/task-metadata.md` §§4, 11 |
 | Checks require observable evidence and explicit failure signatures | State transitions and artifact hooks reduce judge degrees of freedom. | `papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md` |
 | Quality and release are staged gates | Schema-valid does not mean expert-valid, leakage-safe, calibrated, or releasable. | LH-Bench review limitations and action items |
+| Projection lineage is not equivalence | A real source can be rewritten with omitted failures and answer-bearing hindsight; claim licensing must follow transformation evidence. | `papers/agent-benchmarks/2026-07-11-enterpriseclawbench-session-derived-validity.md` §§Two public-safe traces, Unique insight |
 
 The fixture is intentionally at the **rubric** stage and `not_ready`. It is based
 on a full benchmark review, not a domain-expert session, and says so in both the

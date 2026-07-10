@@ -81,6 +81,37 @@ def semantic_errors(packet: dict[str, Any]) -> list[str]:
     scenario_by_id = {item["scenario_id"]: item for item in packet["scenarios"]}
     check_by_id = {item["check_id"]: item for item in packet["checks"]}
 
+    projections = packet.get("session_projections", [])
+    _check_unique(projections, "projection_id", "session_projections", errors)
+    for projection in projections:
+        owner = f"session_projection {projection['projection_id']}"
+        _check_refs(owner, [projection["scenario_id"]], scenario_ids, "scenario_id", errors)
+        if projection["licensed_use"] == "session_replay_fidelity":
+            review = projection["equivalence_review"]
+            if review["status"] != "equivalent" or review["reviewer_independence"] != "independent" or not review["evidence_paths"]:
+                errors.append(f"{owner}: session_replay_fidelity requires an independent equivalent review with evidence")
+            if any(item["relevance_review"] != "independent_equivalent" for item in projection["omitted_context"]):
+                errors.append(f"{owner}: session_replay_fidelity requires independent irrelevance evidence for every omission")
+            if any(item["answer_bearing"] and set(item["used_for"]) - {"validation_only"} for item in projection["hindsight_sources"]):
+                errors.append(f"{owner}: session_replay_fidelity cannot use answer-bearing hindsight to author the task or rubric")
+        if projection["source_access"] == "internal_synthetic" and projection["authorization"] != "internal_synthetic_only":
+            errors.append(f"{owner}: internal synthetic evidence must retain internal_synthetic_only authorization")
+
+    dimensions = packet.get("rubric_dimensions", [])
+    _check_unique(dimensions, "dimension_id", "rubric_dimensions", errors)
+    guidance_groups: dict[tuple[str, ...], list[dict[str, Any]]] = {}
+    for dimension in dimensions:
+        normalized = tuple(" ".join(item.lower().split()) for item in dimension["guidance"])
+        guidance_groups.setdefault(normalized, []).append(dimension)
+    for repeated in guidance_groups.values():
+        if len(repeated) < 2:
+            continue
+        modes = {item["scoring_mode"] for item in repeated}
+        groups = {item.get("holistic_group") for item in repeated}
+        if modes != {"holistic"} or len(groups) != 1 or None in groups:
+            ids = ", ".join(item["dimension_id"] for item in repeated)
+            errors.append(f"rubric_dimensions: identical guidance across distinct dimensions ({ids}) requires one declared holistic_group")
+
     for claim in packet["claims"]:
         _check_refs(f"claim {claim['claim_id']}", [claim["contributor_id"]], contributor_ids, "contributor_id", errors)
 
