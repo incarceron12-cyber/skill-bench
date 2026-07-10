@@ -73,6 +73,36 @@ evidence, invalid-artifact rejection, and abstention for transform mismatch.
 Every declaration cites the full SciVisAgentBench paper/release review and its
 recorded local provenance.
 
+## Task-IR projection conformance
+
+The optional `task.projection_manifest` is a backward-compatible authoring
+contract. It does not treat the IR as professional ground truth. Instead, it
+records one evidence-backed, versioned hypothesis and requires four separately
+hashed projections: public instruction, source/environment affordance, valid
+witness consequence, and checker predicate. The semantic validator recomputes
+canonical JSON hashes for requirement atoms, the IR, and each rendered output;
+requires exactly one projection of each kind; checks requirement-hash lineage;
+and enforces bidirectional coverage so an unmapped checker atom is rejected as
+a checker-only hidden obligation.
+
+The manifest also pins the sampler and projector hashes, preserves accepted and
+rejected sample history, separates solver/model status from executability,
+instruction equivalence, professional validity, capability evidence, and
+readiness evidence, and records witness/negative/mutation/metamorphic/adversarial
+conformance evidence. `capability_evidence` and `readiness_evidence` are fixed to
+`false` because this is authoring-instrument calibration, not an agent trial.
+Declared representation invariances may be applied only by name and only after
+the changed projection output digest is refreshed.
+
+The compact fixture `tests/fixtures/valid-task-projection-manifest.json` cites
+`papers/agent-benchmarks/2026-07-10-anchor-artifact-drift-generation.md`, which
+in turn records the immutable v1 paper and pinned post-v1 release provenance.
+Mutation tests change a requirement, affordance, witness consequence, and
+checker predicate; test stale digests and checker-only obligations; accept one
+declared equivalent wording; and assert that unrelated projection digests stay
+stable. These tests establish internal contract behavior only—no expert,
+professional, capability, or release-readiness claim.
+
 ## Required 2×2 ablation
 
 Trials encode one condition rather than inferring it from filenames:

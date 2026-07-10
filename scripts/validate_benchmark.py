@@ -39,6 +39,82 @@ def _check_unique(items: list[dict[str, Any]], key: str, location: str, errors: 
         errors.append(f"{location}: duplicate {key} {duplicate!r}")
 
 
+def canonical_sha256(value: Any) -> str:
+    """Hash JSON values with stable key ordering and separators."""
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _validate_projection_manifest(manifest: dict[str, Any], source_ids: set[str], errors: list[str]) -> None:
+    """Validate task-IR hashes and bidirectional cross-projection coverage."""
+    ir = manifest["ir"]
+    requirements = ir["requirements"]
+    _check_unique(requirements, "requirement_id", "task.projection_manifest.ir.requirements", errors)
+    requirement_by_id = {item["requirement_id"]: item for item in requirements}
+    for requirement in requirements:
+        claimed = requirement["sha256"]
+        payload = {key: value for key, value in requirement.items() if key != "sha256"}
+        if claimed != canonical_sha256(payload):
+            errors.append(f"projection requirement {requirement['requirement_id']}: stale sha256")
+        unknown_sources = set(requirement["evidence_source_ids"]) - source_ids
+        if unknown_sources:
+            errors.append(f"projection requirement {requirement['requirement_id']}: unknown evidence source(s) {sorted(unknown_sources)}")
+    ir_payload = {"ir_id": ir["ir_id"], "version": ir["version"], "requirements": requirements}
+    if ir["sha256"] != canonical_sha256(ir_payload):
+        errors.append("task.projection_manifest.ir: stale sha256")
+
+    projections = manifest["projections"]
+    _check_unique(projections, "projection_id", "task.projection_manifest.projections", errors)
+    by_kind = {projection["kind"]: projection for projection in projections}
+    expected_kinds = {"instruction", "source_environment", "witness", "check"}
+    if set(by_kind) != expected_kinds:
+        errors.append("task.projection_manifest.projections: require exactly one instruction, source_environment, witness, and check projection")
+    atoms_by_kind: dict[str, dict[str, dict[str, Any]]] = {}
+    all_atom_ids: list[str] = []
+    for projection in projections:
+        atoms = projection["output"]["atoms"]
+        _check_unique(atoms, "atom_id", f"projection {projection['projection_id']}.atoms", errors)
+        atoms_by_kind[projection["kind"]] = {atom["atom_id"]: atom for atom in atoms}
+        all_atom_ids.extend(atom["atom_id"] for atom in atoms)
+        if projection["output_sha256"] != canonical_sha256(projection["output"]):
+            errors.append(f"projection {projection['projection_id']}: stale output_sha256")
+        if not set(projection["applied_invariances"]) <= set(projection["declared_invariances"]):
+            errors.append(f"projection {projection['projection_id']}: applied invariance was not declared")
+        for atom in atoms:
+            requirement = requirement_by_id.get(atom["requirement_id"])
+            if requirement is None:
+                errors.append(f"projection atom {atom['atom_id']}: unknown requirement_id {atom['requirement_id']!r}")
+            elif atom["requirement_sha256"] != requirement["sha256"]:
+                errors.append(f"projection atom {atom['atom_id']}: stale requirement_sha256")
+    for duplicate in sorted(_duplicates(all_atom_ids)):
+        errors.append(f"task.projection_manifest: duplicate cross-projection atom_id {duplicate!r}")
+
+    coverage = manifest["coverage"]
+    _check_unique(coverage, "requirement_id", "task.projection_manifest.coverage", errors)
+    coverage_by_requirement = {item["requirement_id"]: item for item in coverage}
+    if set(coverage_by_requirement) != set(requirement_by_id):
+        errors.append("task.projection_manifest.coverage: must cover every and only IR requirement")
+    field_kind = {
+        "instruction_atom_ids": "instruction", "affordance_atom_ids": "source_environment",
+        "witness_atom_ids": "witness", "check_atom_ids": "check",
+    }
+    covered_by_kind = {kind: set() for kind in expected_kinds}
+    for requirement_id, row in coverage_by_requirement.items():
+        for field, kind in field_kind.items():
+            for atom_id in row[field]:
+                atom = atoms_by_kind.get(kind, {}).get(atom_id)
+                if atom is None:
+                    errors.append(f"coverage {requirement_id}: unknown {kind} atom {atom_id!r}")
+                elif atom["requirement_id"] != requirement_id:
+                    errors.append(f"coverage {requirement_id}: atom {atom_id!r} maps to another requirement")
+                covered_by_kind[kind].add(atom_id)
+    for kind in expected_kinds:
+        uncovered = set(atoms_by_kind.get(kind, {})) - covered_by_kind[kind]
+        if uncovered:
+            label = "checker-only hidden obligation" if kind == "check" else f"unmapped {kind} atom"
+            errors.append(f"task.projection_manifest: {label}(s) {sorted(uncovered)}")
+
+
 def _validate_admissibility_result(
     prefix: str,
     check: dict[str, Any],
@@ -141,6 +217,10 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     check_ids = {item["check_id"] for item in checks}
     grader_ids = {item["grader_id"] for item in graders}
     check_by_id = {item["check_id"]: item for item in checks}
+
+    projection_manifest = task.get("projection_manifest")
+    if projection_manifest:
+        _validate_projection_manifest(projection_manifest, source_ids, errors)
 
     requirement_by_id: dict[str, dict[str, Any]] = {}
     for skill in skills:

@@ -6,11 +6,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.validate_benchmark import DEFAULT_SCHEMA, ValidationFailure, semantic_errors, validate_file
+from scripts.validate_benchmark import DEFAULT_SCHEMA, ValidationFailure, canonical_sha256, semantic_errors, validate_file
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "valid-benchmark-bundle.json"
 ADMISSIBILITY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-artifact-admissibility-bundle.json"
+PROJECTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-task-projection-manifest.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
@@ -18,6 +19,12 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.valid = json.loads(FIXTURE.read_text(encoding="utf-8"))
         cls.admissibility = json.loads(ADMISSIBILITY_FIXTURE.read_text(encoding="utf-8"))
+        cls.projection_manifest = json.loads(PROJECTION_FIXTURE.read_text(encoding="utf-8"))
+
+    def projection_bundle(self):
+        bundle = copy.deepcopy(self.valid)
+        bundle["task"]["projection_manifest"] = copy.deepcopy(self.projection_manifest)
+        return bundle
 
     def validate_mutation(self, mutation) -> None:
         bundle = copy.deepcopy(self.valid)
@@ -185,6 +192,61 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         state = bundle["task"]["artifact_views"][0]
         state["transformation"] = copy.deepcopy(bundle["task"]["artifact_views"][1]["transformation"])
         self.assertTrue(any("authoritative view cannot" in error for error in semantic_errors(bundle)))
+
+
+    def test_valid_task_projection_manifest(self) -> None:
+        bundle = self.projection_bundle()
+        self.assertEqual([], semantic_errors(bundle))
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_projection_rejects_requirement_change_with_stale_projection_links(self) -> None:
+        bundle = self.projection_bundle()
+        manifest = bundle["task"]["projection_manifest"]
+        requirement = manifest["ir"]["requirements"][0]
+        requirement["statement"] += " Preserve provenance."
+        requirement["sha256"] = canonical_sha256({key: value for key, value in requirement.items() if key != "sha256"})
+        ir = manifest["ir"]
+        ir["sha256"] = canonical_sha256({"ir_id": ir["ir_id"], "version": ir["version"], "requirements": ir["requirements"]})
+        self.assertTrue(any("stale requirement_sha256" in error for error in semantic_errors(bundle)))
+
+    def test_projection_rejects_stale_affordance_witness_and_checker_outputs(self) -> None:
+        for kind in ("source_environment", "witness", "check"):
+            with self.subTest(kind=kind):
+                bundle = self.projection_bundle()
+                projection = next(item for item in bundle["task"]["projection_manifest"]["projections"] if item["kind"] == kind)
+                projection["output"]["atoms"][0]["semantic_value"] = "planted drift"
+                self.assertTrue(any("stale output_sha256" in error for error in semantic_errors(bundle)))
+
+    def test_projection_rejects_checker_only_hidden_obligation(self) -> None:
+        bundle = self.projection_bundle()
+        manifest = bundle["task"]["projection_manifest"]
+        check_projection = next(item for item in manifest["projections"] if item["kind"] == "check")
+        atom = copy.deepcopy(check_projection["output"]["atoms"][0])
+        atom["atom_id"] = "undisclosed-checker-obligation"
+        atom["semantic_value"] = "require an obligation with no coverage row"
+        check_projection["output"]["atoms"].append(atom)
+        check_projection["output_sha256"] = canonical_sha256(check_projection["output"])
+        self.assertTrue(any("checker-only hidden obligation" in error for error in semantic_errors(bundle)))
+
+    def test_projection_accepts_declared_equivalent_representation_and_preserves_other_hashes(self) -> None:
+        bundle = self.projection_bundle()
+        projections = bundle["task"]["projection_manifest"]["projections"]
+        unchanged = {item["kind"]: item["output_sha256"] for item in projections if item["kind"] != "instruction"}
+        instruction = next(item for item in projections if item["kind"] == "instruction")
+        instruction["output"]["atoms"][0]["representation"] = "equivalent bulleted sentence"
+        instruction["applied_invariances"] = ["equivalent-wording"]
+        instruction["output_sha256"] = canonical_sha256(instruction["output"])
+        self.assertEqual([], semantic_errors(bundle))
+        self.assertEqual(unchanged, {item["kind"]: item["output_sha256"] for item in projections if item["kind"] != "instruction"})
+
+    def test_projection_rejects_undeclared_equivalence(self) -> None:
+        bundle = self.projection_bundle()
+        instruction = next(item for item in bundle["task"]["projection_manifest"]["projections"] if item["kind"] == "instruction")
+        instruction["applied_invariances"] = ["unreviewed-paraphrase"]
+        self.assertTrue(any("invariance was not declared" in error for error in semantic_errors(bundle)))
 
 
 if __name__ == "__main__":
