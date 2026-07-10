@@ -66,9 +66,19 @@ comma-grouped citations such as `[E01, E02]` were not parsed, and unbounded
 from numeric claims. Tests preserve all three regressions.
 
 Because the no-skill arm is incomplete, `condition_effect_permitted=false`.
-No expert-validity or release gate changed. A fresh matched pair under one
-updated launcher hash remains required when provider streaming succeeds; then
-rerun both post-hoc graders and assess comparability without weakening the
-stream, evidence, or expert-validation gates. Raw request dumps are excluded
+No expert-validity or release gate changed. Raw request dumps are excluded
 because they can contain authorization headers; retained evidence is limited to
 redacted transcripts/stderr, usage, deliverables, canaries, and hashes.
+
+A fresh concurrent v7 pair was attempted after the stale-blocker repair and is
+retained at `ablation/isolated-agent-pair-v7/`. Both explicit zero-call
+preflights and both in-trial canaries passed under launcher hash
+`a35321565eec9c8976bd5a65b6ca7097f57258ba38465ea7ace30131af89e5c9`.
+Both OpenAI Codex arms then failed identically after three retries: the stream
+produced no SSE event within the fixed 12-second threshold after first byte.
+Each arm retained failed usage accounting for three calls and no task
+artifacts. This matched failure strengthens the service-availability diagnosis
+but supplies no agent response, capability evidence, grader result, or Skill
+effect. The next retry must wait for a zero-cost provider health probe or
+another isolated trial to demonstrate streaming availability; it must not
+weaken the stream-integrity threshold merely to force completion.
