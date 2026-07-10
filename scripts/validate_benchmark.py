@@ -39,6 +39,73 @@ def _check_unique(items: list[dict[str, Any]], key: str, location: str, errors: 
         errors.append(f"{location}: duplicate {key} {duplicate!r}")
 
 
+def _validate_admissibility_result(
+    prefix: str,
+    check: dict[str, Any],
+    result: dict[str, Any],
+    declared_views: dict[str, dict[str, Any]],
+    observed_views: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> None:
+    """Fail closed when a grader's declared evidence envelope is not satisfied."""
+    envelope = check["admissibility"]
+    check_id = check["check_id"]
+    required_ids = set(envelope["required_view_ids"])
+    evaluated_ids = set(result.get("evaluated_view_ids", []))
+    if evaluated_ids != required_ids:
+        errors.append(f"{prefix}, check {check_id}: evaluated_view_ids must equal required_view_ids")
+
+    if result.get("admissibility_reason") == "criterion_not_applicable":
+        if result["outcome"] != "not_applicable":
+            errors.append(f"{prefix}, check {check_id}: criterion_not_applicable must yield not_applicable")
+        return
+
+    missing = [view_id for view_id in required_ids if observed_views.get(view_id, {}).get("state") == "missing" or view_id not in observed_views]
+    invalid = [view_id for view_id in required_ids if observed_views.get(view_id, {}).get("state") == "invalid_artifact"]
+    if invalid:
+        expected = ("invalid_artifact", "invalid_artifact")
+    elif missing:
+        expected = ("insufficient_evidence", "missing_required_view")
+    else:
+        expected = (None, None)
+        for view_id in required_ids:
+            declaration = declared_views.get(view_id)
+            observation = observed_views.get(view_id)
+            if not declaration or not observation:
+                continue
+            required_controls = {
+                item["control_id"]: item["value"]
+                for item in envelope["required_controls"]
+                if item["view_id"] == view_id
+            }
+            if not set(observation["invariances_applied"]) <= set(envelope["permitted_invariances"]):
+                expected = ("insufficient_evidence", "unpermitted_invariance")
+                break
+            transformation = declaration.get("transformation")
+            if transformation:
+                observed_controls = {item["control_id"]: item["value"] for item in observation["controls"]}
+                if any(observed_controls.get(key) != value for key, value in required_controls.items()):
+                    expected = ("insufficient_evidence", "control_mismatch")
+                    break
+                observed_transform = observation.get("transformation")
+                identity = (transformation["transform_id"], transformation["version"], transformation["sha256"])
+                observed_identity = None if observed_transform is None else (
+                    observed_transform["component_id"], observed_transform["version"], observed_transform["sha256"]
+                )
+                if observed_identity != identity:
+                    expected = ("insufficient_evidence", "transform_mismatch")
+                    break
+
+    if expected[0] is None:
+        if result["outcome"] not in {"passed", "failed"} or result.get("admissibility_reason") != "admitted":
+            errors.append(f"{prefix}, check {check_id}: satisfied envelope must yield admitted passed/failed evidence")
+    elif (result["outcome"], result.get("admissibility_reason")) != expected:
+        errors.append(
+            f"{prefix}, check {check_id}: admissibility evidence requires outcome/reason {expected}, "
+            f"got {(result['outcome'], result.get('admissibility_reason'))}"
+        )
+
+
 def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     """Return cross-reference and completed-trial invariant violations."""
     errors: list[str] = []
@@ -48,6 +115,7 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     sources = task["source_pack"]
     primitives = task["domain_primitives"]
     contracts = task["artifact_contracts"]
+    artifact_views = task.get("artifact_views", [])
     checks = task["checks"]
     graders = bundle["graders"]
     trials = bundle["trials"]
@@ -58,6 +126,7 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         (sources, "source_id", "task.source_pack"),
         (primitives, "primitive_id", "task.domain_primitives"),
         (contracts, "artifact_id", "task.artifact_contracts"),
+        (artifact_views, "view_id", "task.artifact_views"),
         (checks, "check_id", "task.checks"),
         (graders, "grader_id", "graders"),
         (trials, "trial_id", "trials"),
@@ -68,6 +137,7 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     skill_by_id = {item["skill_id"]: item for item in skills}
     rubric_by_id = {item["rubric_id"]: item for item in rubrics}
     artifact_ids = {item["artifact_id"] for item in contracts}
+    view_by_id = {item["view_id"]: item for item in artifact_views}
     check_ids = {item["check_id"] for item in checks}
     grader_ids = {item["grader_id"] for item in graders}
     check_by_id = {item["check_id"]: item for item in checks}
@@ -109,6 +179,17 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
             if check_id not in check_ids:
                 errors.append(f"primitive {primitive['primitive_id']}: unknown check_id {check_id!r}")
 
+    for view in artifact_views:
+        view_id = view["view_id"]
+        if view["artifact_id"] not in artifact_ids:
+            errors.append(f"artifact view {view_id}: unknown artifact_id {view['artifact_id']!r}")
+        if view["authoritative"] and "transformation" in view:
+            errors.append(f"artifact view {view_id}: authoritative view cannot declare a transformation")
+        if not view["authoritative"] and "transformation" not in view:
+            errors.append(f"artifact view {view_id}: derived view must pin a transformation")
+        controls = view.get("transformation", {}).get("controls", [])
+        _check_unique(controls, "control_id", f"artifact view {view_id}.controls", errors)
+
     for check in checks:
         if check["rubric_id"] not in rubric_by_id:
             errors.append(f"check {check['check_id']}: unknown rubric_id {check['rubric_id']!r}")
@@ -130,6 +211,26 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         for source_id in check["evidence_source_ids"]:
             if source_id not in source_ids:
                 errors.append(f"check {check['check_id']}: unknown evidence source_id {source_id!r}")
+        envelope = check.get("admissibility")
+        if envelope:
+            duplicates = _duplicates(f"{item['view_id']}:{item['control_id']}" for item in envelope["required_controls"])
+            for duplicate in sorted(duplicates):
+                errors.append(f"check {check['check_id']}.required_controls: duplicate view/control {duplicate!r}")
+            for control in envelope["required_controls"]:
+                if control["view_id"] not in envelope["required_view_ids"]:
+                    errors.append(f"check {check['check_id']}: required control references non-required view {control['view_id']!r}")
+            for view_id in envelope["required_view_ids"]:
+                view = view_by_id.get(view_id)
+                if view is None:
+                    errors.append(f"check {check['check_id']}: unknown required view_id {view_id!r}")
+                elif view["artifact_id"] not in check["artifact_ids"]:
+                    errors.append(f"check {check['check_id']}: required view {view_id!r} is not for a checked artifact")
+            if not any(
+                view_by_id.get(view_id, {}).get("authoritative")
+                and view_by_id[view_id]["representation"] == envelope["authoritative_artifact_type"]
+                for view_id in envelope["required_view_ids"]
+            ):
+                errors.append(f"check {check['check_id']}: envelope lacks its declared authoritative artifact type")
 
     required_artifacts = {item["artifact_id"] for item in contracts if item["required"]}
     for trial in trials:
@@ -182,6 +283,19 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         observed_ids = {item["artifact_id"] for item in observed}
         for artifact_id in observed_ids - artifact_ids:
             errors.append(f"{prefix}: unknown observed artifact_id {artifact_id!r}")
+        observed_views = trial.get("artifact_views", [])
+        _check_unique(observed_views, "view_id", f"{prefix}.artifact_views", errors)
+        observed_view_by_id = {item["view_id"]: item for item in observed_views}
+        for view_id, observation in observed_view_by_id.items():
+            declaration = view_by_id.get(view_id)
+            if declaration is None:
+                errors.append(f"{prefix}: unknown observed view_id {view_id!r}")
+                continue
+            if observation["observed_representation"] != declaration["representation"]:
+                errors.append(f"{prefix}, view {view_id}: observed representation differs from declaration")
+            _check_unique(observation["controls"], "control_id", f"{prefix}, view {view_id}.controls", errors)
+            if observation["state"] == "available" and "sha256" not in observation:
+                errors.append(f"{prefix}, view {view_id}: available view requires sha256")
 
         trace = trial["trace"]
         events = trace["events"]
@@ -230,6 +344,9 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
                 errors.append(f"{prefix}, check {result['check_id']}: grader_id differs from task check")
             if "root_cause" in result and result["root_cause"] not in check["allowed_root_causes"]:
                 errors.append(f"{prefix}, check {result['check_id']}: root cause is not allowed by task check")
+            envelope = check.get("admissibility")
+            if envelope:
+                _validate_admissibility_result(prefix, check, result, view_by_id, observed_view_by_id, errors)
             causal_ids = set(result.get("causal_slice_event_ids", []))
             referenced = causal_ids | {result[key] for key in ("root_event_id", "surfaced_at_event_id") if key in result}
             unknown_events = referenced - event_ids
@@ -246,11 +363,14 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
             missing_artifacts = required_artifacts - observed_ids
             if missing_artifacts:
                 errors.append(f"{prefix}: completed trial missing required artifacts {sorted(missing_artifacts)}")
-            if result_ids == check_ids:
+            scored_results = [result for result in results if isinstance(result["score"], (int, float))]
+            if result_ids == check_ids and len(scored_results) == len(results):
                 total_weight = sum(check_by_id[cid]["weight"] for cid in check_ids)
                 expected = sum(check_by_id[result["check_id"]]["weight"] * result["score"] for result in results) / total_weight
                 if abs(expected - trial["aggregate_score"]) > 1e-6:
                     errors.append(f"{prefix}: aggregate_score {trial['aggregate_score']} != weighted score {expected:.6f}")
+            elif result_ids == check_ids:
+                errors.append(f"{prefix}: completed trial cannot aggregate non-scored admissibility outcomes")
 
     longitudinal = bundle.get("longitudinal_evaluation")
     if longitudinal:

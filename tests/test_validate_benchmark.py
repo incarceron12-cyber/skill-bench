@@ -10,12 +10,14 @@ from scripts.validate_benchmark import DEFAULT_SCHEMA, ValidationFailure, semant
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "valid-benchmark-bundle.json"
+ADMISSIBILITY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-artifact-admissibility-bundle.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.valid = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        cls.admissibility = json.loads(ADMISSIBILITY_FIXTURE.read_text(encoding="utf-8"))
 
     def validate_mutation(self, mutation) -> None:
         bundle = copy.deepcopy(self.valid)
@@ -145,6 +147,44 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         event = bundle["longitudinal_evaluation"]["evolution_events"][0]
         event["condition_id"] = "reset-arm"
         self.assertTrue(any("reset arm cannot contain" in error for error in semantic_errors(bundle)))
+
+    def test_valid_artifact_admissibility_conformance_slice(self) -> None:
+        validate_file(ADMISSIBILITY_FIXTURE, DEFAULT_SCHEMA, check_paths=True)
+        outcomes = {
+            trial["check_results"][0]["check_id"]: (
+                trial["check_results"][0]["outcome"],
+                trial["check_results"][0]["admissibility_reason"],
+            )
+            for trial in self.admissibility["trials"]
+        }
+        self.assertEqual(("failed", "admitted"), outcomes["structured-wrong"])
+        self.assertEqual(("passed", "admitted"), outcomes["alternate-render"])
+        self.assertEqual(("insufficient_evidence", "missing_required_view"), outcomes["missing-view"])
+        self.assertEqual(("invalid_artifact", "invalid_artifact"), outcomes["invalid-export"])
+        self.assertEqual(("insufficient_evidence", "transform_mismatch"), outcomes["renderer-mismatch"])
+
+    def test_semantics_rejects_scoring_missing_view_as_failure(self) -> None:
+        bundle = copy.deepcopy(self.admissibility)
+        result = bundle["trials"][2]["check_results"][0]
+        result.update({"outcome": "failed", "score": 0, "admissibility_reason": "admitted"})
+        self.assertTrue(any("requires outcome/reason" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_rejects_admitting_unpinned_renderer(self) -> None:
+        bundle = copy.deepcopy(self.admissibility)
+        result = bundle["trials"][4]["check_results"][0]
+        result.update({"outcome": "passed", "score": 1, "admissibility_reason": "admitted"})
+        self.assertTrue(any("transform_mismatch" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_rejects_unpermitted_render_invariance(self) -> None:
+        bundle = copy.deepcopy(self.admissibility)
+        bundle["trials"][1]["artifact_views"][1]["invariances_applied"] = ["camera_change"]
+        self.assertTrue(any("unpermitted_invariance" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_rejects_transformed_authoritative_view(self) -> None:
+        bundle = copy.deepcopy(self.admissibility)
+        state = bundle["task"]["artifact_views"][0]
+        state["transformation"] = copy.deepcopy(bundle["task"]["artifact_views"][1]["transformation"])
+        self.assertTrue(any("authoritative view cannot" in error for error in semantic_errors(bundle)))
 
 
 if __name__ == "__main__":

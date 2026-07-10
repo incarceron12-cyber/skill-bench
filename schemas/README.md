@@ -1,4 +1,4 @@
-# Benchmark bundle schema v0.2
+# Benchmark bundle schema v0.3
 
 `benchmark-bundle.schema.json` is the first executable contract for a complete
 knowledge-work evaluation evidence chain:
@@ -13,8 +13,8 @@ causal slice names real trace events, or that a completed trial covers every
 required check and artifact. `scripts/validate_benchmark.py` therefore applies:
 
 1. JSON Schema Draft 2020-12 shape, type, format, and conditional checks;
-2. semantic reference checks across task, grader, check, artifact, trace, and
-   trial records;
+2. semantic reference and admissibility checks across task, grader, check,
+   artifact representation, transformation, trace, and trial records;
 3. completed-trial invariants, including weighted aggregate recomputation;
 4. optional verification that local provenance paths exist.
 
@@ -37,11 +37,41 @@ Version 0.2 also recomputes each local procedural skill's SHA-256 when
 | Every check declares its disclosure boundary and public requirement basis | Private checks may hold out exact consequences, but may not introduce surprise obligations. | LH-Bench review § Transferable design patterns 3 |
 | Trial versions are typed for task, skill, rubric, grader, tool interface, harness, and feedback policy | Free-form names cannot detect silent drift or support causal ablations. | LH-Bench review § Concrete changes 2 |
 | Recovery is an explicit error → verifier feedback → repair → verification chain | Error count is uninterpretable without feedback specificity and verified recovery. | LH-Bench review §§ Unique insight, Transferable design patterns 5 |
+| Artifact views and transforms are typed separately from artifacts | A screenshot, structured state, executable source, and export establish different predicates; derived views require pinned transformations. | `papers/agent-benchmarks/2026-07-10-scivisagentbench-multimodal-artifact-evaluation.md` §§ Unique insight, Transferable design patterns 1–3 |
+| Checks can fail closed through an admissibility envelope | Missing views, invalid exports, control/renderer mismatches, and inapplicable criteria are not ordinary zero scores. | SciVisAgentBench review, Sections 5.2–5.5 (pp. 5–6) and Concrete changes 1, 5 |
 
 The fixture `tests/fixtures/valid-benchmark-bundle.json` is deliberately a
 failed completed trial. It demonstrates that a score of zero can still preserve
 a useful, machine-checkable diagnosis and an unsuccessful but fully observed
 recovery chain. Its public skill is a real local file whose hash is verified.
+
+## Artifact-view admissibility
+
+The optional `task.artifact_views`, `check.admissibility`,
+`trial.artifact_views`, and check-result admissibility fields are a
+backward-compatible extension: bundles without them retain the prior behavior.
+When an envelope is present, the semantic validator requires:
+
+1. every required view to identify a checked artifact and include the declared
+   authoritative representation;
+2. authoritative views to be untransformed and derived views to pin transform,
+   software, version, hash, and controls;
+3. observed representations, controls, transform identities, and applied
+   invariances to match the envelope; and
+4. fail-closed outcomes: `insufficient_evidence` for missing views or
+   control/transform mismatch, `invalid_artifact` for invalid exports,
+   `not_applicable` for inapplicable criteria, and scored `passed`/`failed` only
+   after admission.
+
+`tests/fixtures/valid-artifact-admissibility-bundle.json` is internal synthetic
+contract calibration, not an agent trial or a professional-validity result. Its
+five aborted records plant a visually plausible but structurally wrong artifact,
+a structurally correct alternate rendering, a missing side view, an invalid
+export, and a different renderer hash. They demonstrate, respectively, admitted
+failure, admitted acceptance under a declared invariance, abstention for missing
+evidence, invalid-artifact rejection, and abstention for transform mismatch.
+Every declaration cites the full SciVisAgentBench paper/release review and its
+recorded local provenance.
 
 ## Required 2×2 ablation
 
@@ -70,7 +100,8 @@ The validator requires Python's `jsonschema` package (tested with 4.26):
 
 ```bash
 python scripts/validate_benchmark.py --check-paths \
-  tests/fixtures/valid-benchmark-bundle.json
+  tests/fixtures/valid-benchmark-bundle.json \
+  tests/fixtures/valid-artifact-admissibility-bundle.json
 python -m unittest tests.test_validate_benchmark -v
 ```
 
@@ -79,7 +110,7 @@ python -m unittest tests.test_validate_benchmark -v
 external or ephemeral run storage and are not required to be present in the
 repository.
 
-## Deliberate v0.2 boundaries
+## Deliberate v0.3 boundaries
 
 - A bundle contains one task and zero or more trials. Cross-task suites and a
   normalized response-matrix export belong in a later layer.
