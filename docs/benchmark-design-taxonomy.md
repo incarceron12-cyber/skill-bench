@@ -98,7 +98,7 @@ inspected release; use it as design evidence, not calibration ground truth [CT].
 
 | Layer | Unit observed | Appropriate claim | Do not infer |
 |---|---|---|---|
-| Environment validity | tool/service availability, fixture integrity, permissions, timing | the trial had a valid opportunity to complete the task | agent inability from a broken environment |
+| Environment validity | containment canaries, tool/service availability, fixture integrity, permissions, timing | the trial had the declared evidence boundary and a valid opportunity to complete the task | agent inability from repository escape, provider failure, or a broken environment |
 | Workflow/process | ordered trace events and intermediate states | compliance with an observable professional invariant | latent expertise merely because a disclosed procedure was followed |
 | Checkpoint/state | verifiable partial state | meaningful progress and stage-specific capability | professional acceptability of the final artifact |
 | Artifact internals | formulas, citations, structure, file properties, maintainability | technical correctness and inspectable construction quality | stakeholder preference or release readiness |
@@ -191,7 +191,57 @@ reset cadence, update budget, and which feedback may enter memory. Once one test
 item changes behavior on the next, the estimand is ordered-stream learning, not
 independent pass@1 [ACE, SE].
 
-### 4.1 Keep three change planes separate
+### 4.1 Execution validity is an observed boundary, not a directory name
+
+Separate three layers that are often collapsed under “harness” or “sandbox”:
+
+1. **Intended harness treatment:** prompts, tool interface, context/memory policy,
+   recovery behavior, and native permissions that the comparison intends to vary.
+2. **Adapter realization:** path mapping, environment filtering, process launch,
+   timeout, usage capture, and trace extraction that connect the harness to the
+   task.
+3. **Outer execution envelope:** fixture identity; read, write, process, network,
+   and secret boundaries; private-evaluator denial; resource policy; clean reset;
+   and service availability that every comparable arm must satisfy.
+
+The first two are part of configured-system identity. The third is a validity
+contract: test it through the actual agent-facing tools before a model call and
+retain each expected/observed probe with the launcher and environment hashes.
+`cwd`, a fresh workspace, an isolated `HOME`, or a directory named `sandbox` is
+not evidence that parent paths, absolute paths, sibling trials, private graders,
+network destinations, or inherited secrets are unreachable [HB]. A canary's
+claim is also tool-scoped: a read/search/write canary does not prove containment
+for an unexposed shell or browser.
+
+Use a fail-closed evidence ladder:
+
+```text
+outer-envelope canary passes
+  → service starts and trial evidence is attributable
+    → declared deliverables and mandatory measurements are complete
+      → matched arms share the required envelope/configuration
+        → condition contrast is estimable
+          → wider capability/readiness claim requires its own validity argument
+```
+
+Failure at a rung preserves all earlier evidence but blocks later claims. In the
+LH pilot, the original file-tool runs empirically exposed repository-private
+material and were invalid trials. A later bubblewrap launcher passed zero-call
+canaries through the actual file tools in both arms, so filesystem environment
+validity was established for those interfaces. The no-skill arm then produced
+no deliverables after provider-stream retries while the public-skill arm
+completed. This is one valid configured-system execution plus a service-layer
+failure—not a matched Skill effect, not evidence that the failed arm lacked the
+capability, and not professional-readiness evidence [PX].
+
+Missing trace, artifact, usage, component identity, security result, or canary
+must yield `invalid` or `unscorable` according to the predeclared gate; never
+substitute a perfect default. Preserve launch failures and timeout censoring in
+the response matrix. Attribute an adapter, provider, or environment root only
+when event evidence supports it; otherwise use `indeterminate` rather than
+turning operational missingness into an agent failure.
+
+### 4.2 Keep three change planes separate
 
 “The system improved” is ambiguous because three different systems can change.
 They need different atomic records, evidence gates, and claims:
@@ -233,6 +283,7 @@ panel or a calibrated bridge design.
 | Drift/saturation monitor | detect stale difficulty and changed task behavior | periodic full runs, score/rank separation, missingness and invalid-run audit |
 | Validity argument register | bind measurements to bounded interpretations and uses | claim ladder, warrants/rebuttals, facet evidence, excluded interpretations, threshold/loss basis, expiry |
 | Participation/authority ledger | govern expert contribution and transformed artifacts | purpose/consent, reciprocal value, decision rights, transformation lineage, reconsent, approval that never propagates implicitly |
+| Execution validity record | establish whether a trial had the declared boundary and opportunity | tool-scoped canary probes, adapter/launcher/environment hashes, fixture identity, service health, mandatory evidence, invalid/unscorable reason |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
 | Benchmark change log | distinguish instrument drift from agent evolution | old/new component hashes, rationale, affected claims, bridge panel, compatibility/calibration decision, rollback |
@@ -257,6 +308,7 @@ fidelity separately from score calibration [EB, AP].
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
+| Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -296,6 +348,10 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 14. **Messiness must be consequential:** a hidden trap needs a public basis,
     expert-visible cue, auditable correction, decision/artifact consequence, and
     focused diagnostic check.
+15. **Execution evidence fails closed:** prove the outer envelope through every
+    exposed tool interface before a trial; missing service, trace, artifact,
+    security, or attribution evidence blocks the corresponding capability or
+    contrast claim rather than defaulting to success.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -311,6 +367,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Efficient expert substitution vs authority laundering | One ethnography shows why teams shifted routine work to developers and an LLM judge, but reports no held-out fidelity or cost evidence [EP]. | Compare expert vs builder/grader application on frozen held-out anchors; record time, disagreement, transformation review, consent changes, and claim blocks without averaging agency and fidelity. |
 | Useful narrow result vs broad capability/readiness claim | Claim-centered validity allows a criterion result to remain useful while rejecting wider construct or decision claims, but reviewer reliability is untested [VA]. | Have independent reviewers construct claim ladders for the same pilot trials; measure disagreement and test whether the contract rejects planted claim upgrades. |
 | Realistic trap vs benchmark gotcha | Decision-boundary traps can expose expert judgment, but the reviewed consulting corpus and graders are not auditable and live values can drift [CT]. | Instantiate the same critical-incident record in two structurally different domains; plant naive/correct variants and test fairness, typed evidence checks, threshold flips, and predicted failure localization. |
+| Ecological harness comparison vs valid common envelope | Native harness behavior is a legitimate bundled treatment, but Harness-Bench's later runner and the LH pilot show that fresh directories and shared prompts do not establish equivalent filesystem, network, service, or measurement opportunity [HB, PX]. | Run tool-level denial/allow canaries and adapter conformance checks before each cell; retain service failures; repeat matched cells; estimate a contrast only when both arms satisfy one hashed envelope and mandatory-evidence policy. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -328,20 +385,24 @@ them:
 2. **Completed, not release-valid — `build-pilot-scenario`:** the static LH
    adoption pilot instantiates both contracts, but intentionally fails expert
    validity and release gates.
-3. **Current execution gate — `build-lh-pilot-grader-ablation`:** planted
-   provenance grading and the four hash-pinned fixture-replay cells are complete,
-   but they explicitly provide no capability evidence. Next run genuine matched
-   no-skill/public-skill outputs with a pinned harness, then obtain qualified
-   shared-rubric and expert adjudication. Preserve typed existence, entailment,
-   authority, scope, and freshness results and add a threshold-crossing
-   contradiction where feasible. The pending SkillsBench review may refine this
-   protocol but must not be treated as execution evidence.
+3. **Blocked execution gate — `build-lh-pilot-grader-ablation`:** planted
+   grading and fixture replay are complete. The first genuine pair failed the
+   outer-envelope gate and remains invalid; the bubblewrap replacement then
+   passed file-tool canaries in both arms, but provider streaming left the
+   no-skill arm without deliverables. The completed public-skill arm is one
+   configured-system observation only. Retry a fresh matched pair under one
+   launcher hash when service health permits; preserve launch failures, usage,
+   typed existence/entailment/authority/scope/freshness results, and strict
+   completion gates. Only then assess a Skill contrast and pursue qualified
+   shared-rubric and expert adjudication. SkillsBench and Harness-Bench refine
+   selection, uncertainty, and isolation requirements but are not pilot
+   execution evidence [HB, PX].
 4. **Parallel infrastructure — `build-compounding-lesson-contract`:** implement
    candidate lesson provenance, independent promotion, contradiction, firewall,
    and rollback semantics. Building the contract is safe; promoting pilot-derived
    doctrine remains gated on trustworthy trial/adjudication evidence.
 5. **After static execution — `build-longitudinal-evolution-protocol`:** add the
-   stream and evolution-event records from Section 4.1, then exercise matched
+   stream and evolution-event records from Section 4.2, then exercise matched
    reset vs permitted-memory/skill-only vs full-evolution fixtures. Do not use
    longitudinal complexity to bypass the static pilot's failed validity gates.
 6. **Claim gate — `build-validity-argument-contract`:** after real static pilot
@@ -385,3 +446,12 @@ them:
 - **[CT]** `papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md`;
   reviewed immutable v3 paper and inspected release paths/hashes are recorded
   there. The release lacked the reported task and grading artifacts.
+- **[HB]** `papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md`;
+  reviewed immutable v1 PDF/text and inspected official post-paper release
+  paths/hashes are recorded there. The release is implementation evidence, not
+  the exact paper-time runner or empirical result archive.
+- **[PX]** `pilots/lh-skill-adoption/validation-plan.md` and
+  `pilots/lh-skill-adoption/ablation/isolated-agent-pair-v6/pair-summary.json`;
+  local execution evidence records the invalid escaped runs, tool-scoped
+  bubblewrap canaries, one completed public-skill arm, one provider-stream
+  failure, and the explicit prohibition on a condition-effect estimate.
