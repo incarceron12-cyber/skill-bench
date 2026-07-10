@@ -7,6 +7,7 @@ cross-record invariants that JSON Schema cannot express clearly.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -42,6 +43,8 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     """Return cross-reference and completed-trial invariant violations."""
     errors: list[str] = []
     task = bundle["task"]
+    skills = bundle["procedural_skills"]
+    rubrics = bundle["rubrics"]
     sources = task["source_pack"]
     primitives = task["domain_primitives"]
     contracts = task["artifact_contracts"]
@@ -50,6 +53,8 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     trials = bundle["trials"]
 
     for items, key, location in [
+        (skills, "skill_id", "procedural_skills"),
+        (rubrics, "rubric_id", "rubrics"),
         (sources, "source_id", "task.source_pack"),
         (primitives, "primitive_id", "task.domain_primitives"),
         (contracts, "artifact_id", "task.artifact_contracts"),
@@ -60,10 +65,41 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         _check_unique(items, key, location, errors)
 
     source_ids = {item["source_id"] for item in sources}
+    skill_by_id = {item["skill_id"]: item for item in skills}
+    rubric_by_id = {item["rubric_id"]: item for item in rubrics}
     artifact_ids = {item["artifact_id"] for item in contracts}
     check_ids = {item["check_id"] for item in checks}
     grader_ids = {item["grader_id"] for item in graders}
     check_by_id = {item["check_id"]: item for item in checks}
+
+    requirement_by_id: dict[str, dict[str, Any]] = {}
+    for skill in skills:
+        phase_ids = set(skill["workflow_phases"])
+        _check_unique(skill["requirements"], "requirement_id", f"skill {skill['skill_id']}.requirements", errors)
+        local_requirements = {item["requirement_id"] for item in skill["requirements"]}
+        for requirement in skill["requirements"]:
+            requirement_id = requirement["requirement_id"]
+            if requirement_id in requirement_by_id:
+                errors.append(f"procedural_skills: duplicate requirement_id {requirement_id!r}")
+            requirement_by_id[requirement_id] = requirement
+            if requirement["phase_id"] not in phase_ids:
+                errors.append(f"requirement {requirement_id}: unknown phase_id {requirement['phase_id']!r}")
+            for predecessor in requirement["ordering_after"]:
+                if predecessor not in local_requirements:
+                    errors.append(f"requirement {requirement_id}: unknown ordering predecessor {predecessor!r}")
+                if predecessor == requirement_id:
+                    errors.append(f"requirement {requirement_id}: cannot be ordered after itself")
+            for artifact_id in requirement["artifact_ids"]:
+                if artifact_id not in artifact_ids:
+                    errors.append(f"requirement {requirement_id}: unknown artifact_id {artifact_id!r}")
+            for check_id in requirement["check_ids"]:
+                if check_id not in check_ids:
+                    errors.append(f"requirement {requirement_id}: unknown check_id {check_id!r}")
+
+    for rubric in rubrics:
+        for check_id in rubric["check_ids"]:
+            if check_id not in check_ids:
+                errors.append(f"rubric {rubric['rubric_id']}: unknown check_id {check_id!r}")
 
     for primitive in primitives:
         for source_id in primitive["source_ids"]:
@@ -74,6 +110,18 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
                 errors.append(f"primitive {primitive['primitive_id']}: unknown check_id {check_id!r}")
 
     for check in checks:
+        if check["rubric_id"] not in rubric_by_id:
+            errors.append(f"check {check['check_id']}: unknown rubric_id {check['rubric_id']!r}")
+        elif check["check_id"] not in rubric_by_id[check["rubric_id"]]["check_ids"]:
+            errors.append(f"check {check['check_id']}: rubric does not reciprocally list check")
+        if check["visibility"] in {"private", "hidden"} and check["boundary_disclosure"] != "held_out_consequence":
+            errors.append(f"check {check['check_id']}: private/hidden check must be a held_out_consequence")
+        for requirement_id in check["public_basis_requirement_ids"]:
+            requirement = requirement_by_id.get(requirement_id)
+            if requirement is None:
+                errors.append(f"check {check['check_id']}: unknown public basis requirement {requirement_id!r}")
+            elif check["check_id"] not in requirement["check_ids"]:
+                errors.append(f"check {check['check_id']}: public basis requirement does not reciprocally list check")
         if check["grader_id"] not in grader_ids:
             errors.append(f"check {check['check_id']}: unknown grader_id {check['grader_id']!r}")
         for artifact_id in check["artifact_ids"]:
@@ -88,6 +136,46 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         prefix = f"trial {trial['trial_id']}"
         if trial["task_id"] != task["task_id"] or trial["task_version"] != task["version"]:
             errors.append(f"{prefix}: task identity/version does not match bundle task")
+
+        versions = trial["evaluation_versions"]
+        condition = versions["condition"]
+        skill_version = versions["skill"]
+        expected_relationship = {
+            "no_skill_independent_rubric": "independent",
+            "no_skill_shared_rubric": "shared_expert_model",
+            "public_skill_independent_rubric": "independent",
+            "public_skill_shared_rubric": "shared_expert_model",
+            "exact_rubric_disclosed": "exact_disclosed",
+        }[condition]
+        rubric = rubric_by_id.get(versions["rubric"]["component_id"])
+        if rubric is None:
+            errors.append(f"{prefix}: evaluation_versions references unknown rubric")
+        elif (rubric["version"], rubric["sha256"]) != (versions["rubric"]["version"], versions["rubric"]["sha256"]):
+            errors.append(f"{prefix}: rubric version/hash does not match declared rubric")
+        elif rubric["relationship_to_skill"] != expected_relationship:
+            errors.append(f"{prefix}: ablation condition conflicts with rubric relationship")
+        if condition.startswith("no_skill_"):
+            if skill_version is not None:
+                errors.append(f"{prefix}: no-skill condition must record skill as null")
+            enabled_declared_skills = set(trial["agent"]["skills_enabled"]) & set(skill_by_id)
+            if enabled_declared_skills:
+                errors.append(f"{prefix}: no-skill condition enables declared procedural skill(s) {sorted(enabled_declared_skills)}")
+        elif skill_version is None:
+            errors.append(f"{prefix}: skill condition must record a skill version/hash")
+        else:
+            skill = skill_by_id.get(skill_version["component_id"])
+            if skill is None or (skill["version"], skill["sha256"]) != (skill_version["version"], skill_version["sha256"]):
+                errors.append(f"{prefix}: skill version/hash does not match declared skill")
+            if skill_version["component_id"] not in trial["agent"]["skills_enabled"]:
+                errors.append(f"{prefix}: typed skill is not listed in agent.skills_enabled")
+        task_component = versions["task"]
+        if task_component["component_id"] != task["task_id"] or task_component["version"] != task["version"]:
+            errors.append(f"{prefix}: typed task version does not match bundle task")
+        grader_components = {item["component_id"]: item for item in versions["graders"]}
+        for grader in graders:
+            component = grader_components.get(grader["grader_id"])
+            if component is None or (component["version"], component["sha256"]) != (grader["version"], grader["sha256"]):
+                errors.append(f"{prefix}: grader version/hash missing or inconsistent for {grader['grader_id']!r}")
 
         observed = trial["artifacts"]
         _check_unique(observed, "artifact_id", f"{prefix}.artifacts", errors)
@@ -104,11 +192,31 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         if sequences != sorted(sequences):
             errors.append(f"{prefix}.trace.events: events must be ordered by sequence")
         event_ids = {event["event_id"] for event in events}
+        event_by_id = {event["event_id"]: event for event in events}
+        recovery_relations: dict[str, list[tuple[str, str]]] = {}
         for edge in trace["dependencies"]:
             if edge["from_event_id"] not in event_ids or edge["to_event_id"] not in event_ids:
                 errors.append(f"{prefix}: trace dependency references unknown event")
             if edge["from_event_id"] == edge["to_event_id"]:
                 errors.append(f"{prefix}: trace dependency cannot be a self-loop")
+            recovery_relations.setdefault(edge["relation"], []).append((edge["from_event_id"], edge["to_event_id"]))
+            expected_kinds = {
+                "error_feedback": ("error", "verifier_feedback"),
+                "feedback_repair": ("verifier_feedback", "repair"),
+                "repair_verification": ("repair", "verification"),
+            }.get(edge["relation"])
+            if expected_kinds and edge["from_event_id"] in event_by_id and edge["to_event_id"] in event_by_id:
+                actual = (event_by_id[edge["from_event_id"]]["kind"], event_by_id[edge["to_event_id"]]["kind"])
+                if actual != expected_kinds:
+                    errors.append(f"{prefix}: {edge['relation']} edge must connect {expected_kinds}, got {actual}")
+        for error_id, feedback_id in recovery_relations.get("error_feedback", []):
+            repairs = [target for source, target in recovery_relations.get("feedback_repair", []) if source == feedback_id]
+            if not repairs or not any(
+                source == repair_id
+                for repair_id in repairs
+                for source, _ in recovery_relations.get("repair_verification", [])
+            ):
+                errors.append(f"{prefix}: recovery chain from error {error_id!r} is incomplete")
 
         results = trial["check_results"]
         _check_unique(results, "check_id", f"{prefix}.check_results", errors)
@@ -172,6 +280,12 @@ def validate_file(bundle_path: Path, schema_path: Path, check_paths: bool = Fals
         for local_path in _provenance_local_paths(bundle):
             if not (ROOT / local_path).is_file():
                 errors.append(f"provenance local_path does not exist: {local_path}")
+        for skill in bundle.get("procedural_skills", []):
+            content_path = ROOT / skill["content_path"]
+            if not content_path.is_file():
+                errors.append(f"procedural skill content_path does not exist: {skill['content_path']}")
+            elif hashlib.sha256(content_path.read_bytes()).hexdigest() != skill["sha256"]:
+                errors.append(f"procedural skill sha256 mismatch: {skill['skill_id']}")
     if errors:
         raise ValidationFailure("\n".join(f"- {error}" for error in errors))
 

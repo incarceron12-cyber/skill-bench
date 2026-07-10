@@ -1,10 +1,10 @@
-# Benchmark bundle schema v0.1
+# Benchmark bundle schema v0.2
 
 `benchmark-bundle.schema.json` is the first executable contract for a complete
 knowledge-work evaluation evidence chain:
 
 ```text
-task → source pack → artifact contract → trial trace → rubric result → causal diagnosis
+expert model → public procedural skill → task/artifact → versioned trial → rubric result → causal diagnosis
 ```
 
 It is intentionally a **bundle schema**, not seven disconnected files. A local
@@ -18,6 +18,9 @@ required check and artifact. `scripts/validate_benchmark.py` therefore applies:
 3. completed-trial invariants, including weighted aggregate recomputation;
 4. optional verification that local provenance paths exist.
 
+Version 0.2 also recomputes each local procedural skill's SHA-256 when
+`--check-paths` is enabled.
+
 ## Design rationale and evidence
 
 | Contract decision | Why it is explicit | Repository evidence |
@@ -30,10 +33,36 @@ required check and artifact. `scripts/validate_benchmark.py` therefore applies:
 | Trials record model, scaffold, skills, tool, and memory policy | Results are agent-system results; recording only the base model creates a scaffold confound. | `papers/agent-benchmarks/2026-07-09-agent-psychometrics.md` |
 | Failed/error checks require root, surface, and causal-slice events | Failure location may differ from origin; useful runs preserve a compact causal chain. | `papers/agent-benchmarks/2026-07-09-strace.md` |
 | Root-cause vocabulary includes task/grader/environment faults | A benchmark must distinguish agent capability failures from invalid or broken evaluation. | `templates/task-metadata.md` §6 and STRACE review limitations |
+| Procedural skills and rubrics have independent versions and hashes | A dual-use skill otherwise confounds execution guidance, rubric quality, and evaluator-cue leakage. | `papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md` §§ Transferable design patterns 1, 4 |
+| Every check declares its disclosure boundary and public requirement basis | Private checks may hold out exact consequences, but may not introduce surprise obligations. | LH-Bench review § Transferable design patterns 3 |
+| Trial versions are typed for task, skill, rubric, grader, tool interface, harness, and feedback policy | Free-form names cannot detect silent drift or support causal ablations. | LH-Bench review § Concrete changes 2 |
+| Recovery is an explicit error → verifier feedback → repair → verification chain | Error count is uninterpretable without feedback specificity and verified recovery. | LH-Bench review §§ Unique insight, Transferable design patterns 5 |
 
 The fixture `tests/fixtures/valid-benchmark-bundle.json` is deliberately a
 failed completed trial. It demonstrates that a score of zero can still preserve
-a useful, machine-checkable diagnosis.
+a useful, machine-checkable diagnosis and an unsuccessful but fully observed
+recovery chain. Its public skill is a real local file whose hash is verified.
+
+## Required 2×2 ablation
+
+Trials encode one condition rather than inferring it from filenames:
+
+| `evaluation_versions.condition` | Skill | Rubric relationship | What it identifies |
+|---|---|---|---|
+| `no_skill_independent_rubric` | `null` | `independent` | Baseline behavior under a measuring instrument not derived from the skill. |
+| `no_skill_shared_rubric` | `null` | `shared_expert_model` | Rubric-instrument effect without exposing procedural guidance. |
+| `public_skill_independent_rubric` | public skill | `independent` | Skill effect without shared-rubric cue contamination. |
+| `public_skill_shared_rubric` | public skill | `shared_expert_model` | Production-like expert guidance plus an instrument derived from the same expert model. |
+
+An optional fifth condition, `exact_rubric_disclosed`, records a public skill
+plus the exact disclosed measuring boundary. It estimates upper-bound
+evaluator-cue compliance and must not be reported as latent skill transfer.
+
+The semantic validator rejects condition/rubric mismatches and requires `skill:
+null` only in the no-skill condition. Compare process and artifact outcomes
+separately across matched task seeds; do not collapse them into one score before
+checking whether the public skill improves deliverable quality rather than only
+rubric compliance.
 
 ## Validate
 
@@ -45,11 +74,12 @@ python scripts/validate_benchmark.py --check-paths \
 python -m unittest tests.test_validate_benchmark -v
 ```
 
-`--check-paths` applies only to `provenance.local_path`; trial artifact paths can
-refer to external or ephemeral run storage and are not required to be present in
-the repository.
+`--check-paths` verifies `provenance.local_path` files and recomputes local
+`procedural_skills[].content_path` hashes. Trial artifact paths can refer to
+external or ephemeral run storage and are not required to be present in the
+repository.
 
-## Deliberate v0.1 boundaries
+## Deliberate v0.2 boundaries
 
 - A bundle contains one task and zero or more trials. Cross-task suites and a
   normalized response-matrix export belong in a later layer.

@@ -2,13 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skill-bench.local/schemas/benchmark-bundle.schema.json",
   "title": "skill-bench benchmark bundle",
-  "description": "Executable contract joining a knowledge-work task, graders, trials, artifacts, traces, rubric checks, and causal failure labels.",
+  "description": "Executable contract joining a knowledge-work task, independently versioned procedural skills and rubrics, graders, trials, artifacts, traces, rubric checks, and causal failure labels.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "benchmark_version", "task", "graders", "trials"],
+  "required": ["schema_version", "benchmark_version", "procedural_skills", "rubrics", "task", "graders", "trials"],
   "properties": {
-    "schema_version": {"const": "0.1.0"},
+    "schema_version": {"const": "0.2.0"},
     "benchmark_version": {"$ref": "#/$defs/nonEmpty"},
+    "procedural_skills": {"type": "array", "items": {"$ref": "#/$defs/proceduralSkill"}},
+    "rubrics": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/rubric"}},
     "task": {"$ref": "#/$defs/task"},
     "graders": {"type": "array", "items": {"$ref": "#/$defs/grader"}},
     "trials": {"type": "array", "items": {"$ref": "#/$defs/trial"}}
@@ -22,6 +24,17 @@
       "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
     },
     "visibility": {"enum": ["public", "private", "hidden", "internal_calibration"]},
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "versionedComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_id", "version", "sha256"],
+      "properties": {
+        "component_id": {"$ref": "#/$defs/identifier"},
+        "version": {"$ref": "#/$defs/nonEmpty"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
     "provenance": {
       "type": "object",
       "additionalProperties": false,
@@ -77,19 +90,66 @@
         "machine_inspectable": {"type": "boolean", "default": false}
       }
     },
+    "proceduralRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirement_id", "phase_id", "public_basis", "ordering_after", "observable_event_kinds", "artifact_ids", "check_ids", "failure_signatures", "provenance"],
+      "properties": {
+        "requirement_id": {"$ref": "#/$defs/identifier"},
+        "phase_id": {"$ref": "#/$defs/identifier"},
+        "public_basis": {"$ref": "#/$defs/nonEmpty"},
+        "ordering_after": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "observable_event_kinds": {"type": "array", "minItems": 1, "items": {"enum": ["observation", "tool_call", "tool_result", "artifact_write", "checkpoint", "error", "verifier_feedback", "repair", "verification"]}, "uniqueItems": true},
+        "artifact_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "check_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "failure_signatures": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}},
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}}
+      }
+    },
+    "proceduralSkill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["skill_id", "version", "sha256", "visibility", "content_path", "workflow_phases", "requirements", "provenance"],
+      "properties": {
+        "skill_id": {"$ref": "#/$defs/identifier"},
+        "version": {"$ref": "#/$defs/nonEmpty"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "visibility": {"const": "public"},
+        "content_path": {"$ref": "#/$defs/relativePath"},
+        "workflow_phases": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "requirements": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/proceduralRequirement"}},
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}}
+      }
+    },
+    "rubric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rubric_id", "version", "sha256", "relationship_to_skill", "check_ids", "provenance"],
+      "properties": {
+        "rubric_id": {"$ref": "#/$defs/identifier"},
+        "version": {"$ref": "#/$defs/nonEmpty"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "relationship_to_skill": {"enum": ["independent", "shared_expert_model", "exact_disclosed"]},
+        "check_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}}
+      }
+    },
     "rootCauseLabel": {
       "enum": ["source_discovery_failure", "evidence_reconciliation_failure", "calculation_failure", "artifact_structure_failure", "artifact_format_failure", "stakeholder_judgment_failure", "presentation_failure", "tool_use_failure", "context_management_failure", "instruction_following_failure", "safety_or_compliance_failure", "ambiguous_task_design", "environment_or_grader_failure", "unknown"]
     },
     "check": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["check_id", "description", "grader_id", "kind", "visibility", "weight", "artifact_ids", "evidence_source_ids", "pass_criteria", "fail_criteria", "allowed_root_causes", "provenance"],
+      "required": ["check_id", "description", "rubric_id", "grader_id", "kind", "visibility", "boundary_disclosure", "public_basis_requirement_ids", "weight", "artifact_ids", "evidence_source_ids", "pass_criteria", "fail_criteria", "allowed_root_causes", "provenance"],
       "properties": {
         "check_id": {"$ref": "#/$defs/identifier"},
         "description": {"$ref": "#/$defs/nonEmpty"},
+        "rubric_id": {"$ref": "#/$defs/identifier"},
         "grader_id": {"$ref": "#/$defs/identifier"},
         "kind": {"enum": ["deterministic", "spreadsheet", "state", "llm_judge", "human_judge", "pairwise"]},
         "visibility": {"$ref": "#/$defs/visibility"},
+        "boundary_disclosure": {"enum": ["exact_disclosed", "public_principle_only", "held_out_consequence"]},
+        "public_basis_requirement_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
         "weight": {"type": "number", "exclusiveMinimum": 0},
         "artifact_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
         "evidence_source_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
@@ -144,10 +204,11 @@
     "grader": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["grader_id", "version", "kind", "implementation", "input_contract", "output_contract"],
+      "required": ["grader_id", "version", "sha256", "kind", "implementation", "input_contract", "output_contract"],
       "properties": {
         "grader_id": {"$ref": "#/$defs/identifier"},
         "version": {"$ref": "#/$defs/nonEmpty"},
+        "sha256": {"$ref": "#/$defs/sha256"},
         "kind": {"enum": ["deterministic", "spreadsheet", "state", "llm_judge", "human_judge", "pairwise"]},
         "implementation": {
           "type": "object",
@@ -157,7 +218,9 @@
             "entrypoint": {"$ref": "#/$defs/nonEmpty"},
             "config_path": {"$ref": "#/$defs/relativePath"},
             "model": {"type": "string"},
-            "prompt_version": {"type": "string"}
+            "model_version": {"type": "string"},
+            "prompt_version": {"type": "string"},
+            "prompt_sha256": {"$ref": "#/$defs/sha256"}
           }
         },
         "input_contract": {"type": "array", "minItems": 1, "items": {"enum": ["task", "sources", "artifacts", "trace", "reference", "human_pair"]}, "uniqueItems": true},
@@ -198,13 +261,28 @@
         "sequence": {"type": "integer", "minimum": 0},
         "timestamp": {"type": "string", "format": "date-time"},
         "actor": {"enum": ["agent", "tool", "environment", "grader", "human"]},
-        "kind": {"enum": ["observation", "reasoning_summary", "tool_call", "tool_result", "artifact_write", "checkpoint", "error", "grader_decision"]},
+        "kind": {"enum": ["observation", "reasoning_summary", "tool_call", "tool_result", "artifact_write", "checkpoint", "error", "verifier_feedback", "repair", "verification", "grader_decision"]},
         "summary": {"$ref": "#/$defs/nonEmpty"},
         "tool_name": {"type": "string"},
         "artifact_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
         "source_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
-        "payload_path": {"$ref": "#/$defs/relativePath"}
-      }
+        "payload_path": {"$ref": "#/$defs/relativePath"},
+        "diagnostic_code": {"type": "string"},
+        "feedback_specificity": {"enum": ["structured_actionable", "actionable", "ambiguous", "non_actionable"]},
+        "feedback_visibility": {"enum": ["agent_visible", "grader_only"]},
+        "recommended_next_action": {"type": "string"},
+        "verification_outcome": {"enum": ["passed", "failed", "inconclusive"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "verifier_feedback"}}, "required": ["kind"]},
+          "then": {"required": ["diagnostic_code", "feedback_specificity", "feedback_visibility"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "verification"}}, "required": ["kind"]},
+          "then": {"required": ["verification_outcome"]}
+        }
+      ]
     },
     "traceEdge": {
       "type": "object",
@@ -213,7 +291,22 @@
       "properties": {
         "from_event_id": {"$ref": "#/$defs/identifier"},
         "to_event_id": {"$ref": "#/$defs/identifier"},
-        "relation": {"enum": ["control", "data", "artifact", "evidence", "retry"]}
+        "relation": {"enum": ["control", "data", "artifact", "evidence", "retry", "error_feedback", "feedback_repair", "repair_verification"]}
+      }
+    },
+    "evaluationVersions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition", "task", "skill", "rubric", "graders", "tool_interface", "harness", "feedback_policy"],
+      "properties": {
+        "condition": {"enum": ["no_skill_independent_rubric", "no_skill_shared_rubric", "public_skill_independent_rubric", "public_skill_shared_rubric", "exact_rubric_disclosed"]},
+        "task": {"$ref": "#/$defs/versionedComponent"},
+        "skill": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/versionedComponent"}]},
+        "rubric": {"$ref": "#/$defs/versionedComponent"},
+        "graders": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/versionedComponent"}},
+        "tool_interface": {"$ref": "#/$defs/versionedComponent"},
+        "harness": {"$ref": "#/$defs/versionedComponent"},
+        "feedback_policy": {"$ref": "#/$defs/versionedComponent"}
       }
     },
     "trace": {
@@ -256,7 +349,7 @@
     "trial": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["trial_id", "task_id", "task_version", "status", "started_at", "agent", "artifacts", "trace", "check_results"],
+      "required": ["trial_id", "task_id", "task_version", "status", "started_at", "agent", "evaluation_versions", "artifacts", "trace", "check_results"],
       "properties": {
         "trial_id": {"$ref": "#/$defs/identifier"},
         "task_id": {"$ref": "#/$defs/identifier"},
@@ -265,6 +358,7 @@
         "started_at": {"type": "string", "format": "date-time"},
         "ended_at": {"type": "string", "format": "date-time"},
         "agent": {"$ref": "#/$defs/agentConfig"},
+        "evaluation_versions": {"$ref": "#/$defs/evaluationVersions"},
         "artifacts": {"type": "array", "items": {"$ref": "#/$defs/observedArtifact"}},
         "trace": {"$ref": "#/$defs/trace"},
         "check_results": {"type": "array", "items": {"$ref": "#/$defs/checkResult"}},
