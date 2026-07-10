@@ -1,0 +1,926 @@
+                                                  Search-Time Contamination in Deep Research Agents: Measuring
+                                                       Performance Inflation in Public Benchmark Evaluation
+                                                          Yongjie Wang1 , Xinyue Zhang3 , Kunhong Yao3 , Zhiwei Zeng1 ,
+                                                                      Kaisong Song2 , Jun Lin2 , Zhiqi Shen3 ,
+                                                             1
+                                                               Alibaba-NTU Global e-Sustainability CorpLab (ANGEL)
+                                                       2
+                                                         Tongyi Lab, Alibaba Group, 3 College of Computing & Data Science,
+                                        {yongjie.wang, zhiwei.zeng, zhiqi.shen}@ntu.edu.sg,{xinyue020, kunhong002}@e.ntu.edu.sg
+                                                                   {kaisong.sks,linjun.lj}@alibaba-inc.com
+
+                                                                   Abstract                             2025; Wu et al., 2025; Jin et al., 2025; Deng et al.,
+                                                                                                        2023; Gou et al., 2026; Team et al., 2025). Un-
+                                                 Public benchmarks enable fair and reproducible
+                                                                                                        like traditional search engines that mainly surface
+
+
+
+
+arXiv:2606.05241v1 [cs.CR] 3 Jun 2026
+                                                 evaluation of LLM reasoning, but they become
+                                                 fragile for deep research agents that actively         static links, deep research agents actively navigate
+                                                 search the web during inference. Such agents           web environments, decompose complex queries
+                                                 may retrieve public benchmark metadata, ques-          into intermediate search tasks through iterative rea-
+                                                 tion context, or even ground-truth answers via         soning paradigms such as ReAct (Yao et al., 2023),
+                                                 web search. This gives rise to Search-Time             and synthesize fragmented evidence into citation-
+                                                 Contamination (STC), where external retrieval          grounded responses. This active retrieval capability
+                                                 bypasses intended reasoning and inflates mea-
+                                                                                                        substantially improves their performance on chal-
+                                                 sured performance. We systematically study
+                                                 STC in deep research agent evaluation. We de-
+                                                                                                        lenging benchmarks. For example, on HLE, web-
+                                                 fine three contamination types with increasing         enabled Grok 4 improves from 25.4% to 38.6%,
+                                                 severity, namely Benchmark Metadata Leak-              while Grok 4 Heavy further reaches 44.4%, nearly
+                                                 age, Question-Context Leakage, and Explicit            doubling the original score.
+                                                 Answer Leakage, and develop detection algo-               Despite these gains, applying existing bench-
+                                                 rithms to identify them and quantify their im-         mark evaluation protocols directly to deep research
+                                                 pact on agent performance. Evaluating modern           agents raises a critical methodological concern.
+                                                 deep research agents on six public benchmarks,
+                                                                                                        Since benchmark instances are often curated from
+                                                 we find that STC is widespread and can in-
+                                                 flate performance by up to 4%. Our findings            web corpora or released through public dataset host-
+                                                 show that existing evaluations may overesti-           ing platforms such as HuggingFace and GitHub,
+                                                 mate true reasoning ability. We therefore advo-        an agent may retrieve the original test question,
+                                                 cate contamination-aware practices, including          answer cues, or even the ground-truth answer dur-
+                                                 isolated sandboxes, transparent search trajecto-       ing inference. This phenomenon is referred to
+                                                 ries, and controlled benchmark access.                 as Search-Time Contamination (STC) (Han et al.,
+                                                                                                        2025): a failure mode where retrieved benchmark
+                                             1   Introduction
+                                                                                                        artifacts allow the agent to bypass the intended
+                                             Evaluating the generative quality and reasoning            reasoning process, leading to poor generalization
+                                             abilities of large language models (LLMs) (Yang            on practice questions that are not available on the
+                                             et al., 2025; Guo et al., 2025; Singh et al., 2025)        web. As illustrated in Figure 1, once Tongyi Deep
+                                             has largely relied on curated public benchmarks,           Research retrieves the ground-truth label from a
+                                             such as GPQA (Rein et al., 2024), Humanity’s Last          Chegg webpage, it deviates from its initial rea-
+                                             Exam (HLE) (Phan et al., 2025), and BrowseComp             soning path and directly adopts the leaked answer.
+                                             (Wei et al., 2025). Such public benchmarks are             Such cases lead to apparently correct responses
+                                             essential for conventional evaluation, enabling dif-       that do not faithfully reflect the agent’s underlying
+                                             ferent models and methods to be assessed against           reasoning capability.
+                                             shared reference datasets while supporting trans-             Systematically quantifying STC-induced perfor-
+                                             parency, reproducibility, and cumulative progress.         mance inflation is therefore essential for establish-
+                                                Sparked by the rapid advances of LLMs , in-             ing fair, trustworthy, and rigorous evaluation proto-
+                                             formation retrieval is transitioning from passive,         cols for agentic systems. In this paper, we analyze
+                                             keyword-based search to autonomous, agent-driven           the mechanisms through which STC occurs and
+                                             exploration (Nakano et al., 2021; Zhang et al.,            classify it into three fine-grained types along a spec-
+
+                                                                                                    1
+trum of severity: (1) Benchmark Metadata Leak-              risk that public web exposure turns evaluation into
+age, where the agent’s search behavior is directed          retrieval-based answer matching rather than gen-
+toward locating benchmark artifacts rather than             uine reasoning.
+solving the task; (2) Question-Context Leakage,
+where retrieved content reveals the surrounding             2   Preliminary
+context or source of the benchmark instance with-           Deep Research refers to an autonomous agentic
+out explicitly exposing the answer; and (3) Explicit        system that combines step-by-step reasoning with
+Answer Leakage, where the ground-truth label or             external actions, such as web search, to solve com-
+answer is directly retrieved during inference. Cor-         plex decision-making tasks. The agent executes a
+respondingly, we introduce detection algorithms             dynamic, iterative trajectory, usually including the
+to identify these contamination types and quantify          following key components:
+their impacts on measured agent performance from            • Reasoning (τt ): The agent accumulates the exe-
+both question level and turn levels.                          cution history and reasons over it to deduce the
+   We mainly investigated STC on clinical and med-            next step action or generate the final answer.
+ical benchmarks, where questions often require
+multi-hop reasoning, deductive inference, and pre-          • Action (at ): The agent executes an external op-
+cise factual recall. Because many public medical              eration to interact with the environment, such as
+benchmarks are widely reproduced across reposito-             submitting a query to a web search engine.
+ries, examination platforms, question banks, ed-            • Observation (ot ): The agent receives feedback
+ucational websites, and forums, they provide a                from the environment after executing an action
+high-stakes and highly exposed setting for studying           and uses it to update its internal context for sub-
+STC. Based on our study, all evaluated benchmark              sequent reasoning.
+datasets exhibit varying degrees of STC. The issue            Following the ReAct framework (Yao et al.,
+is particularly severe for early benchmark MedM-            2023), we represent an agent trajectory as a se-
+CQA, where nearly one quarter of the questions can          quence of reasoning, action, and observation steps:
+have their answers retrieved from the web. STC-
+induced performance inflation can reach up to 4%                   HT = {q, (τ0 , a0 , o0 ), ..., (τT , aT )}   (1)
+on HLE biological and chemical subsets. Once the
+                                                            At the terminal step T , the agent provides the final
+leaked answer is retrieved, the agent achieves both
+                                                            answer aT . For each intermediate step t, the agent
+higher accuracy and faster convergence, reaching
+                                                            learns to optimize the policy π(·|Ht−1 ), aiming to
+over 95% accuracy regardless of medical task diffi-
+                                                            produce the optimal thought τt and action at :
+culty and rapidly shifting from its previous reason-
+ing trajectory to the leaked answer. Similar leakage                       (τt , at ) ∼ π(·|Ht−1 )              (2)
+patterns are also observed in commercial deep re-
+search systems such as Gemini Deep Research: the               Web Search is one widely used external tool for
+agent visits webpages that explicitly contain both          gathering broad knowledge and synthesizing in-
+the original question and its corresponding answer          formation (Gou et al., 2026; Nakano et al., 2021;
+for 60% of the 100 sampled MedQA questions.                 Jin et al., 2025; Team et al., 2025). It provides ac-
+   Our findings indicate that the improved perfor-          cess to more up-to-date, diverse, and open-domain
+mance observed in deep research agents may be               information, making it particularly useful for com-
+partially attributable to web-based answer leakage,         plex tasks that require recent facts, cross-source
+rather than entirely reflecting genuine reasoning im-       verification, or evidence aggregation. Typically,
+provement. We therefore advocate contamination-             web search consists of two atomic operations: (i)
+aware evaluation practices for deep research agents,        Search, submitting a query to a search engine
+including isolated sandboxes, which prevent agents          and receives a ranked list of relevant URLs to-
+from retrieving benchmark artifacts or answer keys          gether with short snippets; and (ii) Visit (Browse),
+during inference; transparent search trajectories,          opening selected webpages from the search results,
+which allow auditors to inspect search queries, re-         reads their content, and extracts or summarizes
+trieved URLs, visited pages, and summarized evi-            task-relevant evidence. This search-and-visit mech-
+dence for potential contamination; and controlled           anism allows deep research agents to collect com-
+benchmark access, such as private test sets or dy-          plementary evidence from multiple sources and
+namically generated instances, further reduces the          synthesize them into a final response.
+
+                                                        2
+   Search-Time Contamination (STC) was first                  stage, the retrieved URLs already suggest that
+formally discussed in (Han et al., 2025). It refers           the agent’s search process has been steered away
+to a failure mode in which the retrieval step of a            from task-relevant knowledge gathering toward
+deep research agent returns answer-revealing web              benchmark-related artifacts.
+content derived from, or closely overlapping with,          • Question-Context Leakage (QCL) occurs
+the evaluation set itself. Such answer-revealing ev-          when the retrieval process returns documents
+idence allows the agent to bypass the intended rea-           containing the exact phrasing or highly specific
+soning process through retrieval shortcuts, leading           context of the test question, but not its ground-
+to poor generalization on unseen questions that are           truth label. For example, the agent may retrieve
+not available on the web. Measuring STC is there-             the original article or source passage from which
+fore essential for separating genuine reasoning ca-           a QA pair was constructed. Such context can pro-
+pability from contamination-induced performance               vide external priors and substantially narrow the
+inflation and for ensuring trustworthy evaluation.            search space, thereby allowing agents to shortcut
+   Prior work (Han et al., 2025) detects search-time          the intended independent reasoning process.
+leakage through URL matching against Hugging
+Face. While this offers an important initial step, it       • Explicit Answer Leakage (EAL) occurs when
+mainly captures coarse-grained benchmark expo-                the retrieval process returns content that contain
+sure and leaves other contamination forms under-              both the evaluation query x and its corresponding
+examined. First, repository-level matching may                ground-truth label y. In this scenario, the reason-
+miss leakage from broader web sources, such as                ing chain completely collapses into a trivial key-
+forums, educational websites, question banks, or              value extraction task, rendering the benchmark
+informal discussions. Second, a repository hit does           evaluation fundamentally invalid.
+not necessarily imply answer leakage, as bench-             Since we define contamination types at the step
+mark queries and labels may be separated, hidden,           level, a single question-answering trajectory may
+or hosted in different locations. Therefore, repos-         exhibit multiple STC types, as shown in Figure 1.
+itory matching alone is insufficient to distinguish
+different STC mechanisms, which may range from              3.2   Detection Algorithm
+retrieving benchmark metadata and question con-             BML Detection. To infer an LLM’s search in-
+text to directly retrieving gold-standard answers.          tent from returned URLs, we employ a regular-
+                                                            expression-based URL matching method. For each
+3     Methodology                                           query phrase, the search engine returns top rele-
+                                                            vant websites and snippets. We detect whether
+In this section, we formalize Search-Time Contam-           the returned URLs are suspicious by applying
+ination (STC) with a three-level taxonomy: Bench-           regular-expression matching over two groups of
+mark Metadata Leakage, Question-Context Leak-               websites: (1) common source websites, includ-
+age, and Explicit Answer Leakage. We then design            ing data-hosting platforms (e.g. Hugging Face
+specific detection mechanisms to identify each type         and GitHub), which often provide free access to
+of contamination.                                           open-source datasets; and medical examination
+                                                            URLs (e.g. Quizlet), which serve as original
+3.1    STC Taxonomy
+                                                            data sources for benchmarks and expose exam
+During iterative search, the agent may encounter            questions or answers directly; and (2) benchmark-
+benchmark-related artifacts at different stages, in-        specific websites, which contain dataset names, and
+cluding top-ranked search results and subsequently          known dataset source patterns. The complete set
+visited webpages. As such, we define three types            of matching templates is provided in Appendix
+of STC according to the agent operation involved            G. The occurrence of any of these two groups of
+and the severity of the exposed information.                search results serves as an indicator that the LLM
+• Benchmark Metadata Leakage (BML) occurs                   seeks dataset-level metadata, rather than question-
+  when the search step returns URLs that expose             relevant medical knowledge.
+  benchmark-specific metadata, such as bench-               QCL Detection. We detect question-context leak-
+  mark names or question identifiers, rather than           age by measuring the lexical overlap between the
+  useful knowledge sources. Although the web-               question and the retrieved content. Specifically, we
+  page content has not yet been visited at this             compute the longest common substring between
+
+                                                        3
+                            Tool: search                                          Tool: visit                                                         Sufficient Evidence for
+                            Query: pruritic rash within 2 hours of                URL: https://www.chegg.com/homework-                                Direct Answering
+                            ceftriaxone skin findings most likely      Web Search help/questions-and-answers/question Visit Webpage                                                  Final Answer
+                            associated with xxx
+    Question: An 18-year-old woman             [1] (https://www.chegg.com/homework-help/questions-
+                                                                                                                   Based on the extracted content from the Chegg          The Chegg solution says D:
+    comes to the physician because of          and-answers/question-15-18-year-old-woman-comes-
+                                                                                                                   webpage, the correct answer to Question #15            Hyperpermeability of superficial dermal
+    a pruritic rash on her back for the        physician-pruritie-rash-2-hours-morning-started-course-
+                                                                                                                   regarding the 18-year-old woman with a pruritic        microvasculature.\n\nOriginal options in
+    past 2 hours. ..., This patient's          q93239116) \nThis patient's skin findings are most likely
+                                               associated with Answer Image A Perivascular cutaneous
+                                                                                                                   rash following ceftriaxone treatment is Option D.      the user prompt show D as mast cell
+    skin findings are most likely
+                                               polymorphonuclear infiltration B Direct ..                          The webpage explicitly identifies                      activation; maybe misordered. Let's re-
+    associated with which of the
+                                               [2] (https://pmc.ncbi.nlm.nih.gov/articles/PMC4124684/)
+                                                                                                                   'Hyperpermeability of superficial dermal               read the original question: "An 18-year-
+    following?
+                                               This drug is known to be associated with rare and mild              microvasculature' as the association for the           old woman comes to the physician
+    'A': 'Direct tissue damage by
+                                               side-effects such as urticaria, skin rash, diarrhea, vomiting       patient's skin findings. Although the                  because of a pruritic rash on her back for
+    irradiated antibiotic agent', 'B':
+    'Cytotoxic T-cell destruction of           [3] (https://pmc.ncbi.nlm.nih.gov/articles/PMC10381535/)            comprehensive medical reasoning is partially           the past 2 hours. ...., According to
+    antigen-tagged cells', 'C':                We review the current knowledge on the physiological and            hidden behind a subscription gate, the provided        Chegg, correct answer is
+    'Hyperpermeability of superficial          pathological roles of MCs, with a dermatological
+                                                                                                                   solution confirms this specific pathological           hyperpermeability (option C). So answer
+    dermal microvasculature', 'D':             [4] (https://www.scribd.com/document/592055272/Sabree               mechanism.                                             is C.
+    'Mast cell activation in                   nMaK19)This document contains questions and multiple
+    subcutaneous tissues'                      [5] ......
+
+                                          Search Tool: Benchmark Metadata Leakage [URL Matching]
+                                          Visit Tool: Question-Context Leakage [Content Matching, No Answer]; Explicit Answer Leakage [LLM as a Judge]
+
+
+
+Figure 1: Illustration of clinical search-time contamination with Tongyi Deep Research. After retrieving the answer,
+the agent directly jumps to prediction, bypassing the intended reasoning process. This example can be found in
+MedQA output in our released repository, Line 715.
+
+the retrieved content and the question, and normal-                                                                tion and a turn-level evaluation.
+ize it by the question length to account for length
+variations. A higher normalized overlap indicates                                                                  4.1       Question-level Evaluation
+that the question itself is more likely to have ap-                                                                Since a single question may be associated with mul-
+peared in the retrieved content. However, string                                                                   tiple STC types, our main strategy is to compare
+matching alone cannot determine whether the re-                                                                    agent performance across subsets split by specific
+trieved content also exposes the corresponding an-                                                                 STC types. We assume that questions in the com-
+swer. Therefore, we combine EAL detection to                                                                       pared subsets have comparable difficulty, so the ob-
+exclude cases involving explicit answer leakage.                                                                   served performance gap can be primarily attributed
+EAL Detection. To further identify whether the                                                                     to the presence of STC events.
+retrieved content explicitly contains the answer, we                                                                  To assess the impact of BML, we partition the
+adopt LLM-as-a-Judge (Zheng et al., 2023). We                                                                      dataset into BML-triggered and non-BML subsets
+prompt DeepSeek V4 Pro (DeepSeek-AI, 2026) to                                                                      and compare agent performance between them.
+determine whether the retrieved content provides                                                                   Since QCL and EAL occur at the visit stage, they
+direct evidence for the answer. The prompt is pro-                                                                 are inherently conditioned on BML, where a rele-
+vided in Figure 3 of the Appendix section.                                                                         vant URL has already been retrieved. We therefore
+   We evaluate the correctness of automatic de-                                                                    further split the BML-triggered subset by the pres-
+tection by comparing it against human-annotated                                                                    ence or absence of QCL and EAL, yielding four
+ground-truth labels on the Medbullets5op and                                                                       subgroups, and report agent performance for each.
+MedQA datasets. For Medbullets-5op, we com-
+pare the EAL detection results with finalized hu-                                                                  4.2       Turn-level Evaluation
+man annotations and find that the detector achieves
+                                                                                                                   The turn-level evaluation investigates how leakage
+83.3% recall and 100% precision. For MedQA,
+                                                                                                                   triggered during a search step impacts the final
+due to the larger dataset size, we conduct human
+                                                                                                                   prediction and analyzes the interaction among the
+post-checking only on the detected EAL cases and
+                                                                                                                   three STC types.
+therefore report precision only; the detection al-
+                                                                                                                       Prediction Shift. Because agents may generate
+gorithm achieves 94.85% precision. The detailed
+                                                                                                                   tentative predictions during the search process, we
+results are reported in Appendix D.
+                                                                                                                   analyze how their answers evolve when an STC oc-
+4        Evaluation                                                                                                curs. Specifically, assuming a contamination event
+                                                                                                                   is triggered at turn t, we quantify the prediction
+To systematically assess this complex vulnerability                                                                shift by comparing the agent’s prediction at turn t
+and its impact on final prediction performance, we                                                                 against its prediction at turn t + 1. Notably, if the
+introduce an evaluation framework from two com-                                                                    LLM fails to output any prediction at a given turn,
+plementary perspectives: a question-level evalua-                                                                  it is strictly evaluated as incorrect.
+
+                                                                                                               4
+   Dynamic Impact on Predictions. We treat the              CQA, we exclude the shortest half of questions, as
+agent’s step-by-step search process as a survival           they are more likely to require only factual recall
+problem where each agent turn corresponds to a              rather than complex reasoning, inspired by (Thapa
+time step, the event of interest is that the agent          et al., 2025). More dataset details are provided in
+reaches a correct prediction, and STC events are            Appendix Section B.
+modeled as time-dependent covariates, indicating               We directly report accuracy for multiple-choice
+whether a specific contamination type has occurred          questions. For the HLE subset, which includes
+by a given turn. This formulation allows us to              open-ended questions, we use LLM-as-a-judge to
+model not only whether the agent eventually an-             estimate accuracy following the standard HLE eval-
+swers correctly, but also when the correct predic-          uation protocol. Note that our goal is not to com-
+tion emerges after an STC event is triggered, using         pare the relative performance of different deep re-
+survival analysis models in public health.                  search agents. Instead, we focus on measuring the
+   To estimate how STC affects this process, we             severity of STC and the extent to which perfor-
+use a time-varying Cox proportional hazards model           mance changes after rectification.
+(Cox, 1972), referring to Section A in the Appendix.        Deep Research Agents. We evaluate a represen-
+The estimated hazard ratio measures how the occur-          tative set of deep research agents spanning both
+rence of an STC event changes the instantaneous             open-source models and commercial research sys-
+likelihood of reaching a correct prediction at that         tems, including Tongyi Deep Research (Team
+turn. A hazard ratio larger than 1 indicates that           et al., 2025), Step Deep Research (Hu et al., 2025),
+the agent is more likely to reach the correct answer        Gemini Deep Research (Gemini Team, 2026) and
+after the corresponding STC event. For example, a           Valyu Deep Research (Valyu, 2026). In addition,
+remarkably high HR for EAL contamination indi-              we include Qwen3-30B-A3B (Team, 2025), the
+cates that the agent outputs the correct prediction         base model of Tongyi Deep Research, to assess the
+quickly after answers are explicitly leaked. Con-           underlying model capability before applying the
+versely, a lower HR implies a delayed or weaker             full deep research agent pipeline. More details of
+correlation between the contamination event and             agents are provided in Appendix Section C.
+the successful prediction.                                     Our main experiments are conducted on Tongyi
+   Cascading Effect of STC Types. In the search             Deep Research because it is cost-effective, publicly
+trajectory, contamination events are rarely isolated;       accessible, and provides fully observable execu-
+the occurrence of one leakage type may catalyze             tion traces, allowing us to inspect search queries,
+another. We therefore investigate the internal se-          visited webpages, intermediate summaries, and rea-
+quential dynamics among these STC states. We use            soning steps. To examine the generalizability of
+Kaplan–Meier curves to analyze STC escalation               our findings, we further evaluate several other deep
+after BML occurs. Specifically, we reset the time           research agents. All experiment results are released
+origin to the first BML turn and measure the num-           at GitHub 1 .
+ber of subsequent turns until the first occurrence of
+                                                            5.1    Statistics Report
+QCL or EAL. Furthermore, to evaluate the forward
+cascading effect from question to answer, we set            Table 1 reports the turn-level and question-level
+EAL as the target event and QCL as the covariate.           statistics of STC types. We observe that STC ap-
+This configuration quantifies whether encountering          pears at different severity levels across evaluated
+the exact question early in the search catalyzes the        datasets, indicating that STC is not an isolated phe-
+subsequent retrieval of the explicit answer.                nomenon but a common risk in evaluation.
+                                                               Earlier benchmarks such as MedQA, MedM-
+5   Experiment                                              CQA and MMLU show stronger contamination sig-
+                                                            nals, likely because they have been available longer
+Datasets. We evaluate clinical search-time contam-          and are more widely indexed, mirrored, and dis-
+ination on six medical question-answering bench-            cussed online. In particular, medical-exam-derived
+marks: MedQA (Jin et al., 2021), MMLU medical               datasets such as MedQA and MedMCQA are fre-
+subsets (Hendrycks et al., 2021), MedMCQA (Pal              quently redistributed through exam-preparation
+et al., 2022), MedXpertQA (Zuo et al., 2025), HLE           websites, forums, repositories, and social platforms,
+medical subsets (Phan et al., 2025), and Medbul-               1
+                                                               https://anonymous.4open.science/r/Search-
+lets5op (Chen et al., 2025). For MMLU and MedM-             Time_Contamination-25F2/
+
+
+                                                        5
+                      Table 1: Turn-level and question-level STC statistics across benchmarks.
+
+                                 Turn-level Statistics                            Question-level Statistics
+      Dataset
+                      Avg Turn   No STC BML QCL          EAL      No STC    BML    BML&QCL BML&EAL               All Types
+      MedQA              6.55      7427    834     44       39     872      351         16             23           11
+      MMLU               6.23      2873    431     27       56     382      114          6             32           10
+      MedMCQA           15.87     24274   7543    569      769     533      934        115            324          183
+      MedXpertQA        10.22     21973   3031     1        25     1456     971          0             22            1
+      HLE-149           14.23      1917    192     6         5      77       66          3              1            2
+      Medbullets5op      9.85      2612    296     18       10     203       81          5              2            7
+
+Table 2: Main results of Tongyi-DeepResearch. Tongyi-DeepResearch* disables web search; results are reported on
+the full dataset, subsets splited by BML occurrence, and by QCL/EAL co-occurrence within the BML subset.
+
+       Name                         MedQA        MedMCQA         MMLU      MedXpertQA        HLE-149        Medbullets5op
+                                                  Full Dataset Evaluation
+       Qwen3-30B-A3B                83.58%        70.27%         89.72%      21.80%          12.75%            67.45%
+       Tongyi-DeepResearch*         89.00%        72.47%         91.96%      28.45%          15.44%            73.15%
+       Tongyi-DeepResearch          91.28%        87.34%         94.86%      40.61%          24.83%            76.17%
+                                 Split by Benchmark Metadata Leakage (BML) Occurrence
+       Without BML                  92.78%        90.24%         94.24%      37.64%          20.78%            74.38%
+       With BML                     88.03%        86.12%         95.68%      44.97%          29.17%            80.00%
+                                           Breakdown within the BML Group
+       With BML only                88.03%        84.37%         94.74%      44.28%          27.27%            80.25%
+       With BML and QCL             68.75%        61.74%          100%         N/A             0%                60%
+       With BML and EAL             95.65%        97.53%         96.88%      72.73%           100%               50%
+       With BML, QCL and EAL         100%         90.16%          100%        100%            100%              100%
+
+
+
+making them more susceptible to retrieval during                  group shows that the actual performance impact de-
+web search. Notably, benchmark recency does                       pends on whether the agent subsequently retrieves
+not eliminate STC risk. Even recently released                    explicit answers. Subsets involving EAL tend to
+datasets such as MedXpertQA and HLE-149 show                      achieve much higher accuracy, such as 100% on
+leakage signals, mainly due to exposure through                   the HLE subsets and 73.91% on MedXpertQA,
+LLM-related publications, data hosting platforms,                 substantially exceeding average performance. In
+or online forum discussions.                                      contrast, QCL alone does not consistently improve
+                                                                  performance, suggesting that query-context expo-
+5.2   Main Results                                                sure may introduce partial or noisy priors rather
+The question-level evaluation results are reported                than direct answer shortcuts. These results demon-
+in Table 2. Disabling the web search, the agent                   strate the necessity of a multi-level STC taxonomy
+consistently improves over the base Qwen3-30B-                    and highlight the need for greater awareness of
+A3B model, showing that finetuning enhances the                   STC risks in search-enabled agent evaluation.
+model’s underlying reasoning capability. Enabling
+web search further improves performance, but these                5.3     Turn-Level Prediction Dynamics
+gains are partially attributable to STC.                          Table 3 reports the prediction dynamics. We ob-
+   The results on the splits induced by BML do not                serve a sharp improvement in prediction accuracy
+always indicate performance inflation. Although                   after the agent retrieves the answer. Interestingly,
+the BML-triggered subset performs better on four                  answer options on external websites may appear
+benchmarks, it performs worse on two others, con-                 in shuffled orders, which can initially mislead the
+trasting with prior conclusions based on repository               LLM. After one or two additional reasoning turns,
+matching (Han et al., 2025). This suggests that                   however, the agent may correct its prediction, as
+URL-level benchmark metadata leakage alone is                     shown in Figure 1. This explains why performance
+insufficient to determine whether the agent actually              after EAL is lower than the final prediction perfor-
+benefits from contamination.                                      mance (80% vs 88.7% on Medbullet5op datasets).
+   The fine-grained breakdown within the BML                      In contrast, BML and QCL exhibit more varied
+
+                                                             6
+behaviors. Moreover, when the LLM fails to out-                Therefore, We first match each question against
+put a prediction at an intermediate turn, we strictly          visited webpage content, then manually verify an-
+count that turn as incorrect, which makes interme-             swer exposure. If an visited source contains both
+diate prediction dynamics noisier. Providing only              exact answer and questions, we label the instance
+web snippets or question-related context without               as answer leakage.
+directly exposing the answer may not consistently                 As shown in Table 6, Gemini exhibits an alarm-
+improve prediction accuracy.                                   ingly high leakage rate of 60% when web search
+                                                               is enabled. Although its underlying agent model is
+5.4   Impact on Predictions                                    already strong, such a high leakage rate raises seri-
+Table 4 presents the time-varying Cox regression re-           ous concerns. Step Deep Research shows a more
+sults. A clear pattern is that EAL has the strongest           moderate level of contamination, with a leakage
+and most consistent positive association with cor-             rate of 9%. One possible reason is that its search
+rect prediction, indicating that explicit answer leak-         infrastructure is more Chinese-oriented, which may
+age substantially increases the likelihood that the            make it less effective at retrieving English bench-
+agent reaches a correct prediction in subsequent               mark artifacts from the web. Conversely, Va-
+search turns. Its hazard ratios are consistently               lyu shows an exceptional leakage rate of 0% on
+larger than 1, ranging from 2.20 on Medbullets5op              MedQA. This may be due to its unique search in-
+to 8.92 on HLE-149, and are statistically signif-              frastructure, which appears to retrieve evidence
+icant on most datasets. By contrast, BML does                  from restricted or curated sources, such as PubMed,
+not consistently improve prediction. Its hazard ra-            rather than general webpages. However, this de-
+tios are below 1 on 5 benchmarks, suggesting that              sign does not eliminate STC risk: when evaluated
+benchmark metadata leakage alone is not sufficient             on PubMedQA, whose questions are curated from
+to help the agent answer correctly. QCL shows                  PubMed articles, Valyu also exhibits a 78% leakage
+mixed effects: it is negatively associated with cor-           rate (seen in Appendix Section F).
+rect prediction on several benchmarks and is not
+statistically significant on others.                           6   Discussion
+5.5   Cascading Effect between STC Types                       Our experiments lead to a critical conclusion: the
+Figure 2 shows the Kaplan–Meier curves of STC es-              exceptional performance exhibited by deep re-
+calation after the first BML event. Across datasets,           search agents is, at least partially, an artifact of
+BML is more likely to escalate into EAL than                   web-based answer leakage. How to maintain a ro-
+into QCL, suggesting that weak contamination ob-               bust, contamination-free knowledge-gathering pro-
+served in search snippets can serve as an early warn-          cess for measuring an agent’s reasoning capabilities
+ing signal for subsequent explicit answer leakage              remains a pivotal challenge.
+during webpage visits. This pattern is especially                 First, future evaluations should be conducted in
+pronounced on MMLU and MedMCQA, while                          an isolated knowledge sandbox, such as ToolUni-
+HLE-149 shows a lower escalation probability. Ta-              verse (Gao et al., 2025), to ensure fair comparisons.
+ble 5 shows that QCL significantly increases the               All evaluated agents should retrieve information
+hazard of subsequent EAL across most datasets,                 from the same sandbox, differing only in their un-
+with hazard ratios ranging from 2.50 to 6.74. This             derlying model or reasoning policy.
+suggests that once QCL occurs, the agent is more                  Current commercial systems return only a syn-
+likely to escalate to EAL in later turns. The only ex-         thesized summary and reference URLs rather than
+ception is HLE-149, where the confidence interval              the full search trajectory, which makes STC events
+is wide and the effect is not statistically significant,       difficult to detect. Offering retrieved URLs, search
+likely due to limited event counts.                            queries, and intermediate evidence would enable
+                                                               users and evaluators to examine whether the fi-
+5.6   Generalizability of STC                                  nal answer is grounded in legitimate reasoning or
+Here, we verify whether search-time contamination              merely reflects leaked benchmark artifacts.
+is a ubiquitous vulnerability for other agents. As                Third, benchmark access must be strictly con-
+the internal search trajectories of proprietary agents         trolled rather than fully indexed by search engines
+are opaque, we only have access to their final pre-            or vulnerable to automated crawlers. To enforce
+dictions, summaries, and the list of visited URLs.             this, dataset repositories should implement mecha-
+
+                                                           7
+                                    Table 3: Performance comparison between the current turns and after detected STC events.
+
+                                                 Benchmark Metadata Leakage              Question-Context Leakage                                     Explicit Answer Leakage
+                 Dataset
+                                                 #Samples Before     After              #Samples Before      After                                  #Samples Before       After
+                 MedQA                              834        48.44%         30.94%      44                                4.55%         22.73%        39          7.69%           89.74%
+                 MMLU                               431        52.67%         36.89%      27                               18.52%         48.15%        56         17.86%           82.14%
+                 MedMCQA                            7543       27.71%         16.62%      569                              14.24%         25.66%       769         19.25%           79.45%
+                 MedXpertQA                         3031        7.06%          6.20%       1                                  0%            0%          25            8%              48%
+                 HLE-149                            192         9.90%         7.81%        6                                  0%            0%          5            20%             100%
+                 Medbullets5op                      296        25.34%         16.22%      18                                  0%          11.11%        10            0%              80%
+
+Table 4: Time-varying Cox regression results for the association between each STC type and correct prediction. We
+report hazard ratios (HRs), 95% confidence intervals (CIs), and p-values.
+
+                                                         BML → Accuracy                        QCL → Accuracy                                                  EAL → Accuracy
+                   Dataset
+                                                  HR       95% CI    p-value            HR       95% CI     p-value                                  HR          95% CI     p-value
+                   MMLU                           0.45     [0.36, 0.55]       < 0.005   0.78      [0.47, 1.28]                             0.32      2.21       [1.54, 3.18]        <0.005
+                   MedMCQA                        0.62     [0.56, 0.69]       <0.005    0.72      [0.63, 0.82]                            <0.005     2.27       [2.03, 2.53]        <0.005
+                   MedQA                          0.68     [0.60, 0.78]       <0.005    0.64      [0.43, 0.97]                            0.035      4.21       [2.89, 6.13]        <0.005
+                   MedXpertQA                     0.85     [0.76, 0.96]       0.0069    2.99     [0.41, 22.05]                             0.28      2.49       [1.53, 4.05]        <0.005
+                   HLE-149                        1.06     [0.62, 1.84]        0.82     0.94      [0.29, 3.11]                             0.92      8.92      [2.46, 32.35]        <0.005
+                   Medbullets5op                  0.78     [0.59, 1.02]        0.07     1.10      [0.57, 2.10]                             0.79      2.20       [0.99, 4.86]         0.052
+
+
+                              0.7                        BML -> QCL                                                      0.7                        BML -> EAL
+                                        MMLU                                                                                       MMLU
+                              0.6       MedMCQA                                                                          0.6       MedMCQA
+
+
+
+
+     Cumulative probability                                                                     Cumulative probability
+                                        MedQA                                                                                      MedQA
+                              0.5       HLE-149                                                                          0.5       HLE-149
+                                        Medbullets5op                                                                              Medbullets5op
+                              0.4                                                                                        0.4
+                              0.3                                                                                        0.3
+                              0.2                                                                                        0.2
+                              0.1                                                                                        0.1
+                              0.0                                                                                        0.0
+                                    0      5        10        15         20       25      30                                   0      5        10         15        20         25        30
+                                                 Turns after the first BML                                                                   Turns after the first BML
+
+                                                        Figure 2: Kaplan–Meier curves of STC escalation after BML.
+
+
+Table 5: Time-varying Cox regression results between                                                        Table 6: STC severity across deep research agents on
+QCL and EAL. We report HR, 95% confidence interval,                                                         the first 100 MedQA questions.
+and p-values.
+                                                                                                                                                                Web Search           Leakage
+                                                                                                                                          Models
+                                                           QCL → EAL                                                                                            On    Off             Rate
+               Dataset
+                                                 HR         95% CI   p-value
+                                                                                                                               Gemini Deep Research             99%      97%           60%
+               MMLU                             3.51      [1.56, 7.91]        <0.005                                            Step Deep Research              93%      92%           9%
+               MedMCQA                          2.50      [2.04, 3.06]        <0.005                                           Valyu Deep Research              87%      N/A           0%
+               MedQA                            2.95      [1.43, 6.09]        <0.005
+               HLE-149                          2.12     [0.35, 12.98]         0.42
+               Medbullets5op                    6.74     [2.46,18.50]         <0.005
+                                                                                                            types—Benchmark Metadata Leakage, Question-
+                                                                                                            Context Leakage, and Explicit Answer Leakage—
+nisms such as gated access and mandatory user reg-                                                          and introduce corresponding detection methods to
+istration. Furthermore, data use agreements must                                                            assess their prevalence and influence in public med-
+explicitly prohibit the unauthorized redistribution                                                         ical benchmarks. Our results show that modern
+of benchmark instances.                                                                                     agents are vulnerable to varying degrees of con-
+                                                                                                            tamination, which can inflate reported performance
+7   Conclusion
+                                                                                                            and even alter model rankings. These findings high-
+This work identifies search-time contamination                                                              light the need for strict knowledge sandboxes to
+(STC) as a critical reliability threat in evaluating                                                        separate genuine reasoning ability from superficial
+deep research agents. We categorize STC into three                                                          retrieval of benchmark artifacts.
+
+                                                                                               8
+Limitations                                                 David R Cox. 1972. Regression models and life-tables.
+                                                              Journal of the royal statistical society: Series B
+While this study exposes important vulnerabilities            (methodological), 34(2):187–202.
+in existing deep research agents, several limitations       DeepSeek-AI. 2026. Deepseek-v4: Towards highly
+remain.                                                       efficient million-token context intelligence.
+   First, our URL matching strategy for BML detec-          Xiang Deng, Yu Gu, Boyuan Zheng, Shijie Chen,
+tion focuses on commonly observed websites that               Samuel Stevens, Boshi Wang, Huan Sun, and Yu Su.
+are highly likely to contain benchmark artifacts.             2023. Mind2web: Towards a generalist agent for
+However, websites outside these predefined match-             the web. In Thirty-seventh Conference on Neural
+                                                              Information Processing Systems Datasets and Bench-
+ing patterns may also contain benchmark questions,            marks Track.
+leading to imperfect recall and a potential underes-
+timation of BML prevalence.                                 Shanghua Gao, Richard Zhu, Pengwei Sui, Zhenglun
+                                                              Kong, Sufian Aldogom, Yepeng Huang, Ayush
+   Second, our experiments are limited to clin-               Noori, Reza Shamji, Krishna Parvataneni, Theodoros
+ical benchmarks, which are reasoning-intensive                Tsiligkaridis, and 1 others. 2025. Democratizing
+and widely available on the web. Similar issues               ai scientists using tooluniverse. arXiv preprint
+have also been observed in general QA tasks (Han              arXiv:2509.23426.
+et al., 2025), suggesting that STC is a broader phe-        Gemini Team. 2026. Gemini deep research agent. http
+nomenon. However, more task domains should be                 s://ai.google.dev/gemini-api/docs/intera
+examined in future work for rigorous evaluation.              ctions/deep-research. Accessed: 2026-05-18.
+   Third, evaluating commercial agents is costly            Boyu Gou, Zanming Huang, Yuting Ning, Yu Gu,
+and time-consuming, so we include only three com-             Michael Lin, Weijian Qi, Andrei Kopanev, Botao
+                                                              Yu, Bernal Jimenez Gutierrez, Yiheng Shu, Chan Hee
+mercial systems. However, search-time contamina-
+                                                              Song, Jiaman Wu, Shijie Chen, Hanane Nour Moussa,
+tion mainly comes from open-web search over pub-              TIANSHU ZHANG, Jian Xie, Yifei Li, Tianci Xue,
+licly indexed benchmark artifacts. Without sand-              Zeyi Liao, and 7 others. 2026. Mind2web 2: Eval-
+boxed search or protection against benchmark in-              uating agentic search with agent-as-a-judge. In The
+dexing, we believe other web-search based agents              Thirty-ninth Annual Conference on Neural Informa-
+                                                              tion Processing Systems Datasets and Benchmarks
+should face similar risks.                                    Track.
+                                                            Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song,
+Ethics Considerations                                         Peiyi Wang, Qihao Zhu, Runxin Xu, Ruoyu Zhang,
+                                                              Shirong Ma, Xiao Bi, and 1 others. 2025. Deepseek-
+This work could introduce dual-use risks, as the              r1 incentivizes reasoning in llms through reinforce-
+proposed methodology could be misused to manip-               ment learning. Nature, 645(8081):633–638.
+ulate evaluations of search-based agents by deliber-
+                                                            Ziwen Han, Meher Mankikar, Julian Michael, and Zifan
+ately creating search-time contamination through              Wang. 2025. Search-time data contamination. In
+online benchmark leakage. We acknowledge this                 NeurIPS 2025 Workshop on Evaluating the Evolving
+concern, but we believe that transparent disclosure           LLM Lifecycle: Benchmarks, Emergent Abilities, and
+is necessary for revealing systematic weaknesses              Scaling.
+in current evaluation protocols and improving the           Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou,
+integrity of agent benchmarks. Our goal is to sup-            Mantas Mazeika, Dawn Song, and Jacob Steinhardt.
+port contamination-aware evaluation rather than               2021. Measuring massive multitask language under-
+                                                              standing. In International Conference on Learning
+to facilitate benchmark exploitation or artificially          Representations.
+improve agent rankings.
+                                                            Chen Hu, Haikuo Du, Heng Wang, Lin Lin, Min-
+                                                              grui Chen, Peng Liu, Ruihang Miao, Tianchi Yue,
+                                                              Wang You, Wei Ji, Wei Yuan, Wenjin Deng, Xiaojian
+References                                                    Yuan, Xiaoyun Zhang, Xiangyu Liu, Xikai Liu, Yan-
+                                                              ming Xu, Yicheng Cao, Yifei Zhang, and 48 others.
+Hanjie Chen, Zhouxiang Fang, Yash Singla, and Mark            2025. Step-deepresearch technical report. Preprint,
+  Dredze. 2025. Benchmarking large language mod-              arXiv:2512.20491.
+  els on answering and explaining challenging medical
+  questions. In Proceedings of the 2025 Conference          Bowen Jin, Hansi Zeng, Zhenrui Yue, Jinsung Yoon, Ser-
+  of the Nations of the Americas Chapter of the Asso-         can O Arik, Dong Wang, Hamed Zamani, and Jiawei
+  ciation for Computational Linguistics: Human Lan-           Han. 2025. Search-r1: Training LLMs to reason and
+  guage Technologies (Volume 1: Long Papers), pages           leverage search engines with reinforcement learning.
+  3563–3599.                                                  In Second Conference on Language Modeling.
+
+
+                                                        9
+Di Jin, Eileen Pan, Nassim Oufattole, Wei-Hung Weng,           Tongyi DeepResearch Team, Baixuan Li, Bo Zhang,
+  Hanyi Fang, and Peter Szolovits. 2021. What dis-               Dingchu Zhang, Fei Huang, Guangyu Li, Guoxin
+  ease does this patient have? a large-scale open                Chen, Huifeng Yin, Jialong Wu, Jingren Zhou, and 1
+  domain question answering dataset from medical                 others. 2025. Tongyi deepresearch technical report.
+  exams. Applied Sciences, 11(14):6421. DOI:                     arXiv preprint arXiv:2510.24701.
+  10.3390/app11146421.
+                                                               Rahul Thapa, Qingyang Wu, Kevin Wu, Harrison Zhang,
+Qiao Jin, Bhuwan Dhingra, Zhengping Liu, William                 Angela Zhang, Eric Wu, Haotian Ye, Suhana Bedi,
+  Cohen, and Xinghua Lu. 2019. PubMedQA: A                       Nevin Aresh, Joseph Boen, and 1 others. 2025. Dis-
+  dataset for biomedical research question answering.            entangling reasoning and knowledge in medical large
+  In Proceedings of the 2019 Conference on Empirical             language models. arXiv preprint arXiv:2505.11462.
+  Methods in Natural Language Processing and the
+  9th International Joint Conference on Natural Lan-
+  guage Processing (EMNLP-IJCNLP), pages 2567–                 Valyu. 2026. Deepresearch documentation. https:
+  2577, Hong Kong, China. Association for Computa-               //docs.valyu.ai/guides/deepresearch. Ac-
+  tional Linguistics.                                            cessed: 2026-05-19.
+
+Reiichiro Nakano, Jacob Hilton, Suchir Balaji, Jeff Wu,        Jason Wei, Zhiqing Sun, Spencer Papay, Scott McK-
+  Long Ouyang, Christina Kim, Christopher Hesse,                  inney, Jeffrey Han, Isa Fulford, Hyung Won Chung,
+  Shantanu Jain, Vineet Kosaraju, William Saunders,               Alex Tachard Passos, William Fedus, and Amelia
+  and 1 others. 2021. Webgpt: Browser-assisted                    Glaese. 2025. Browsecomp: A simple yet challeng-
+  question-answering with human feedback. arXiv                   ing benchmark for browsing agents. arXiv preprint
+  preprint arXiv:2112.09332.                                      arXiv:2504.12516.
+
+Harsha Nori, Yin Tat Lee, Sheng Zhang, Dean Carignan,          Jialong Wu, Wenbiao Yin, Yong Jiang, Zhenglin Wang,
+  Richard Edgar, Nicolo Fusi, Nicholas King, Jonathan             Zekun Xi, Runnan Fang, Linhai Zhang, Yulan He,
+  Larson, Yuanzhi Li, Weishung Liu, and 1 others.                 Deyu Zhou, Pengjun Xie, and 1 others. 2025. Web-
+  2023. Can generalist foundation models outcom-                  walker: Benchmarking llms in web traversal. In
+  pete special-purpose tuning? case study in medicine.            Proceedings of the 63rd Annual Meeting of the As-
+  arXiv preprint arXiv:2311.16452.                                sociation for Computational Linguistics (Volume 1:
+                                                                  Long Papers), pages 10290–10305.
+Ankit Pal, Logesh Kumar Umapathi, and Malaikannan
+  Sankarasubbu. 2022. Medmcqa: A large-scale multi-
+  subject multi-choice dataset for medical domain ques-        An Yang, Anfeng Li, Baosong Yang, Beichen Zhang,
+  tion answering. In Proceedings of the Conference on            Binyuan Hui, Bo Zheng, Bowen Yu, Chang
+  Health, Inference, and Learning, pages 248–260.                Gao, Chengen Huang, Chenxu Lv, and 1 others.
+                                                                 2025. Qwen3 technical report. arXiv preprint
+Long Phan, Alice Gatti, Ziwen Han, Nathaniel Li,                 arXiv:2505.09388.
+  Josephina Hu, Hugh Zhang, Chen Bo Calvin Zhang,
+  Mohamed Shaaban, John Ling, Sean Shi, and 1 oth-             Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak
+  ers. 2025. Humanity’s last exam. arXiv preprint                Shafran, Karthik Narasimhan, and Yuan Cao. 2023.
+  arXiv:2501.14249.                                              ReAct: Synergizing reasoning and acting in language
+                                                                 models. In International Conference on Learning
+David Rein, Betty Li Hou, Asa Cooper Stickland, Jack-            Representations (ICLR).
+  son Petty, Richard Yuanzhe Pang, Julien Dirani, Ju-
+  lian Michael, and Samuel R. Bowman. 2024. GPQA:              Wenlin Zhang, Xiaopeng Li, Yingyi Zhang, Pengyue Jia,
+  A graduate-level google-proof q&a benchmark. In               Yichao Wang, Huifeng Guo, Yong Liu, and Xiangyu
+  First Conference on Language Modeling.                         Zhao. 2025. Deep research: A survey of autonomous
+                                                                 research agents. arXiv preprint arXiv:2508.12752.
+Aaditya Singh, Adam Fry, Adam Perelman, Adam Tart,
+  Adi Ganesh, Ahmed El-Kishky, Aidan McLaughlin,
+  Aiden Low, AJ Ostrow, Akhila Ananthram, and 1 oth-           Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan
+  ers. 2025. Openai gpt-5 system card. arXiv preprint            Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin,
+  arXiv:2601.03267.                                              Zhuohan Li, Dacheng Li, Eric Xing, and 1 others.
+                                                                 2023. Judging llm-as-a-judge with mt-bench and
+Karan Singhal, Shekoofeh Azizi, Tao Tu, Eric Weil,               chatbot arena. Advances in neural information pro-
+  David Murphy, Manasa Shanthanna, Hafeez Anwar,                 cessing systems, 36:46595–46623.
+  Kevin S. Boehnke, Jing Li, Alan Karthikesalingam,
+  and Vivek Natarajan. 2023. Large language models             Yuxin Zuo, Shang Qu, Yifei Li, Zhang-Ren Chen,
+  encode clinical knowledge. Nature, 620:172–180.                Xuekai Zhu, Ermo Hua, Kaiyan Zhang, Ning Ding,
+  Published: 12 July 2023.                                       and Bowen Zhou. 2025. MedxpertQA: Benchmark-
+                                                                 ing expert-level medical reasoning and understand-
+Qwen Team. 2025. Qwen3 technical report. Preprint,               ing. In Forty-second International Conference on
+ arXiv:2505.09388.                                               Machine Learning.
+
+
+                                                          10
+A    Time-varying Cox Proportional                                  require clinical knowledge, deep understanding of
+     Hazards Model                                                  medical concepts and multi-hop reasoning.
+To jointly estimate the effects of different contami-           • MMLU-Med is a medical subset of the Mas-
+nation types, we employ a multivariable Cox pro-                  sive Multitask Language Understanding (MMLU)
+portional hazards model with time-dependent co-                   benchmark (Hendrycks et al., 2021), which con-
+variates:                                                         tains multiple-choice questions spanning 57 sub-
+                                                                  jects across humanities, sciences, and professional
+ h(t|x(t)) = h0 (t) exp (β1 x1 (t) + β2 x2 (t) + β3 x3 (t)),      domains. Following prior work (Singhal et al.,
+                                                         (3)      2023), we evaluate the test sets of six medical
+where:                                                            subjects (College Medicine, College Biology, Pro-
+ • t denotes the turn within the trajectory.                      fessional Medicine, Anatomy, Medical Genetics,
+  • h(t|x(t)) is the hazard rate, representing the                and Clinical Knowledge), comprising a total of
+    conditional probability that the agent reaches a              1089 four-option questions. we exclude the short-
+    correct prediction at turn t, given that it has not           est half of questions, as they are more likely to
+    reached a correct prediction before turn t.                   require only factual recall rather than complex
+                                                                  reasoning.
+  • h0 (t) is the baseline hazard of reaching a cor-
+    rect prediction at turn t when no STC covariates            • MedMCQA (Pal et al., 2022) is a large-scale
+    are active.                                                   medical QA dataset sourced from Indian post-
+  • x1 (t), x2 (t), and x3 (t) are binary time-                   graduate medical entrance exams (AIIMS PG and
+    dependent covariates indicating whether BML,                  NEET PG). The evaluation set comprises 4183
+    QCL, or EAL has occurred by turn t.                           four-option multiple-choice questions. Same with
+                                                                  MMLU, we also exclude the shortest half of ques-
+  • β1 , β2 , and β3 are regression coefficients. The             tions which only require the simple factual recall.
+    hazard ratio for each STC type is given by
+    exp(βk ), which quantifies its independent asso-                MedXpertQA (Zuo et al., 2025) is a medical 10-
+    ciation with the likelihood of reaching a correct               choice question answering benchmark collected
+    prediction, controlling for the other STC types.                from professional medical licensing and specialty
+   For example, a remarkably high HR for EAL con-                   board exams. We evaluate on the MedXpertQA
+tamination indicates that the agent outputs the cor-                Text test set, consisting of 2,450 questions. The
+rect prediction quickly after answers are explicitly                10-option settings forces models to demonstrate
+leaked. Conversely, a lower HR implies a delayed                    genuine clinical knowledge rather than relying on
+or weaker correlation between the contamination                     statistical luck, making the evaluation metric far
+event and the successful prediction.                                more rigorous and reliable.
+                                                                    HLE-149 (Phan et al., 2025) is an expert-level
+B    Dataset Description                                            biological and chemical QA dataset curated from
+• PubMedQA (Jin et al., 2019) is a biomedi-                         the Humanity’s Last Exam (HLE) benchmark.
+  cal question answering dataset collected from                     It was constructed by strictly auditing the orig-
+  PubMed abstracts. The task involves answering                     inal HLE subset to remove erroneous, ambigu-
+  research questions with yes/no/maybe using the                    ous, or literature-conflicting items. In our exper-
+  corresponding article abstracts as context. We                    iments, we evaluate on this highly verified gold
+  evaluate on the PQA-L test set, consisting of 500                 split, which comprises 149 scientifically rigorous
+  questions. It requires interpreting complex quanti-               questions.
+  tative information and comparing groups.                          MedBullets (Chen et al., 2025) is a multiple-
+• MedQA (Jin et al., 2021) is a multilingual med-                   choice medical question answering dataset con-
+  ical question answering dataset compiled from                     sisting of 308 USMLE Step 2&3 style practice
+  medical board exam questions. Following prior                     questions, which were originally posted by Med-
+  works (Singhal et al., 2023; Nori et al., 2023), we               Bullets on Twitter/X between April 2022 and De-
+  evaluate on the English subset corresponding to                   cember 2023. Each question features a detailed
+  the United States Medical Licensing Examination                   patient case vignette accompanied by five answer
+  (USMLE), using 1273 test questions in a four-                     choices, the correct answer key, and a profession-
+  option multiple-choice format. These questions                    ally written explanation by medical experts. Dif-
+
+                                                               11
+Table 7: Summary statistics of the evaluated medical            leading performance on web search benchmarks.
+benchmarks. MCQ = multiple-choice question; EM =                We evaluate its fast modes to prioritize cost-
+exact match.
+                                                                efficiency and low latency.
+  Name             #Samples    Question Type    Year
+                                                                  The comparison of evaluated deep research
+                                                               agents are listed in Table 8. Our main experiments
+  MedQA               1273        MCQ           2020           are conducted on Tongyi Deep Research because it
+  MMLU                 544        MCQ           2021
+                                                               is cost-effective, publicly accessible, and provides
+  MedMCQA             2089        MCQ           2022
+  MedXpertQA          2450        MCQ           2025           fully observable execution traces, allowing us to
+  HLE-149              149      MCQ & EM        2025           inspect search queries, visited webpages, interme-
+  Medbullets5op        298        MCQ           2025           diate summaries, and reasoning steps. To examine
+                                                               the generalizability of our findings, we further eval-
+                                                               uate several other deep research agents.
+ ferent from traditional benchmarks that focus on
+ textbook knowledge recall, MedBullets is specif-              D    Human-Automatic Judge Agreement
+ ically designed to evaluate complex, multi-step
+                                                               To validate the accuracy of automatic judgments,
+ clinical reasoning capabilities of models.
+                                                               we conduct manual annotation of the EAL de-
+   As shown in Table 7, these datasets cover a                 tection results on two representative datasets, as
+diverse range of medical QA formats, including                 shown in Table 9. For MedQA, we manually re-
+multiple-choice questions, and exact-match an-                 view the automatically detected EAL cases and
+swers. In total, our evaluation includes 6,803 sam-            assess whether they satisfied the predefined criteria.
+ples from benchmarks released between 2020 and                 For MedBullets5op, we manually annotate the first
+2025, allowing us to examine search-time contami-              160 questions and use these annotations as refer-
+nation across both established and recently released           ence labels to estimate both the precision and recall
+medical evaluation sets.                                       of the automatic detection results on this subset.
+                                                               Overall, our detection algorithm shows substantial
+C    Deep Research Agents Description
+                                                               agreement with human annotations, suggesting its
+ We evaluate a representative set of deep research             reliability for automated EAL identification.
+ agents spanning both open-source models and com-
+ mercial research systems:                                     E    Experiment Costs
+• Qwen3-30B-A3B (Team, 2025): the base model                   Table 10 summarizes the API costs of our experi-
+  on which Tongyi Deep Research is fine-tuned. We              ments. The total cost is mainly composed of two
+  include it to assess the model capability before             parts: agent execution and LLM-as-a-judge evalu-
+  applying the full deep research agent pipeline.              ation. Due to these costs, we restrict commercial-
+• Tongyi Deep Research (Team et al., 2025): a pub-             agent evaluation to two datasets with 200 questions
+  licly available deep research agent that provides            in total. Scaling the same protocol to all bench-
+  detailed execution traces, including search queries,         marks and all commercial agents would be pro-
+  retrieved webpages, intermediate summaries, and              hibitively expensive. Even so, commercial deep
+  reasoning details.                                           research systems are costly: Gemini DeepResearch
+                                                               alone costs 200 USD, while Valyu Fast and Step
+• Step Deep Research (Hu et al., 2025): a cost-                DeepResearch cost 35 USD and 18 USD, respec-
+  effective commercial agent for autonomous infor-             tively.
+  mation gathering and professional report genera-                Therefore, our full-scale analysis is conducted
+  tion in open-ended research scenarios.                       mainly on Tongyi DeepResearch, which provides
+• Gemini Deep Research (Gemini Team, 2026): a                  observable search trajectories and a more control-
+  closed-source commercial deep research system                lable evaluation pipeline, while commercial sys-
+  that provides only the visited URLs and summa-               tems are used to assess whether the observed STC
+  rized retrieved content, with limited visibility into        patterns generalize beyond a single agent.
+  its web search process.
+                                                               F   PubMedQA Leakage Rate on ValYu
+• Valyu Deep Research (Valyu, 2026): an API-
+  based deep research agent built on Valyu’s AI                Valyu presents a distinctive case among the eval-
+  search infrastructure, which is reported to achieve          uated agents. Unlike general-purpose web search
+
+                                                          12
+Prompt for Detecting Explicit Answer Leakage
+
+You are a strictly objective Data Contamination Auditor.
+
+Your task is to analyze ‘Web Search Content’ to determine if an AI system bypassed genuine
+reasoning through “Search-Time Contamination”—retrieving the exact benchmark question and
+its corresponding answer key directly from the web.
+
+Inputs you will receive:
+1. [Question]: The original benchmark question.
+2. [Ground-Truth Answer]: The correct answer.
+3. [Web Search Content]: The retrieved context to be evaluated.
+
+Your goal is to distinguish between “Search-Time Contamination” (contaminated=true) and
+“Legitimate Knowledge Retrieval” (contaminated=false).
+
+### Evaluation Criteria:
+Set ‘contaminated = true’ ONLY IF BOTH of the following strict conditions are simultaneously
+met:
+1. EXACT Question Fingerprint Match: The search content contains extended, contiguous blocks
+of verbatim text from the original question.
+- EXCLUSION (Crucial): It MUST NOT be a merely “similar” or analogous question. If the
+content describes a parallel scenario but uses different variables, numbers, patient demographics
+(e.g., age, gender), or specific lab values, it is NOT an exact match. Mere keyword overlap is
+insufficient.
+
+ 2. DIRECT Answer Leakage: The exact Ground-Truth Answer or correct option label MUST be
+ explicitly paired with the matched question text in the search content (e.g., within the same Q&A
+ block, flashcard format, or forum post).
+- EXCLUSION (Crucial): If the web content contains the exact question but DOES NOT explicitly
+ provide the ground-truth answer key, you MUST set ‘contaminated = false’. Retrieving an
+ unanswered question does not constitute answer leakage.
+
+Set ‘contaminated = false’ (Legitimate Knowledge Retrieval) in ALL other cases, strictly including
+when:
+- The content is a similar practice question with altered details or different variables.
+- The content contains the exact question but lacks the answer.
+- The content provides general encyclopedic knowledge, literature snippets, or clinical guidelines
+that help *deduce* the answer, but lacks the exact Q&A pair.
+
+### Output Format:
+You must output a strictly valid JSON object with the following structure:
+{
+      “reasoning”: “Step 1: Check for EXACT string matching (reject similar questions with
+different variables). Step 2: Check if the ground-truth answer is explicitly provided alongside the
+question. Step 3: Conclude contamination status based on the strict AND logic.”,
+      “contaminated”: true or false
+}
+
+
+                      Figure 3: Prompt for Detecting Explicit Answer Leakage.
+
+
+
+                                                13
+                             Table 8: Comparison of evaluated deep research agents.
+
+ Agent                          Agent Model               Search Engine           Web Browser         Search Language
+ Tongyi Deep Research    Tongyi-DeepResearch-30B-A3B           Serper                    Jina            English
+ Step Deep Research              Step 3.5 Flash         Built-in Web search     Built-in Web Reader     Multilingual
+ Gemini Deep Research           Gemini 3.1 Pro             Google Search        Built-in Web Reader     Multilingual
+ Valyu Deep Research               Valyu API           Valyu AI-native search   Built-in Web Reader        NA
+
+
+Table 9: Turn-level human evaluation results of EAL          in Table 11. We categorize sensitive URL pat-
+detection.                                                   terns into two distinct groups. The first group
+                                                             targets common hosts of benchmark artifacts, en-
+         Dataset           Precision    Recall
+                                                             compassing open-data platforms (e.g., Hugging
+         MedQA              94.87%        -                  Face and GitHub) alongside exam-preparation,
+         Medbullets5op       100%      83.33%                flashcard, document-sharing, and Q&A websites
+                                                             (e.g., CourseHero, Quizlet, Scribd, MedicoApps,
+              Table 10: Experiment Cost.                     and MedBullets). These platforms frequently dis-
+                                                             tribute redistributed benchmark instances, exam-
+      Agent / Component                Cost (USD)            style queries, and answer discussions. The sec-
+      Tongyi DeepResearch                  384               ond group comprises benchmark-specific identi-
+      Gemini DeepResearch                  200               fiers, including dataset names, paper URLs, and
+      Valyu [Fast]                         35
+                                                             known source patterns such as MedQA, MedMCQA,
+      Step DeepResearch                    18
+      LLM Judge: DeepSeek v4 Pro           221
+                                                             MMLU, MedXpertQA, HLE, and MedBullets. If a re-
+                                                             trieved URL matches any of these patterns, we flag
+      Total                                858
+                                                             it as potential metadata leakage, indicating that
+                                                             the agent’s search trajectory has been misdirected
+                                                             toward benchmark artifacts rather than authentic,
+engines, Valyu employs a proprietary AI-native
+                                                             task-relevant clinical knowledge sources.
+search infrastructure that integrates curated data
+sources, including professional knowledge repos-
+itories. In our MedQA evaluation, we observed
+no STC for Valyu, suggesting that its constrained
+retrieval backend mitigates exposure to widely re-
+distributed benchmark artifacts.
+   However, given that Valyu has supported
+PubMed retrieval, we hypothesized that STC might
+resurface if the benchmark itself originates from
+PubMed. To investigate this, we evaluated Valyu
+on 100 samples from PubMedQA. Strikingly, 65 of
+these questions exhibited STC. This finding demon-
+strates that STC vulnerability is not merely a di-
+chotomy between open-web and restricted-source
+systems. Rather, the risk is fundamentally driven
+by the overlap between the agent’s retrieval cor-
+pus and the benchmark’s source material; when
+a benchmark is derived from a searchable corpus,
+even highly specialized search infrastructures re-
+main susceptible to severe contamination.
+
+G    URLs in BML Detection
+To detect Benchmark Metadata Leakage meta-
+data leakage, we employ URL-level matching
+as a lightweight and interpretable signal, shown
+
+                                                        14
+                  Table 11: URL matching patterns used for sensitive website detection.
+
+Type                    Matching keywords                             Description
+                                          Common Matching Keywords
+                        huggingface.co/datasets                       Hugging Face open-source datasets.
+Data-hosting Platform
+                        github.com                                    GitHub open-source repositories.
+                        coursehero.com                                Study resources and Q&A pages.
+                        getoncourse.ai                                AI-based medical exam preparation website.
+                        medicoapps.org                                Indian medical exam preparation website.
+                        accessmedicine.mhmedical.com/...question...   Medical review questions or quizzes.
+                        quizlet.com                                   Flashcards, quizzes, and practice tests.
+                        cram.com/flashcards                           Flashcard-based study materials.
+                        scribd.com/document                           Uploaded study or exam documents.
+                        orthobullets.com/testview                     Orthopedic exam-style question pages.
+                        dentaldevotee.com/...yyyy...                  Dental MCQs and past questions.
+                        transtutors.com/questions                     Solved homework Q&A.
+                        cliffsnotes.com/cliffs-questions              Homework Q&A solutions.
+Medical Exam URL        homework.study.com/explanation                Expert step-by-step explanations.
+                        AIIMS                                         Indian medical entrance-exam content.
+                        dental pulse                                  Dental exam preparation materials.
+                        SMART DENTAL REVISION                         Dental revision resources.
+                        ORAL SURGERY LIVE Test                        Oral surgery test materials.
+                        USMLE                                         Medical licensing exam content.
+                        osmosis.org/blog/usmle                        Medical licensing exam study resources.
+                        passmed                                       Medical exam question banks.
+                        MCQ                                           Multiple-choice questions.
+                        quiz                                          Quiz-based materials.
+                        question                                      Question-based content.
+                        test                                          Test-oriented content.
+                                       Dataset-adapted Matching Keywords
+                        step2.medbullets.com/testview                 TestView question pages.
+                        facebook.com/medbullets                       Related Facebook pages.
+MedBullets5op
+                        medbullets                                    Keyword-based URL matches.
+                        medbullets_op4 / medbullets_op5               Dataset identifier matches.
+                        medqa                                         Keyword-based URL matches.
+MedQA
+                        OpenMedQA                                     Open-version keyword matches.
+                        dokumen.pub                                   Document-hosting pages.
+MedMCQA                 facebook.com                                  Related Facebook pages.
+                        medmcqa                                       Keyword-based URL matches.
+MMLU                    mmlu                                          Keyword-based URL matches.
+                        arxiv.org/pdf/2505.18283                      Article containing leaked questions.
+MedXpertQA
+                        MedXpertQA                                    Keyword-based URL matches.
+                        HLE                                           Keyword-based URL matches.
+HLE-149
+                        Humanity’s Last Exam                          Full-name keyword matches.
+
+
+
+
+                                                           15
+
