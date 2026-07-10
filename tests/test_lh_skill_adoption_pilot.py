@@ -35,8 +35,15 @@ class LhSkillAdoptionPilotTests(unittest.TestCase):
     def test_all_pinned_local_components_have_real_hashes(self) -> None:
         components = [
             (PILOT / "public-skill.md", self.bundle["procedural_skills"][0]["sha256"]),
-            (PILOT / "rubric-skeleton.json", self.bundle["rubrics"][0]["sha256"]),
         ]
+        rubric_paths = {
+            "lh-adoption-shared-rubric": PILOT / "rubric-skeleton.json",
+            "lh-adoption-independent-claim-rubric": PILOT / "graders" / "independent-claim-rubric.json",
+        }
+        components.extend(
+            (rubric_paths[rubric["rubric_id"]], rubric["sha256"])
+            for rubric in self.bundle["rubrics"]
+        )
         components.extend(
             (ROOT / grader["implementation"]["config_path"], grader["sha256"])
             for grader in self.bundle["graders"]

@@ -1,6 +1,6 @@
 # Pilot: advise on adopting skill-grounded scoring
 
-**Status:** non-releasable internal calibration pilot; the evidence-link check is executable, but no domain expert has approved the procedures, task, or rubric.
+**Status:** non-releasable internal calibration pilot; the evidence-link and two private claim-boundary checks are executable, but no domain expert has approved the procedures, task, or rubric.
 
 ## Scenario
 
@@ -32,6 +32,16 @@ python scripts/grade_lh_evidence.py \
 The grader emits `check-result-v0.1`. It checks six deliberately inspectable properties: required columns, evidence-ID resolution, exact source authority, exact source scope, exact caveat preservation, and numeric memo citation linkage. Calibration fixtures live under `calibration/`: one cautious pass plus agreement-overclaim, tiny-ablation-overclaim, and malformed-source failures.
 
 This is intentionally **not** an entailment grader or a substitute for professional judgment. Exact string preservation makes a bounded provenance failure surface executable; contradiction reconciliation, causal appropriateness, decision quality, and alternative valid phrasings remain human-calibrated. The distinction follows the consulting review's separation of source existence, support, authority, scope, and freshness rather than pretending one citation check establishes them all.
+
+The private internal calibrator can also be exercised with:
+
+```bash
+python scripts/grade_lh_claims.py \
+  --matrix outputs/evidence-matrix.csv \
+  --memo outputs/recommendation.md
+```
+
+It emits separate `contradiction-reconciliation` and `causal-claim-strength` check results. Its independently versioned rubric was derived afresh from the pinned evidence groups and review claims, but this is **not blinded independent human authorship**: the builder had repository access to the shared rubric. Evidence-group membership and regex boundaries correctly classify the planted cases; they do not establish entailment, accept alternative professional reasoning, or advance the failed expert/release gates.
 
 ## Difficulty knobs
 
