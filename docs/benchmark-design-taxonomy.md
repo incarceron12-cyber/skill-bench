@@ -198,6 +198,37 @@ slices and minimum support; comparator/window; and source-population fidelity.
 A **monitoring action** then binds a versioned metric to a threshold and loss
 basis, alert/audit policy, owner, remediation, rollback, and expiry.
 
+A grader or expert record must also identify its **evidence view**, not merely
+its author and verdict. Type the predicate; required channels; channels actually
+received; temporal scope; evidence locators; raw and parsed outputs; model,
+prompt, and policy versions; retries and fallback representation; confidence;
+and `invalid` or `insufficient_evidence` separately from a substantive negative.
+Artifact views, full trajectories, environment queries, agent reasoning, and
+private state are different observation treatments. Agreement between observers
+with unequal views does not isolate judgment ability [ARB].
+
+Preserve deterministic outputs, model judgments, and every human label as
+separate immutable observations before resolution. Duplicate labels need stable
+annotator IDs, assignment and independence metadata, uncertainty, and an
+explicit adjudicated record containing policy, adjudicator, rationale, changed
+fields, and disagreement type. File order, overwrite precedence, or a generic
+`expert` label is not adjudication. AgentRewardBench's released table contains
+mostly single labels and selects the first CSV occurrence as primary; its one
+systematically duplicated 100-trajectory subset lacks a released consensus
+lineage, while paper/release agreement calculations cannot be reconciled from
+the preserved fields [ARB]. This is evidence for the lineage requirement, not a
+portable estimate of human reliability.
+
+Reliability is an error surface indexed by predicate × task family × configured
+system × evidence view × threshold × time, not one judge attribute. Report
+confusion matrices, prevalence, asymmetric loss, task-clustered uncertainty,
+slices, repeated-call stability, invalid-output rate, and audit burden. The
+AgentRewardBench sample is 1,302 once-generated trajectories from 351 web tasks;
+its pooled results omit intervals and task-cluster adjustment, and its rare
+side-effect labels have very different errors from success or repetition [ARB].
+These limits support heterogeneous reporting, not a claim about judges across
+knowledge-work domains.
+
 Amazon's production architecture usefully connects offline/online traces,
 component and end-to-end evaluators, dashboards, alerts, human audits, and
 business effects. It does not publish formulas, denominators, uncertainty,
@@ -303,7 +334,54 @@ the response matrix. Attribute an adapter, provider, or environment root only
 when event evidence supports it; otherwise use `indeterminate` rather than
 turning operational missingness into an agent failure.
 
-### 4.2 Keep three change planes separate
+### 4.2 Retrieval is governed information flow, not automatic leakage
+
+Retrieval is often part of the professional construct. A source becomes leakage
+only through a relation among the task version, information object, access
+policy, trial event, and licensed claim. Freeze a versioned information-flow
+policy that declares network mode, legitimate source classes, protected objects
+(`task_instance`, `reference_answer`, `private_check`, `rubric`, calibration
+case, and private source-pack material), snapshots, allowed tools, and fail-closed
+behavior. An original domain source can be required evidence in one task and an
+answer-bearing shortcut in another [SC].
+
+Preserve a staged external-evidence chain rather than one `contaminated` flag:
+
+```text
+query/provider/time → result returned → page accessed → content captured
+  → protected-object match → agent/model visibility → incorporation or adoption
+    → score quarantine → causal effect estimate under a separate intervention
+```
+
+Each arrow needs its own observation and evidence sufficiency. Record provider
+and index mode, timestamp/locale, rank, URL and redirects, visit status, content
+hash or snapshot, agent-visible extraction, detector/version, match relation,
+and artifact/citation use. A suspicious host, returned URL, final citation, or
+privileged detector match alone does not prove intent, model visibility,
+adoption, or score inflation [SC]. When proprietary traces omit a rung, retain
+`insufficient_evidence`; do not manufacture equivalence with a richer trace.
+
+Keep mechanisms separate: **pretraining contamination** (possible parameter
+exposure before the run), **search-time leakage** (protected material retrieved
+during it), **evaluator-cue leakage** (skills, examples, feedback, or rubrics
+reveal private reward boundaries), **local/private-file leakage** (the execution
+envelope exposes protected repository or sibling-trial material), **cross-trial
+leakage** (memory retains protected outcomes), and **legitimate domain
+retrieval**. One mechanism is not evidence for another. Audit prevalence is also
+not a causal score correction: identifying exposure can quarantine a trial, but
+estimating effect requires matched replay or randomized masking that holds the
+task, configured system, provider snapshot, budget, and legitimate evidence
+constant [SC].
+
+The search-time-contamination study motivates this chain from 6,803 medical QA
+items, but only its explicit-answer detector received partial human validation;
+metadata/context detectors were unvalidated or under-specified, exposure was
+agent-selected, commercial traces were not measurement-equivalent, runs were
+not repeated, and the reported “up to 4%” correction was not auditable in v1
+[SC]. Treat it as a strong audit signal and experiment design, not a general
+prevalence estimate or causal correction for knowledge work.
+
+### 4.3 Keep three change planes separate
 
 “The system improved” is ambiguous because three different systems can change.
 They need different atomic records, evidence gates, and claims:
@@ -373,6 +451,8 @@ fidelity separately from score calibration [EB, AP].
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
+| Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
+| Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -423,6 +503,14 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 17. **Observations do not define metrics:** population, denominator, missingness,
     dependence, uncertainty, threshold, and action semantics must be versioned
     before a per-trial score becomes a monitoring statistic or decision trigger.
+18. **Observers do not share a view by default:** bind each expert, deterministic,
+    or model judgment to required and actual evidence channels; preserve plural
+    labels and adjudication lineage; invalid execution and insufficient evidence
+    are not substantive failures.
+19. **Retrieval validity is stage- and policy-specific:** distinguish returned,
+    accessed, matched, visible, adopted, and effect-estimated states, and keep
+    legitimate domain retrieval separate from pretraining, evaluator-cue,
+    local-private-file, cross-trial, and search-time leakage.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -441,6 +529,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Ecological harness comparison vs valid common envelope | Native harness behavior is a legitimate bundled treatment, but Harness-Bench's later runner and the LH pilot show that fresh directories and shared prompts do not establish equivalent filesystem, network, service, or measurement opportunity [HB, PX]. | Run tool-level denial/allow canaries and adapter conformance checks before each cell; retain service failures; repeat matched cells; estimate a contrast only when both arms satisfy one hashed envelope and mandatory-evidence policy. |
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
+| Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
+| Open retrieval realism vs shortcut-free causal measurement | Search-time contamination finds strong post-exposure associations for exact answer-bearing pages, but weak detectors, self-selected access, mutable search, and non-equivalent traces do not identify a clean counterfactual [SC]. | Pair ecological open-retrieval audits with replayable snapshots and randomized masking of protected answer artifacts while holding legitimate sources, configured system, task, and budget fixed; report exposure prevalence separately from effect. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -487,20 +577,29 @@ them:
    rebuttals, thresholds, and prohibited upgrades are executable. The planted
    fixture licenses only a narrow regression-behavior claim; real professional
    capability/readiness remains unsupported pending pilot evidence [VA].
-7. **Next participation gate — `build-expert-participation-contract`:** govern
-   real contribution purpose, reciprocity, authority, transformation, and
-   reconsent separately from ACTA elicitation content. An internal fixture cannot
-   validate consent, motivation, or expert fidelity [EP, RR].
-8. **Then task-health gate — `build-task-health-lifecycle-contract`:** implement
-   origin, reference-witness, contrast-set, replicate, adjudication, role-change,
-   revision, and retirement evidence. Include rubric health checks for duplicated
-   or bundled criteria, undeclared/range-invalid weights, dynamic-source expiry,
-   evidence-access mismatch, and judge-error slices [AN, RR].
-9. **Then metric/monitoring bridge — `build-metric-monitoring-contract`:** bind
-   immutable observations to eligible populations, missingness/dependence,
-   aggregation/uncertainty, windows, thresholds, audits, and actions [AM]. Do not
-   infer production representativeness from the planned synthetic LH fixture.
-10. **Evidence-gated elicitation contract — `build-elicitation-session-contract`:**
+7. **Completed participation contract, not demonstrated feasibility —
+   `build-expert-participation-contract`:** purpose, reciprocity, authority,
+   transformation, withdrawal, and reconsent are executable. Its internal
+   fixture validates contract boundaries only; it supplies no real consent,
+   motivation, cost, or expert-fidelity evidence [EP, RR].
+8. **Completed task-health contract, not longitudinal validation —
+   `build-task-health-lifecycle-contract`:** immutable origin, exact-version
+   witness, contrast, replicate, adjudication, role-change, revision, and
+   retirement records are executable. Its synthetic health history and planted
+   grader defect do not establish real task stability or grader accuracy [AN,
+   ARB].
+9. **Completed metric/monitoring contract, not population validation —
+   `build-metric-monitoring-contract`:** observations now bind to eligible
+   populations, missing/invalid/duplicate policy, clustering, uncertainty,
+   windows, thresholds, audits, and actions. Its exact planted-fixture metric is
+   an internal regression check, not production representativeness [AM, ARB].
+10. **Completed artifact-view admissibility slice —
+   `build-artifact-view-admissibility-contract`:** task checks now declare
+   authoritative representations, required views and controls, permitted
+   invariances, evidence sufficiency, and fail-closed outcomes. The synthetic
+   cross-artifact fixture validates the contract, not cross-domain construct
+   validity or grader reliability.
+11. **Evidence-gated elicitation contract — `build-elicitation-session-contract`:**
     wait for one consented real contribution before encoding session evidence
     types; do not simulate testimony to satisfy a schema dependency.
 
@@ -552,3 +651,14 @@ them:
   local execution evidence records the invalid escaped runs, tool-scoped
   bubblewrap canaries, one completed public-skill arm, one provider-stream
   failure, and the explicit prohibition on a condition-effect estimate.
+- **[ARB]**
+  `papers/agent-benchmarks/2026-07-10-agentrewardbench-judge-reliability.md`;
+  reviewed immutable v2 PDF/text and pinned code, dataset, annotation, and result
+  release paths/hashes are recorded there. The release inspection did not mirror
+  the complete multi-gigabyte trajectory corpus, and the evidence is bounded to
+  sampled web-agent trajectories and the preserved observer views.
+- **[SC]**
+  `papers/agent-benchmarks/2026-07-10-search-time-contamination.md`; reviewed
+  immutable v1 PDF/text paths and hashes are recorded there. Its medical-QA
+  audit provides association and partial detector-validation evidence, not a
+  reproducible causal inflation estimate or general knowledge-work prevalence.
