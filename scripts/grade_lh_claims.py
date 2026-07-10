@@ -19,7 +19,8 @@ from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "pilots/lh-skill-adoption/graders/independent-claim-rubric.json"
-CITATION_RE = re.compile(r"\[(E\d{2})\]")
+CITATION_GROUP_RE = re.compile(r"\[(E\d{2}(?:\s*,\s*E\d{2})*)\]")
+EVIDENCE_ID_RE = re.compile(r"E\d{2}")
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,15 @@ def _matrix_ids(path: Path) -> tuple[set[str], list[Diagnostic]]:
             return {(row.get("evidence_id") or "").strip() for row in reader}, []
     except (OSError, UnicodeError, csv.Error) as exc:
         return set(), [Diagnostic("MALFORMED_ARTIFACT", str(exc))]
+
+
+def _citation_ids(text: str) -> set[str]:
+    """Extract IDs from both singular and comma-grouped bracket citations."""
+    return {
+        evidence_id
+        for group in CITATION_GROUP_RE.findall(text)
+        for evidence_id in EVIDENCE_ID_RE.findall(group)
+    }
 
 
 def _result(check_id: str, diagnostics: list[Diagnostic]) -> dict[str, object]:
@@ -76,7 +86,7 @@ def grade(config_path: Path, matrix_path: Path, memo_path: Path) -> list[dict[st
     except (OSError, UnicodeError) as exc:
         memo = ""
         common.append(Diagnostic("MALFORMED_ARTIFACT", str(exc)))
-    cited_ids = set(CITATION_RE.findall(memo.upper()))
+    cited_ids = _citation_ids(memo.upper())
     available_ids = matrix_ids & cited_ids
 
     contradiction = list(common)

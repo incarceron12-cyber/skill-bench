@@ -197,24 +197,33 @@ def canary(condition: str, run_root: Path) -> dict[str, Any]:
     return report
 
 
+def _trial_command(prompt: str) -> list[str]:
+    """Build the pinned one-shot command used by measured trials.
+
+    ``--usage-file`` is intentionally paired with ``-z``: Hermes documents
+    usage accounting as a one-shot-only interface. The earlier ``chat
+    --query`` form silently ignored the flag and could leave an otherwise
+    successful arm unmeasurable.
+    """
+    return [
+        "/opt/hermes/venv/bin/python", "/opt/hermes/venv/bin/hermes",
+        "-z", prompt, "--usage-file", "/trial/outputs/usage.json",
+        "--model", "gpt-5.6-sol", "--provider", "openai-codex",
+        "--toolsets", "file", "--safe-mode",
+    ]
+
+
 def run_trial(condition: str, run_root: Path) -> dict[str, Any]:
     preflight = canary(condition, run_root / "preflight")
     paths = _materialize(condition, run_root / "trial")
     prompt = TASK.read_text(encoding="utf-8")
-    command = [
-        "/opt/hermes/venv/bin/python", "/opt/hermes/venv/bin/hermes",
-        "--usage-file", "/trial/outputs/usage.json", "chat",
-        "--query", prompt, "--model", "gpt-5.6-sol", "--provider", "openai-codex",
-        "--toolsets", "file", "--safe-mode", "--quiet", "--max-turns", "40",
-        "--source", "skill-bench-pilot",
-    ]
+    command = _trial_command(prompt)
     proc = subprocess.run(_bwrap(paths, condition, command), text=True, capture_output=True, timeout=900)
     (run_root / "transcript.log").write_text(proc.stdout, encoding="utf-8")
     (run_root / "launcher-stderr.log").write_text(proc.stderr, encoding="utf-8")
-    retained_state = run_root / "session-state"
-    sessions = paths["profile"] / "sessions"
-    if sessions.exists():
-        shutil.copytree(sessions, retained_state, dirs_exist_ok=True)
+    # Hermes request dumps can contain provider authorization headers. Never
+    # retain raw session state in benchmark evidence; transcript, stderr,
+    # usage, deliverables, and their hashes are the auditable surface.
     artifacts = {}
     for name in ("evidence-matrix.csv", "recommendation.md", "usage.json"):
         path = paths["outputs"] / name
@@ -226,7 +235,10 @@ def run_trial(condition: str, run_root: Path) -> dict[str, Any]:
         "condition": condition, "complete": complete, "returncode": proc.returncode,
         "valid_environment": preflight["passed"], "capability_evidence": complete and preflight["passed"],
         "condition_effect_permitted": False,
-        "configured_system": {"model": "gpt-5.6-sol", "provider": "openai-codex", "toolsets": ["file"], "safe_mode": True},
+        "configured_system": {
+            "model": "gpt-5.6-sol", "provider": "openai-codex",
+            "toolsets": ["file"], "safe_mode": True, "invocation": "oneshot",
+        },
         "task_sha256": sha256(TASK), "launcher_sha256": sha256(Path(__file__)),
         "artifacts": artifacts,
         "interpretation_boundary": "One attempt in one arm is execution evidence only; no condition effect, professional validity, or release readiness is licensed.",

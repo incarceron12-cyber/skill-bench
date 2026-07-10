@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -51,6 +52,20 @@ class LhPrivateClaimCalibratorTests(unittest.TestCase):
     def test_effect_without_directional_and_controlled_language_fails(self) -> None:
         result = self.run_case("tiny-ablation-overclaim")["causal-claim-strength"]
         self.assertIn("MISSING_CAUSAL_BOUNDARY", self.codes(result))
+
+    def test_comma_grouped_citations_satisfy_evidence_groups(self) -> None:
+        case = CALIBRATION / "passing"
+        memo = (case / "recommendation.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            grouped = Path(tmp) / "recommendation.md"
+            grouped.write_text(
+                memo.replace("[E01]", "[E01, E02]").replace("[E05]", "[E05, E06]"),
+                encoding="utf-8",
+            )
+            results = grade(CONFIG, case / "evidence-matrix.csv", grouped)
+        outcomes = {str(item["check_id"]): item["outcome"] for item in results}
+        self.assertEqual("passed", outcomes["contradiction-reconciliation"])
+        self.assertEqual("passed", outcomes["causal-claim-strength"])
 
 
 if __name__ == "__main__":

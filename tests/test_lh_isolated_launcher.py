@@ -40,6 +40,18 @@ class IsolatedLauncherCanaryTests(unittest.TestCase):
         self.assertEqual(report["observed"]["observed_cwd"], "/trial")
         self.assertNotIn("skill-bench", report["observed"]["parent_search"])
 
+    def test_measured_trial_uses_oneshot_usage_interface(self) -> None:
+        command = module._trial_command("do the task")
+        self.assertIn("-z", command)
+        self.assertEqual(command[command.index("-z") + 1], "do the task")
+        self.assertIn("--usage-file", command)
+        self.assertEqual(
+            command[command.index("--usage-file") + 1],
+            "/trial/outputs/usage.json",
+        )
+        self.assertNotIn("chat", command)
+        self.assertNotIn("--query", command)
+
 
 if __name__ == "__main__":
     unittest.main()

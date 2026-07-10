@@ -23,7 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = ROOT / "pilots/lh-skill-adoption/source-pack/decision-evidence.csv"
 REQUIRED_MATRIX_COLUMNS = ("claim", "evidence_id", "authority", "scope", "caveat", "decision_use")
 SOURCE_FIELDS = ("authority", "scope", "caveat")
-CITATION_RE = re.compile(r"\[(E\d{2})\]")
+CITATION_GROUP_RE = re.compile(r"\[(E\d{2}(?:\s*,\s*E\d{2})*)\]")
+EVIDENCE_ID_RE = re.compile(r"E\d{2}")
 NUMBER_RE = re.compile(r"(?<![A-Za-z])(?:[+≥>]=?)?\d+(?:\.\d+)?%?")
 
 
@@ -45,6 +46,15 @@ def _read_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
 
 def _numbers(text: str) -> set[str]:
     return {token.replace("%", "") for token in NUMBER_RE.findall(text)}
+
+
+def _citation_ids(text: str) -> set[str]:
+    """Extract IDs from both ``[E01]`` and conventional grouped citations."""
+    return {
+        evidence_id
+        for group in CITATION_GROUP_RE.findall(text)
+        for evidence_id in EVIDENCE_ID_RE.findall(group)
+    }
 
 
 def _load_sources(path: Path) -> tuple[dict[str, dict[str, str]], list[Diagnostic]]:
@@ -110,8 +120,11 @@ def grade(source_path: Path, matrix_path: Path, memo_path: Path) -> dict[str, ob
         diagnostics.append(Diagnostic("MALFORMED_ARTIFACT", str(memo_path), str(exc)))
 
     for line_number, line in enumerate(memo_lines, start=1):
-        citation_ids = set(CITATION_RE.findall(line))
-        numbers = _numbers(CITATION_RE.sub("", line))
+        citation_ids = _citation_ids(line)
+        citation_free = CITATION_GROUP_RE.sub("", line)
+        # Markdown ordered-list markers are structure, not material claims.
+        citation_free = re.sub(r"^\s*\d+[.)]\s+", "", citation_free)
+        numbers = _numbers(citation_free)
         if not numbers:
             continue
         location = f"recommendation line {line_number}"

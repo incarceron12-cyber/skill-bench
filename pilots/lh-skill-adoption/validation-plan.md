@@ -45,11 +45,30 @@ repository/rubric/calibration paths, deny writes outside `outputs/`, and find no
 `skill-bench` path under the isolated home. The launcher exposes only the file
 toolset and deletes ephemeral copied credentials after each probe.
 
-A first post-canary no-skill launch is retained at
-`ablation/isolated-agent-pair-v4/no-skill/`. Its environment preflight passed,
-but the provider stream produced no events before Hermes' 12-second stream
-threshold and no deliverables were written; `complete=false`,
-`capability_evidence=false`, and no matched effect is permitted. A fresh matched
-pair remains blocked on a successful provider execution. Do not weaken the
-stream or evidence gate: retry both arms under one pinned launcher version,
-retain all outcomes, run post-hoc graders, and only then assess comparability.
+The first post-canary `chat --query` retries are retained under
+`ablation/isolated-agent-pair-v4/` and `isolated-agent-pair-v5/`. They exposed a
+measurement-interface defect in addition to intermittent provider streaming:
+Hermes documents `--usage-file` as one-shot-only, so a successful v5
+public-skill execution wrote deliverables but no usage record and remained
+incomplete. The launcher now uses the tested `-z` one-shot interface; this is a
+measurement fix, not a weakened completion gate.
+
+The resulting pinned v6 attempt is summarized with hashes and interpretation
+boundaries in `ablation/isolated-agent-pair-v6/pair-summary.json`. Both
+filesystem preflights passed. The no-skill arm recorded usage failure after
+three OpenAI Codex stream retries and produced no deliverables. The public-skill
+arm completed with all deliverables and included usage (57,404 total tokens,
+seven API calls, included cost reported as $0.00). Post-hoc grading rejected its
+evidence-provenance convention but passed contradiction-reconciliation and
+causal-claim-strength. The live output also exposed and fixed two grader defects:
+comma-grouped citations such as `[E01, E02]` were not parsed, and unbounded
+`prove` regexes falsely matched `improves`; ordered-list numbers are now excluded
+from numeric claims. Tests preserve all three regressions.
+
+Because the no-skill arm is incomplete, `condition_effect_permitted=false`.
+No expert-validity or release gate changed. A fresh matched pair under one
+updated launcher hash remains required when provider streaming succeeds; then
+rerun both post-hoc graders and assess comparability without weakening the
+stream, evidence, or expert-validation gates. Raw request dumps are excluded
+because they can contain authorization headers; retained evidence is limited to
+redacted transcripts/stderr, usage, deliverables, canaries, and hashes.

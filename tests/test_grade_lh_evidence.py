@@ -64,6 +64,34 @@ class LhEvidenceGraderTests(unittest.TestCase):
             temporary.unlink(missing_ok=True)
         self.assertIn("UNCITED_MATERIAL_CLAIM", self.diagnostic_codes(result))
 
+    def test_comma_grouped_citations_are_parsed_without_id_digits(self) -> None:
+        case = CALIBRATION / "passing"
+        original = (case / "recommendation.md").read_text(encoding="utf-8")
+        temporary = case / "_grouped-citation-test.md"
+        try:
+            temporary.write_text(
+                original.replace("[E01]", "[E01, E02]").replace("[E05]", "[E05, E06]"),
+                encoding="utf-8",
+            )
+            result = grade(SOURCE, case / "evidence-matrix.csv", temporary)
+        finally:
+            temporary.unlink(missing_ok=True)
+        codes = self.diagnostic_codes(result)
+        self.assertNotIn("UNSUPPORTED_NUMERIC_VALUE", codes)
+        self.assertNotIn("UNKNOWN_EVIDENCE_ID", codes)
+        self.assertIn("MEMO_MATRIX_DISCONNECT", codes)
+
+    def test_markdown_ordered_list_number_is_not_a_material_claim(self) -> None:
+        case = CALIBRATION / "passing"
+        original = (case / "recommendation.md").read_text(encoding="utf-8")
+        temporary = case / "_ordered-list-test.md"
+        try:
+            temporary.write_text(original.replace("The reported", "1. The reported"), encoding="utf-8")
+            result = grade(SOURCE, case / "evidence-matrix.csv", temporary)
+        finally:
+            temporary.unlink(missing_ok=True)
+        self.assertEqual("passed", result["outcome"])
+
 
 if __name__ == "__main__":
     unittest.main()
