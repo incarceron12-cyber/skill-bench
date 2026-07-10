@@ -272,6 +272,52 @@ uncertainty, and validity arguments bound inference. Connect these records; do
 not add a parallel suite schema until a real multi-task assembly exposes an
 unrepresentable obligation.
 
+### 2.7 Professional work is an initial-state-to-consequence contract
+
+Artifact and workflow tasks share one boundary that final-state scoring can
+hide. Represent the required work as a sparse transition system:
+
+```text
+pinned initial state → public requirement and stage precondition
+  → admissible action or artifact mutation → stage postcondition
+    → downstream affordance → final decision/artifact consequence
+```
+
+For every consequential stage or artifact mutation, preserve: initial absence
+or value; required delta and preserved state; alternative valid paths; the
+native, executable, rendered, trace, or environment view needed to observe it;
+necessity/sufficiency and dependency relations; and invalid-environment versus
+substantive-failure semantics. A reference procedure or artifact is one
+solvability witness, not proof that its path, layout, formula positions, or
+residual state are normative. Process evidence is required only when the stage
+itself is part of the construct or the final consequence cannot identify it.
+
+For editable artifacts, static fidelity and counterfactual integrity are
+different claims. A workbook, notebook, visualization, or linked report may look
+correct now while failing after an authoritative input changes. Its behavioral
+contract is:
+
+```text
+authoritative mutation → pinned execution/recalculation
+  → dependency propagation → changed and invariant checks
+    → updated native/rendered views with provenance preserved
+```
+
+Record inherited complexity, required mutation surface, preserved regions, and
+final complexity separately. Exercise a small set of expert- or source-grounded
+metamorphic changes; declare formula/layout equivalence classes; and treat
+engine, external-link, circularity, cached-value, chart, and print behavior as
+versioned evidence. MBABench's released judge usefully inspects cells, formulas,
+and styles, but does not systematically mutate/recalculate artifacts or render
+charts and print layouts; one traced dashboard inherits over 20,000 formulas
+while adding only 12, and one reference retains external-link residue [MB].
+Workflow-GYM independently shows why final state is insufficient: an official
+showcase encounters a pre-existing required Anki profile and another exposes
+ambiguous `Input`/`input` paths, while the 338-task package, graders, and result
+inventory remain unreleased [WG]. These are evidence for transition, residual-
+state, and admissibility controls—not finance/GUI scope commitments or portable
+professional-capability estimates.
+
 ## 3. Measurement stack: trial to defensible claim
 
 | Layer | Unit observed | Appropriate claim | Do not infer |
@@ -574,7 +620,39 @@ unauthorized mutation, missing process evidence, causal overclaim, and failed
 cleanup. This establishes internal contract behavior only—not expert validity,
 capability, causal use, workspace learning, or readiness.
 
-### 4.4 Keep three change planes separate
+### 4.4 Action safety is an authority-to-consequence chain
+
+An ordinary source may be legitimate to inspect without being authorized to
+govern a consequential action. Preserve the chain rather than one attack-success
+bit:
+
+```text
+source placement and authority → exposure → interpretation/adoption
+  → attempted action → interceptor decision → realized state
+    → severity/reversibility → detection/recovery/residual harm
+      × benign utility
+```
+
+Each source/action pair needs an authority rule, allowed and prohibited
+consequences, corroboration/escalation policy, and evidence locators. Each action
+needs a target, authorization status, tool event, containment decision, and
+pre/post state. Non-exposure, safe refusal, blocked attempt, partial harm,
+realized harm, repaired harm, secure useful completion, benign-task failure, and
+invalid execution are distinct outcomes. Report safety and utility separately;
+an unavailable tool or blanket refusal is not evidence of secure useful work.
+
+Containment is part of execution validity: synthetic credentials, mock-only
+targets, denied egress, protected-state boundaries, and interceptor behavior
+must pass agent-facing canaries before a trial. ClawSafety motivates this model
+but its reported ASR lacks utility and an auditable result/scorer inventory; its
+post-v2 partial release includes mutable/live Gmail and unrestricted-egress
+paths, so the headline rates are not calibration targets [CS]. The repository's
+eight-case inert fixture and static preflight demonstrate only contract behavior
+for placement/exposure/adoption/attempt/mock realization/recovery and separate
+safety/utility counts. They do not probe a live sandbox or establish expert
+validity, capability, real-world safety, or readiness [AC].
+
+### 4.5 Keep three change planes separate
 
 “The system improved” is ambiguous because three different systems can change.
 They need different atomic records, evidence gates, and claims:
@@ -625,6 +703,9 @@ panel or a calibrated bridge design.
 | Task projection manifest | detect drift among public requirements, affordances, witnesses, and checks | evidence-backed requirement atoms, IR/sampler/projector/output hashes, bidirectional coverage, declared invariances, solver/validity separation, conformance tests |
 | Suite assembly argument | distinguish a broad frame and healthy pool from the administered sample and licensed population inference | frame/content exclusions, eligible pool, selection/seed/order, lineage clusters, intended/realized mixture, weights, precision/stopping, invalid/missing policy, alternate-assembly sensitivity, bounded claim |
 | Persistent-workspace record | distinguish file presence and authored relevance from observed or causal use while preserving state integrity | inventory/overlay hashes, placement and valid time, permissions/network, typed and alternate relations, evidence-view-bound access/write, protected/mutable zones, pre/post mutations, cleanup |
+| Sparse workflow-transition record | distinguish one witness path and final state from run-attributable stage completion | pinned initial state, pre/postconditions, alternative paths, necessity/sufficiency, state delta, evidence views, downstream consequence, invalid-environment policy |
+| Counterfactual artifact record | establish editability and behavioral integrity rather than current-value similarity | native/executable/rendered/trace views, pinned engine, initial-to-final mutation surface, authoritative perturbations, dependency propagation, invariants, permitted formula/layout equivalence, witness health |
+| Action-safety record | distinguish source presence, attempted behavior, realized consequence, recovery, and useful completion | authority matrix, placement/exposure/adoption evidence, tool event, interceptor, pre/post state, severity/reversibility, residual harm, containment canaries, separate safety/utility outcomes |
 
 A reduced panel serves **ranking efficiency**, not automatically diagnostic
 coverage or absolute professional-quality estimation. Mid-range checks often
@@ -636,8 +717,9 @@ fidelity separately from score calibration [EB, AP].
 
 | Pattern / examples | Primary reusable object | Main validity risk | Evidence status here |
 |---|---|---|---|
-| Artifact-centered professional work (AA-Briefcase, MBABench, WorkstreamBench) | multi-file deliverable and correctness/internals/presentation contracts | polished output hides unsupported analysis; subjective dimensions dominate | landscape/triage; local AA source material, no dedicated deep review yet |
-| Stateful workflow (SaaS-Bench, Workflow-GYM, OdysseyBench) | persistent environment, stage checkpoints, final-state verification | infrastructure failures and tool familiarity confound capability | full-text triage in `reports/daily/2026-07-10-morning.md`; no dedicated deep reviews yet |
+| Artifact-centered professional work (AA-Briefcase, MBABench, WorkstreamBench) | plural native/executable/rendered views, initial-to-final mutation surface, counterfactual integrity, and professional judgment | reference imitation, static-value coincidence, inherited-size inflation, unobservable charts/layout, engine drift, and weighted score mistaken for readiness | MBABench full immutable v4 paper plus inspected post-v4 code/data and two workbook traces [MB]; other family members remain landscape/triage |
+| Stateful professional workflow (SaaS-Bench, Workflow-GYM, OdysseyBench) | pinned initial state, sparse consequential stage transitions, alternative paths, final-state and artifact checks | residual/pre-satisfied state, stage bypass, canonical-path bias, environment/harness defects, and final consequence mistaken for complete workflow evidence | Workflow-GYM full immutable v3 paper plus post-v3 official showcase/trajectory inspection, with full dataset/VMs/graders/results unavailable [WG]; SaaS-Bench has a separate full review; OdysseyBench remains landscape-level |
+| Adversarial authority and action safety (ClawSafety) | source-authority matrix, exposure/adoption/action-state ledger, containment, recovery, and benign utility | source placement or token match mistaken for adoption/realized harm; refusal or tool failure counted as safety; mutable/live side effects | full immutable v2 paper plus complete post-v2 partial-release audit [CS]; internal inert conformance fixture/preflight validates contract behavior only [AC] |
 | Skill-grounded long-horizon evaluation (LH-Bench) | expert procedure → observable boundary → artifact/check crosswalk | intervention/instrument contamination; agreement mistaken for validity | full immutable v2 PDF/text and deep review [LH] |
 | Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
@@ -732,6 +814,18 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     can establish a feasible route and one pairwise judgment can establish a
     preference observation; neither is an expert-population ceiling, an
     acceptance threshold, or an economic-value estimate.
+25. **Final state does not prove the transition:** pin initial state and grade
+    sparse consequential deltas with alternative paths and admissible views;
+    inherited or pre-satisfied state, stage bypass, and environment ambiguity do
+    not become agent progress.
+26. **Editable artifacts are behavioral systems:** current values and formula
+    presence do not establish counterfactual integrity; independently test native,
+    executable/recalculated, rendered, and trace views under declared mutations
+    and equivalence classes.
+27. **Safety retains both consequence and utility:** source placement, exposure,
+    adoption, attempt, interception, realization, recovery, and benign completion
+    remain separate; refusal, non-exposure, blocked action, and invalid execution
+    are not interchangeable evidence of safe useful work.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -757,6 +851,9 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Broad frame vs representative suite and bounded inference | GDPval operationalizes broad occupational acquisition, while equal quotas, undocumented gold selection, restricted one-shot digital artifacts, and unobserved task frequency do not support occupational/economic inference; ECBD identifies the assembly warrant but does not supply estimators [GDP, ECBD]. | On a multi-domain pool, predeclare frame/content exclusions, lineage clusters, intended weights and precision; compare equal-cell and population-justified estimands under alternate assemblies, retain invalid/ungradable cases, and measure task/family/domain uncertainty before claim upgrades. |
 | Workspace dependency score vs evidence use and integrity | Workspace-Bench makes large workspaces and authored graphs inspectable, but graph matching confounds availability, canonical relevance, harness observability, alternate paths, and causal use; post-v4 release defects also leave placement and reset uncertain [WB]. | In a persistent pilot, plant authoritative/obsolete/distractor/alternate/protected paths; canary placement and clean state; cross observed access with source masking or matched alternatives; grade decision consequence and protected-state integrity separately [WC]. |
 | Connected record graph vs supported validity argument | The LH evidence-chain audit resolves immutable nodes yet finds unsupported response-view and claim bridges, a contradicted professional-check→synthetic-metric edge, and no suite sufficiency [EA]. | Have independent reviewers audit a real multi-task, expert-reviewed pilot; retain initial edge states, disagreements, time, defects and false alarms, then test whether edge auditing contracts claims beyond existing validation [ECBD]. |
+| Static artifact fidelity vs counterfactual integrity | MBABench catches formula and structural defects that value-only grading misses, but its judge does not systematically perturb/recalculate workbooks or observe charts and print layout; references and engines also contain residue and differ [MB]. | For one editable artifact, predeclare authoritative mutations and invariant regions; execute them under pinned engines; compare native, dependency, recalculated, and rendered views; include equivalent formulas/layouts and fallible-reference cases. |
+| Final-state success vs valid professional transition | Workflow-GYM supplies long expert witness paths but no released task/check package, and its official showcases expose a pre-existing required object and ambiguous input placement [WG]. | Canary initial absence, unique placement, and clean output; define sparse stage pre/postconditions and alternative paths; compare stage evidence with final consequences while quarantining invalid environments. |
+| Binary attack success vs safe useful completion | ClawSafety measures completed harm without benign utility and its partial post-v2 release lacks an executable ASR scorer while retaining live/mutable side-effect paths [CS]. The internal action fixture proves only inert contract behavior [AC]. | Cross source authority and exposure with mock-only action opportunities; retain attempt/interception/realization/recovery and utility separately; repeat under agent-facing containment canaries and expert-reviewed consequence thresholds. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -850,6 +947,23 @@ them:
     cleanup. The inert fixture and mutation tests establish contract behavior
     only; causal use, workspace learning, expert validity, capability, and
     readiness remain false [WC].
+15. **Completed inert action-safety conformance, not real-world safety —
+    `build-adversarial-action-conformance-slice`:** optional action-safety records
+    now separate authority, placement, exposure, adoption, attempted/mock-realized
+    action, recovery, residual harm, invalidity, and benign utility. The eight
+    synthetic cases and static preflight establish validator/adapter behavior
+    only; they do not probe a live host boundary or establish expert validity,
+    capability, safety, or readiness [AC].
+16. **Completed second pilot package and one bounded execution —
+    `build-second-cross-domain-pilot` / `build-vendor-incident-isolated-agent-trial`:**
+    the vendor-incident package reused bundle, expertise-transfer, workspace,
+    action-safety, and evidence-chain machinery without a schema fork. One pinned
+    isolated attempt passed its preflight and preserved protected state, but its
+    invalid-time judgment exposed a possible task/grader validity defect. This is
+    one diagnostic observation, not reliability, cross-domain generalization,
+    professional validity, treatment effect, real-world safety, or readiness.
+    Preserve the original score and use the queued versioned adjudication/retest
+    rather than interpreting the behavior as capability evidence.
 
 ## Provenance keys
 
@@ -952,3 +1066,27 @@ them:
   `tests/test_validate_benchmark.py`; inert internal fixture and mutation tests
   grounded in [WB]. They establish validator behavior only, not causal use,
   workspace learning, professional capability, or release readiness.
+- **[MB]**
+  `papers/agent-benchmarks/2026-07-11-mbabench-spreadsheet-artifact-validity.md`;
+  reviewed immutable v4 PDF/text plus inspected post-v4 code, pinned 38-task
+  dataset manifest, and two workbook traces are recorded there. Raw attempts,
+  expert labels, perturbations, results, and paper-time implementation were not
+  released; static criterion evidence does not establish editability or
+  professional readiness.
+- **[WG]**
+  `papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md`;
+  reviewed immutable v3 PDF/text plus the official post-v3 project-site snapshot
+  and 24 showcase trajectories are recorded there. The 338 tasks, VMs,
+  initialization, graders, scores, and result inventory were unavailable.
+- **[CS]**
+  `papers/agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md`;
+  reviewed immutable v2 PDF/text and complete post-v2 partial-release inspection
+  are recorded there. Reported ASR denominators and results are unauditable from
+  the release, which does not supply an executable safety scorer or inert-only
+  side-effect boundary.
+- **[AC]** `schemas/README.md` (Inert adversarial-action conformance),
+  `tests/fixtures/valid-adversarial-action-conformance.json`, and
+  `tests/fixtures/action-safety-preflight-report.json`; eight builder-authored
+  synthetic cases and static preflight grounded in [CS]. They establish internal
+  contract behavior only, not a live sandbox, expert validity, agent capability,
+  real-world safety, or release readiness.
