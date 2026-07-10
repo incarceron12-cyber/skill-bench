@@ -2,18 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skill-bench.local/schemas/benchmark-bundle.schema.json",
   "title": "skill-bench benchmark bundle",
-  "description": "Executable contract joining a knowledge-work task, independently versioned procedural skills and rubrics, graders, trials, artifacts, traces, rubric checks, and causal failure labels.",
+  "description": "Executable contract joining a knowledge-work task, independently versioned procedural skills and rubrics, graders, trials, artifacts, traces, rubric checks, causal failure labels, and optional longitudinal evolution protocols.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "benchmark_version", "procedural_skills", "rubrics", "task", "graders", "trials"],
   "properties": {
-    "schema_version": {"const": "0.2.0"},
+    "schema_version": {"const": "0.3.0"},
     "benchmark_version": {"$ref": "#/$defs/nonEmpty"},
     "procedural_skills": {"type": "array", "items": {"$ref": "#/$defs/proceduralSkill"}},
     "rubrics": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/rubric"}},
     "task": {"$ref": "#/$defs/task"},
     "graders": {"type": "array", "items": {"$ref": "#/$defs/grader"}},
-    "trials": {"type": "array", "items": {"$ref": "#/$defs/trial"}}
+    "trials": {"type": "array", "items": {"$ref": "#/$defs/trial"}},
+    "longitudinal_evaluation": {"$ref": "#/$defs/longitudinalEvaluation"}
   },
   "$defs": {
     "nonEmpty": {"type": "string", "minLength": 1},
@@ -345,6 +346,148 @@
           "then": {"properties": {"score": {"const": 1}}}
         }
       ]
+    },
+    "resourceBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tokens", "tool_calls", "wall_seconds", "cost_usd", "memory_bytes", "human_minutes"],
+      "properties": {
+        "tokens": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "wall_seconds": {"type": "number", "minimum": 0},
+        "cost_usd": {"type": "number", "minimum": 0},
+        "memory_bytes": {"type": "integer", "minimum": 0},
+        "human_minutes": {"type": "number", "minimum": 0}
+      }
+    },
+    "stateSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state_sha256", "components"],
+      "properties": {
+        "state_sha256": {"$ref": "#/$defs/sha256"},
+        "components": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/versionedComponent"}}
+      }
+    },
+    "streamItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stream_item_id", "sequence", "stage_id", "task_id", "task_version", "cluster_id", "distribution", "exposure_split"],
+      "properties": {
+        "stream_item_id": {"$ref": "#/$defs/identifier"},
+        "sequence": {"type": "integer", "minimum": 0},
+        "stage_id": {"$ref": "#/$defs/identifier"},
+        "task_id": {"$ref": "#/$defs/identifier"},
+        "task_version": {"$ref": "#/$defs/nonEmpty"},
+        "cluster_id": {"$ref": "#/$defs/identifier"},
+        "distribution": {"enum": ["same_instance_retry", "near_neighbor", "held_out_cluster", "cross_domain"]},
+        "exposure_split": {"enum": ["adaptation", "retention_probe", "selective_forgetting_probe", "transfer_probe", "safety_probe"]}
+      }
+    },
+    "longitudinalCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition_id", "treatment", "initial_state", "reset_policy", "persistence_policy", "allowed_update_loci", "trial_ids"],
+      "properties": {
+        "condition_id": {"$ref": "#/$defs/identifier"},
+        "treatment": {"enum": ["reset", "lesson_only", "full_evolution"]},
+        "initial_state": {"$ref": "#/$defs/stateSnapshot"},
+        "reset_policy": {"enum": ["before_every_item", "stage_boundary", "never"]},
+        "persistence_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model", "prompt_skill", "memory", "tools_code", "topology", "scoped_deletion", "rollback"],
+          "properties": {
+            "model": {"type": "boolean"},
+            "prompt_skill": {"type": "boolean"},
+            "memory": {"type": "boolean"},
+            "tools_code": {"type": "boolean"},
+            "topology": {"type": "boolean"},
+            "scoped_deletion": {"type": "boolean"},
+            "rollback": {"type": "boolean"}
+          }
+        },
+        "allowed_update_loci": {"type": "array", "items": {"enum": ["model", "prompt_skill", "memory", "tools_code", "topology", "update_policy"]}, "uniqueItems": true},
+        "trial_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}
+      }
+    },
+    "feedbackExposure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exposure_id", "kind", "authority", "visibility", "locator"],
+      "properties": {
+        "exposure_id": {"$ref": "#/$defs/identifier"},
+        "kind": {"enum": ["public_instruction", "runtime_observation", "agent_artifact", "expert_guidance", "verifier_feedback", "private_check", "reference_answer", "other_agent_trajectory"]},
+        "authority": {"enum": ["system", "task_author", "domain_expert", "grader", "environment", "agent", "unverified"]},
+        "visibility": {"enum": ["agent_visible", "updater_visible", "grader_only"]},
+        "locator": {"$ref": "#/$defs/nonEmpty"}
+      }
+    },
+    "evolutionEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evolution_event_id", "condition_id", "after_stream_item_id", "timing", "trigger", "parent_state", "child_state", "changed_loci", "feedback_exposures", "update_mechanism", "random_seed", "resource_use", "validation", "downstream_event_ids"],
+      "properties": {
+        "evolution_event_id": {"$ref": "#/$defs/identifier"},
+        "condition_id": {"$ref": "#/$defs/identifier"},
+        "after_stream_item_id": {"$ref": "#/$defs/identifier"},
+        "timing": {"enum": ["within_task", "between_attempts", "between_tasks", "between_stages"]},
+        "trigger": {"enum": ["failure", "success", "uncertainty_threshold", "scheduled_consolidation", "human_request", "autonomous_exploration", "revocation", "safety_incident"]},
+        "parent_state": {"$ref": "#/$defs/stateSnapshot"},
+        "child_state": {"$ref": "#/$defs/stateSnapshot"},
+        "changed_loci": {"type": "array", "minItems": 1, "items": {"enum": ["model", "prompt_skill", "memory", "tools_code", "topology", "update_policy"]}, "uniqueItems": true},
+        "feedback_exposures": {"type": "array", "items": {"$ref": "#/$defs/feedbackExposure"}},
+        "update_mechanism": {"$ref": "#/$defs/nonEmpty"},
+        "random_seed": {"type": "integer", "minimum": 0},
+        "resource_use": {"$ref": "#/$defs/resourceBudget"},
+        "validation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status", "evidence_locator"],
+          "properties": {
+            "status": {"enum": ["pending", "accepted", "rejected", "rolled_back"]},
+            "evidence_locator": {"$ref": "#/$defs/nonEmpty"},
+            "rollback_to_event_id": {"$ref": "#/$defs/identifier"}
+          }
+        },
+        "downstream_event_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["probe_id", "stream_item_id", "kind", "form_policy", "target_cluster_id", "unaffected_control_cluster_ids", "private_evidence_firewall", "scheduled_after_sequences"],
+      "properties": {
+        "probe_id": {"$ref": "#/$defs/identifier"},
+        "stream_item_id": {"$ref": "#/$defs/identifier"},
+        "kind": {"enum": ["retention", "selective_forgetting", "transfer", "safety_drift"]},
+        "form_policy": {"enum": ["exact_replay", "equivalent_form", "held_out_cluster", "cross_domain"]},
+        "target_cluster_id": {"$ref": "#/$defs/identifier"},
+        "unaffected_control_cluster_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "private_evidence_firewall": {"const": true},
+        "scheduled_after_sequences": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}, "uniqueItems": true}
+      }
+    },
+    "longitudinalEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol_id", "version", "provenance", "frozen_instrument", "task_order_seed", "stages", "stream", "feedback_policy", "stage_budget", "cumulative_budget", "conditions", "evolution_events", "probes", "reported_estimands"],
+      "properties": {
+        "protocol_id": {"$ref": "#/$defs/identifier"},
+        "version": {"$ref": "#/$defs/nonEmpty"},
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}},
+        "frozen_instrument": {"$ref": "#/$defs/versionedComponent"},
+        "task_order_seed": {"type": "integer", "minimum": 0},
+        "stages": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "stream": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/streamItem"}},
+        "feedback_policy": {"$ref": "#/$defs/versionedComponent"},
+        "stage_budget": {"$ref": "#/$defs/resourceBudget"},
+        "cumulative_budget": {"$ref": "#/$defs/resourceBudget"},
+        "conditions": {"type": "array", "minItems": 3, "items": {"$ref": "#/$defs/longitudinalCondition"}},
+        "evolution_events": {"type": "array", "items": {"$ref": "#/$defs/evolutionEvent"}},
+        "probes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/probe"}},
+        "reported_estimands": {"type": "array", "minItems": 4, "items": {"enum": ["initial_competence", "adaptation_gain", "retention_regression", "transfer", "cost_drift", "safety_drift", "selective_forgetting"]}, "uniqueItems": true}
+      }
     },
     "trial": {
       "type": "object",

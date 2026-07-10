@@ -109,6 +109,43 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValidationFailure, "sha256"):
             self.validate_mutation(mutate)
 
+    def test_semantics_require_matched_longitudinal_treatments(self) -> None:
+        bundle = copy.deepcopy(self.valid)
+        bundle["longitudinal_evaluation"]["conditions"][1]["treatment"] = "full_evolution"
+        self.assertTrue(any("exactly one reset" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_reject_private_evidence_in_evolution_update(self) -> None:
+        bundle = copy.deepcopy(self.valid)
+        exposure = bundle["longitudinal_evaluation"]["evolution_events"][0]["feedback_exposures"][0]
+        exposure["kind"] = "private_check"
+        exposure["visibility"] = "grader_only"
+        self.assertTrue(any("cannot feed an update" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_reject_lesson_only_tool_update(self) -> None:
+        bundle = copy.deepcopy(self.valid)
+        bundle["longitudinal_evaluation"]["evolution_events"][0]["changed_loci"] = ["tools_code"]
+        self.assertTrue(any("changed loci exceed" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_reject_broken_state_chain(self) -> None:
+        bundle = copy.deepcopy(self.valid)
+        event = copy.deepcopy(bundle["longitudinal_evaluation"]["evolution_events"][0])
+        event["evolution_event_id"] = "lesson-update-2"
+        event["after_stream_item_id"] = "retention-form-c"
+        event["child_state"]["state_sha256"] = "3434343434343434343434343434343434343434343434343434343434343434"
+        bundle["longitudinal_evaluation"]["evolution_events"].append(event)
+        self.assertTrue(any("does not continue its condition ledger" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_reject_exact_replay_retention_probe(self) -> None:
+        bundle = copy.deepcopy(self.valid)
+        bundle["longitudinal_evaluation"]["probes"][0]["form_policy"] = "exact_replay"
+        self.assertTrue(any("must use an equivalent form" in error for error in semantic_errors(bundle)))
+
+    def test_semantics_reject_reset_arm_evolution_event(self) -> None:
+        bundle = copy.deepcopy(self.valid)
+        event = bundle["longitudinal_evaluation"]["evolution_events"][0]
+        event["condition_id"] = "reset-arm"
+        self.assertTrue(any("reset arm cannot contain" in error for error in semantic_errors(bundle)))
+
 
 if __name__ == "__main__":
     unittest.main()

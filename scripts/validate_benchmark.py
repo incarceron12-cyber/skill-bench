@@ -252,6 +252,116 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
                 if abs(expected - trial["aggregate_score"]) > 1e-6:
                     errors.append(f"{prefix}: aggregate_score {trial['aggregate_score']} != weighted score {expected:.6f}")
 
+    longitudinal = bundle.get("longitudinal_evaluation")
+    if longitudinal:
+        prefix = f"longitudinal_evaluation {longitudinal['protocol_id']}"
+        stream = longitudinal["stream"]
+        conditions = longitudinal["conditions"]
+        evolution_events = longitudinal["evolution_events"]
+        probes = longitudinal["probes"]
+        for items, key, location in [
+            (stream, "stream_item_id", f"{prefix}.stream"),
+            (conditions, "condition_id", f"{prefix}.conditions"),
+            (evolution_events, "evolution_event_id", f"{prefix}.evolution_events"),
+            (probes, "probe_id", f"{prefix}.probes"),
+        ]:
+            _check_unique(items, key, location, errors)
+
+        stream_ids = {item["stream_item_id"] for item in stream}
+        stream_by_id = {item["stream_item_id"]: item for item in stream}
+        stream_sequences = [item["sequence"] for item in stream]
+        if stream_sequences != sorted(stream_sequences) or len(stream_sequences) != len(set(stream_sequences)):
+            errors.append(f"{prefix}: stream sequences must be unique and ordered")
+        stages = set(longitudinal["stages"])
+        for item in stream:
+            if item["stage_id"] not in stages:
+                errors.append(f"{prefix}: stream item {item['stream_item_id']!r} references unknown stage")
+            if item["task_id"] != task["task_id"] or item["task_version"] != task["version"]:
+                errors.append(f"{prefix}: stream item {item['stream_item_id']!r} does not match frozen bundle task")
+        frozen = longitudinal["frozen_instrument"]
+        if frozen["component_id"] != task["task_id"] or frozen["version"] != task["version"]:
+            errors.append(f"{prefix}: frozen instrument does not match bundle task identity/version")
+
+        treatment_set = {item["treatment"] for item in conditions}
+        if treatment_set != {"reset", "lesson_only", "full_evolution"} or len(conditions) != 3:
+            errors.append(f"{prefix}: conditions must contain exactly one reset, lesson_only, and full_evolution arm")
+        initial_hashes = {item["initial_state"]["state_sha256"] for item in conditions}
+        if len(initial_hashes) != 1:
+            errors.append(f"{prefix}: matched conditions must share one initial state hash")
+        condition_by_id = {item["condition_id"]: item for item in conditions}
+        assigned_trial_ids: list[str] = []
+        for condition in conditions:
+            treatment = condition["treatment"]
+            loci = set(condition["allowed_update_loci"])
+            persistence = condition["persistence_policy"]
+            _check_unique(condition["initial_state"]["components"], "component_id", f"condition {condition['condition_id']}.initial_state", errors)
+            if treatment == "reset" and (condition["reset_policy"] != "before_every_item" or loci or any(persistence[key] for key in ("model", "prompt_skill", "memory", "tools_code", "topology"))):
+                errors.append(f"condition {condition['condition_id']}: reset arm cannot persist or update agent state")
+            if treatment == "lesson_only" and not loci <= {"prompt_skill", "memory"}:
+                errors.append(f"condition {condition['condition_id']}: lesson_only arm may update only prompt_skill or memory")
+            for trial_id in condition["trial_ids"]:
+                if trial_id not in {trial["trial_id"] for trial in trials}:
+                    errors.append(f"condition {condition['condition_id']}: unknown trial_id {trial_id!r}")
+            assigned_trial_ids.extend(condition["trial_ids"])
+        if len(assigned_trial_ids) != len(set(assigned_trial_ids)):
+            errors.append(f"{prefix}: a trial cannot belong to multiple longitudinal conditions")
+
+        event_ids = {event["evolution_event_id"] for event in evolution_events}
+        last_child_by_condition: dict[str, str] = {}
+        for event in evolution_events:
+            event_id = event["evolution_event_id"]
+            condition = condition_by_id.get(event["condition_id"])
+            if condition is None:
+                errors.append(f"evolution event {event_id}: unknown condition_id")
+            elif condition["treatment"] == "reset":
+                errors.append(f"evolution event {event_id}: reset arm cannot contain evolution events")
+            elif not set(event["changed_loci"]) <= set(condition["allowed_update_loci"]):
+                errors.append(f"evolution event {event_id}: changed loci exceed condition allowance")
+            if event["after_stream_item_id"] not in stream_ids:
+                errors.append(f"evolution event {event_id}: unknown after_stream_item_id")
+            if event["parent_state"]["state_sha256"] == event["child_state"]["state_sha256"]:
+                errors.append(f"evolution event {event_id}: parent and child state hashes must differ")
+            for state_name in ("parent_state", "child_state"):
+                _check_unique(event[state_name]["components"], "component_id", f"evolution event {event_id}.{state_name}", errors)
+            expected_parent = last_child_by_condition.get(event["condition_id"], condition["initial_state"]["state_sha256"] if condition else None)
+            if expected_parent and event["parent_state"]["state_sha256"] != expected_parent:
+                errors.append(f"evolution event {event_id}: parent state does not continue its condition ledger")
+            last_child_by_condition[event["condition_id"]] = event["child_state"]["state_sha256"]
+            for exposure in event["feedback_exposures"]:
+                if exposure["kind"] in {"private_check", "reference_answer"} or exposure["visibility"] == "grader_only":
+                    errors.append(f"evolution event {event_id}: private/grader-only evidence cannot feed an update")
+            validation = event["validation"]
+            if validation["status"] == "rolled_back":
+                rollback_id = validation.get("rollback_to_event_id")
+                if not rollback_id or rollback_id not in event_ids or rollback_id == event_id:
+                    errors.append(f"evolution event {event_id}: rolled_back status requires another known rollback target")
+            for downstream_id in event["downstream_event_ids"]:
+                if downstream_id not in event_ids or downstream_id == event_id:
+                    errors.append(f"evolution event {event_id}: invalid downstream event {downstream_id!r}")
+
+        stage_budget = longitudinal["stage_budget"]
+        cumulative_budget = longitudinal["cumulative_budget"]
+        for key, stage_value in stage_budget.items():
+            if cumulative_budget[key] < stage_value:
+                errors.append(f"{prefix}: cumulative {key} budget is below stage budget")
+        for probe in probes:
+            item = stream_by_id.get(probe["stream_item_id"])
+            if item is None:
+                errors.append(f"probe {probe['probe_id']}: unknown stream_item_id")
+            else:
+                expected_split = {
+                    "retention": "retention_probe",
+                    "selective_forgetting": "selective_forgetting_probe",
+                    "transfer": "transfer_probe",
+                    "safety_drift": "safety_probe",
+                }[probe["kind"]]
+                if item["exposure_split"] != expected_split:
+                    errors.append(f"probe {probe['probe_id']}: stream item split does not match probe kind")
+                if item["cluster_id"] != probe["target_cluster_id"]:
+                    errors.append(f"probe {probe['probe_id']}: target cluster does not match stream item")
+            if probe["kind"] == "retention" and probe["form_policy"] == "exact_replay":
+                errors.append(f"probe {probe['probe_id']}: retention must use an equivalent form to avoid answer replay")
+
     return errors
 
 
