@@ -130,6 +130,38 @@ paper reports useful task patterns and results, but its task corpus, verifier
 specifications, grading artifacts, and response matrix were absent from the
 inspected release; use it as design evidence, not calibration ground truth [CT].
 
+### 2.2a Problem recognition is staged inference, not final-artifact failure
+
+Some professional work begins before a named workflow: the agent must notice that
+the surface request or apparent state is incomplete, anomalous, or governed by a
+different problem. Preserve the chain as independently observable stages:
+
+```text
+surface situation → decisive and disconfirming cues → candidate/alternate frames
+  → targeted inquiry → action selection → artifact or state consequence
+```
+
+Do not infer the first stages from the last. A failed artifact can reflect domain
+knowledge, execution, tool, or grader failure; a correct artifact can arise from a
+template or indiscriminate skepticism. Each private candidate-problem record
+therefore needs cue provenance, scope/severity, competing frames, positive and
+negative near neighbors, alternate-valid-path policy, and stage-specific checks.
+Use matched situation-only, minimal-frame, and fully specified conditions with
+repeated, task-clustered analysis. The situation-only→minimal-frame contrast is a
+**recognition intervention**; procedural guidance and evaluator/rubric disclosure
+are separate treatments and must remain independently versioned [KW].
+
+KWBench makes this missing construct explicit and usefully designs backward from
+plausible wrong path to cue and consequence. Its cold condition nevertheless
+mixes recognition, inquiry, domain judgment, action, and artifact execution; its
+single model judge, best-of-three selection, opaque expert provenance, and absent
+framed/near-neighbor/human conditions do not isolate recognition [KW]. The
+internal six-cell replay exercises staged labels, positive/negative neighbors,
+and invalid-environment abstention, but all responses and expected outcomes are
+builder-authored and deterministic. It establishes instrumentation behavior only,
+not expert validity, agent capability, a treatment effect, prevalence, or
+cross-domain generalization [PR].
+
 ### 2.3 A rubric is a dependency-aware evidence model
 
 Rubric decomposition makes expert attention inspectable, but does not make it
@@ -523,6 +555,14 @@ consistency but also create evaluator-cue compliance. The minimum causal matrix
 is no-skill/public-skill × independent/shared-rubric, with exact-rubric
 disclosure only as an explicit leakage/compliance condition [LH].
 
+A problem frame is a third object: it names or narrows *what situation is
+present*, while a skill prescribes *how to proceed* and a rubric exposes *what an
+observer will reward*. Estimate recognition with situation-only versus minimal-
+frame conditions, execution support with minimal-frame versus fully specified or
+procedurally guided conditions, and evaluator-cue effects with independent versus
+shared/disclosed instruments. Do not call any one contrast an undifferentiated
+expertise-transfer effect [KW].
+
 For adaptive systems, also pin stream order/seed, warmup, similarity groups,
 reset cadence, update budget, and which feedback may enter memory. Once one test
 item changes behavior on the next, the estimand is ordered-stream learning, not
@@ -778,6 +818,7 @@ fidelity separately from score calibration [EB, AP].
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
+| Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
 | Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
@@ -885,6 +926,10 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     representation, reader, and grader effects from held-out behavioral benefit;
     stale or failed-run lessons require scope, contradiction, harm, and rollback
     evidence before promotion.
+31. **Recognition is not execution:** preserve cue, framing, inquiry, action, and
+    artifact observations separately; identify recognition, procedural-guidance,
+    and evaluator-cue interventions with matched near neighbors before attributing
+    a final consequence to unprompted problem recognition.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -916,6 +961,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Elicitation yield vs valid expertise transfer | Data Therapist increases inspectable candidate production, but expert identity, probe/interface treatment, unsupported model checks, and absent downstream tests confound quality and utility [DT]. | In one consented session, preserve unprompted then probed phases and the full event ledger; compare corroborated, scope-valid, consequence-bearing primitives and correction/review burden rather than annotation count. |
 | Consensus label vs plural professional judgment | One three-psychiatrist panel shows strong systematic disagreement but cannot separate person, framework, rubric, or context effects; the internal fixture proves only aggregation-contract behavior [ED, PJ]. | Repeat held-out ratings, prospectively declare frameworks, replicate experts within framework, vary context/rubric evidence, and compare explicit stakeholder policies while preserving dissent and claim blocks. |
 | Retrospective memory QA vs consequential action transfer | LongMemEval-V2 cleanly evaluates bounded evidence delivery but representation/reader/grader effects remain treatment components and no acting agent uses the memory [LM]. | Compare no-memory, evidence-only, and provenance-gated lessons on equivalent-form QA and held-out artifact/state action; plant stale, failed-attempt, contradiction, safe-alternative, harmful-transfer, and rollback cases. |
+| Unprompted recognition vs solving and execution | KWBench's cold gate combines cue extraction, framing, inquiry, action, artifact production, and judge behavior, with no matched framed condition or negative near neighbors [KW]. The internal replay establishes only staged instrumentation [PR]. | On expert-adjudicated positive/negative scenario pairs, cross situation-only, minimal-frame, and fully specified conditions; score cue, frame, inquiry, action, and artifact separately; repeat by scenario cluster and test alternate valid framings before licensing a recognition claim. |
+| Retrospective QA success vs safe held-out transfer | The internal memory replay plants QA-correct but harmful evidence-only transfer and safe provenance-gated promotion, but deterministically encodes its own expected causal story [XM]. | Run stochastic consumers on unseen task families with frozen memory packages; vary stale/contradicted/failed-attempt evidence, measure access/adoption/action/recovery, cluster by source lineage, and test rollback plus expert-grounded consequences. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -1030,11 +1077,21 @@ them:
     `build-plural-judgment-conformance-slice`:** framework-indexed observations,
     explicit policy aggregation, dissent, and blocked claim upgrades are
     executable. The synthetic cases establish validator behavior only [ED, PJ].
-18. **Pending evidence-to-action bridge —
-    `build-experience-memory-transfer-conformance`:** connect trajectory-derived
-    evidence to both equivalent-form QA and held-out action while testing stale
-    or harmful transfer and rollback. Reuse existing contracts; LongMemEval-V2
-    does not itself supply action-transfer evidence [LM].
+18. **Completed evidence-to-action conformance, not demonstrated transfer —
+    `build-experience-memory-transfer-conformance`:** trajectory-derived evidence
+    connects to both equivalent-form QA and held-out action while testing stale
+    or harmful transfer and rollback. The deterministic synthetic replay makes
+    evidence-only QA success coexist with harmful transfer and provenance-gated
+    promotion coexist with the planted safe action. It validates package/scorer
+    behavior only; LongMemEval-V2 does not supply action-transfer evidence and
+    this fixture supplies no agent, expert, prevalence, or safety result [LM, XM].
+19. **Completed recognition-intervention conformance, not recognition evidence —
+    `build-problem-recognition-intervention-slice`:** a builder-authored positive/
+    negative pair is projected into situation-only, minimal-frame, and fully
+    specified conditions with separate cue, framing, inquiry, action, and artifact
+    labels. Deterministic replay and invalid-environment abstention establish
+    instrumentation behavior only, not an agent treatment effect, expert validity,
+    professional competence, prevalence, or cross-domain generality [KW, PR].
 
 ## Provenance keys
 
@@ -1179,3 +1236,16 @@ them:
   reviewed immutable v1 PDF/text plus pinned code and dataset release are
   recorded there. Results concern retrospective evidence QA, not held-out action
   benefit, stale-memory safety, professional competence, or readiness.
+- **[KW]**
+  `papers/agent-benchmarks/2026-07-11-kwbench-unprompted-problem-recognition.md`;
+  reviewed immutable v1 PDF/text and inspected linked code/site snapshots are
+  recorded there. Gated dataset rows were unavailable; reported results concern
+  an unprompted author-defined consequence gate, not isolated recognition.
+- **[PR]** `pilots/problem-recognition-intervention/replay-report.json` and
+  `pilots/problem-recognition-intervention/README.md`; six builder-authored,
+  deterministic synthetic cells establish staged scorer and abstention behavior
+  only.
+- **[XM]** `pilots/experience-memory-transfer/replay-report.json` and
+  `pilots/experience-memory-transfer/README.md`; three builder-authored,
+  deterministic synthetic conditions establish QA/action separation, harmful-
+  transfer, promotion, and rollback fixture behavior only.
