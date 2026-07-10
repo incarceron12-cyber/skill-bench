@@ -13,6 +13,7 @@ FIXTURE = ROOT / "tests" / "fixtures" / "valid-benchmark-bundle.json"
 ADMISSIBILITY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-artifact-admissibility-bundle.json"
 PROJECTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-task-projection-manifest.json"
 WORKSPACE_FIXTURE = ROOT / "tests" / "fixtures" / "valid-persistent-workspace-conformance.json"
+ACTION_SAFETY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-adversarial-action-conformance.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
@@ -22,6 +23,7 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         cls.admissibility = json.loads(ADMISSIBILITY_FIXTURE.read_text(encoding="utf-8"))
         cls.projection_manifest = json.loads(PROJECTION_FIXTURE.read_text(encoding="utf-8"))
         cls.workspace = json.loads(WORKSPACE_FIXTURE.read_text(encoding="utf-8"))
+        cls.action_safety = json.loads(ACTION_SAFETY_FIXTURE.read_text(encoding="utf-8"))
 
     def projection_bundle(self):
         bundle = copy.deepcopy(self.valid)
@@ -33,6 +35,15 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         bundle["task"]["workspace"] = copy.deepcopy(self.workspace["task_workspace"])
         bundle["trials"][0]["workspace"] = copy.deepcopy(self.workspace["trial_workspace"])
         bundle["trials"][0]["trace"]["events"].extend(copy.deepcopy(self.workspace["synthetic_trace_events"]))
+        return bundle
+
+    def action_safety_bundle(self):
+        bundle = copy.deepcopy(self.valid)
+        bundle["task"]["source_pack"].append(copy.deepcopy(self.action_safety["source"]))
+        bundle["task"]["action_safety"] = copy.deepcopy(self.action_safety["task_action_safety"])
+        bundle["task"]["policies"]["network"] = "denied"
+        bundle["trials"][0]["action_safety"] = copy.deepcopy(self.action_safety["trial_action_safety"])
+        bundle["trials"][0]["trace"]["events"].extend(copy.deepcopy(self.action_safety["synthetic_trace_events"]))
         return bundle
 
     def validate_mutation(self, mutation) -> None:
@@ -299,6 +310,40 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         bundle = self.workspace_bundle()
         bundle["trials"][0]["workspace"]["cleanup"]["status"] = "not_run"
         self.assertTrue(any("cleanup verification failed" in error for error in semantic_errors(bundle)))
+
+    def test_valid_inert_adversarial_action_conformance_and_separate_metrics(self) -> None:
+        bundle = self.action_safety_bundle()
+        self.assertEqual([], semantic_errors(bundle))
+        metrics = bundle["trials"][0]["action_safety"]["metrics"]
+        self.assertEqual(3, metrics["safety"]["realized_or_partial_harm"])
+        self.assertEqual(1, metrics["utility"]["over_refusal"])
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_action_safety_rejects_exposure_to_adoption_upgrade(self) -> None:
+        bundle = self.action_safety_bundle()
+        case = next(item for item in bundle["trials"][0]["action_safety"]["cases"] if item["case_id"] == "not-exposed")
+        case["adoption"] = {"status": "supported", "event_ids": ["act-adopt-blocked"]}
+        self.assertTrue(any("exposure-to-adoption" in error for error in semantic_errors(bundle)))
+
+    def test_action_safety_rejects_attempt_to_realization_upgrade_and_live_target(self) -> None:
+        bundle = self.action_safety_bundle()
+        case = next(item for item in bundle["trials"][0]["action_safety"]["cases"] if item["case_id"] == "attempt-blocked")
+        case["actions"][0].update({"realized": True, "target": "https://real.example", "post_state_sha256": "2" * 64})
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("live or non-allowlisted target" in error for error in errors))
+        self.assertTrue(any("attempt-to-realization" in error for error in errors))
+
+    def test_action_safety_rejects_harm_without_state_change_and_metric_drift(self) -> None:
+        bundle = self.action_safety_bundle()
+        case = next(item for item in bundle["trials"][0]["action_safety"]["cases"] if item["case_id"] == "mock-harm-realized")
+        case["actions"][0]["post_state_sha256"] = case["actions"][0]["pre_state_sha256"]
+        bundle["trials"][0]["action_safety"]["metrics"]["utility"]["completed"] = 7
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("attempt-to-realization" in error for error in errors))
+        self.assertTrue(any("utility metric does not replay" in error for error in errors))
 
 
 if __name__ == "__main__":

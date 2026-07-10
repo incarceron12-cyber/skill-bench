@@ -367,6 +367,7 @@
         "artifact_views": {"type": "array", "items": {"$ref": "#/$defs/artifactView"}},
         "projection_manifest": {"$ref": "#/$defs/taskProjectionManifest"},
         "workspace": {"$ref": "#/$defs/workspaceInstrument"},
+        "action_safety": {"$ref": "#/$defs/actionSafetyInstrument"},
         "checks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/check"}},
         "difficulty": {
           "type": "object",
@@ -479,6 +480,39 @@
           "status": {"enum": ["passed", "failed", "not_run"]}, "observed_root_sha256": {"$ref": "#/$defs/sha256"}
         }},
         "invalid_run": {"type": "boolean"}
+      }
+    },
+    "actionSafetyInstrument": {
+      "type": "object", "additionalProperties": false,
+      "required": ["instrument_id", "version", "authority_rules", "containment", "preflight_canaries", "claim_boundaries", "provenance"],
+      "properties": {
+        "instrument_id": {"$ref": "#/$defs/identifier"}, "version": {"$ref": "#/$defs/nonEmpty"},
+        "authority_rules": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false,
+          "required": ["rule_id", "source_id", "source_eligibility", "authority", "allowed_consequences", "prohibited_consequences"],
+          "properties": {"rule_id": {"$ref": "#/$defs/identifier"}, "source_id": {"$ref": "#/$defs/identifier"}, "source_eligibility": {"enum": ["ordinary_task_source", "untrusted", "not_eligible"]}, "authority": {"enum": ["informational_only", "may_authorize", "no_authority"]}, "allowed_consequences": {"type": "array", "items": {"$ref": "#/$defs/nonEmpty"}, "uniqueItems": true}, "prohibited_consequences": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/nonEmpty"}, "uniqueItems": true}}}},
+        "containment": {"type": "object", "additionalProperties": false, "required": ["mode", "network", "synthetic_credentials_only", "allowed_target_prefixes", "protected_host_path_reachable"], "properties": {"mode": {"const": "inert_mock_only"}, "network": {"const": "denied"}, "synthetic_credentials_only": {"const": true}, "allowed_target_prefixes": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^(mock://|sandbox/mock/)"}, "uniqueItems": true}, "protected_host_path_reachable": {"const": false}}},
+        "preflight_canaries": {"type": "array", "minItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["canary_id", "boundary", "probe_target", "expected", "observed", "evidence"], "properties": {"canary_id": {"$ref": "#/$defs/identifier"}, "boundary": {"enum": ["network", "email", "credential", "filesystem"]}, "probe_target": {"$ref": "#/$defs/nonEmpty"}, "expected": {"const": "blocked"}, "observed": {"const": "blocked"}, "evidence": {"$ref": "#/$defs/nonEmpty"}}}},
+        "claim_boundaries": {"type": "object", "additionalProperties": false, "required": ["expert_validity", "capability_evidence", "real_world_safety", "readiness_evidence"], "properties": {"expert_validity": {"const": false}, "capability_evidence": {"const": false}, "real_world_safety": {"const": false}, "readiness_evidence": {"const": false}}},
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}}
+      }
+    },
+    "actionSafetyObservation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["instrument_id", "version", "cases", "metrics"],
+      "properties": {
+        "instrument_id": {"$ref": "#/$defs/identifier"}, "version": {"$ref": "#/$defs/nonEmpty"},
+        "cases": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["case_id", "outcome", "invalid_run", "source_rule_id", "placement", "exposure", "adoption", "actions", "harm", "utility"], "properties": {
+          "case_id": {"$ref": "#/$defs/identifier"}, "outcome": {"enum": ["secure_useful_completion", "over_refusal", "non_exposure", "blocked_attempt", "partial_harm", "realized_harm", "repaired_harm", "invalid_run"]}, "invalid_run": {"type": "boolean"}, "source_rule_id": {"$ref": "#/$defs/identifier"}, "placement": {"const": "confirmed"},
+          "exposure": {"type": "object", "additionalProperties": false, "required": ["status", "event_ids"], "properties": {"status": {"enum": ["observed", "not_observed", "unknown"]}, "event_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}}},
+          "adoption": {"type": "object", "additionalProperties": false, "required": ["status", "event_ids"], "properties": {"status": {"enum": ["supported", "unsupported", "unknown"]}, "event_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}}},
+          "actions": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["action_id", "event_id", "target", "authorized", "interceptor", "realized", "pre_state_sha256", "post_state_sha256"], "properties": {"action_id": {"$ref": "#/$defs/identifier"}, "event_id": {"$ref": "#/$defs/identifier"}, "target": {"$ref": "#/$defs/nonEmpty"}, "authorized": {"type": "boolean"}, "interceptor": {"enum": ["blocked", "committed_mock", "not_reached"]}, "realized": {"type": "boolean"}, "pre_state_sha256": {"$ref": "#/$defs/sha256"}, "post_state_sha256": {"$ref": "#/$defs/sha256"}}}},
+          "harm": {"type": "object", "additionalProperties": false, "required": ["severity", "reversibility", "detection", "recovery", "residual_harm"], "properties": {"severity": {"enum": ["none", "low", "medium", "high"]}, "reversibility": {"enum": ["not_applicable", "fully_reversible", "partially_reversible", "irreversible"]}, "detection": {"enum": ["not_applicable", "prevented", "detected", "undetected"]}, "recovery": {"enum": ["not_needed", "blocked", "repaired", "not_repaired"]}, "residual_harm": {"enum": ["none", "present", "unknown"]}}},
+          "utility": {"enum": ["completed", "over_refusal", "failed", "invalid"]}
+        }}},
+        "metrics": {"type": "object", "additionalProperties": false, "required": ["safety", "utility"], "properties": {
+          "safety": {"type": "object", "additionalProperties": false, "required": ["eligible_cases", "invalid_excluded", "realized_or_partial_harm"], "properties": {"eligible_cases": {"type": "integer", "minimum": 0}, "invalid_excluded": {"type": "integer", "minimum": 0}, "realized_or_partial_harm": {"type": "integer", "minimum": 0}}},
+          "utility": {"type": "object", "additionalProperties": false, "required": ["eligible_cases", "completed", "over_refusal"], "properties": {"eligible_cases": {"type": "integer", "minimum": 0}, "completed": {"type": "integer", "minimum": 0}, "over_refusal": {"type": "integer", "minimum": 0}}}
+        }}
       }
     },
     "traceEvent": {
@@ -739,6 +773,7 @@
         "artifacts": {"type": "array", "items": {"$ref": "#/$defs/observedArtifact"}},
         "artifact_views": {"type": "array", "items": {"$ref": "#/$defs/observedArtifactView"}},
         "workspace": {"$ref": "#/$defs/workspaceObservation"},
+        "action_safety": {"$ref": "#/$defs/actionSafetyObservation"},
         "trace": {"$ref": "#/$defs/trace"},
         "check_results": {"type": "array", "items": {"$ref": "#/$defs/checkResult"}},
         "aggregate_score": {"type": "number", "minimum": 0, "maximum": 1},

@@ -40,6 +40,7 @@ Version 0.2 also recomputes each local procedural skill's SHA-256 when
 | Artifact views and transforms are typed separately from artifacts | A screenshot, structured state, executable source, and export establish different predicates; derived views require pinned transformations. | `papers/agent-benchmarks/2026-07-10-scivisagentbench-multimodal-artifact-evaluation.md` §§ Unique insight, Transferable design patterns 1–3 |
 | Checks can fail closed through an admissibility envelope | Missing views, invalid exports, control/renderer mismatches, and inapplicable criteria are not ordinary zero scores. | SciVisAgentBench review, Sections 5.2–5.5 (pp. 5–6) and Concrete changes 1, 5 |
 | Persistent workspace identity, placement, dependency hypotheses, process observations, mutations, and cleanup are separate | File existence, authored relevance, observed access/write, and causal use are different claims; a correct deliverable can coexist with destructive workspace state. | `papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md` §§ Representative task trace, Unique insight, Transferable benchmark design lessons 1–8 |
+| Source authority, exposure, adoption, attempted action, intercepted/realized state, recovery, and utility are separate | Source placement is not exposure; exposure is not adoption; a tool call is not a realized consequence; and refusal is not secure useful completion. | `papers/agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md` §§ Unique insight, Transferable benchmark-design lessons 1–5 |
 
 The fixture `tests/fixtures/valid-benchmark-bundle.json` is deliberately a
 failed completed trial. It demonstrates that a score of zero can still preserve
@@ -124,6 +125,29 @@ record. Mutation tests plant graph/placement drift, protected deletion,
 unauthorized creation, missing process evidence, causal overclaim, and failed
 cleanup. The fixture establishes contract behavior only: expert validity,
 capability, workspace learning, causal use, and readiness remain false.
+
+## Inert adversarial-action conformance
+
+Optional `task.action_safety` and `trial.action_safety` records add an authority
+matrix, inert containment policy, four-boundary preflight, and an action-state
+ledger without creating a separate safety subsystem. The semantic validator
+requires a trace-backed distinction among placement, exposure, adoption,
+attempt, mock realization, severity/reversibility, detection, recovery,
+residual harm, and benign utility. It derives realization from both interceptor
+state and pre/post state identity, rejects live/non-allowlisted targets, and
+replays safety and utility counts separately while excluding invalid cases.
+
+`tests/fixtures/valid-adversarial-action-conformance.json` plants exactly eight
+internal cases: secure useful completion, over-refusal, non-exposure, blocked
+attempt, low-severity token disclosure in a warning, realized mock harm,
+repaired mock harm, and an invalid run. Its ordinary source and token are
+builder-authored and synthetic. `scripts/run_action_safety_preflight.py`
+statically verifies the pinned source, mock-only target namespace, denied
+network contract, synthetic credential marker, and absence of absolute or
+traversal paths; its preserved output is
+`tests/fixtures/action-safety-preflight-report.json`. This proves fixture and
+adapter conformance only—not a live host sandbox, expert validity, agent
+capability, real-world safety, or readiness.
 
 ## Required 2×2 ablation
 
