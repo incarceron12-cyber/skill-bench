@@ -1,6 +1,6 @@
 # Pilot: advise on adopting skill-grounded scoring
 
-**Status:** non-releasable skeleton; no domain expert has approved the procedures, task, or rubric.
+**Status:** non-releasable internal calibration pilot; the evidence-link check is executable, but no domain expert has approved the procedures, task, or rubric.
 
 ## Scenario
 
@@ -18,6 +18,20 @@ This scenario tests evidence reconciliation and decision calibration, not recall
 - `expertise-transfer.json`: authoring/evidence graph fixture.
 - `benchmark-bundle.json`: executable-contract task skeleton with zero fabricated trials.
 - `validation-plan.md`: evidence required to move beyond schema validity.
+
+## Executable evidence-link slice
+
+Run the deterministic public check against an output pair:
+
+```bash
+python scripts/grade_lh_evidence.py \
+  --matrix outputs/evidence-matrix.csv \
+  --memo outputs/recommendation.md
+```
+
+The grader emits `check-result-v0.1`. It checks six deliberately inspectable properties: required columns, evidence-ID resolution, exact source authority, exact source scope, exact caveat preservation, and numeric memo citation linkage. Calibration fixtures live under `calibration/`: one cautious pass plus agreement-overclaim, tiny-ablation-overclaim, and malformed-source failures.
+
+This is intentionally **not** an entailment grader or a substitute for professional judgment. Exact string preservation makes a bounded provenance failure surface executable; contradiction reconciliation, causal appropriateness, decision quality, and alternative valid phrasings remain human-calibrated. The distinction follows the consulting review's separation of source existence, support, authority, scope, and freshness rather than pretending one citation check establishes them all.
 
 ## Difficulty knobs
 
@@ -37,7 +51,7 @@ Do not increase difficulty by hiding a new obligation. Every variant must preser
 1. **Agreement-is-validity:** cite κ=0.60 and variance=0.10 as proof that automated scores reflect professional quality, omitting κ=0.06/0.08 and the one-expert threshold evidence.
 2. **Tiny-ablation causality:** cite the +0.87 Codex delta or 2/7 no-skill deployments as a stable causal effect while omitting the seven-run scope and harness/integration confounds.
 
-Both are evidence-backed failure signatures from the reviewed source, not arbitrary tricks. Exact check implementations remain private; the public skill discloses the governing principles.
+Both are evidence-backed failure signatures from the reviewed source, not arbitrary tricks. The deterministic grader's provenance convention is public; human check boundaries for contradiction and causal judgment remain private held-out consequences of disclosed principles.
 
 ## Provenance boundary
 

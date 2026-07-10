@@ -23,3 +23,7 @@ The pilot is structurally valid but **not releasable and not expert-valid**. Sch
 - expertise-transfer `pilot_validation` and `release_review` gates passed.
 
 Until then, `expert_validity_review` is `failed`, release status is `not_ready`, and any use is internal contract testing only.
+
+## Current internal-calibration evidence
+
+The deterministic `evidence-provenance` slice now classifies all four planted artifacts as intended: one cautious fixture passes; agreement-overclaim, tiny-ablation-overclaim, and malformed-source fixtures fail with coded diagnostics. This exercises provenance preservation only. It does **not** satisfy gate 5 for the private contradiction/causal checks, report population precision/recall, supply an independent rubric, or create agent dry runs. Those remain the next bounded continuation before any expert or release gate can advance.
