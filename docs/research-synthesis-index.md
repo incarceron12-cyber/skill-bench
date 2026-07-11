@@ -61,6 +61,7 @@ Most relevant sources:
 |---|---:|---|
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Demonstrates large-scale expert-authored multimodal occupational task acquisition while exposing sampling, weighting, witness, and inference limitations |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
+| [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
@@ -127,6 +128,20 @@ separates raw-history success, summary omission, stale adoption, required-state
 failure, collateral mutation, and unavailable-evaluator invalidity in one
 deterministic synthetic fixture only; it is implementation evidence, not empirical
 support for the planted causal story or any workplace claim.
+
+Context-heavy tasks add an authority boundary before the workplace ladder:
+**availability → authorization → access → observation → interpretation → adoption
+→ answer/artifact acceptance → state consequence → affected-party validation**.
+No rung inherits the next. Corpus-creation consent is not task-time permission for
+every inference; an authored minimal support set must admit reviewed alternatives;
+and semantic answer agreement cannot prove evidence use, privacy safety, correct
+action, or user benefit. HippoCamp supplies multimodal localized-support and
+interface evidence from three edited cross-person composites, but no single user
+can validate those composite profiles; its answer-only judge cannot inspect
+sources, and unavailable corpus/audit/result records prevent independent replay.
+Existing consent, artifact-view, trace, workspace-state, task-health, metric, and
+validity records implement this ladder; no personal-computing scope commitment or
+personalization, professional-capability, privacy-safety, or readiness claim follows.
 
 Interactive families add a parallel boundary. Executable outcome checks are a
 real repair over action-sequence imitation because they admit alternative paths,

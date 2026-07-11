@@ -396,6 +396,48 @@ Observed demand is provenance evidence, not semantic-equivalence evidence. For e
 
 EnterpriseClawBench demonstrates scalable session projection, but its proprietary 852-task pool prevents external source sampling or rewrite audit. In one public trace a later user-authored image analysis becomes answer-bearing rubric content for a fresh single-turn task, changing repair-in-interaction into visual analysis; its public rubrics also copy identical guidance across nominally distinct score dimensions. This supports demand provenance and pipeline reproducibility, not replay fidelity, independent rubric validity, enterprise representativeness, or economic claims [ECB].
 
+### 2.5b Context authority and downstream consequence are separate warrants
+
+Context presence is neither permission to use it nor evidence that an inference
+was causally used or beneficial. Preserve a claim-level ladder:
+
+```text
+available → authorized → accessible → observed → interpreted → adopted
+  → answer/artifact accepted → intended and collateral state consequence
+    → affected-party validation
+```
+
+Each edge needs independent evidence. Authorization binds contributor or affected
+party, purpose, permitted inference/action, entity, valid time, scope, sensitivity,
+withdrawal/reconsent boundary, and prohibited uses; corpus-creation consent must
+not be promoted into task-time authority for arbitrary profiling. Observation
+binds the exact model-visible representation and locator. Interpretation preserves
+supporting and contradicting evidence, source authority, uncertainty, and entity/
+time/scope resolution. Adoption requires trace or intervention evidence that the
+claim changed the output or decision. Semantic answer acceptance is only a grader
+observation; consequence requires attributable intended and collateral state
+deltas, while affected-party validation requires the person or legitimate proxy
+to disposition the inference or action for the intended use.
+
+An authored minimal support set is a hypothesis, not unique ground truth. Admit
+independently reviewed alternate support sets and test necessity through source
+ablation; keep answer agreement and evidence-set overlap separate. HippoCamp
+strongly exposes availability and authored localized support, partially observes
+reported file access and answer acceptance, and does not measure adoption, action,
+state consequence, or affected-user validation. Its three edited cross-person
+composites cannot supply a literal user model; its answer-only judge lacks source
+views; and unavailable corpus, audit, consent-lineage, result, and replay records
+block independent privacy, grounding, and reproducibility claims [HC]. The
+one-day-post-v1 code archive is release evidence, not paper-time identity.
+
+**Invariant:** no later rung may be inferred from an earlier one, and missing
+authorization or affected-party authority fails closed for sensitive inference
+or action. Existing participation/consent, artifact-view, trace, workspace-state,
+metric, task-health, and validity records are the implementation homes; no
+parallel context schema is implied. This ladder licenses no faithful
+personalization, privacy safety, professional correctness, causal process,
+capability, or readiness claim.
+
 ### 2.6 Frame, content, assembly, and inference have different denominators
 
 Do not infer suite validity by adding healthy tasks or broad labels. Preserve
@@ -1645,6 +1687,14 @@ them:
   reviewed immutable v1 PDF/text and pinned official post-paper release paths and
   hashes are recorded there. Proprietary sessions, 852 tasks, outputs, and result
   records are unavailable; two public traces bound the projection findings.
+- **[HC]**
+  `papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md`;
+  reviewed immutable v1 PDF/text and inspected one-day-post-v1 official release
+  paths and hashes are recorded there. The 42.4 GB corpus, gold annotations,
+  paper results, human audit, consent lineage, and container images were not
+  archived locally, so no corpus replay, privacy audit, faithful-personalization,
+  causal-use, professional-correctness, consequential-action, or readiness claim
+  is supported.
 - **[ALE]**
   `papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md`;
   reviewed immutable v1 PDF/text plus pinned post-paper official release and three
