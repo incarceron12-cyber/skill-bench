@@ -279,6 +279,12 @@ evidence-backed hypothesis, recomputes projection hashes, enforces four-way
 coverage and public basis, and keeps capability/readiness evidence false in its
 internal conformance fixture.
 
+### 2.5a Session-derived tasks are bounded counterfactual projections
+
+Observed demand is provenance evidence, not semantic-equivalence evidence. For each source episode preserve selected turns and initial state; observed request, resolution, feedback, and acceptance; every split/merge, omission, rewrite, fixture restoration, environment substitution, and artifact-contract change; hindsight sources; the fresh-system counterfactual; an independent equivalence disposition; and the licensed claim. `faithful_replay`, `demand_inspired_task`, and `synthetic_calibration` are distinct uses. A source user or expert must explicitly disposition material changes; approval before an engineer/model rewrite does not transfer through it [ECB].
+
+EnterpriseClawBench demonstrates scalable session projection, but its proprietary 852-task pool prevents external source sampling or rewrite audit. In one public trace a later user-authored image analysis becomes answer-bearing rubric content for a fresh single-turn task, changing repair-in-interaction into visual analysis; its public rubrics also copy identical guidance across nominally distinct score dimensions. This supports demand provenance and pipeline reproducibility, not replay fidelity, independent rubric validity, enterprise representativeness, or economic claims [ECB].
+
 ### 2.6 Frame, content, assembly, and inference have different denominators
 
 Do not infer suite validity by adding healthy tasks or broad labels. Preserve
@@ -315,6 +321,8 @@ missing warrant, but supplies no sampling, cluster, stopping, or sensitivity
 machinery and does not estimate how common the omission is [ECBD]. Thus GDP,
 wage, duration, frequency, consequence, and equal-task weights are different
 estimands; none may be appended after scoring to manufacture economic validity.
+
+Agents' Last Exam adds a useful occupational coordinate frame and broad executable pool, but its 55 nonempty subdomains are not task-frequency or consequence-weighted occupational coverage. Preserve the exact immutable **suite-role membership** used in a reported result. Its paper and later release have different Near-Term/Last-Exam counts and overlapping roles, so a tier name is not a version. Outcome-informed difficulty is routing metadata, not an intrinsic task trait; freeze the admission snapshot or model-system outcomes partly define the comparison [ALE].
 
 The current LH audit makes the boundary concrete: one convenience task, one
 source/builder lineage cluster, no alternate assembly, no precision target, and
@@ -370,6 +378,8 @@ ambiguous `Input`/`input` paths, while the 338-task package, graders, and result
 inventory remain unreleased [WG]. These are evidence for transition, residual-
 state, and admissibility controls—not finance/GUI scope commitments or portable
 professional-capability estimates.
+
+ALE's released PowerMill evaluator adds a concrete bypass: a pre-existing `agent_sim.stl` can enter a test path that skips collision checking and simulation. The internal seven-case replay rejects pre-satisfied, stale, copied-reference, and omitted-transition outcomes, accepts one declared alternate path, and marks invalid initialization as environment invalid. These are builder-authored synthetic conformance results only—not ALE reproduction, verifier completeness, agent capability, prevalence, expert validity, or readiness [ALE, IS].
 
 ## 3. Measurement stack: trial to defensible claim
 
@@ -793,6 +803,7 @@ panel or a calibrated bridge design.
 | Suite assembly argument | distinguish a broad frame and healthy pool from the administered sample and licensed population inference | frame/content exclusions, eligible pool, selection/seed/order, lineage clusters, intended/realized mixture, weights, precision/stopping, invalid/missing policy, alternate-assembly sensitivity, bounded claim |
 | Persistent-workspace record | distinguish file presence and authored relevance from observed or causal use while preserving state integrity | inventory/overlay hashes, placement and valid time, permissions/network, typed and alternate relations, evidence-view-bound access/write, protected/mutable zones, pre/post mutations, cleanup |
 | Sparse workflow-transition record | distinguish one witness path and final state from run-attributable stage completion | pinned initial state, pre/postconditions, alternative paths, necessity/sufficiency, state delta, evidence views, downstream consequence, invalid-environment policy |
+| Role-versioned suite membership | distinguish coverage, regression, frontier, calibration, and retired uses of the same task | immutable membership hash, role/tier, admission evidence, outcome-selection flag and snapshot, exposure state, transition event, replacement bridge, retirement reason |
 | Counterfactual artifact record | establish editability and behavioral integrity rather than current-value similarity | native/executable/rendered/trace views, pinned engine, initial-to-final mutation surface, authoritative perturbations, dependency propagation, invariants, permitted formula/layout equivalence, witness health |
 | Action-safety record | distinguish source presence, attempted behavior, realized consequence, recovery, and useful completion | authority matrix, placement/exposure/adoption evidence, tool event, interceptor, pre/post state, severity/reversibility, residual harm, containment canaries, separate safety/utility outcomes |
 
@@ -827,6 +838,8 @@ fidelity separately from score calibration [EB, AP].
 | Evidence-centered design (ECBD) | edge-level intended-use→construct→content/treatment→assembly→response/score warrants | completed worksheet mistaken for support; paper-only evidence view; assembly named without sampling machinery; reviewer consensus mistaken for reliability | full immutable v1 paper and complete pinned worksheets; three purposive dependent NLP cases, no prospective framework validation or independent-review reliability [ECBD] |
 | Occupational artifact portfolio (GDPval) | explicit occupational frame, expert acquisition pipeline, multimodal witness artifacts, separate frame/content/assembly/inference denominators | equal task quotas laundered into work/economic representativeness; one witness treated as expert ceiling; pairwise preference treated as acceptance or productivity | full immutable v1 paper plus parsed 220-task post-v1 pinned release and one workbook pair; no probability sample, gold-selection record, augmentation trial, expert-population baseline, or release license [GDP] |
 | Persistent file workspace (Workspace-Bench) | workspace identity/placement, typed relevance and provenance hypotheses, alternate paths, observed-use and integrity records | scale or authored graph treated as causal use; task-local injection/placement ambiguity; judge-view mismatch; unclustered single runs and mutable releases | full immutable v4 paper plus pinned post-v4 code/data audit and 37-file targeted task trace; no base-workspace replay, immutable result inventory, professional validation, Lite-fidelity, or workspace-learning identification [WB] |
+| Session-derived workplace projection (EnterpriseClawBench) | observed-episode-to-counterfactual delta, hindsight firewall, equivalence disposition, and licensed-use record | real demand laundered into replay fidelity; omitted interaction/repair; answer-bearing hindsight; duplicated rubric dimensions; one-deployment generalization | full immutable v1 plus pinned post-paper release and two public trace audits; proprietary source pool/tasks/results and independent equivalence review unavailable [ECB] |
+| Broad expert executable portfolio (Agents' Last Exam) | expert→engineer→grader authority handoff, clean-start/verifier falsification, occupational denominators, and role-versioned living suites | nonempty cells mistaken for representativeness; deterministic proxy mistaken for professional closure; single runs; outcome-selected tiers; occupational/economic overclaim | full immutable v1 plus pinned post-paper release and three task traces; private pool, exact paper-time tree/results, licensed VM execution, expert reliability, and grader calibration unavailable [ALE] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -930,6 +943,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     artifact observations separately; identify recognition, procedural-guidance,
     and evaluator-cue interventions with matched near neighbors before attributing
     a final consequence to unprompted problem recognition.
+32. **Observed demand is not replay fidelity:** source episodes and rewritten counterfactuals have separate hashes, deltas, hindsight controls, equivalence dispositions, and licensed uses; real provenance cannot silently upgrade semantic equivalence.
+33. **A tier label is not suite identity:** immutable membership, admission snapshot, outcome-selection, exposure, role transitions, and bridges govern living-benchmark comparisons; outcome-informed routing is not intrinsic difficulty.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -963,6 +978,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Retrospective memory QA vs consequential action transfer | LongMemEval-V2 cleanly evaluates bounded evidence delivery but representation/reader/grader effects remain treatment components and no acting agent uses the memory [LM]. | Compare no-memory, evidence-only, and provenance-gated lessons on equivalent-form QA and held-out artifact/state action; plant stale, failed-attempt, contradiction, safe-alternative, harmful-transfer, and rollback cases. |
 | Unprompted recognition vs solving and execution | KWBench's cold gate combines cue extraction, framing, inquiry, action, artifact production, and judge behavior, with no matched framed condition or negative near neighbors [KW]. The internal replay establishes only staged instrumentation [PR]. | On expert-adjudicated positive/negative scenario pairs, cross situation-only, minimal-frame, and fully specified conditions; score cue, frame, inquiry, action, and artifact separately; repeat by scenario cluster and test alternate valid framings before licensing a recognition claim. |
 | Retrospective QA success vs safe held-out transfer | The internal memory replay plants QA-correct but harmful evidence-only transfer and safe provenance-gated promotion, but deterministically encodes its own expected causal story [XM]. | Run stochastic consumers on unseen task families with frozen memory packages; vary stale/contradicted/failed-attempt evidence, measure access/adoption/action/recovery, cluster by source lineage, and test rollback plus expert-grounded consequences. |
+| Real-session demand provenance vs source-to-task fidelity | EnterpriseClawBench provides real episode origin, but public traces show omitted repair, hindsight-derived answers, and rubric duplication while the proprietary pool blocks independent sampling and equivalence audit [ECB]. | Blind source users/independent experts to projected outputs; disposition each delta and omitted turn; compare faithful, demand-inspired, and synthetic licenses; sample rejected episodes; test preserved decisions, alternate paths, and acceptance judgments. |
+| Living difficulty tier vs stable comparison | ALE's tiers are partly outcome-informed and later release memberships/counts differ while labels persist; most reported cells are single runs [ALE]. | Freeze membership/admission outcomes and exposure state; repeat systems across old/new memberships plus an anchor bridge; estimate task/workflow uncertainty and report role-transition effects separately from ability change. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -1092,6 +1109,12 @@ them:
     labels. Deterministic replay and invalid-environment abstention establish
     instrumentation behavior only, not an agent treatment effect, expert validity,
     professional competence, prevalence, or cross-domain generality [KW, PR].
+20. **Completed initial-state conformance, not professional transition validity —
+    `build-task-initial-state-bypass-conformance`:** seven deterministic synthetic
+    cases distinguish valid creation, pre-satisfied/stale/copied outcomes, omitted
+    transition, a declared alternative, and invalid initialization. This validates
+    local fixture/scorer behavior only; real-task execution, alternate-path review,
+    expert adjudication, and adversarial grader calibration remain required [IS].
 
 ## Provenance keys
 
@@ -1249,3 +1272,19 @@ them:
   `pilots/experience-memory-transfer/README.md`; three builder-authored,
   deterministic synthetic conditions establish QA/action separation, harmful-
   transfer, promotion, and rollback fixture behavior only.
+- **[ECB]**
+  `papers/agent-benchmarks/2026-07-11-enterpriseclawbench-session-derived-validity.md`;
+  reviewed immutable v1 PDF/text and pinned official post-paper release paths and
+  hashes are recorded there. Proprietary sessions, 852 tasks, outputs, and result
+  records are unavailable; two public traces bound the projection findings.
+- **[ALE]**
+  `papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md`;
+  reviewed immutable v1 PDF/text plus pinned post-paper official release and three
+  task traces are recorded there. Release behavior cannot be projected backward,
+  and private tasks/results, licensed execution, expert reliability, repeated-run
+  uncertainty, occupational sampling, and economic claims remain unsupported.
+- **[IS]** `pilots/task-initial-state-conformance/conformance.json` and
+  `pilots/task-initial-state-conformance/replay-report.json`; seven builder-authored
+  deterministic cases grounded in [ALE]. They establish internal conformance only,
+  not verifier completeness, agent capability, professional validity, prevalence,
+  cross-domain generalization, or readiness.
