@@ -150,6 +150,7 @@ simulator identity, reset health, and the claims that survive those choices.
 | [AI Agent Reliability](../papers/agent-benchmarks/2026-07-11-agent-reliability-profile.md) | B | Separates accuracy from repeatability, perturbation sensitivity, confidence quality, and violation consequences while binding each estimate to a configured operational profile |
 | [LiveBench](../papers/agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | B | Makes benchmark renewal operational through rotating recent-source forms, temporary private roles, deterministic checks, and reruns, while exposing equivalent-form, outcome-conditioned selection, exposure, and grader-drift limits |
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
+| [BrowserGym](../papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md) | B | Separates useful runner/interface interoperability from unsupported evaluator, score, reset, or construct equivalence across adapted benchmark families |
 
 **Repository consequence:** Criterion/check contracts, metric-monitoring contracts, validity arguments, response matrices, and separate ranking versus absolute-capability claims. Grader identity includes rubric/examples, evidence view, criterion execution topology, score transformation, aggregation/tie policy, and configured rater. Agreement, panel-relative severity, fit, repeated-call stability, construct preservation, decision loss, cost, and audit burden remain separate outcomes; adjusted scores never overwrite raw observations or become adjudicated truth. Reliability is a conditional profile—not a system trait—indexed by configured system, task/form population, environment, time, intervention/exposure distribution, and consequence model. Accuracy, repeatability (including consistently wrong behavior), resource variation, perturbation effects, confidence quality, violation frequency, severity, remediation, and loss remain separate. Every perturbation needs independently supported preservation and exposure claims; wrapper recovery cannot count as agent recovery; confidence is licensed only for the decision time and evidence view at which it was elicited. Plural judgments remain immutable observations; aggregation is a versioned stakeholder/error-loss policy rather than discovered ground truth. Specification error, evidence gaps, rater instability, framework-conditioned disagreement, policy selection with dissent, and unresolved value conflict require distinct dispositions. The completed synthetic plural-judgment conformance slice exercises this boundary but supplies no prevalence, professional-consensus, or readiness evidence. Before the second pilot is interpreted, its adversarial audit should plant a pre-satisfied requirement, an unrelated record sharing the expected scalar, a title-only empty artifact, and one upstream defect with several descendant checks; readiness or duplicated consequences must not inflate progress.
 
@@ -168,6 +169,21 @@ mutable live web, unsupported authority tiers/80% threshold, missing result
 artifacts, and close post-v1 release bound it to Tier B evaluator-design evidence;
 its inspected default fail-open fallback directly motivates capability-claim
 abstention when verification is unavailable.
+
+A common runner adds an adapter boundary rather than removing benchmark identity.
+For every adapted family, preserve three independent records: the canonical
+benchmark contract (task/split, upstream dataset and evaluator, backend/state, and
+native defaults), the adapter realization (field/action/reward/termination/error
+maps plus transformed or dropped semantics), and the trial policy (agent,
+observation/action defaults, budgets, retries, invalid handling, resets, and
+aggregation). BrowserGym's inspected MiniWoB, WebArena, AssistantBench, and later
+WebArena Verified paths retain materially different reward and evaluator meanings
+behind one scalar interface; its 2026 release is not the 2024 paper implementation.
+Therefore report family-specific scores and typed retry/reset/invalid ledgers.
+Native-versus-adapted differential tests from frozen state—comparing score,
+termination, side effects, and evaluator evidence—are required before a semantic-
+preservation claim. API compatibility alone licenses no pooled capability,
+measurement-equivalence, safety, or professional-validity claim.
 
 ## 6. Failures should generate causal diagnostic evidence
 

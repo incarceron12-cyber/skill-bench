@@ -842,6 +842,39 @@ the response matrix. Attribute an adapter, provider, or environment root only
 when event evidence supports it; otherwise use `indeterminate` rather than
 turning operational missingness into an agent failure.
 
+#### Adapter interoperability is not measurement equivalence
+
+For benchmark-family adapters, split configured evaluation into three records:
+
+1. **Canonical benchmark contract:** native task/split, upstream dataset/package,
+   evaluator composition and evidence views, backend image/state, seeds, and
+   intended defaults.
+2. **Adapter realization:** independently versioned field/action mappings,
+   observation transforms, reward/termination/error translations, defaults,
+   unsupported or dropped semantics, and adapter-specific dependencies.
+3. **Trial policy:** scaffold/model, information and action treatments, budgets,
+   parser and infrastructure retries, invalid/replacement rules, reset evidence,
+   score inclusion, and aggregation.
+
+A shared `reset/step/reward` transport makes trials runnable, not scores
+exchangeable. BrowserGym's inspected MiniWoB, WebArena, AssistantBench, and later
+WebArena Verified adapters preserve different evaluator meanings while sometimes
+changing viewport, trajectories, parsing, error handling, and component-status
+visibility. The official snapshot is from 2026, not the 2024 manuscript-time
+implementation; exact paper reproduction and native/adapted equivalence remain
+unavailable [BG]. Treat all defaults as interventions, keep typed component and
+invalid statuses instead of flattening them to ordinary zeros, and retain every
+attempt, retry cause, reset attestation, replacement, and inclusion decision.
+
+Semantic-preservation claims require native-versus-adapted differential cases
+from the same frozen state, comparing score, termination, side effects, evaluator
+evidence, and invalid classification. Until those pass, aggregate only within a
+declared family/score contract with cluster- and repeat-aware uncertainty. A
+common runner alone cannot license a pooled capability scale, safety/isolation,
+professional validity, or measurement equivalence. Existing configured-system,
+execution-validity, task-health, metric, validity, artifact-view, and trace
+contracts are the implementation homes; no parallel adapter schema is implied.
+
 ### 4.2 Retrieval is governed information flow, not automatic leakage
 
 Retrieval is often part of the professional construct. A source becomes leakage
@@ -1047,6 +1080,7 @@ fidelity separately from score calibration [EB, AP].
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
+| Cross-family execution substrate (BrowserGym) | canonical benchmark contract + adapter realization + trial-policy identity; differential conformance | common method signature or scalar hides heterogeneous evaluator, reset, retry, backend, observation, and error semantics | full immutable v2 paper plus inspected March 2026 official release; broad transport evidence, not exact-paper reproduction, native/adapted equivalence, common scale, safety, or professional validity [BG] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
 | Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
 | Evolving-information workspace evaluation (ClawArena) | evidence-emission/update map, persistent workspace state, and update-to-check crosswalk | authored omniscience, untyped claim transitions, answer-bearing feedback, explicit preferences, mostly syntactic checks, unsafe shell execution, one-run order effects | full immutable v2 paper plus inspected official v1.0.0 and later release with timing boundaries; 337 rounds and 327 checker scripts audited, not professional-truth or reliability evidence [CA] |
@@ -1176,6 +1210,10 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     check needs a trigger, fair basis, typed applicability/evidence, overlap graph,
     and generator identity, while absent mandatory verification blocks capability
     interpretation rather than failing open.
+39. **Interface compatibility is not measurement compatibility:** preserve native
+    benchmark, upstream evaluator/dataset/backend, adapter transformations and
+    losses, and trial policy as independent identities; require differential
+    conformance before semantic-preservation or pooled-score claims.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1192,6 +1230,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Useful narrow result vs broad capability/readiness claim | Claim-centered validity allows a criterion result to remain useful while rejecting wider construct or decision claims, but reviewer reliability is untested [VA]. | Have independent reviewers construct claim ladders for the same pilot trials; measure disagreement and test whether the contract rejects planted claim upgrades. |
 | Realistic trap vs benchmark gotcha | Decision-boundary traps can expose expert judgment, but the reviewed consulting corpus and graders are not auditable and live values can drift [CT]. | Instantiate the same critical-incident record in two structurally different domains; plant naive/correct variants and test fairness, typed evidence checks, threshold flips, and predicted failure localization. |
 | Ecological harness comparison vs valid common envelope | Native harness behavior is a legitimate bundled treatment, but Harness-Bench's later runner and the LH pilot show that fresh directories and shared prompts do not establish equivalent filesystem, network, service, or measurement opportunity [HB, PX]. | Run tool-level denial/allow canaries and adapter conformance checks before each cell; retain service failures; repeat matched cells; estimate a contrast only when both arms satisfy one hashed envelope and mandatory-evidence policy. |
+| Shared runner breadth vs measurement equivalence | BrowserGym runs heterogeneous families through one interface, but inspected adapters retain different rewards/evaluators and transform observations, trajectories, parsing, errors, retries, and resets; paper results lack native/adapted agreement and clustered repeats [BG]. | From frozen native states, run matched native/adapted cases and compare score, termination, side effects, typed evaluator evidence, invalidity, resets, and all attempts; report family scores until preservation and any common-scale validity are independently supported. |
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
@@ -1395,6 +1434,13 @@ them:
   reviewed immutable v1 PDF/text and inspected official post-paper release
   paths/hashes are recorded there. The release is implementation evidence, not
   the exact paper-time runner or empirical result archive.
+- **[BG]**
+  `papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md`;
+  reviewed immutable v2 PDF/text and inspected official March 2026 release paths
+  and hashes are recorded there. The release is not manuscript-time identity;
+  adapter inspection establishes heterogeneous implementation semantics, not
+  native/adapted equivalence, common construct measurement, safety, professional
+  validity, or exact reproduction of the reported experiment.
 - **[PX]** `pilots/lh-skill-adoption/validation-plan.md` and
   `pilots/lh-skill-adoption/ablation/isolated-agent-pair-v6/pair-summary.json`;
   local execution evidence records the invalid escaped runs, tool-scoped
