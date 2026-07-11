@@ -63,6 +63,18 @@ The grader emits `check-result-v0.1`. It checks six deliberately inspectable pro
 
 This is intentionally **not** an entailment grader or a substitute for professional judgment. Exact string preservation makes a bounded provenance failure surface executable; contradiction reconciliation, causal appropriateness, decision quality, and alternative valid phrasings remain human-calibrated. The distinction follows the consulting review's separation of source existence, support, authority, scope, and freshness rather than pretending one citation check establishes them all.
 
+### Prospective provenance contract v2
+
+A separately versioned prospective contract is published at `provenance-v2/public-artifact-contract-v2.md`, with executable grader `scripts/grade_lh_evidence_v2.py`, frozen conformance corpus, and abstention-boundary review. It discloses exact `[E##]`/`[E01, E02]` syntax and the `{{PROSPECTIVE:<numeric program-set value>}}` marker. Only source-value matching abstains inside a valid marker; citations, matrix links, and row fidelity remain checked. The legacy grader and all v8/v10 records are unchanged. The independent builder review demonstrates that semantic misuse of the marker remains machine-undetectable, so a v2 pass licenses neither entailment nor Skill-effect, capability, expert-validity, or readiness claims.
+
+Run it prospectively with:
+
+```bash
+python scripts/grade_lh_evidence_v2.py \
+  --matrix outputs/evidence-matrix.csv \
+  --memo outputs/recommendation.md
+```
+
 The private internal calibrator can also be exercised with:
 
 ```bash
