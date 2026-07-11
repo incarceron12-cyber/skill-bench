@@ -34,3 +34,9 @@ than silently discarded; they exposed an overly broad canary string matcher.
 These runs measure deterministic artifact proxies, not actual recipient use.
 They support no human-usability, expert-validity, capability, cross-domain
 generalization, treatment-effect, or readiness claim.
+
+`downstream_launcher.py` consumes each frozen v3 handoff in a second isolated
+workspace containing no producer source pack, trace, private rubric, or
+repository. The predeclared single attempts and invalid outcomes are retained
+under `trials/downstream-agent-v1/`; its diagnostic separates an observed
+public-path contract defect from producer, environment, and grader evidence.

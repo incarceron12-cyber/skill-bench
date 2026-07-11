@@ -1,4 +1,4 @@
-import copy, json, unittest
+import copy, json, tempfile, unittest
 from pathlib import Path
 import importlib.util
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,7 +11,12 @@ LAUNCH_SPEC = importlib.util.spec_from_file_location("handoff_launcher", ROOT / 
 assert LAUNCH_SPEC is not None and LAUNCH_SPEC.loader is not None
 LAUNCHER = importlib.util.module_from_spec(LAUNCH_SPEC)
 LAUNCH_SPEC.loader.exec_module(LAUNCHER)
+DOWN_SPEC = importlib.util.spec_from_file_location("handoff_downstream", ROOT / "pilots/handoff-usability-conformance/downstream_launcher.py")
+assert DOWN_SPEC is not None and DOWN_SPEC.loader is not None
+DOWNSTREAM = importlib.util.module_from_spec(DOWN_SPEC)
+DOWN_SPEC.loader.exec_module(DOWNSTREAM)
 TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/isolated-agent-v3"
+DOWN_TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/downstream-agent-v1"
 
 class HandoffUsabilityTests(unittest.TestCase):
     def setUp(self): self.data = json.loads(FIXTURE.read_text())
@@ -54,4 +59,23 @@ class HandoffUsabilityTests(unittest.TestCase):
             observed = LAUNCHER.grade(case_id, root / "trial/outputs/handoff.json")
             self.assertEqual(expected, observed)
             self.assertEqual("pass", observed["outcome"])
+    def test_downstream_consumer_isolation_and_lineage(self):
+        for case_id, case in DOWNSTREAM.CASES.items():
+            root = DOWN_TRIAL / case_id
+            report = json.loads((root / "trial-report.json").read_text())
+            canary = json.loads((root / "preflight/canary-report.json").read_text())
+            self.assertTrue(report["valid_environment"]); self.assertFalse(report["complete"])
+            self.assertTrue(canary["passed"])
+            self.assertEqual(set(canary["input_inventory"]), {"public-task.md", "handoff.json", "manifest.json"})
+            self.assertEqual(DOWNSTREAM.sha(case["handoff"]), report["lineage"]["consumer_input_sha256"])
+            self.assertEqual("not_scored", report["grader"]["outcome"])
+    def test_downstream_grader_replay_on_declared_operations(self):
+        examples = {
+            "analysis-to-decision-memo": {"decision":"approve","scope":"EU hosting renewal","evidence_refs":["supplier-scorecard-v1","risk-register-v2"],"recorded_action":"Record approval","risk_control":"Calendar control for 30-day notice"},
+            "incident-record-to-operations": {"action":"block","scope":"payments-api eu-west","evidence_refs":["incident-timeline-v3","service-runbook-v5"],"owner":"database on-call","requested_confirmation":"database failover confirmation","rationale":"precondition unmet"},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            for case_id, value in examples.items():
+                artifact = Path(directory) / f"{case_id}.json"; artifact.write_text(json.dumps(value))
+                self.assertEqual("pass", DOWNSTREAM.grade(case_id, artifact, DOWNSTREAM.CASES[case_id]["handoff"])["outcome"])
 if __name__ == "__main__": unittest.main()
