@@ -50,8 +50,27 @@ Most relevant sources:
 | [Data Therapist](../papers/agent-benchmarks/2026-07-11-data-therapist-tacit-knowledge-elicitation.md) | A | Makes the elicitation instrument and its path-dependent selection effects visible; separates annotation yield from corroboration, scope, transformation fidelity, and benchmark utility |
 | [SimInstruct](../papers/agent-benchmarks/2026-07-11-siminstruct-simulated-novice-elicitation.md) | B | Treats simulated interlocutor behavior as an elicitation treatment; motivates productive-friction probes, phase labels, correction lineage, and separate participation-versus-utility outcomes |
 | [EnterpriseClawBench](../papers/agent-benchmarks/2026-07-11-enterpriseclawbench-session-derived-validity.md) | A | Separates observed workplace demand from the rewritten counterfactual task; requires projection deltas, hindsight controls, equivalence review, and a claim licensed to the evidence actually preserved |
+| [AlphaEval](../papers/agent-benchmarks/2026-07-11-alphaeval-production-grounded-validity.md) | A | Separates current company-demand provenance from requirement projection, grader validity, configured-package comparison, occupational inference, and economic value |
+| [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Types codified knowledge by execution semantics and bounds a co-designed package effect away from tacit transfer, expert equivalence, and cross-domain generalization |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
+
+The combined evidence supports a **demand-to-transfer chain**, not a shortcut:
+`demand provenance → elicitation authority → representation/codification →
+source-to-task projection → configured intervention → independent measurement →
+bounded package/transfer/use claim`. AlphaEval provides meaningful evidence for
+prospective partner demand, recurring co-design, package construction, and selected
+configured-package outcomes; its seven purposive partners, private 94-task corpus,
+unreleased transformations/results, nonfactorial scaffold matrix, winner-only
+repeats, and post-v1 framework release block occupational, readiness, causal
+scaffold, and economic-value promotion. The Siemens case provides evidence that a
+bundled rules/prompt/routing/RAG package improved five selected, rule-aligned
+visualization outputs; two eliciting experts, task–rule–criterion co-design, no
+component ablations, no rater reliability, and one organization/workflow block
+tacit-transfer, expert-equivalence, and cross-domain claims. Confidentiality can
+legitimately prevent release, but it remains missing audit evidence rather than
+positive validity evidence. Existing participation, expertise-transfer, projection,
+configured-system, metric, task-health, and validity records are the durable homes.
 
 ## 2. The benchmark should represent broad knowledge work without pretending a small suite represents all work
 
@@ -164,6 +183,7 @@ simulator identity, reset health, and the claims that survive those choices.
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Shows why expert-written examples and criteria can improve judge agreement while also anchoring outputs |
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Makes the harness and execution boundary explicit so a skill effect is not confused with launcher, tool, or isolation differences |
 | [KWBench](../papers/agent-benchmarks/2026-07-11-kwbench-unprompted-problem-recognition.md) | A | Identifies situation framing before named-workflow execution, while showing that a cold final-artifact gate does not isolate recognition from inquiry, action, domain knowledge, or grading |
+| [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Demonstrates a bounded package effect while exposing representation semantics, authorship overlap, missing component ablations, and the need for held-out independent measurement |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
 

@@ -38,6 +38,8 @@ The review files below are deep reviews unless their own evidence-status section
 | [Domain-Expert Participation Ethnography](agent-benchmarks/2026-07-10-domain-expert-participation-ethnography.md) | How should purpose, authority, transformation, approval, reciprocity, and withdrawal be governed? | participation, consent, incentives |
 | [Expert Disagreement in Human Feedback](agent-benchmarks/2026-07-11-expert-disagreement-human-feedback-validity.md) | How should genuine expert disagreement affect labels, adjudication, and benchmark claims? | disagreement, authority, human evaluation |
 
+**Demand-to-transfer synthesis:** Read [AlphaEval](agent-benchmarks/2026-07-11-alphaeval-production-grounded-validity.md) with [Industrial expertise codification](agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md). Together they motivate a bounded chain from production demand through elicitation authority, representation, task projection, configured intervention, and independent measurement to a claim ceiling. Their evidence supports demand/co-design provenance and selected package effects—not occupational representativeness, tacit transfer, expert equivalence, production readiness, economic value, or cross-domain capability.
+
 ## 3. Realistic knowledge work, workflows, workspaces, and artifacts
 
 | Review | Primary question | Secondary tags |

@@ -396,7 +396,57 @@ Observed demand is provenance evidence, not semantic-equivalence evidence. For e
 
 EnterpriseClawBench demonstrates scalable session projection, but its proprietary 852-task pool prevents external source sampling or rewrite audit. In one public trace a later user-authored image analysis becomes answer-bearing rubric content for a fresh single-turn task, changing repair-in-interaction into visual analysis; its public rubrics also copy identical guidance across nominally distinct score dimensions. This supports demand provenance and pipeline reproducibility, not replay fidelity, independent rubric validity, enterprise representativeness, or economic claims [ECB].
 
-### 2.5b Context authority and downstream consequence are separate warrants
+### 2.5b Production demand and codified expertise require independent claim promotion
+
+Current company demand and expert rules are valuable upstream evidence, but neither
+is a transferable-validity label. Preserve one linked, typed chain:
+
+```text
+demand provenance → elicitation authority → representation/codification
+  → source-to-task projection → configured intervention
+    → independent measurement → bounded package/transfer/use claim
+```
+
+At the demand edge, record stakeholder, workflow, recipient, consequential decision,
+acceptance/rework boundary, candidate and rejected requirements, sampling frame, and
+confidentiality/nonrelease status. At elicitation and representation, preserve who
+may speak for which criterion; source locators and informal channels; disagreements,
+read-back, and transformation approval; and whether each primitive is a
+`deterministic_rule`, `contextual_procedure`, or `open_judgment`, with applicability,
+exceptions, implementation locus, and observable consequence. At projection, retain
+all scoping, anonymization, self-containment, environment substitution, artifact,
+oracle, criterion, weight, and threshold deltas. Agent-conditioned repair or quality-
+bar change belongs in task-health history and requires frozen anchors or bridges.
+Confidentiality may justify nonrelease, but unavailable source/task/result lineage is
+missing audit evidence—not affirmative evidence of fidelity [AE, IC].
+
+At intervention and measurement, disclose authorship overlap across expert source,
+elicitor, coder, skill author, task/reference/criterion/grader author, scenario
+selector, and evaluator. Hold configured-system identity fixed where possible; use
+component ablations for rules, contextual guidance, routing, retrieval, and the full
+package; repeat held-out incidents; bind raters to criterion-specific authority and
+evidence views; and estimate rater reliability and task/rater dependence. Preserve
+four claim ceilings: `rule_execution`, `package_efficacy`, `contextual_transfer`, and
+`professional_equivalence_or_readiness`. A co-designed package effect can support the
+first two while shared task–rule–criterion content blocks the latter two.
+
+AlphaEval supplies prospective demand and recurring co-design evidence for 94
+reported private tasks from seven purposively selected partners, plus selected
+configured-package outcomes. Its private transformations/results, nonfactorial
+model–scaffold matrix, winner-only repeats, point-level rather than end-to-end rater
+validation, and post-v1 framework release do not establish occupational sampling,
+causal scaffold effects, production readiness, or economic value. Multiplying a
+rubric score by estimated human cost does not measure accepted work, productivity,
+replacement value, or consequence [AE]. The Siemens case supplies a credible bundled
+rules/prompt/routing/RAG package effect on five selected rule-aligned visualization
+outputs. Two experts, one organization/workflow, no component ablation, no rater-
+reliability analysis, and overlapping authorship block tacit-transfer, expert-
+equivalence, non-expert learning, and cross-domain claims [IC]. These cases refine
+existing expertise-transfer, participation, projection, procedural-skill,
+configured-system, metric, task-health, and validity objects; they do not justify a
+parallel schema or a domain commitment.
+
+### 2.5c Context authority and downstream consequence are separate warrants
 
 Context presence is neither permission to use it nor evidence that an inference
 was causally used or beneficial. Preserve a claim-level ladder:
@@ -1207,6 +1257,8 @@ fidelity separately from score calibration [EB, AP].
 | Occupational artifact portfolio (GDPval) | explicit occupational frame, expert acquisition pipeline, multimodal witness artifacts, separate frame/content/assembly/inference denominators | equal task quotas laundered into work/economic representativeness; one witness treated as expert ceiling; pairwise preference treated as acceptance or productivity | full immutable v1 paper plus parsed 220-task post-v1 pinned release and one workbook pair; no probability sample, gold-selection record, augmentation trial, expert-population baseline, or release license [GDP] |
 | Persistent file workspace (Workspace-Bench) | workspace identity/placement, typed relevance and provenance hypotheses, alternate paths, observed-use and integrity records | scale or authored graph treated as causal use; task-local injection/placement ambiguity; judge-view mismatch; unclustered single runs and mutable releases | full immutable v4 paper plus pinned post-v4 code/data audit and 37-file targeted task trace; no base-workspace replay, immutable result inventory, professional validation, Lite-fidelity, or workspace-learning identification [WB] |
 | Session-derived workplace projection (EnterpriseClawBench) | observed-episode-to-counterfactual delta, hindsight firewall, equivalence disposition, and licensed-use record | real demand laundered into replay fidelity; omitted interaction/repair; answer-bearing hindsight; duplicated rubric dimensions; one-deployment generalization | full immutable v1 plus pinned post-paper release and two public trace audits; proprietary source pool/tasks/results and independent equivalence review unavailable [ECB] |
+| Production-demand task construction (AlphaEval) | demand/projection/measurement/evolution ledgers; configured-package identity; criterion-version bridges | company provenance laundered into projection fidelity, occupational coverage, readiness, scaffold causality, or score-times-wage value | full immutable v1 plus pinned three-day-post-v1 framework release; 94 private tasks, transformations, outputs, and results unavailable, with seven purposive partners and nonfactorial package evidence [AE] |
+| Industrial expertise codification | representation semantics, authorship-separation matrix, component ablations, and four-level transfer claim ceiling | selected co-designed rule-conformance effect laundered into tacit transfer, non-expert learning, expert equivalence, or cross-domain generalization | full immutable v1 paper; five selected artifacts from one organization/workflow, no released system/data/ratings, component ablation, repeated generation, or rater reliability [IC] |
 | Broad expert executable portfolio (Agents' Last Exam) | expert→engineer→grader authority handoff, clean-start/verifier falsification, occupational denominators, and role-versioned living suites | nonempty cells mistaken for representativeness; deterministic proxy mistaken for professional closure; single runs; outcome-selected tiers; occupational/economic overclaim | full immutable v1 plus pinned post-paper release and three task traces; private pool, exact paper-time tree/results, licensed VM execution, expert reliability, and grader calibration unavailable [ALE] |
 | Conditional agent reliability profiling | response matrix over matched repeats, preserved perturbations, decision-time confidence, and typed consequences | repeatability mistaken for capability; authored variants/exposure treated as deployment robustness; wrapper recovery credited to agent; post-hoc confidence and generic severity promoted to readiness | full immutable v3 paper and protocol-level review; two benchmark families, five incompletely controlled repeats, unvalidated interventions/severity, and no paper-pinned experiment code [AR] |
 | Work-activity and handoff-centered reporting | many-to-many activity map, tested-setting claim subtraction, persistent product bound to recipient/next operation, strongest and excluded claims | preliminary labels mistaken for representative coverage; visual realism or product polish mistaken for responsibility, downstream usability, or deployment evidence | full immutable v1 paper; LLM-mediated O*NET/ESCO descriptive taxonomy and three purposive report demonstrations, with no reliability, stability, reconstruction, recipient-use, or framework-effect validation [DR] |
@@ -1341,6 +1393,10 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     and collateral deltas, evaluator sufficiency, and licensed claims separate;
     integrated apps or supplied histories cannot silently confer occupational,
     persistent-memory, collaboration, professional-validity, or readiness claims.
+42. **Demand provenance is not expertise-transfer validity:** preserve elicitation
+    authority, representation semantics, task projection, configured intervention,
+    independent measurement, and claim ceiling; co-design, production origin, or a
+    package effect cannot silently confer transfer, equivalence, readiness, or value.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1687,6 +1743,18 @@ them:
   reviewed immutable v1 PDF/text and pinned official post-paper release paths and
   hashes are recorded there. Proprietary sessions, 852 tasks, outputs, and result
   records are unavailable; two public traces bound the projection findings.
+- **[AE]**
+  `papers/agent-benchmarks/2026-07-11-alphaeval-production-grounded-validity.md`;
+  reviewed immutable v1 PDF/text plus pinned three-day-post-v1 official release
+  paths and hashes are recorded there. The private 94-task corpus, source-to-task
+  deltas, results, and full labels remain unavailable; production, occupational,
+  causal-scaffold, readiness, and economic-value claims are unsupported.
+- **[IC]**
+  `papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md`;
+  reviewed immutable v1 PDF/text hashes are recorded there. Five selected
+  co-designed artifacts from one Siemens workflow support a bounded package effect,
+  not tacit transfer, non-expert learning, expert equivalence, cross-domain
+  generalization, operational benefit, or readiness.
 - **[HC]**
   `papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md`;
   reviewed immutable v1 PDF/text and inspected one-day-post-v1 official release
