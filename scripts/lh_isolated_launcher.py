@@ -35,6 +35,7 @@ SOURCE_FILES = (
 )
 SKILL = PILOT / "public-skill.md"
 TASK = PILOT / "ablation/agent-attempts-20260710/no_skill_01/task.md"
+ARTIFACT_CONTRACT = PILOT / "provenance-v2/public-artifact-contract-v2.md"
 PRIVATE_PROBES = (
     "/home/sam/skill-bench/pilots/lh-skill-adoption/rubric-skeleton.json",
     "/home/sam/skill-bench/pilots/lh-skill-adoption/calibration/passing/recommendation.md",
@@ -85,6 +86,9 @@ def _materialize(condition: str, run_root: Path) -> dict[str, Path]:
     (task_root / "outputs").mkdir()
     for source in SOURCE_FILES:
         shutil.copy2(source, inputs / source.name)
+    # The versioned provenance convention is a public artifact contract, not a
+    # treatment. Expose the exact same read-only file to both matched arms.
+    shutil.copy2(ARTIFACT_CONTRACT, task_root / "artifact-contract.md")
     if condition == "public_skill":
         shutil.copy2(SKILL, task_root / "public-skill.md")
     _copy_runtime_profile(profile)
@@ -140,6 +144,7 @@ result = {
   "observed_cwd": os.getcwd(),
   "input_readable": ok_read("inputs/decision-evidence.csv"),
   "manifest_readable": ok_read("inputs/manifest.json"),
+  "artifact_contract_readable": ok_read("artifact-contract.md"),
   "skill_readable": ok_read("public-skill.md"),
   "private_reads_denied": {p: denied_read(p) for p in PRIVATE},
   "parent_search": search_tool("skill-bench", target="files", path="/home/sam", limit=20),
@@ -167,6 +172,7 @@ def canary(condition: str, run_root: Path) -> dict[str, Any]:
         and observed.get("observed_cwd") == "/trial"
         and observed.get("input_readable") is True
         and observed.get("manifest_readable") is True
+        and observed.get("artifact_contract_readable") is True
         and observed.get("skill_readable") is expected_skill
         and all(observed.get("private_reads_denied", {}).values())
         and "skill-bench" not in str(observed.get("parent_search", ""))
@@ -178,6 +184,7 @@ def canary(condition: str, run_root: Path) -> dict[str, Any]:
         "condition": condition, "passed": passed, "model_calls": 0,
         "launcher_sha256": sha256(Path(__file__)),
         "source_hashes": {p.name: sha256(p) for p in SOURCE_FILES},
+        "artifact_contract_sha256": sha256(ARTIFACT_CONTRACT),
         "skill_sha256": sha256(SKILL) if expected_skill else None,
         "isolation_substrate": "bubblewrap mount namespace",
         "tool_interface": "Hermes tools.file_tools read/search/write",
@@ -240,6 +247,7 @@ def run_trial(condition: str, run_root: Path) -> dict[str, Any]:
             "toolsets": ["file"], "safe_mode": True, "invocation": "oneshot",
         },
         "task_sha256": sha256(TASK), "launcher_sha256": sha256(Path(__file__)),
+        "artifact_contract_sha256": sha256(ARTIFACT_CONTRACT),
         "artifacts": artifacts,
         "interpretation_boundary": "One attempt in one arm is execution evidence only; no condition effect, professional validity, or release readiness is licensed.",
     }
