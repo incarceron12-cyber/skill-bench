@@ -22,6 +22,8 @@ This file tracks benchmark families relevant to `skill-bench`. For grouped concl
 | ClawsBench | Productivity agents + safety | Simulated workspace services | API actions / task completion | State-based task success and safety | Important for productivity-agent risks | How to include safety and prompt injection? |
 | SWE-bench / Terminal-Bench | Coding / terminal tasks | Repos or terminal envs | Patches / terminal outcomes | Tests | Shows value of executable scoring | What analogs exist for decks/spreadsheets/memos? |
 | LiveBench | Rotating broad LLM capability forms under limited public exposure | Recent competitions/articles/datasets plus procedural variants; temporary private slice | Short answers, code, tables, constrained text | Exact/regex/symbolic/executable/task-specific checks | Makes source age, exposure role, form renewal, grader revision, rerun cost, and leaderboard version explicit | Difficulty-conditioned renewal changes the estimand; timestamp is not exposure proof; equivalent-form linkage and grader reliability remain weak |
+| MMLU → MMLU-Pro | Broad academic/professional exam knowledge → harder, reasoning-weighted multiple choice | Public static questions; 57 subjects → 14 domains and ten choices | One selected option, optionally with CoT | Exact-match macro/domain accuracy | Preserves a cheap common interface; MMLU-Pro demonstrates renewed headroom and lower tested prompt sensitivity | Difficulty/model-assisted filtering changes the population; subject breadth is not work sampling; hardness and CoT gain do not establish professional reasoning validity |
+| HumanEval → LiveCodeBench | Standalone function synthesis → rotating contest problems and generation/repair/execution/output scenarios | Docstrings/tests → timestamped contest statements, programs, inputs, and execution feedback | Python functions/programs or predicted outputs | Hidden tests, exact outputs, pass@k | Functional tests admit alternative implementations; timestamped renewal and plural scenarios expose failures hidden by generation-only scores | Tests observe only encoded consequences; pass@k is budget-conditioned; cutoff dates do not prove non-exposure; rotating difficulty/source mix breaks naive trends |
 | PaperBench / PresentBench | Research replication / presentations | Papers, specs | Artifacts | Task-specific / judge scoring | Adjacent artifact-generation benchmarks | How mature are methods? |
 
 The cross-family evolution analysis and retain/repair/test decisions are in
@@ -43,6 +45,13 @@ Its central conclusion is that exact, executable, state, artifact, rubric,
 expert, psychometric, validity, and lifecycle systems repair different links;
 no observer family dominates, and form or grader renewal is itself a
 measurement intervention requiring immutable identity and bridge evidence.
+
+The reasoning/coding evolution analysis is in
+[`concepts/reasoning-coding-benchmark-evolution.md`](concepts/reasoning-coding-benchmark-evolution.md).
+It shows that adoption often follows a low-friction common interface, while
+successor hardness, freshness, executable grading, and larger execution units
+repair different links. Difficulty filtering and rolling forms change the task
+population; executable checks relocate rather than eliminate the oracle.
 
 ## How to use this landscape
 

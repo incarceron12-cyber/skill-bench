@@ -55,6 +55,8 @@ The review files below are deep reviews unless their own evidence-status section
 
 **Interactive-family synthesis:** [Web, tool-use, and computer-use benchmark evolution](../docs/concepts/web-tool-computer-benchmark-evolution.md) compares full immutable primary sources for GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp. It traces answer→action→state→policy/user→repeated-outcome measurement, records retain/repair/test decisions, and keeps BrowserGym and OSWorld 2.0 as explicit successor audit gaps.
 
+**Reasoning/coding synthesis:** [Reasoning and coding benchmark evolution](../docs/concepts/reasoning-coding-benchmark-evolution.md) compares full primary papers for MMLU, MMLU-Pro, HumanEval, and LiveCodeBench plus pinned current successor releases. It separates low-friction adoption, evidenced headroom/prompt stability, executable equivalence, and rolling freshness from unsupported professional-validity, contamination-free, and longitudinal-trend claims.
+
 ## 4. Rubrics, graders, raters, and artifact evidence
 
 | Review | Primary question | Secondary tags |
