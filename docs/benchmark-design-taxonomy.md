@@ -177,6 +177,54 @@ builder-authored and deterministic. It establishes instrumentation behavior only
 not expert validity, agent capability, a treatment effect, prevalence, or
 cross-domain generalization [PR].
 
+### 2.2b Professionally correct non-completion is a counterfactual action contract
+
+A request to produce an artifact is not always an obligation to complete it.
+Represent stop, refuse, escalate, clarify, revise, preserve, and proceed as
+first-class terminal actions when disclosed evidence and professional duties make
+them legitimate. Author the decision boundary as:
+
+```text
+apparent action + requesting authority → observable disqualifying evidence
+  → threshold and legitimate alternatives → selected substantive action
+    → required state/communication consequences + prohibited collateral harm
+```
+
+The record must preserve the action that would have been appropriate absent the
+disqualifying evidence; evidence locator, visibility, authority, and strength;
+decision threshold and uncertainty; permissible alternatives; abstention or
+escalation conditions; state that must change or remain unchanged; recipient and
+communication obligation; and prohibited cost, disclosure, fabrication, or other
+harm. Keep decision correctness, rationale evidence, artifact-state preservation,
+communication quality, resource use, and collateral harm as separate observations.
+Substantive refusal is not a keyword match, and a well-worded dissent does not
+prove that the prohibited action was avoided.
+
+Every stopping form needs a matched case where persistence is correct; every
+dissent form needs a matched case where compliance with legitimate authority is
+correct. Vary evidence strength and authority legitimacy so the estimand is
+calibrated action selection rather than generic caution or contrarianism. Admit
+professionally equivalent realizations and test lexical or model graders with
+positive paraphrases, semantically wrong keyword-bearing negatives, and retained
+false-accept/false-reject adjudications. AARRI supplies 82 inspectable authored
+research episodes and directly demonstrates one regex false rejection, but no
+sampling frame, contributor inventory, expert/novice contrast, human baseline,
+agreement, repeated trials, clustered uncertainty, verifier-wide audit, exact
+configuration record, contamination-safe split, environment canaries, or
+paper-pinned release [AA]. Treat its incidents and action categories as design
+hypotheses, not validated researcher-quality measures or a research-domain scope
+commitment.
+
+**Invariant:** a completion score must never encode professionally correct
+non-completion as ordinary failure, and no lexical check may stand in for the
+substantive action or preserved consequence. **Validation experiment:** construct
+matched persist/stop and comply/dissent forms, cross authority legitimacy and
+evidence strength, then measure action, state, communication, harm, lexical-grader
+confusion, and semantic adjudication separately with task-clustered repeats.
+Existing task/check, artifact/state, action-safety, trace, task-health, metric, and
+validity records are the implementation homes; this evidence does not justify a
+parallel schema or pilot.
+
 ### 2.3 A rubric is a dependency-aware evidence model
 
 Rubric decomposition makes expert attention inspectable, but does not make it
@@ -1388,3 +1436,11 @@ them:
   tail estimates, cross-domain reliability ordering, prospective predictability,
   calibrated consequence loss, deployment readiness, or certification; the
   inspected implementation commit is not paper-time identity.
+- **[AA]**
+  `papers/agent-benchmarks/2026-07-11-aarri-research-judgment-lifecycle.md`;
+  reviewed immutable v1 PDF/text and acquisition-time official release archive
+  paths and hashes are recorded there. The 82 authored AI-research tasks and
+  descriptive one-trial configured-system results expose consequence-bearing
+  non-completion and verifier false rejection; they do not establish sampling,
+  professional construct validity, human ease, reliability, causal harness
+  effects, cross-domain transfer, or paper-time release identity.
