@@ -16,11 +16,36 @@ class ExperienceMemoryTransferTests(unittest.TestCase):
         validate_file(FIXTURE, check_paths=True)
 
     def test_replay_separates_qa_from_action(self):
-        cells = replay(self.package)
+        cells = replay(self.package)["memory_cells"]
         self.assertTrue(cells["evidence_only"]["qa_correct"])
         self.assertFalse(cells["evidence_only"]["action_safe"])
         self.assertTrue(cells["evidence_only"]["harmful_transfer"])
         self.assertTrue(cells["provenance_gated_promoted_lesson"]["action_safe"])
+
+    def test_consequence_replay_separates_failure_boundaries(self):
+        result = replay(self.package)
+        cases = result["consequence_cases"]
+        self.assertEqual(cases["summary-omission"]["classification"], "retrieval_failure")
+        self.assertEqual(cases["stale-adoption"]["classification"], "stale_evidence_failure")
+        self.assertEqual(cases["transition-missed"]["classification"], "state_transition_failure")
+        self.assertEqual(cases["collateral-mutation"]["classification"], "collateral_preservation_failure")
+        self.assertEqual(cases["unavailable-evaluator"]["classification"], "instrument_invalid")
+        self.assertEqual(result["capability_denominator_count"], 5)
+
+    def test_instrument_invalid_cannot_enter_denominator(self):
+        p = copy.deepcopy(self.package)
+        next(x for x in p["consequence_observations"] if x["id"] == "unavailable-evaluator")["capability_denominator_eligible"] = True
+        self.assertTrue(any("denominator eligibility" in e for e in semantic_errors(p)))
+
+    def test_collateral_mutation_cannot_be_labeled_success(self):
+        p = copy.deepcopy(self.package)
+        next(x for x in p["consequence_observations"] if x["id"] == "collateral-mutation")["expected_classification"] = "success"
+        self.assertTrue(any("does not replay" in e for e in semantic_errors(p)))
+
+    def test_stale_adoption_is_not_retrieval_failure(self):
+        p = copy.deepcopy(self.package)
+        next(x for x in p["consequence_observations"] if x["id"] == "stale-adoption")["expected_classification"] = "retrieval_failure"
+        self.assertTrue(any("does not replay" in e for e in semantic_errors(p)))
 
     def test_adoption_without_access_is_rejected(self):
         p = copy.deepcopy(self.package)

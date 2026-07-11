@@ -16,7 +16,7 @@ def semantic_errors(package, check_paths=False):
     design = package.get("design", {})
     if package.get("status") != "internal_synthetic_contract_calibration":
         errors.append("status must preserve synthetic calibration scope")
-    for key in ("source_review", "source_provenance"):
+    for key in ("source_review", "source_provenance", "consequence_source_review"):
         value = design.get(key)
         if not value or (check_paths and not (ROOT / value).is_file()):
             errors.append(f"design.{key} must reference an existing repository file")
@@ -68,6 +68,33 @@ def semantic_errors(package, check_paths=False):
     if not promoted.get("action", {}).get("safe") or not promoted.get("action", {}).get("receipt_emitted"):
         errors.append("promoted lesson cell must realize the declared safe action and receipt")
 
+    lineage = package.get("hidden_requirement_lineage", {})
+    spans = {s.get("id"): s for s in lineage.get("evidence_spans", [])}
+    correction = spans.get("history-correction", {})
+    if correction.get("supersedes") != "history-original" or lineage.get("current_basis_ids") != ["history-correction"]:
+        errors.append("hidden requirement must have an exact current correction and supersession basis")
+    if {s.get("kind") for s in spans.values()} != {"original", "distractor", "correction"}:
+        errors.append("hidden requirement requires original, distractor, and correction spans")
+    state_contract = lineage.get("state_contract", {})
+    if set(state_contract) != {"required", "permitted", "forbidden", "preserve"}:
+        errors.append("state contract must separate required, permitted, forbidden, and preservation deltas")
+    observations = package.get("consequence_observations", [])
+    expected = {"success", "retrieval_failure", "stale_evidence_failure", "state_transition_failure", "collateral_preservation_failure", "instrument_invalid"}
+    observed_classes = set()
+    for observation in observations:
+        available, accessed, adopted = (set(observation.get(k, [])) for k in ("available_ids", "accessed_ids", "adopted_ids"))
+        if not adopted <= accessed <= available <= set(spans):
+            errors.append(f"{observation.get('id')} must preserve available -> accessed -> adopted requirement evidence")
+        actual = classify_consequence(lineage, observation)
+        observed_classes.add(actual)
+        if actual != observation.get("expected_classification"):
+            errors.append(f"{observation.get('id')} expected classification does not replay")
+        eligible = observation.get("capability_denominator_eligible")
+        if eligible == (actual == "instrument_invalid"):
+            errors.append(f"{observation.get('id')} has invalid capability denominator eligibility")
+    if observed_classes != expected:
+        errors.append("consequence observations must distinguish all six required outcomes")
+
     execution = package.get("execution", {})
     if execution.get("stochastic_components") and execution.get("repetitions_per_cell", 0) < 2:
         errors.append("stochastic components require repeated cells")
@@ -79,8 +106,31 @@ def semantic_errors(package, check_paths=False):
     return errors
 
 
+def classify_consequence(lineage, observation):
+    """Return the earliest supported evidence-to-consequence boundary."""
+    if observation.get("evaluator_dispatch") != "available":
+        return "instrument_invalid"
+    current = set(lineage.get("current_basis_ids", []))
+    accessed = set(observation.get("accessed_ids", []))
+    adopted = set(observation.get("adopted_ids", []))
+    if not current <= accessed:
+        return "retrieval_failure"
+    if not current <= adopted:
+        return "stale_evidence_failure"
+    realized = observation.get("realized_state", {})
+    contract = lineage["state_contract"]
+    required_failed = any(realized.get(k) != v for k, v in contract["required"].items())
+    forbidden_realized = any(realized.get(k) == v for k, v in contract["forbidden"].items())
+    permitted_violated = any(k in realized and realized[k] not in values for k, values in contract["permitted"].items())
+    if required_failed or forbidden_realized or permitted_violated:
+        return "state_transition_failure"
+    if any(realized.get(k) != v for k, v in contract["preserve"].items()):
+        return "collateral_preservation_failure"
+    return "success"
+
+
 def replay(package):
-    return {
+    memory_cells = {
         c["condition"]: {
             "qa_correct": c["qa"]["correct"],
             "action_safe": c["action"]["safe"],
@@ -88,6 +138,18 @@ def replay(package):
             "evidence_access_count": len(c["qa"]["accessed_ids"]) + len(c["action"]["accessed_ids"]),
             "evidence_adoption_count": len(c["qa"]["adopted_ids"]) + len(c["action"]["adopted_ids"]),
         } for c in package["conditions"]
+    }
+    consequence_cases = {
+        observation["id"]: {
+            "classification": classify_consequence(package["hidden_requirement_lineage"], observation),
+            "capability_denominator_eligible": observation["capability_denominator_eligible"],
+        }
+        for observation in package["consequence_observations"]
+    }
+    return {
+        "memory_cells": memory_cells,
+        "consequence_cases": consequence_cases,
+        "capability_denominator_count": sum(case["capability_denominator_eligible"] for case in consequence_cases.values()),
     }
 
 
