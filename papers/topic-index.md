@@ -66,6 +66,8 @@ The review files below are deep reviews unless their own evidence-status section
 | [Rubric Modification and Human/Autorater Agreement](agent-benchmarks/2026-07-11-rubric-modification-human-autorater-agreement.md) | When do rubric changes improve agreement, and what construct shifts might they introduce? | rubric evolution, agreement, calibration |
 | [SciVisAgentBench](agent-benchmarks/2026-07-10-scivisagentbench-multimodal-artifact-evaluation.md) | Which artifact representations and controls are sufficient for valid multimodal grading? | visualization, renderer, admissibility |
 
+**Cross-family synthesis:** [Grading, validity, and benchmark-lifecycle evolution](../docs/concepts/grading-validity-lifecycle-evolution.md) compares exact/executable checks, state and artifact observers, fixed/dynamic rubrics, human preference and plural judgment, rater/psychometric models, claim-validity systems, reliability profiles, task health, and live forms through explicit retain/repair/test decisions.
+
 ## 5. Reliability, traces, recovery, memory, and execution
 
 | Review | Primary question | Secondary tags |
@@ -83,6 +85,7 @@ The review files below are deep reviews unless their own evidence-status section
 |---|---|---|
 | [ClawSafety](agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md) | How should prompt-injection placement, exposure, adoption, attempted action, realized harm, severity, recovery, and benign utility differ? | prompt injection, tool safety, utility |
 | [Search-Time Contamination](agent-benchmarks/2026-07-10-search-time-contamination.md) | How should source exposure and benchmark contamination be audited without overclaiming causal score inflation? | leakage, live search, role transition |
+| [LiveBench](agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | What does rolling recent-source evaluation repair, and when do renewal or grader changes break longitudinal comparability? | contamination, deterministic grading, lifecycle |
 
 Safety and integrity also appear in Workspace-Bench, Delegate52, Harness-Bench, and the artifact-view reviews; they remain in their primary collections to avoid duplicate inventory rows.
 

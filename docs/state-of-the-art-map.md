@@ -21,6 +21,7 @@ This file tracks benchmark families relevant to `skill-bench`. For grouped concl
 | Efficient Benchmarking / Agent Psychometrics | Low-cost, calibrated agent evaluation | Per-task response matrices, task artifacts, model/scaffold metadata | Reduced task panels, predicted difficulty, component ability estimates | Rank fidelity, AUC-ROC, IRT-style difficulty/ability models | Shows that benchmark operation needs psychometric infrastructure: pass-rate histories, mid-difficulty panels, and scaffold-aware reporting | Can artifact-heavy knowledge-work rubrics be reduced at the rubric-check level without losing diagnostic coverage? |
 | ClawsBench | Productivity agents + safety | Simulated workspace services | API actions / task completion | State-based task success and safety | Important for productivity-agent risks | How to include safety and prompt injection? |
 | SWE-bench / Terminal-Bench | Coding / terminal tasks | Repos or terminal envs | Patches / terminal outcomes | Tests | Shows value of executable scoring | What analogs exist for decks/spreadsheets/memos? |
+| LiveBench | Rotating broad LLM capability forms under limited public exposure | Recent competitions/articles/datasets plus procedural variants; temporary private slice | Short answers, code, tables, constrained text | Exact/regex/symbolic/executable/task-specific checks | Makes source age, exposure role, form renewal, grader revision, rerun cost, and leaderboard version explicit | Difficulty-conditioned renewal changes the estimand; timestamp is not exposure proof; equivalent-form linkage and grader reliability remain weak |
 | PaperBench / PresentBench | Research replication / presentations | Papers, specs | Artifacts | Task-specific / judge scoring | Adjacent artifact-generation benchmarks | How mature are methods? |
 
 The cross-family evolution analysis and retain/repair/test decisions are in
@@ -35,6 +36,13 @@ The interactive-family evolution analysis is in
 Its central conclusion is that interactivity migrates rather than removes the
 oracle: syntheticity moves from a reference answer into authored site/database
 state, user simulators, task initializers, and selected success predicates.
+
+The grading/validity/lifecycle evolution analysis is in
+[`concepts/grading-validity-lifecycle-evolution.md`](concepts/grading-validity-lifecycle-evolution.md).
+Its central conclusion is that exact, executable, state, artifact, rubric,
+expert, psychometric, validity, and lifecycle systems repair different links;
+no observer family dominates, and form or grader renewal is itself a
+measurement intervention requiring immutable identity and bridge evidence.
 
 ## How to use this landscape
 
