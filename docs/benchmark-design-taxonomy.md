@@ -103,6 +103,21 @@ professionally consequential yield therefore remain separate estimands. A model
 may assist dialogue management; it does not inherit authority to verify truth or
 approve a benchmark primitive [DT].
 
+A simulated interlocutor is the same class of intervention, not a substitute
+expert, client, or ground truth. Preserve challenge/profile provenance and
+sampling, simulator prompt/model/settings, requested and realized resistance,
+utterance-linked expert statements, skips/deletions/revisions, stopping reason,
+actual burden, and every downstream transformation. Begin with an unprompted
+incident before disclosed `SIMULATED_PROBED` friction such as a failed prior
+attempt, conflicting constraint, adverse consequence, or request for when not to
+use the advice. Contributor read-back must separate representative cues from
+role-play artifacts [SI]. Dialogue length and fluency are not expertise yield;
+participation value, privacy/consent, grounded novelty, correction burden, and
+held-out task/check utility are different outcomes. SimInstruct's 18 paid experts,
+123 retained dialogues, and randomized persona effect establish instrument
+reactivity and bounded feasibility in one higher-education network—not tacit-cue
+capture, burden reduction, near-zero-cost recruitment, or real-user validity [SI].
+
 ### 2.2 A legitimate trap is a decision-boundary critical incident
 
 Do not equate realistic messiness with arbitrary obscurity. For each trap,
@@ -486,6 +501,30 @@ its pooled results omit intervals and task-cluster adjustment, and its rare
 side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
+
+For ordinal plural grading, agreement, panel-relative severity/location, model
+fit, repeated-call stability, and decision validity are non-substitutable. A
+connected assignment may identify relative rater locations only under explicit
+anchoring, thresholds, dependence assumptions, and a frozen linked panel; bridge
+items are required across task, rubric, or rater changes. Preserve raw scores and
+uncertainty when deriving an adjustment, test rater×criterion and rater×task
+interactions, and never promote a mean-centered or well-fitting rater to
+professionally correct or interchangeable [MF]. The reviewed complete crossing
+contains only 30 learners, four Chinese-writing prompts, two human references,
+unpinned one-call model configurations, and no released data/code or differential-
+rater analysis, so its estimates are measurement-design evidence only [MF].
+
+Rubric realization is also configured instrument identity: criterion text and
+order, examples/context, evidence view, joint/isolated/dependent execution plan,
+output-scale transformation, aggregation and tie/incomparability policy, retry
+behavior, cost, and latency. An edit must retain old/new observations and be tested
+separately for human reliability, autorater repeats, paired agreement, severity/
+interaction effects, construct preservation, decision loss, and burden. Higher
+agreement can arise from shared anchors, compressed scale use, or narrowed valid
+solutions [RM]. The reviewed study rerates only machines against heterogeneous
+historical labels, bundles edits, changes aggregation, covers two domains/two
+models, and releases no runnable package; it identifies configured agreement
+effects, not improved accuracy or rubric validity [RM].
 
 ### 3.2a Disagreement can be evidence about the instrument or the construct
 
@@ -945,6 +984,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     a final consequence to unprompted problem recognition.
 32. **Observed demand is not replay fidelity:** source episodes and rewritten counterfactuals have separate hashes, deltas, hindsight controls, equivalence dispositions, and licensed uses; real provenance cannot silently upgrade semantic equivalence.
 33. **A tier label is not suite identity:** immutable membership, admission snapshot, outcome-selection, exposure, role transitions, and bridges govern living-benchmark comparisons; outcome-informed routing is not intrinsic difficulty.
+34. **Agreement does not establish interchangeability:** preserve raw observations and keep agreement, panel-relative severity, fit, repeat stability, construct preservation, and decision loss separate; rubric execution topology and aggregation are instrument versions, not implementation trivia.
+35. **Simulated dialogue is probed evidence:** simulator behavior, productive friction, stopping/deletion, and correction lineage remain visible; conversation volume or participant enjoyment cannot replace grounded downstream utility or consent/privacy evidence.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -974,6 +1015,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Final-state success vs valid professional transition | Workflow-GYM supplies long expert witness paths but no released task/check package, and its official showcases expose a pre-existing required object and ambiguous input placement [WG]. | Canary initial absence, unique placement, and clean output; define sparse stage pre/postconditions and alternative paths; compare stage evidence with final consequences while quarantining invalid environments. |
 | Binary attack success vs safe useful completion | ClawSafety measures completed harm without benign utility and its partial post-v2 release lacks an executable ASR scorer while retaining live/mutable side-effect paths [CS]. The internal action fixture proves only inert contract behavior [AC]. | Cross source authority and exposure with mock-only action opportunities; retain attempt/interception/realization/recovery and utility separately; repeat under agent-facing containment canaries and expert-reviewed consequence thresholds. |
 | Elicitation yield vs valid expertise transfer | Data Therapist increases inspectable candidate production, but expert identity, probe/interface treatment, unsupported model checks, and absent downstream tests confound quality and utility [DT]. | In one consented session, preserve unprompted then probed phases and the full event ledger; compare corroborated, scope-valid, consequence-bearing primitives and correction/review burden rather than annotation count. |
+| Engaging simulated novice vs productive elicitation | SimInstruct obtains substantial paid asynchronous dialogue and shows one randomized persona effect, but excessive agreeableness, endogenous stopping, selected retention, unknown burden/privacy lineage, and no downstream utility leave tacit-cue capture unidentified [SI]. | Within qualified contributors and frozen cases, compare vignette, neutral simulation, and friction-seeking simulation after an unprompted incident; measure realized resistance, grounded thresholds/failure signatures, corrections, time, privacy events, contributor value, and held-out task/check utility. |
+| Higher rater agreement vs valid interchangeable measurement | Many-facet analysis separates panel-relative severity/fit from agreement, while rubric-modification results show examples, call topology, and aggregation can shift agreement through shared cueing or construct change [MF, RM]. Neither source supplies held-out professional decisions, repeat model calls, or reproducible release artifacts. | On a connected, held-out pilot panel, cross rubric/example variant with joint versus isolated execution; repeat raters, retain raw scores, estimate task/criterion interactions and linked severity, test legitimate-solution preservation and external decision loss, and report cost/audit burden without adjudicating by adjustment. |
 | Consensus label vs plural professional judgment | One three-psychiatrist panel shows strong systematic disagreement but cannot separate person, framework, rubric, or context effects; the internal fixture proves only aggregation-contract behavior [ED, PJ]. | Repeat held-out ratings, prospectively declare frameworks, replicate experts within framework, vary context/rubric evidence, and compare explicit stakeholder policies while preserving dissent and claim blocks. |
 | Retrospective memory QA vs consequential action transfer | LongMemEval-V2 cleanly evaluates bounded evidence delivery but representation/reader/grader effects remain treatment components and no acting agent uses the memory [LM]. | Compare no-memory, evidence-only, and provenance-gated lessons on equivalent-form QA and held-out artifact/state action; plant stale, failed-attempt, contradiction, safe-alternative, harmful-transfer, and rollback cases. |
 | Unprompted recognition vs solving and execution | KWBench's cold gate combines cue extraction, framing, inquiry, action, artifact production, and judge behavior, with no matched framed condition or negative near neighbors [KW]. The internal replay establishes only staged instrumentation [PR]. | On expert-adjudicated positive/negative scenario pairs, cross situation-only, minimal-frame, and fully specified conditions; score cue, frame, inquiry, action, and artifact separately; repeat by scenario cluster and test alternate valid framings before licensing a recognition claim. |
@@ -1288,3 +1331,19 @@ them:
   deterministic cases grounded in [ALE]. They establish internal conformance only,
   not verifier completeness, agent capability, professional validity, prevalence,
   cross-domain generalization, or readiness.
+- **[MF]**
+  `papers/agent-benchmarks/2026-07-11-many-facet-human-ai-rater-effects.md`;
+  reviewed immutable v2 PDF/text hashes are recorded there. The small fully
+  crossed educational sample has no released data/code and does not establish
+  operational grader interchangeability or cross-domain severity stability.
+- **[RM]**
+  `papers/agent-benchmarks/2026-07-11-rubric-modification-human-autorater-agreement.md`;
+  reviewed immutable v1 PDF/text hashes are recorded there. Historical human
+  labels, bundled edits, changing aggregation, and absent release artifacts bound
+  results to configured agreement effects rather than accuracy or validity.
+- **[SI]**
+  `papers/agent-benchmarks/2026-07-11-siminstruct-simulated-novice-elicitation.md`;
+  reviewed immutable v2 PDF/text hashes are recorded there. One paid education-
+  coaching network demonstrates dialogue feasibility and instrument reactivity,
+  not tacit-knowledge capture, low-cost recruitment, privacy closure, or real-user
+  and downstream benchmark utility.
