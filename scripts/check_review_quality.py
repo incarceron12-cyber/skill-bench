@@ -18,11 +18,13 @@ REQUIRED_SECTIONS = {
     "actions": [r"^##\s+Action items", r"^##\s+Concrete changes", r"^##\s+Concrete repository"],
 }
 
+NON_REVIEW_FILES = {"readme.md", "topic-index.md"}
+
 
 def review_files(path: Path):
     if path.is_file():
         return [path]
-    return sorted(p for p in path.rglob("*.md") if p.name.lower() != "readme.md")
+    return sorted(p for p in path.rglob("*.md") if p.name.lower() not in NON_REVIEW_FILES)
 
 
 def check(path: Path) -> list[str]:

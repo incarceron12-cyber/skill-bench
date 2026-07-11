@@ -19,6 +19,8 @@ If you are new to the repository, these are the most useful entry points:
 |---|---|
 | [`PROJECT_CHARTER.md`](PROJECT_CHARTER.md) | **Master source of truth:** founding intent, broad cross-domain scope, objectives, success criteria, anti-drift rules, and document hierarchy |
 | [`docs/research-synthesis-index.md`](docs/research-synthesis-index.md) | **Grouped insights and relevance map:** which papers matter most, why they matter, and how findings combine across sources |
+| [`docs/benchmark-landscape-research-program.md`](docs/benchmark-landscape-research-program.md) | Comparative program for established benchmark families, newer successors, strengths to retain, and limitations to improve |
+| [`papers/topic-index.md`](papers/topic-index.md) | Thematically organized navigation across the full deep-review corpus |
 | [`docs/benchmark-design-taxonomy.md`](docs/benchmark-design-taxonomy.md) | The canonical design map: expertise-to-task authoring, measurement layers, system identity, failure attribution, and benchmark operation |
 | [`schemas/README.md`](schemas/README.md) | The executable benchmark contract and how task, trial, grader, artifact, trace, and diagnosis records fit together |
 | [`schemas/EXPERTISE_TRANSFER.md`](schemas/EXPERTISE_TRANSFER.md) | The authoring contract for converting expert claims into primitives, scenarios, source packs, traps, artifacts, checks, and release gates |
