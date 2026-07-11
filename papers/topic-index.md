@@ -53,6 +53,8 @@ The review files below are deep reviews unless their own evidence-status section
 
 **Cross-family synthesis:** [Professional knowledge-work benchmark evolution](../docs/concepts/professional-benchmark-evolution-matrix.md) compares the fully reviewed/release-audited professional families plus the official AA-Briefcase-Lite release. It records retain/repair/test decisions and keeps OfficeBench/WorkArena labeled as evidence gaps rather than inferring validity from benchmark names or programmatic scoring.
 
+**Interactive-family synthesis:** [Web, tool-use, and computer-use benchmark evolution](../docs/concepts/web-tool-computer-benchmark-evolution.md) compares full immutable primary sources for GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp. It traces answer→action→state→policy/user→repeated-outcome measurement, records retain/repair/test decisions, and keeps BrowserGym and OSWorld 2.0 as explicit successor audit gaps.
+
 ## 4. Rubrics, graders, raters, and artifact evidence
 
 | Review | Primary question | Secondary tags |

@@ -65,6 +65,7 @@ Most relevant sources:
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
 | [Professional benchmark evolution matrix](concepts/professional-benchmark-evolution-matrix.md) | A | Compares AA-Briefcase/Lite, GDPval, Workspace-Bench, MBABench, LH-Bench, Workflow-GYM, SaaS-Bench, and Agents' Last Exam as repairs to different links in one evidence chain; distinguishes implemented machinery from demonstrated validity |
+| [Web/tool/computer benchmark evolution](concepts/web-tool-computer-benchmark-evolution.md) | B | Compares GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp; shows that interactive realism migrates the oracle into authored state, simulators, lifecycle hooks, and selected predicates |
 
 **Repository consequence:** The charter remains cross-domain; pilots must state their general hypothesis, suite assembly needs explicit coverage evidence, and results must bound their inference population. A nonempty occupation/subdomain cell is coverage, not representativeness or readiness. Expert submission, engineer implementation, grader construction, and post-transformation expert disposition require separate authority records.
 
@@ -78,6 +79,16 @@ inspection (MBABench), and observable expert procedures (LH-Bench) more strongly
 than it supports occupational representativeness, longitudinal project work,
 counterfactual artifact integrity, checkpoint progress, or professional
 readiness. OfficeBench/WorkArena remain explicit primary-source audit gaps.
+
+Interactive families add a parallel boundary. Executable outcome checks are a
+real repair over action-sequence imitation because they admit alternative paths,
+but a passing selected predicate is not proof of complete, safe, or
+professionally usable work. Live web improves ecological substrate while
+weakening repeat equivalence; frozen APIs improve reproducibility by simplifying
+the world; model-simulated users add interaction while becoming part of the
+treatment. Every task therefore needs a projection ledger for native/simulated
+substrate, authored initial state, observer coverage, omitted consequences,
+simulator identity, reset health, and the claims that survive those choices.
 
 ## 3. Expertise transfer is an intervention that must be separated from the measuring instrument
 

@@ -7,7 +7,10 @@ This file tracks benchmark families relevant to `skill-bench`. For grouped concl
 | AA-Briefcase / Lite | Private multi-project artifact benchmark; public demonstrative due-diligence week | Private thousands of files/91 tasks; Lite 147 files across 67 sources | PDF/LaTeX, XLSX, PPTX, MP4/SRT | Binary accuracy/critical-insight checks + pairwise analytical/presentation Elo | Strong source→check traceability, contradiction/supersession cases, artifact diversity | Private scored suite is unauditable; tasks reset independently, so “multi-week” is not longitudinal agent work; artifact-only judges cannot verify source entailment/use |
 | GDPval / GDPval-AA | Broad occupational artifact-production slice | Multimodal case/task material | Professional work deliverables | Occupation-matched pairwise comparison against one human witness | Demonstrates expert task acquisition and occupational-frame breadth | How should frame, content, suite assembly, and inference populations be separated? |
 | APEX-Agents-AA | Professional services tasks | Realistic app/workflow dependencies | Task completions | Rubric-based local file grading | Strong adjacent model for professional service workflows | What is reproducible publicly? |
-| OSWorld / OSWorld 2.0 | Computer-use agents | Desktop environment | Completed GUI workflows | Task success | Long-horizon GUI realism | How to combine GUI tasks with knowledge-work artifacts? |
+| GAIA / BrowseComp | Generalist tool use and persistent live-web fact finding | Web, files, multimodal inputs | Short answers | Exact/semantic answer correctness | Historical anchors for tool composition and adversarial search depth | Live-web equivalence, source authority/use, search-time leakage, and professional research quality remain unmeasured |
+| WebArena / BrowserGym | Stateful browser navigation and transactions | Self-hosted websites and browser observations | Website state changes | Task-specific URL/content/state evaluators | Retains alternative valid action paths and functional outcomes | Selected predicates can miss side effects; BrowserGym successor implementation remains a full-source audit gap |
+| ToolBench / API-Bank / τ-bench | Tool retrieval, invocation, planning, policy, user interaction, and transaction state | Implemented APIs, databases, policies, simulated users | Calls, responses, database deltas | Call equivalence, response overlap, final state, repeated `pass^k` | Evolution from call syntax to stateful policy/user reliability | Gold-chain bias, synthetic APIs/users, omitted consequences, task defects, and simulator validity |
+| OSWorld / OSWorld 2.0 / AndroidWorld | Computer/mobile agents | Desktop VMs or parameterized Android environment | Completed GUI workflows and state | Task-specific execution/state success | Real applications, alternative paths, reset lifecycle, and equivalent-form stress | Environment health, omitted harms, version drift, expensive maintenance; OSWorld 2.0 remains a full-source audit gap |
 | OdysseyBench / OfficeBench / WorkArena | Office and browser application workflows | Word/Excel/PDF/email/calendar or enterprise apps | Workflow completion and state | Programmatic / task-specific evaluation | Important historical anchors for interactive office work | **Evidence gap:** acquire and audit primary sources/releases before claiming reset, evaluator, adoption, or successor quality |
 | MBABench | End-to-end finance spreadsheet artifacts | Competition/training cases and starting workbooks | Native professional spreadsheets | Static Accuracy/Formula/Format judgments against one reference | Corrects final-cell evaluation by exposing formulas, structure, and formatting | How should counterfactual recalculation, rendered charts, task delta, and alternative valid models be tested? |
 | AIDABench | Document analysis agents | Heterogeneous documents | Analysis outputs | End-to-end pipeline checks | Useful for document-heavy source pools | How to evaluate evidence use? |
@@ -26,6 +29,12 @@ Its central conclusion is that newer professional-work benchmarks repair
 different links—occupational frame, source pack, environment, workflow,
 artifact/state delta, grader, and lifecycle—but none yet closes the full chain
 from professional demand to a licensed readiness claim.
+
+The interactive-family evolution analysis is in
+[`concepts/web-tool-computer-benchmark-evolution.md`](concepts/web-tool-computer-benchmark-evolution.md).
+Its central conclusion is that interactivity migrates rather than removes the
+oracle: syntheticity moves from a reference answer into authored site/database
+state, user simulators, task initializers, and selected success predicates.
 
 ## How to use this landscape
 
