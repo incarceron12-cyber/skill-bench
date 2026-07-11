@@ -64,10 +64,21 @@ Most relevant sources:
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
+| [Design Report for Knowledge-Work Benchmarks](../papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | A | Adds a work-activity → tested-setting → persistent-product → licensed-claim reporting chain and makes omitted responsibilities and downstream handoffs explicit; its preliminary 18-label inventory is a revisable vocabulary, not validated coverage |
 | [Professional benchmark evolution matrix](concepts/professional-benchmark-evolution-matrix.md) | A | Compares AA-Briefcase/Lite, GDPval, Workspace-Bench, MBABench, LH-Bench, Workflow-GYM, SaaS-Bench, and Agents' Last Exam as repairs to different links in one evidence chain; distinguishes implemented machinery from demonstrated validity |
 | [Web/tool/computer benchmark evolution](concepts/web-tool-computer-benchmark-evolution.md) | B | Compares GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp; shows that interactive realism migrates the oracle into authored state, simulators, lifecycle hooks, and selected predicates |
 
-**Repository consequence:** The charter remains cross-domain; pilots must state their general hypothesis, suite assembly needs explicit coverage evidence, and results must bound their inference population. A nonempty occupation/subdomain cell is coverage, not representativeness or readiness. Expert submission, engineer implementation, grader construction, and post-transformation expert disposition require separate authority records.
+**Repository consequence:** The charter remains cross-domain; pilots must state their general hypothesis, suite assembly needs explicit coverage evidence, and results must bound their inference population. A nonempty occupation/subdomain/activity cell is coverage, not representativeness or readiness. Map each task many-to-many to target, required, incidental, and explicitly omitted work activities, retaining the source frame and reviewer disposition rather than freezing one occupational vocabulary. Expert submission, engineer implementation, grader construction, and post-transformation expert disposition require separate authority records.
+
+Tested-setting choices are interventions on the supported claim. Preselected
+sources, prescribed output forms, clean workspaces, one-shot interaction,
+simulators, and executable oracles may make an experiment reproducible while
+removing discovery, product choice, coordination, institutional consequence, or
+downstream use. Record those removals as explicit claim subtraction. Bind a
+persistent product or state to its recipient and next operation, then inspect
+source fidelity, scope/boundary compliance, and destination usability separately.
+The strongest supported claim and named excluded claims should accompany every
+result; visual occupational resemblance does not supply the missing links.
 
 The comparative evolution view adds a second boundary: a newer benchmark is
 not automatically a validated successor because it adds more files, longer

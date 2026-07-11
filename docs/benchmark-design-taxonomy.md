@@ -387,6 +387,55 @@ estimands; none may be appended after scoring to manufacture economic validity.
 
 Agents' Last Exam adds a useful occupational coordinate frame and broad executable pool, but its 55 nonempty subdomains are not task-frequency or consequence-weighted occupational coverage. Preserve the exact immutable **suite-role membership** used in a reported result. Its paper and later release have different Near-Term/Last-Exam counts and overlapping roles, so a tier name is not a version. Outcome-informed difficulty is routing metadata, not an intrinsic task trait; freeze the admission snapshot or model-system outcomes partly define the comparison [ALE].
 
+### 2.6a Work realism is a many-to-many activity and handoff correspondence
+
+An occupation label, plausible interface, or polished deliverable does not by
+itself identify the responsibility tested. For each task, preserve a revisable
+many-to-many activity map with `target`, `required`, `incidental`, and `omitted`
+relations, source/version, reviewer disposition, and mapping uncertainty. The 18
+O*NET-derived labels in the reviewed design report are useful candidate
+coordinates, not a closed ontology, representative denominator, prevalence
+estimate, or validated latent structure; local workflow and expert evidence may
+split, merge, or replace them [DR].
+
+Represent the correspondence and its negative boundary explicitly:
+
+```text
+target activity ↔ required operations ↔ tested setting and omitted responsibility
+  ↔ persistent product/state ↔ recipient and next operation
+    ↔ source/boundary/destination evidence ↔ strongest supported claim
+      + named excluded claims
+```
+
+For materials, tools, role/scope, and workflow state, record what is supplied,
+withheld, simplified, or simulated and which inference is thereby removed.
+Preselected sources subtract discovery; a prescribed form subtracts product
+choice; one-shot interaction subtracts clarification; a simulator subtracts
+some institutional consequences; an executable oracle observes selected
+acceptance predicates. These may be legitimate treatments, but they are
+**claim subtraction**, not an undifferentiated realism score.
+
+A work product is complete only relative to a declared receiving operation.
+Record recipient role/system, intended next operation, required handoff fields,
+accepted alternatives, acceptance evidence, unresolved blockers, and destination
+conventions. Keep three check families distinct: **source** (authority,
+entailment, provenance), **boundary** (scope, jurisdiction, authorization, and
+preserved constraints), and **destination** (recipient interpretability and
+next-operation executability). A correct answer may fail to support reviewable
+analysis; a working integration may still fail deployment readiness.
+
+**Invariant:** setting simplifications and omitted activities must subtract named
+claims, and no artifact-quality aggregate may substitute for source, boundary,
+and destination evidence. **Validation experiment:** across at least two unlike
+handoffs, give an independent recipient only the produced product and measure
+clarification, repair, rejection, time, and propagated error while admitting
+legitimate alternate formats. The source supplies no recipient-use trial, panel
+details, annotation reliability, taxonomy stability, exact reconstruction, or
+downstream-validity evidence; these remain required before treating its reporting
+chain or vocabulary as validated [DR]. Existing artifact/state, participation,
+validity, task-health, metric, and provenance records are the implementation
+homes; do not create a parallel schema.
+
 The current LH audit makes the boundary concrete: one convenience task, one
 source/builder lineage cluster, no alternate assembly, no precision target, and
 no cross-domain sample can support suite sufficiency even when its constituent
@@ -959,6 +1008,7 @@ fidelity separately from score calibration [EB, AP].
 | Session-derived workplace projection (EnterpriseClawBench) | observed-episode-to-counterfactual delta, hindsight firewall, equivalence disposition, and licensed-use record | real demand laundered into replay fidelity; omitted interaction/repair; answer-bearing hindsight; duplicated rubric dimensions; one-deployment generalization | full immutable v1 plus pinned post-paper release and two public trace audits; proprietary source pool/tasks/results and independent equivalence review unavailable [ECB] |
 | Broad expert executable portfolio (Agents' Last Exam) | expert→engineer→grader authority handoff, clean-start/verifier falsification, occupational denominators, and role-versioned living suites | nonempty cells mistaken for representativeness; deterministic proxy mistaken for professional closure; single runs; outcome-selected tiers; occupational/economic overclaim | full immutable v1 plus pinned post-paper release and three task traces; private pool, exact paper-time tree/results, licensed VM execution, expert reliability, and grader calibration unavailable [ALE] |
 | Conditional agent reliability profiling | response matrix over matched repeats, preserved perturbations, decision-time confidence, and typed consequences | repeatability mistaken for capability; authored variants/exposure treated as deployment robustness; wrapper recovery credited to agent; post-hoc confidence and generic severity promoted to readiness | full immutable v3 paper and protocol-level review; two benchmark families, five incompletely controlled repeats, unvalidated interventions/severity, and no paper-pinned experiment code [AR] |
+| Work-activity and handoff-centered reporting | many-to-many activity map, tested-setting claim subtraction, persistent product bound to recipient/next operation, strongest and excluded claims | preliminary labels mistaken for representative coverage; visual realism or product polish mistaken for responsibility, downstream usability, or deployment evidence | full immutable v1 paper; LLM-mediated O*NET/ESCO descriptive taxonomy and three purposive report demonstrations, with no reliability, stability, reconstruction, recipient-use, or framework-effect validation [DR] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -1067,6 +1117,11 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 34. **Agreement does not establish interchangeability:** preserve raw observations and keep agreement, panel-relative severity, fit, repeat stability, construct preservation, and decision loss separate; rubric execution topology and aggregation are instrument versions, not implementation trivia.
 35. **Simulated dialogue is probed evidence:** simulator behavior, productive friction, stopping/deletion, and correction lineage remain visible; conversation volume or participant enjoyment cannot replace grounded downstream utility or consent/privacy evidence.
 36. **Reliability is conditional, not a trait:** bind separate capability, repeatability, perturbation, predictability, and consequence estimands to an operational profile; require preservation/exposure evidence, separate wrapper from agent recovery, and license confidence only at its observed decision point.
+37. **Realism is typed correspondence, not resemblance:** map target, required,
+    incidental, and omitted activities; treat setting simplifications as claim
+    subtraction; bind every persistent product to a recipient and next operation;
+    and report source, boundary, and destination evidence with strongest supported
+    and excluded claims.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1105,6 +1160,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Real-session demand provenance vs source-to-task fidelity | EnterpriseClawBench provides real episode origin, but public traces show omitted repair, hindsight-derived answers, and rubric duplication while the proprietary pool blocks independent sampling and equivalence audit [ECB]. | Blind source users/independent experts to projected outputs; disposition each delta and omitted turn; compare faithful, demand-inspired, and synthetic licenses; sample rejected episodes; test preserved decisions, alternate paths, and acceptance judgments. |
 | Living difficulty tier vs stable comparison | ALE's tiers are partly outcome-informed and later release memberships/counts differ while labels persist; most reported cells are single runs [ALE]. | Freeze membership/admission outcomes and exposure state; repeat systems across old/new memberships plus an anchor bridge; estimate task/workflow uncertainty and report role-transition effects separately from ability change. |
 | Mean accuracy vs operational reliability | The reviewed reliability profile separates repeatability, perturbation response, confidence, and safety, but five non-independent repeats, unvalidated semantic preservation/exposure, wrapper-side recovery, retrospective confidence, and generic LLM severity prevent deployment interpretation [AR]. | On cross-domain forms, predeclare matched baseline/intervention repeats and operational profiles; independently validate variant preservation, cluster by task/form, retain invalid/provider failures, distinguish wrapper/agent recovery, elicit signals at routing/escalation/acceptance times, and calibrate consequence/loss with domain experts. |
+| Artifact correctness vs handoff usability | The design report argues that persistent products support work claims through receiving workflows, but its three purposive cases contain no recipient-use trial, independent mapping reliability, or downstream validation [DR]. | Across unlike domains, give independent recipients only the produced product; test source, boundary, and destination checks separately and record clarification, repair, rejection, time, error propagation, and legitimate alternate formats before licensing downstream-use claims. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -1444,3 +1500,11 @@ them:
   non-completion and verifier false rejection; they do not establish sampling,
   professional construct validity, human ease, reliability, causal harness
   effects, cross-domain transfer, or paper-time release identity.
+- **[DR]**
+  `papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md`;
+  reviewed immutable v1 PDF/text paths and hashes are recorded there. Its
+  LLM-mediated O*NET/ESCO inventory and three purposive case mappings demonstrate
+  a reporting proposal; undisclosed panel procedure, absent annotation
+  reliability/stability and exact reconstruction, and no recipient-use or
+  framework-effect study block taxonomy-validity, representativeness,
+  downstream-usability, professional-readiness, and deployment claims.
