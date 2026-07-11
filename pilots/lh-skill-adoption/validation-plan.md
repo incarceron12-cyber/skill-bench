@@ -79,6 +79,26 @@ produced no SSE event within the fixed 12-second threshold after first byte.
 Each arm retained failed usage accounting for three calls and no task
 artifacts. This matched failure strengthens the service-availability diagnosis
 but supplies no agent response, capability evidence, grader result, or Skill
-effect. The next retry must wait for a zero-cost provider health probe or
-another isolated trial to demonstrate streaming availability; it must not
-weaken the stream-integrity threshold merely to force completion.
+effect. The next retry had to wait for a zero-cost provider health probe or
+another isolated trial to demonstrate streaming availability; the fixed
+stream-integrity threshold was not to be weakened merely to force completion.
+
+A fresh concurrent v8 pair was run after three other isolated benchmark trials
+demonstrated provider availability. Both explicit zero-call and in-trial
+canaries passed under the unchanged launcher hash, and both arms produced the
+required artifacts and usage records. The no-skill arm used 35,773 total tokens
+across six API calls; the public-skill arm used 36,541 across six. Included cost
+was reported as $0.00 for both.
+
+Post-hoc grading found that both outputs failed the deterministic
+evidence-provenance convention. The no-skill output passed both unvalidated
+private claim conventions; the public-skill output failed contradiction
+reconciliation and passed causal-claim strength. Exact outputs, redacted logs,
+usage, grader records, hashes, and interpretation boundaries are retained at
+`ablation/isolated-agent-pair-v8/`.
+
+This closes the executable single-pair slice but does **not** license a Skill
+effect: one paired observation cannot distinguish treatment from run variance,
+and the rubric has not received independent human or expert calibration. The
+next empirical gate is replicated matched pairs plus independent rubric/expert
+review. Expert validity and release readiness remain false.
