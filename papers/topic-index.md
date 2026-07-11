@@ -41,6 +41,7 @@ The review files below are deep reviews unless their own evidence-status section
 
 | Review | Primary question | Secondary tags |
 |---|---|---|
+| [TheAgentCompany](agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | What does an integrated simulated company establish, and where do workplace substrate, occupational validity, collaboration, consequences, and sampling diverge? | workplace simulation, coworkers, checkpoints, reset |
 | [Workspace-Bench](agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | How should files, dependencies, provenance, observed use, mutations, and workspace integrity be evaluated? | persistent workspace, retrieval, causal use |
 | [Workflow-GYM](agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | How can professional GUI workflows and final state be evaluated without confusing environment faults with capability? | GUI, state, environment validity |
 | [SaaS-Bench](agent-benchmarks/2026-07-11-saas-bench-stateful-workflow-validity.md) | What does cross-application persistent-state evaluation add, and what simulator/checkpoint limits remain? | SaaS, checkpoints, workflow |
