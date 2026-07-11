@@ -122,3 +122,15 @@ or guidance-usability problem, but does not identify task, Skill, agent, or
 grader as root cause. Condition effect, professional capability, expert
 validity, and release readiness remain false pending independent rubric/expert
 review and a predeclared analysis with adequate valid replication.
+
+A separately predeclared v13 continuation exercised the comparator-corrected
+provenance-v2.1 contract with the unchanged v12 launcher/configuration. Both
+explicit and in-trial canaries passed, but both concurrent arms failed after
+three calls produced no SSE event within the frozen 12-second threshold. The
+retained directory is `ablation/isolated-agent-pair-v13-provenance-v2/`.
+Neither arm produced artifacts or usable token/cost accounting; all v2,
+legacy, and claim-calibrator outputs are therefore fail-closed execution
+records, not artifact-quality scores. No additional pair was run. This matched
+failure changes only the service-availability record; all capability,
+treatment, validity, reliability, generalization, and release claims remain
+false.

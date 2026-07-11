@@ -85,6 +85,14 @@ python scripts/grade_lh_claims.py \
 
 It emits separate `contradiction-reconciliation` and `causal-claim-strength` check results. Its independently versioned rubric was derived afresh from the pinned evidence groups and review claims, but this is **not blinded independent human authorship**: the builder had repository access to the shared rubric. Evidence-group membership and regex boundaries correctly classify the planted cases; they do not establish entailment, accept alternative professional reasoning, or advance the failed expert/release gates.
 
+The latest predeclared v13 configured pair is retained at
+`ablation/isolated-agent-pair-v13-provenance-v2/`. Both explicit and in-trial
+isolation canaries passed, but both concurrent arms exhausted three provider
+calls without an SSE event inside the unchanged 12-second threshold. No memo
+or matrix was produced, so the fail-closed grader records are execution
+integrity evidence only; provenance v2.1, capability, and Skill effect were not
+evaluated. No adaptive retry or threshold change was made.
+
 ## Matched-condition task-only preflight
 
 Run the reproducible packaging preflight with:
