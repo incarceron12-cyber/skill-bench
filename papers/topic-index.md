@@ -51,6 +51,8 @@ The review files below are deep reviews unless their own evidence-status section
 | [AgentCoop](agent-benchmarks/2026-07-11-agentcoop-typed-handoffs-localized-repair.md) | How can multi-agent handoffs and localized repair be represented without hiding upstream failures? | collaboration, handoff, recovery |
 | [AARRI](agent-benchmarks/2026-07-11-aarri-research-judgment-lifecycle.md) | How should research judgment, action, abstention, escalation, and artifact consequences be evaluated? | research, judgment, non-completion |
 
+**Cross-family synthesis:** [Professional knowledge-work benchmark evolution](../docs/concepts/professional-benchmark-evolution-matrix.md) compares the fully reviewed/release-audited professional families plus the official AA-Briefcase-Lite release. It records retain/repair/test decisions and keeps OfficeBench/WorkArena labeled as evidence gaps rather than inferring validity from benchmark names or programmatic scoring.
+
 ## 4. Rubrics, graders, raters, and artifact evidence
 
 | Review | Primary question | Secondary tags |

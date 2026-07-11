@@ -4,13 +4,12 @@ This file tracks benchmark families relevant to `skill-bench`. For grouped concl
 
 | Benchmark / Area | What it tests | Inputs | Outputs | Scoring | Why it matters for us | Open questions |
 |---|---|---|---|---|---|---|
-| AA-Briefcase | Long-horizon knowledge work | Emails, Slack, docs, transcripts, spreadsheets, data exports | Spreadsheets, decks, memos, PDFs, mockups, videos | Binary rubrics + pairwise analytical/presentation Elo | Closest inspiration; shows artifact-centered benchmark design | How to build an open/lower-budget version without losing realism? |
-| AA-Briefcase-Lite | Public due-diligence example | 147 files across 67 sources | LaTeX/PDF, XLSX, PPTX, MP4/SRT | 63 checks: accuracy, critical insight, analytical quality, presentation | Concrete schema to study and adapt | How much of the structure can be generalized? |
-| GDPval / GDPval-AA | Economically valuable professional tasks | Case/task material | Work deliverables | Pairwise comparison / expert anchoring | Demonstrates labor-market relevance framing | What task taxonomy did they use? |
+| AA-Briefcase / Lite | Private multi-project artifact benchmark; public demonstrative due-diligence week | Private thousands of files/91 tasks; Lite 147 files across 67 sources | PDF/LaTeX, XLSX, PPTX, MP4/SRT | Binary accuracy/critical-insight checks + pairwise analytical/presentation Elo | Strong source→check traceability, contradiction/supersession cases, artifact diversity | Private scored suite is unauditable; tasks reset independently, so “multi-week” is not longitudinal agent work; artifact-only judges cannot verify source entailment/use |
+| GDPval / GDPval-AA | Broad occupational artifact-production slice | Multimodal case/task material | Professional work deliverables | Occupation-matched pairwise comparison against one human witness | Demonstrates expert task acquisition and occupational-frame breadth | How should frame, content, suite assembly, and inference populations be separated? |
 | APEX-Agents-AA | Professional services tasks | Realistic app/workflow dependencies | Task completions | Rubric-based local file grading | Strong adjacent model for professional service workflows | What is reproducible publicly? |
 | OSWorld / OSWorld 2.0 | Computer-use agents | Desktop environment | Completed GUI workflows | Task success | Long-horizon GUI realism | How to combine GUI tasks with knowledge-work artifacts? |
-| OdysseyBench / OfficeBench | Office application workflows | Word/Excel/PDF/email/calendar | Office workflow completion | Programmatic / task-specific evaluation | Directly relevant to office knowledge work | How robust are evaluation functions? |
-| WorkstreamBench / MBABench | End-to-end spreadsheet finance tasks | Finance context and spreadsheet data | Professional spreadsheets | Spreadsheet / finance-specific checks | Useful for artifact testing and spreadsheet grading | Can we make an open finance-lite scenario? |
+| OdysseyBench / OfficeBench / WorkArena | Office and browser application workflows | Word/Excel/PDF/email/calendar or enterprise apps | Workflow completion and state | Programmatic / task-specific evaluation | Important historical anchors for interactive office work | **Evidence gap:** acquire and audit primary sources/releases before claiming reset, evaluator, adoption, or successor quality |
+| MBABench | End-to-end finance spreadsheet artifacts | Competition/training cases and starting workbooks | Native professional spreadsheets | Static Accuracy/Formula/Format judgments against one reference | Corrects final-cell evaluation by exposing formulas, structure, and formatting | How should counterfactual recalculation, rendered charts, task delta, and alternative valid models be tested? |
 | AIDABench | Document analysis agents | Heterogeneous documents | Analysis outputs | End-to-end pipeline checks | Useful for document-heavy source pools | How to evaluate evidence use? |
 | SaaS-Bench | Real deployable SaaS workflows | 23 open-source SaaS systems, multimodal inputs, persistent app state | Cross-application task completion | Weighted verification checkpoints + resolved score | Strong model for professional workflow realism and partial-credit state checks | Can we borrow checkpoint scoring without inheriting heavy environment maintenance? |
 | LH-Bench | Subjective enterprise long-horizon work | Real Figma files, course data rooms, expert-authored `SKILL.md` procedures | Front-end implementations, programmatic content artifacts | Skill-grounded rubrics, artifact contracts, human pairwise preferences | Shows expert procedural knowledge can be the bridge between execution guidance and evaluation criteria | How should skill-bench separate public skills from private verifier/rubric contracts to avoid leakage? |
@@ -20,6 +19,13 @@ This file tracks benchmark families relevant to `skill-bench`. For grouped concl
 | ClawsBench | Productivity agents + safety | Simulated workspace services | API actions / task completion | State-based task success and safety | Important for productivity-agent risks | How to include safety and prompt injection? |
 | SWE-bench / Terminal-Bench | Coding / terminal tasks | Repos or terminal envs | Patches / terminal outcomes | Tests | Shows value of executable scoring | What analogs exist for decks/spreadsheets/memos? |
 | PaperBench / PresentBench | Research replication / presentations | Papers, specs | Artifacts | Task-specific / judge scoring | Adjacent artifact-generation benchmarks | How mature are methods? |
+
+The cross-family evolution analysis and retain/repair/test decisions are in
+[`concepts/professional-benchmark-evolution-matrix.md`](concepts/professional-benchmark-evolution-matrix.md).
+Its central conclusion is that newer professional-work benchmarks repair
+different links—occupational frame, source pack, environment, workflow,
+artifact/state delta, grader, and lifecycle—but none yet closes the full chain
+from professional demand to a licensed readiness claim.
 
 ## How to use this landscape
 

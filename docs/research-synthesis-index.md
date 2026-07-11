@@ -64,8 +64,20 @@ Most relevant sources:
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
+| [Professional benchmark evolution matrix](concepts/professional-benchmark-evolution-matrix.md) | A | Compares AA-Briefcase/Lite, GDPval, Workspace-Bench, MBABench, LH-Bench, Workflow-GYM, SaaS-Bench, and Agents' Last Exam as repairs to different links in one evidence chain; distinguishes implemented machinery from demonstrated validity |
 
 **Repository consequence:** The charter remains cross-domain; pilots must state their general hypothesis, suite assembly needs explicit coverage evidence, and results must bound their inference population. A nonempty occupation/subdomain cell is coverage, not representativeness or readiness. Expert submission, engineer implementation, grader construction, and post-transformation expert disposition require separate authority records.
+
+The comparative evolution view adds a second boundary: a newer benchmark is
+not automatically a validated successor because it adds more files, longer
+trajectories, native state, or deterministic checks. A claimed repair needs a
+direct falsification test at the repaired link. Current evidence supports broad
+task acquisition (GDPval/ALE), source/check traceability (AA-Briefcase-Lite),
+workspace and state substrates (Workspace-Bench/SaaS-Bench), native artifact
+inspection (MBABench), and observable expert procedures (LH-Bench) more strongly
+than it supports occupational representativeness, longitudinal project work,
+counterfactual artifact integrity, checkpoint progress, or professional
+readiness. OfficeBench/WorkArena remain explicit primary-source audit gaps.
 
 ## 3. Expertise transfer is an intervention that must be separated from the measuring instrument
 
