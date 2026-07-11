@@ -541,6 +541,36 @@ professional-capability estimates.
 
 ALE's released PowerMill evaluator adds a concrete bypass: a pre-existing `agent_sim.stl` can enter a test path that skips collision checking and simulation. The internal seven-case replay rejects pre-satisfied, stale, copied-reference, and omitted-transition outcomes, accepts one declared alternate path, and marks invalid initialization as environment invalid. These are builder-authored synthetic conformance results only—not ALE reproduction, verifier completeness, agent capability, prevalence, expert validity, or readiness [ALE, IS].
 
+### 2.8 Executable composition is not a workflow-validity argument
+
+Composing seeded setup, oracle actions, and state validators can efficiently create
+longer executable tasks, but it does not establish that the chain represents a
+professional workflow or isolates planning. Represent every composite task as a
+typed obligation DAG: prerequisites, produced and consumed state, equivalent paths,
+reversibility, milestone observations, and terminal invariants. Retain validator
+invocation cadence as instrument identity; at termination, replay all required
+invariants independently of polling order so earlier credit cannot survive a
+reversal. Reset evidence needs pre/post fingerprints, enumerated side effects,
+teardown outcomes, and invalid-trial handling [WA].
+
+WorkArena++ strongly supports executable composition in one ServiceNow substrate,
+including paired explicit-procedure and protocol-retrieval variants. Its 341 paired
+author-designed workflows, near-floor configured-agent results, and small trained
+convenience human study do not establish occupational sampling, five isolated
+cognitive abilities, or causal planning burden. The inspected official code is from
+2026 rather than the 2025 paper, uses both sequential and global validators, and
+does not prove complete reset, cross-software transfer, safety, or exact
+reproduction [WA]. Compare observed composite success with a matched atomic
+prediction using template/family-clustered repeats; a gap remains diagnostic unless
+presentation, horizon, interface, and information budgets are controlled and the
+workflow has expert or source provenance.
+
+The internal two-work-shape conformance replay makes reversal-safe terminal checks,
+poll-order independence, earliest unsupported-dependency localization, reset
+attestation, and atomic-product recomputation executable [CW]. It validates fixture
+behavior only—not agent capability, planning causality, occupational realism,
+professional validity, safety, cross-domain generality, or readiness.
+
 ## 3. Measurement stack: trial to defensible claim
 
 | Layer | Unit observed | Appropriate claim | Do not infer |
@@ -1051,6 +1081,7 @@ panel or a calibrated bridge design.
 | Suite assembly argument | distinguish a broad frame and healthy pool from the administered sample and licensed population inference | frame/content exclusions, eligible pool, selection/seed/order, lineage clusters, intended/realized mixture, weights, precision/stopping, invalid/missing policy, alternate-assembly sensitivity, bounded claim |
 | Persistent-workspace record | distinguish file presence and authored relevance from observed or causal use while preserving state integrity | inventory/overlay hashes, placement and valid time, permissions/network, typed and alternate relations, evidence-view-bound access/write, protected/mutable zones, pre/post mutations, cleanup |
 | Sparse workflow-transition record | distinguish one witness path and final state from run-attributable stage completion | pinned initial state, pre/postconditions, alternative paths, necessity/sufficiency, state delta, evidence views, downstream consequence, invalid-environment policy |
+| Composite-workflow contract | distinguish executable chaining from supported workflow and planning claims | typed obligation DAG, produced/consumed state, equivalent paths, milestone/terminal split, reversal replay, validator cadence, reset attestation, atomic baseline, family clustering, workflow provenance |
 | Role-versioned suite membership | distinguish coverage, regression, frontier, calibration, and retired uses of the same task | immutable membership hash, role/tier, admission evidence, outcome-selection flag and snapshot, exposure state, transition event, replacement bridge, retirement reason |
 | Counterfactual artifact record | establish editability and behavioral integrity rather than current-value similarity | native/executable/rendered/trace views, pinned engine, initial-to-final mutation surface, authoritative perturbations, dependency propagation, invariants, permitted formula/layout equivalence, witness health |
 | Action-safety record | distinguish source presence, attempted behavior, realized consequence, recovery, and useful completion | authority matrix, placement/exposure/adoption evidence, tool event, interceptor, pre/post state, severity/reversibility, residual harm, containment canaries, separate safety/utility outcomes |
@@ -1081,6 +1112,7 @@ fidelity separately from score calibration [EB, AP].
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
 | Cross-family execution substrate (BrowserGym) | canonical benchmark contract + adapter realization + trial-policy identity; differential conformance | common method signature or scalar hides heterogeneous evaluator, reset, retry, backend, observation, and error semantics | full immutable v2 paper plus inspected March 2026 official release; broad transport evidence, not exact-paper reproduction, native/adapted equivalence, common scale, safety, or professional validity [BG] |
+| Executable workflow composition (WorkArena++) | typed obligation DAG, composable setup/oracle/validator, milestone/terminal split, reversal and reset evidence | chained atomic difficulty or polling history mistaken for planning, realism, or complete consequential work | full immutable v2 paper plus inspected February 2026 official release, which postdates the paper; strong construction evidence, but floor effects, small convenience human study, single software, reset uncertainty, and no occupational, safety, or exact-reproduction validation [WA]; internal replay is synthetic conformance only [CW] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
 | Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
 | Evolving-information workspace evaluation (ClawArena) | evidence-emission/update map, persistent workspace state, and update-to-check crosswalk | authored omniscience, untyped claim transitions, answer-bearing feedback, explicit preferences, mostly syntactic checks, unsafe shell execution, one-run order effects | full immutable v2 paper plus inspected official v1.0.0 and later release with timing boundaries; 337 rounds and 327 checker scripts audited, not professional-truth or reliability evidence [CA] |
@@ -1214,6 +1246,10 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     benchmark, upstream evaluator/dataset/backend, adapter transformations and
     losses, and trial policy as independent identities; require differential
     conformance before semantic-preservation or pooled-score claims.
+40. **Composition is not construct validity:** executable subtasks need a typed
+    dependency DAG, poll-order-independent terminal invariant replay, reversal and
+    reset evidence, and matched atomic/family-cluster baselines; longer chains and
+    lower success do not alone identify planning, realism, or professional work.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1231,6 +1267,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Realistic trap vs benchmark gotcha | Decision-boundary traps can expose expert judgment, but the reviewed consulting corpus and graders are not auditable and live values can drift [CT]. | Instantiate the same critical-incident record in two structurally different domains; plant naive/correct variants and test fairness, typed evidence checks, threshold flips, and predicted failure localization. |
 | Ecological harness comparison vs valid common envelope | Native harness behavior is a legitimate bundled treatment, but Harness-Bench's later runner and the LH pilot show that fresh directories and shared prompts do not establish equivalent filesystem, network, service, or measurement opportunity [HB, PX]. | Run tool-level denial/allow canaries and adapter conformance checks before each cell; retain service failures; repeat matched cells; estimate a contrast only when both arms satisfy one hashed envelope and mandatory-evidence policy. |
 | Shared runner breadth vs measurement equivalence | BrowserGym runs heterogeneous families through one interface, but inspected adapters retain different rewards/evaluators and transform observations, trajectories, parsing, errors, retries, and resets; paper results lack native/adapted agreement and clustered repeats [BG]. | From frozen native states, run matched native/adapted cases and compare score, termination, side effects, typed evaluator evidence, invalidity, resets, and all attempts; report family scores until preservation and any common-scale validity are independently supported. |
+| Executable composition vs workflow/planning validity | WorkArena++ composes setup, oracle, and validators and increases horizon, but author-designed variants, history-dependent sequential validation, near-floor agents, a small ServiceNow-heavy human sample, and a later release do not isolate planning or occupational realism [WA]. | Across two provenance-grounded unlike workflows, compare matched atomic and composite conditions with controlled presentation/interface/information budgets; replay terminal invariants independent of polling order, test reversals and resets, and report family-clustered uncertainty plus earliest unsupported dependencies [CW]. |
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
@@ -1618,3 +1655,13 @@ them:
   evidence; the small clustered BizBench comparison and outcome-conditioned,
   heterogeneous HealthBench transfer do not establish criterion validity,
   expert equivalence, calibrated fusion, cross-domain capability, or readiness.
+- **[WA]**
+  `papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md`;
+  reviewed immutable v2 PDF/text and pinned official February 2026 archive paths
+  and hashes are recorded there. The release postdates the 2025 paper and no live
+  ServiceNow run was reproduced. Evidence supports executable composition, not
+  occupational representativeness, isolated planning/reasoning, complete reset,
+  cross-software transfer, safety, professional validity, or readiness.
+- **[CW]** `pilots/composite-workflow-conformance/README.md` and
+  `pilots/composite-workflow-conformance/workflows.json`; two builder-authored
+  synthetic workflows establish deterministic conformance behavior only.

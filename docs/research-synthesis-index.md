@@ -62,6 +62,7 @@ Most relevant sources:
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Demonstrates large-scale expert-authored multimodal occupational task acquisition while exposing sampling, weighting, witness, and inference limitations |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
+| [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
 | [Design Report for Knowledge-Work Benchmarks](../papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | A | Adds a work-activity → tested-setting → persistent-product → licensed-claim reporting chain and makes omitted responsibilities and downstream handoffs explicit; its preliminary 18-label inventory is a revisable vocabulary, not validated coverage |
@@ -89,7 +90,21 @@ workspace and state substrates (Workspace-Bench/SaaS-Bench), native artifact
 inspection (MBABench), and observable expert procedures (LH-Bench) more strongly
 than it supports occupational representativeness, longitudinal project work,
 counterfactual artifact integrity, checkpoint progress, or professional
-readiness. OfficeBench/WorkArena remain explicit primary-source audit gaps.
+readiness. OfficeBench remains an explicit primary-source audit gap; the completed
+WorkArena++ audit closes the composition-method gap but not occupational validity.
+
+Executable composition is therefore a construction mechanism, not a construct
+argument. A composite task needs a typed obligation DAG with prerequisites,
+produced/consumed state, equivalent paths, and reversibility; milestone observations
+must be rechecked against terminal invariants, with validator cadence and reset
+attestations retained as instrument identity. Compare observed composite outcomes
+with matched atomic baselines using family-clustered uncertainty, but interpret any
+gap as diagnostic until workflow provenance and controlled horizon, interface, and
+information-budget comparisons support a planning or realism claim. The internal
+[composite-workflow replay](../pilots/composite-workflow-conformance/README.md)
+demonstrates poll-order-independent reversal detection and earliest unsupported-
+dependency localization on two synthetic work shapes only; it supplies no agent,
+occupational, planning, safety, cross-software, or readiness evidence.
 
 Interactive families add a parallel boundary. Executable outcome checks are a
 real repair over action-sequence imitation because they admit alternative paths,
