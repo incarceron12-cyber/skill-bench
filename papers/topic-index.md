@@ -43,6 +43,7 @@ The review files below are deep reviews unless their own evidence-status section
 | Review | Primary question | Secondary tags |
 |---|---|---|
 | [TheAgentCompany](agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | What does an integrated simulated company establish, and where do workplace substrate, occupational validity, collaboration, consequences, and sampling diverge? | workplace simulation, coworkers, checkpoints, reset |
+| [OdysseyBench](agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md) | When do dialogue-distributed requirements support consequential office action, and why is that not persistent memory or professional validity? | office workflows, history, evidence adoption, evaluator dispatch |
 | [Workspace-Bench](agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | How should files, dependencies, provenance, observed use, mutations, and workspace integrity be evaluated? | persistent workspace, retrieval, causal use |
 | [Workflow-GYM](agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | How can professional GUI workflows and final state be evaluated without confusing environment faults with capability? | GUI, state, environment validity |
 | [SaaS-Bench](agent-benchmarks/2026-07-11-saas-bench-stateful-workflow-validity.md) | What does cross-application persistent-state evaluation add, and what simulator/checkpoint limits remain? | SaaS, checkpoints, workflow |
@@ -56,7 +57,7 @@ The review files below are deep reviews unless their own evidence-status section
 | [OSWorld 2.0](agent-benchmarks/2026-07-11-osworld2-long-horizon-workflow-validity.md) | Do long, evolving desktop workflows repair short-task validity, and which professional/reliability claims remain unsupported? | computer use, checkpoints, dynamic state, safety |
 | [WorkArena++](agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | What does executable workflow composition establish, and when do dependency, polling, reset, and provenance gaps block planning or realism claims? | composition, state validators, reset, construct validity |
 
-**Cross-family synthesis:** [Professional knowledge-work benchmark evolution](../docs/concepts/professional-benchmark-evolution-matrix.md) compares the fully reviewed/release-audited professional families plus the official AA-Briefcase-Lite release. It records retain/repair/test decisions. OfficeBench remains an evidence gap; the WorkArena++ review now supplies bounded composition evidence without licensing occupational, planning, or readiness claims.
+**Cross-family synthesis:** [Professional knowledge-work benchmark evolution](../docs/concepts/professional-benchmark-evolution-matrix.md) compares the fully reviewed/release-audited professional families plus the official AA-Briefcase-Lite release. It records retain/repair/test decisions. OfficeBench remains an evidence gap; TheAgentCompany, OdysseyBench, and WorkArena++ now supply bounded substrate, evidence-to-action, and composition evidence without licensing occupational, persistent-memory, collaboration, planning, professional-validity, or readiness claims.
 
 **Interactive-family synthesis:** [Web, tool-use, and computer-use benchmark evolution](../docs/concepts/web-tool-computer-benchmark-evolution.md) compares full immutable primary sources for GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp. It traces answer→action→state→policy/user→repeated-outcome measurement and records retain/repair/test decisions. Release-audited reviews now cover [OSWorld 2.0](agent-benchmarks/2026-07-11-osworld2-long-horizon-workflow-validity.md) and [BrowserGym](agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md), with their successor and adapter claim limits preserved.
 
@@ -85,6 +86,10 @@ The review files below are deep reviews unless their own evidence-status section
 | [Anchor](agent-benchmarks/2026-07-10-anchor-artifact-drift-generation.md) | How can generated tasks keep instructions, environment, witness, and checker projections aligned? | task generation, conformance, drift |
 | [ClawArena](agent-benchmarks/2026-07-10-clawarena-evolving-information.md) | How should corrections, retractions, supersession, and consequential updates be represented? | evolving evidence, workspace, state |
 | [LongMemEval v2](agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md) | How should environment experience, memory access, adoption, retention, and downstream effect differ? | memory, longitudinal evaluation, experience |
+
+OdysseyBench is indexed primarily with workplace workflows rather than duplicated
+here: it consumes a supplied synthetic history and acts on office state, but does
+not test memory accumulated persistently through executed experience.
 
 ## 6. Safety, contamination, and integrity
 

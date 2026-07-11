@@ -63,6 +63,8 @@ Most relevant sources:
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
+| [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
+| [OdysseyBench](../papers/agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md) | B | Connects dialogue-distributed requirements to office-state action while exposing persistent-memory, evaluator-dispatch, collateral-state, and professional-validity gaps |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
 | [Design Report for Knowledge-Work Benchmarks](../papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | A | Adds a work-activity → tested-setting → persistent-product → licensed-claim reporting chain and makes omitted responsibilities and downstream handoffs explicit; its preliminary 18-label inventory is a revisable vocabulary, not validated coverage |
@@ -105,6 +107,26 @@ information-budget comparisons support a planning or realism claim. The internal
 demonstrates poll-order-independent reversal detection and earliest unsupported-
 dependency localization on two synthetic work shapes only; it supplies no agent,
 occupational, planning, safety, cross-software, or readiness evidence.
+
+Workplace validity therefore needs a **substrate-to-consequence evidence ladder**:
+occupational/task provenance; service and initial-state validity; requirement or
+history availability, access, authority recognition, and adoption; actor/NPC
+authority; action execution; intended and collateral state deltas; evaluator
+dispatch and evidence sufficiency; then a licensed claim. TheAgentCompany supplies
+strong integrated-service evidence and some cross-service coherence, but its one
+invented software company, convenience/verifier-shaped tasks, unvalidated LLM
+coworkers, permissive sampled checks, and unproven shared-service resets leave the
+later links weak. OdysseyBench supplies inspectable generated requirement lineage
+and evidence-to-office-state tasks, but histories are delivered at evaluation
+rather than accumulated, prior work is simulated, source testbeds are external,
+and dominant existence/substring predicates omit artifact and collateral-state
+quality. Neither licenses occupational sampling, persistent memory, human-like
+collaboration, professional validity, capability, labor automation, or readiness.
+The internal [experience-memory replay](../pilots/experience-memory-transfer/README.md)
+separates raw-history success, summary omission, stale adoption, required-state
+failure, collateral mutation, and unavailable-evaluator invalidity in one
+deterministic synthetic fixture only; it is implementation evidence, not empirical
+support for the planted causal story or any workplace claim.
 
 Interactive families add a parallel boundary. Executable outcome checks are a
 real repair over action-sequence imitation because they admit alternative paths,

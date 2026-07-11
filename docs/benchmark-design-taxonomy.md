@@ -571,6 +571,50 @@ attestation, and atomic-product recomputation executable [CW]. It validates fixt
 behavior only—not agent capability, planning causality, occupational realism,
 professional validity, safety, cross-domain generality, or readiness.
 
+### 2.9 Workplace substrate is not consequential-work validity
+
+Treat workplace realism as an evidence profile, not a setting label. Preserve this
+ladder without allowing a later link to inherit validity from an earlier one:
+
+```text
+occupational/task provenance → service/environment and initial-state validity
+  → requirement/history availability → access → authority/applicability → adoption
+    → actor or NPC authority → action execution
+      → intended + collateral state deltas → evaluator dispatch + sufficient view
+        → licensed construct, population, and use claim
+```
+
+At the substrate layer, pin services, files, identities, permissions, actor/NPC
+model and profile, source-state roots, network/tool envelope, health, reset, and
+cleanup. At the requirement layer, bind each hidden consequence to exact admissible
+spans, valid time, scope, corrections, and alternate support sets; availability is
+not access, and access is not authoritative adoption. At the action layer, declare
+required, permitted, forbidden, and preserved deltas, legitimate alternate paths,
+recipient or downstream operation, and verification. At the instrument layer,
+statically dispatch every criterion, execute an oracle witness, and prove that the
+observer can distinguish task-created success, collateral damage, and insufficient
+evidence. Broken dispatch, stale/shared pre-state, or unavailable observers produce
+instrument/environment invalidity, not agent failure [TAC, OD].
+
+TheAgentCompany strongly demonstrates integrated self-hosted services and selected
+cross-service coherence. Its convenience/verifier-shaped tasks in one invented
+software company, simulated coworkers, permissive inspected predicates, shared-
+service reset uncertainty, and single-run results do not establish authority,
+complete consequences, occupational sampling, collaboration, labor automation, or
+readiness [TAC]. OdysseyBench adds inspectable synthetic history-to-office-state
+lineage, but supplies histories at evaluation time, simulates prior work, imports
+mutable external testbeds, and relies mostly on existence/substring/cell predicates;
+it therefore tests a configured evidence-to-action pipeline, not persistent memory
+or professionally complete workflow execution [OD].
+
+The internal experience-memory conformance extension makes six failure classes
+distinct—raw-history success, summary omission, stale adoption, missed required
+transition, collateral mutation, and unavailable-evaluator invalidity [XM]. Its one
+deterministic builder-authored fixture validates contract behavior only. Real claim
+upgrades require provenance-grounded unlike workflows, repeated trials, actor and
+recipient/expert validation, alternate-path and adversarial-observer tests, complete
+reset evidence, and lineage-clustered uncertainty.
+
 ## 3. Measurement stack: trial to defensible claim
 
 | Layer | Unit observed | Appropriate claim | Do not infer |
@@ -1250,6 +1294,11 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     dependency DAG, poll-order-independent terminal invariant replay, reversal and
     reset evidence, and matched atomic/family-cluster baselines; longer chains and
     lower success do not alone identify planning, realism, or professional work.
+41. **Workplace substrate is not consequential-work validity:** keep task sampling,
+    service/reset validity, requirement access/adoption, actor authority, intended
+    and collateral deltas, evaluator sufficiency, and licensed claims separate;
+    integrated apps or supplied histories cannot silently confer occupational,
+    persistent-memory, collaboration, professional-validity, or readiness claims.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1665,3 +1714,15 @@ them:
 - **[CW]** `pilots/composite-workflow-conformance/README.md` and
   `pilots/composite-workflow-conformance/workflows.json`; two builder-authored
   synthetic workflows establish deterministic conformance behavior only.
+- **[TAC]**
+  `papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md`;
+  reviewed immutable v3 PDF/text and pinned post-v3 official release hashes are
+  recorded there. Release inspection supports substrate and evaluator audit, not
+  manuscript-time identity, occupational sampling, coworker validity, complete
+  consequences, labor automation, professional validity, or readiness.
+- **[OD]**
+  `papers/agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md`;
+  reviewed immutable v1 PDF/text and pinned seven-month-later official release
+  hashes are recorded there. External testbeds, absent paper trajectories, generated
+  histories, and narrow/invalid predicates block persistent-memory, occupational,
+  professional-validity, capability, safety, and readiness claims.
