@@ -554,6 +554,36 @@ The synthetic plural-judgment fixture validates policy/lineage machinery only;
 it does not establish professional consensus, construct validity, or readiness
 [ED, PJ].
 
+### 3.3 Reliability is a conditional operational profile
+
+Mean success and operational reliability are non-substitutable. Bind every
+reliability estimate to a configured system, task and equivalent-form population,
+environment version, time window, retry/timeout policy, intervention and exposure
+distribution, and consequence model. Preserve separate observations for accuracy,
+outcome/action/resource repeatability, perturbation sensitivity, confidence
+calibration and discrimination, constraint frequency, severity, reversibility,
+remediation, and decision loss. Consistently failing is repeatable but not capable;
+an equal-weight dashboard is not a validated reliability or readiness scale [AR].
+
+A perturbation is an instrument with two defeasible warrants: a **preservation
+claim** that the intended requirement and difficulty remain invariant, and an
+**exposure claim** that its type and intensity represent a declared operating
+profile. Record transformed loci, independent semantic/metamorphic evidence,
+applicability, intensity, and source distribution. Invalid variants are instrument
+defects. In fault trials, retain injection, delivery, wrapper retry/recovery, agent
+retry/fallback, latency/cost, and final consequence separately; harness-resolved
+faults cannot establish agent recovery [AR].
+
+Predictability also requires a decision point. A pre-task routing signal, in-run
+escalation signal, and post-artifact acceptance signal have different evidence
+views and licensed uses. Bind confidence method and fallback, signal time, available
+evidence, frozen calibration population, threshold/action policy, coverage,
+outcome horizon, and asymmetric loss. The reviewed study's five incompletely
+controlled repeats, unvalidated paraphrases/fault exposure, retrospective
+self-confidence, single-LLM severity judgments, unclustered dependence, and
+unpinned experiment code demonstrate a diagnostic profile only—not cross-domain
+ordering, prospective prediction, deployment risk, or certification [AR].
+
 Amazon's production architecture usefully connects offline/online traces,
 component and end-to-end evaluators, dashboards, alerts, human audits, and
 business effects. It does not publish formulas, denominators, uncertainty,
@@ -834,6 +864,7 @@ panel or a calibrated bridge design.
 | Participation/authority ledger | govern expert contribution and transformed artifacts | purpose/consent, reciprocal value, decision rights, transformation lineage, reconsent, approval that never propagates implicitly |
 | Execution validity record | establish whether a trial had the declared boundary and opportunity | tool-scoped canary probes, adapter/launcher/environment hashes, fixture identity, service health, mandatory evidence, invalid/unscorable reason |
 | Metric specification and monitoring record | turn trial observations into a reproducible population estimand and governed trigger | eligible population/unit, versions, missingness, clustering/dependence, aggregation/uncertainty, slices, baseline/window, threshold/loss, alert/audit/remediation/rollback |
+| Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system, task/form population, environment/time, retry policy, intervention preservation and exposure evidence, matched clustered repeats, decision-time evidence view, consequence/loss model |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
 | Benchmark change log | distinguish instrument drift from agent evolution | old/new component hashes, rationale, affected claims, bridge panel, compatibility/calibration decision, rollback |
@@ -879,6 +910,7 @@ fidelity separately from score calibration [EB, AP].
 | Persistent file workspace (Workspace-Bench) | workspace identity/placement, typed relevance and provenance hypotheses, alternate paths, observed-use and integrity records | scale or authored graph treated as causal use; task-local injection/placement ambiguity; judge-view mismatch; unclustered single runs and mutable releases | full immutable v4 paper plus pinned post-v4 code/data audit and 37-file targeted task trace; no base-workspace replay, immutable result inventory, professional validation, Lite-fidelity, or workspace-learning identification [WB] |
 | Session-derived workplace projection (EnterpriseClawBench) | observed-episode-to-counterfactual delta, hindsight firewall, equivalence disposition, and licensed-use record | real demand laundered into replay fidelity; omitted interaction/repair; answer-bearing hindsight; duplicated rubric dimensions; one-deployment generalization | full immutable v1 plus pinned post-paper release and two public trace audits; proprietary source pool/tasks/results and independent equivalence review unavailable [ECB] |
 | Broad expert executable portfolio (Agents' Last Exam) | expert→engineer→grader authority handoff, clean-start/verifier falsification, occupational denominators, and role-versioned living suites | nonempty cells mistaken for representativeness; deterministic proxy mistaken for professional closure; single runs; outcome-selected tiers; occupational/economic overclaim | full immutable v1 plus pinned post-paper release and three task traces; private pool, exact paper-time tree/results, licensed VM execution, expert reliability, and grader calibration unavailable [ALE] |
+| Conditional agent reliability profiling | response matrix over matched repeats, preserved perturbations, decision-time confidence, and typed consequences | repeatability mistaken for capability; authored variants/exposure treated as deployment robustness; wrapper recovery credited to agent; post-hoc confidence and generic severity promoted to readiness | full immutable v3 paper and protocol-level review; two benchmark families, five incompletely controlled repeats, unvalidated interventions/severity, and no paper-pinned experiment code [AR] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -986,6 +1018,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 33. **A tier label is not suite identity:** immutable membership, admission snapshot, outcome-selection, exposure, role transitions, and bridges govern living-benchmark comparisons; outcome-informed routing is not intrinsic difficulty.
 34. **Agreement does not establish interchangeability:** preserve raw observations and keep agreement, panel-relative severity, fit, repeat stability, construct preservation, and decision loss separate; rubric execution topology and aggregation are instrument versions, not implementation trivia.
 35. **Simulated dialogue is probed evidence:** simulator behavior, productive friction, stopping/deletion, and correction lineage remain visible; conversation volume or participant enjoyment cannot replace grounded downstream utility or consent/privacy evidence.
+36. **Reliability is conditional, not a trait:** bind separate capability, repeatability, perturbation, predictability, and consequence estimands to an operational profile; require preservation/exposure evidence, separate wrapper from agent recovery, and license confidence only at its observed decision point.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1023,6 +1056,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Retrospective QA success vs safe held-out transfer | The internal memory replay plants QA-correct but harmful evidence-only transfer and safe provenance-gated promotion, but deterministically encodes its own expected causal story [XM]. | Run stochastic consumers on unseen task families with frozen memory packages; vary stale/contradicted/failed-attempt evidence, measure access/adoption/action/recovery, cluster by source lineage, and test rollback plus expert-grounded consequences. |
 | Real-session demand provenance vs source-to-task fidelity | EnterpriseClawBench provides real episode origin, but public traces show omitted repair, hindsight-derived answers, and rubric duplication while the proprietary pool blocks independent sampling and equivalence audit [ECB]. | Blind source users/independent experts to projected outputs; disposition each delta and omitted turn; compare faithful, demand-inspired, and synthetic licenses; sample rejected episodes; test preserved decisions, alternate paths, and acceptance judgments. |
 | Living difficulty tier vs stable comparison | ALE's tiers are partly outcome-informed and later release memberships/counts differ while labels persist; most reported cells are single runs [ALE]. | Freeze membership/admission outcomes and exposure state; repeat systems across old/new memberships plus an anchor bridge; estimate task/workflow uncertainty and report role-transition effects separately from ability change. |
+| Mean accuracy vs operational reliability | The reviewed reliability profile separates repeatability, perturbation response, confidence, and safety, but five non-independent repeats, unvalidated semantic preservation/exposure, wrapper-side recovery, retrospective confidence, and generic LLM severity prevent deployment interpretation [AR]. | On cross-domain forms, predeclare matched baseline/intervention repeats and operational profiles; independently validate variant preservation, cluster by task/form, retain invalid/provider failures, distinguish wrapper/agent recovery, elicit signals at routing/escalation/acceptance times, and calibrate consequence/loss with domain experts. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -1347,3 +1381,10 @@ them:
   coaching network demonstrates dialogue feasibility and instrument reactivity,
   not tacit-knowledge capture, low-cost recruitment, privacy closure, or real-user
   and downstream benchmark utility.
+- **[AR]**
+  `papers/agent-benchmarks/2026-07-11-agent-reliability-profile.md`; reviewed
+  immutable v3 PDF/text hashes are recorded there. The two-family, five-repeat
+  study demonstrates distinct diagnostic profile dimensions, not independent
+  tail estimates, cross-domain reliability ordering, prospective predictability,
+  calibrated consequence loss, deployment readiness, or certification; the
+  inspected implementation commit is not paper-time identity.
