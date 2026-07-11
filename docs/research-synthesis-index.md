@@ -140,6 +140,7 @@ simulator identity, reset health, and the claims that survive those choices.
 | [Anthropic agent evaluation lifecycle](concepts/anthropic-agent-evaluation-lifecycle.md) | A | Provides a production vocabulary of tasks, trials, graders, transcripts, and multi-grader evaluation patterns |
 | [AgentRewardBench](../papers/agent-benchmarks/2026-07-10-agentrewardbench-judge-reliability.md) | B | Exposes judge reliability, evidence-view, trajectory, annotation, and observer-access issues |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
+| [JADE](../papers/agent-benchmarks/2026-07-11-jade-dynamic-professional-grading.md) | B | Separates invariant requirements from response-created claims/consequences, while exposing variable denominators, shared-cue judging, verifier fail-open behavior, and unvalidated score fusion |
 | [SaaS-Bench](../papers/agent-benchmarks/2026-07-11-saas-bench-stateful-workflow-validity.md) | A | Release audit shows that a checkpoint becomes partial-progress evidence only when it was not pre-satisfied, is attributable to the run, has declared necessity/sufficiency, and does not double-count one upstream event through dependent consequences |
 | [Efficient Benchmarking of AI Agents](../papers/agent-benchmarks/2026-07-09-efficient-benchmarking-ai-agents.md) | B | Shows that reduced panels may preserve rank while degrading absolute-score interpretation |
 | [Agent Psychometrics](../papers/agent-benchmarks/2026-07-09-agent-psychometrics.md) | B | Treats difficulty as a property of the configured task/system package and motivates response matrices and scaffold-aware reporting |
@@ -151,6 +152,22 @@ simulator identity, reset health, and the claims that survive those choices.
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
 
 **Repository consequence:** Criterion/check contracts, metric-monitoring contracts, validity arguments, response matrices, and separate ranking versus absolute-capability claims. Grader identity includes rubric/examples, evidence view, criterion execution topology, score transformation, aggregation/tie policy, and configured rater. Agreement, panel-relative severity, fit, repeated-call stability, construct preservation, decision loss, cost, and audit burden remain separate outcomes; adjusted scores never overwrite raw observations or become adjudicated truth. Reliability is a conditional profile—not a system trait—indexed by configured system, task/form population, environment, time, intervention/exposure distribution, and consequence model. Accuracy, repeatability (including consistently wrong behavior), resource variation, perturbation effects, confidence quality, violation frequency, severity, remediation, and loss remain separate. Every perturbation needs independently supported preservation and exposure claims; wrapper recovery cannot count as agent recovery; confidence is licensed only for the decision time and evidence view at which it was elicited. Plural judgments remain immutable observations; aggregation is a versioned stakeholder/error-loss policy rather than discovered ground truth. Specification error, evidence gaps, rater instability, framework-conditioned disagreement, policy selection with dissent, and unresolved value conflict require distinct dispositions. The completed synthetic plural-judgment conformance slice exercises this boundary but supplies no prevalence, professional-consensus, or readiness evidence. Before the second pilot is interpreted, its adversarial audit should plant a pre-satisfied requirement, an unrelated record sharing the expected scalar, a title-only empty artifact, and one upstream defect with several descendant checks; readiness or duplicated consequences must not inflate progress.
+
+Open-ended grading adds a two-population boundary. Fixed requirements retain a
+common public basis and denominator; response-triggered criteria may inspect only
+claims, dependencies, side effects, contradictions, or artifact elements that the
+submission actually creates. Each contingent criterion needs a trigger locator,
+typed applicability and public basis, authority/evidence view, overlap and
+dependency relations, generation identity, and `supported`, `contradicted`,
+`insufficient`, or `not_applicable` evidence state. Report fixed completion,
+contingent claim reliability, evidence-conditioned reasoning, source authority,
+and abstention burden separately until fusion is independently calibrated. JADE's
+30-task/180-report human comparison, clustered correlations without uncertainty,
+withheld rich skills, shared model cues, outcome-conditioned HealthBench trimming,
+mutable live web, unsupported authority tiers/80% threshold, missing result
+artifacts, and close post-v1 release bound it to Tier B evaluator-design evidence;
+its inspected default fail-open fallback directly motivates capability-claim
+abstention when verification is unavailable.
 
 ## 6. Failures should generate causal diagnostic evidence
 

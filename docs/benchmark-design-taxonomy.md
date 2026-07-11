@@ -254,6 +254,54 @@ truth. Its example ablation suggests examples can improve judge agreement while
 also anchoring answers; rubric transformations therefore need before/after hashes,
 semantic review, and held-out tests of both agreement and construct breadth [RR].
 
+### 2.3a Dynamic criteria are a separate contingent population
+
+Open-ended artifacts may create facts, dependencies, risks, or side effects that
+no fixed reference answer can enumerate. Keep two ledgers rather than one changing
+rubric denominator:
+
+```text
+fixed requirement criteria (task/query conditioned, comparable)
+  + contingent claim/consequence criteria (response conditioned, diagnostic)
+    → typed evidence and dependency observations → separately reported metrics
+```
+
+A contingent criterion is legitimate only when it cites the exact response span,
+action, state, or artifact element that triggered it and tests the truth,
+entailment, consequence, contradiction, safety, or convention thereby created. It
+may not convert a judge-preferred omission into a new obligation. Preserve its
+type, applicability and public professional basis, claim-specific authority and
+evidence view, relation to fixed/other criteria (`novel`, `specialization`,
+`duplicate`, `dependency`, `counterevidence`, or shared evidence), score/gate/
+diagnostic role, and generator model/prompt/decoding/seed plus skill, response, and
+criterion-set hashes [JADE].
+
+Evidence verdicts must distinguish `supported`, `contradicted`,
+`insufficient_evidence`, and `not_applicable`; retrieval failure or verifier
+absence cannot become a substantive negative or restore a reasoning-only score.
+Fixed completion, contingent-claim reliability, reasoning conditional on evidence,
+source authority, and abstention burden remain separate until an independently
+validated fusion supplies a stable population interpretation. Criterion legitimacy
+and verdict correctness need blind expert calibration, including extraction
+precision/recall and dependency-edge agreement; generator/scorer agreement is not
+independent validity [JADE].
+
+JADE demonstrates the architecture on 150 strategic-sourcing queries, but its
+human evidence is 180 reports clustered in 30 tasks, with under-specified experts,
+trimmed ratings, no clustered uncertainty, withheld rich skills, shared model
+cues, mutable live-web verification, uncalibrated authority/threshold/fusion rules,
+outcome-conditioned medical trimming, heterogeneous transfer, and absent result
+artifacts. Its close post-v1 release is not manuscript identity and its default
+two-stage path reproducibly fails open when evidence is absent. **Invariant:** no
+response-conditioned criterion without a trigger and fair public basis may affect
+a score, and missing mandatory verification blocks the corresponding capability
+claim. **Validation experiment:** across two unlike artifact shapes, hold the task
+and core content fixed while changing one claim, citation, or dependency; require
+only the expected criterion/edge/verdict changes, preserve unrelated invariants,
+and measure criterion, graph, verdict, ranking, and score stability across repeats.
+Existing criterion, evidence-view, validity, metric, artifact, trace, and task-
+health contracts are the implementation homes; do not create a parallel schema.
+
 ### 2.4 Evolving evidence is a typed state transition, not a changed answer key
 
 A task's private basis must not collapse every event, source statement, and
@@ -993,6 +1041,7 @@ fidelity separately from score calibration [EB, AP].
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
 | Production agent evaluation (Anthropic, Amazon) | task/trial/grader/trace separation, task-health lifecycle, metric/monitoring contract, and operational failure taxonomy | engineering guidance may not establish construct validity; named metrics omit populations/estimands; synthetic and online samples drift | full official Anthropic and Amazon articles and concept reviews; experience/prescription evidence, not controlled effectiveness studies [AN, AM] |
 | Expert-authored criterion evaluation (ResearchRubrics) | reviewed criterion inventory, criterion-level judge observation, rubric transformation lineage | task-design authority mistaken for domain authority; bundled/dependent or hidden criteria; artifact-only source checks; uncalibrated additive score | full immutable v1 paper plus inspected post-paper official code/dataset releases; authoring and agreement evidence, not professional-readiness validation [RR] |
+| Dynamic professional grading (JADE) | separate fixed and response-triggered criterion populations, trigger lineage, typed evidence/dependency graph, and plural score families | answer-conditioned obligations, variable denominators, duplicate/shared-cue checks, live-web authority error, fail-open verification, and uncalibrated fusion | full immutable v1 paper plus inspected close post-v1 release; bounded evaluator-architecture and deterministic fallback evidence, not expert-equivalent, cross-domain, or readiness validation [JADE] |
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
@@ -1122,6 +1171,11 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     subtraction; bind every persistent product to a recipient and next operation;
     and report source, boundary, and destination evidence with strongest supported
     and excluded claims.
+38. **Adaptive coverage does not imply a common scale:** fixed obligations and
+    response-created claims use separate ledgers and score families; every dynamic
+    check needs a trigger, fair basis, typed applicability/evidence, overlap graph,
+    and generator identity, while absent mandatory verification blocks capability
+    interpretation rather than failing open.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1161,6 +1215,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Living difficulty tier vs stable comparison | ALE's tiers are partly outcome-informed and later release memberships/counts differ while labels persist; most reported cells are single runs [ALE]. | Freeze membership/admission outcomes and exposure state; repeat systems across old/new memberships plus an anchor bridge; estimate task/workflow uncertainty and report role-transition effects separately from ability change. |
 | Mean accuracy vs operational reliability | The reviewed reliability profile separates repeatability, perturbation response, confidence, and safety, but five non-independent repeats, unvalidated semantic preservation/exposure, wrapper-side recovery, retrospective confidence, and generic LLM severity prevent deployment interpretation [AR]. | On cross-domain forms, predeclare matched baseline/intervention repeats and operational profiles; independently validate variant preservation, cluster by task/form, retain invalid/provider failures, distinguish wrapper/agent recovery, elicit signals at routing/escalation/acceptance times, and calibrate consequence/loss with domain experts. |
 | Artifact correctness vs handoff usability | The design report argues that persistent products support work claims through receiving workflows, but its three purposive cases contain no recipient-use trial, independent mapping reliability, or downstream validation [DR]. | Across unlike domains, give independent recipients only the produced product; test source, boundary, and destination checks separately and record clarification, repair, rejection, time, error propagation, and legitimate alternate formats before licensing downstream-use claims. |
+| Adaptive diagnostic coverage vs comparable measurement | JADE separates stable skills from response-specific claim checks, but generated criterion counts, dependencies, shared model cues, mutable verification, and a fail-open release path leave common denominators and fusion unvalidated [JADE]. | On matched counterfactual artifacts from two unlike work shapes, mutate one claim/citation/dependency; blind experts to scores when judging criterion legitimacy and verdicts; measure extraction/edge agreement and item/graph/rank stability; report fixed and contingent families separately. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -1508,3 +1563,12 @@ them:
   reliability/stability and exact reconstruction, and no recipient-use or
   framework-effect study block taxonomy-validity, representativeness,
   downstream-usability, professional-readiness, and deployment claims.
+- **[JADE]**
+  `papers/agent-benchmarks/2026-07-11-jade-dynamic-professional-grading.md`;
+  reviewed immutable v1 PDF/text and close post-v1 official archive paths and
+  hashes are recorded there. The release is three days newer than v1 and omits
+  rich demonstrated skills, human labels, generated evaluation evidence, and
+  result reproduction artifacts. Its inspected fail-open scoring path is release
+  evidence; the small clustered BizBench comparison and outcome-conditioned,
+  heterogeneous HealthBench transfer do not establish criterion validity,
+  expert equivalence, calibrated fusion, cross-domain capability, or readiness.
