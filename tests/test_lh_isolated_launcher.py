@@ -53,5 +53,41 @@ class IsolatedLauncherCanaryTests(unittest.TestCase):
         self.assertNotIn("--query", command)
 
 
+class RetainedReplicationTests(unittest.TestCase):
+    def test_predeclared_replication_is_replayable_and_fail_closed(self) -> None:
+        base = ROOT / "pilots/lh-skill-adoption/ablation"
+        pre = json.loads((base / "replication-predeclaration-v9-v10.json").read_text())
+        summary = json.loads((base / "replication-summary-v9-v10.json").read_text())
+
+        self.assertTrue(pre["declared_before_execution"])
+        self.assertEqual(summary["pair_ids"], ["isolated-agent-pair-v9", "isolated-agent-pair-v10"])
+        self.assertEqual(summary["attempted_pairs"], 2)
+        self.assertEqual(summary["complete_pairs"], 1)
+        self.assertEqual(summary["arm_completion"], {"complete": 2, "attempted": 4})
+        for claim in ("condition_effect_permitted", "professional_capability", "expert_validity", "release_readiness"):
+            self.assertFalse(summary[claim])
+
+        for pair_id in summary["pair_ids"]:
+            pair = json.loads((base / pair_id / "pair-summary.json").read_text())
+            self.assertTrue(pair["environment_valid_both_arms"])
+            self.assertFalse(pair["condition_effect_permitted"])
+            for arm in pair["arms"].values():
+                for canary in ("zero_call_preflight", "in_trial_canary"):
+                    ref = arm[canary]
+                    path = ROOT / ref["path"]
+                    self.assertTrue(ref["passed"])
+                    self.assertEqual(module.sha256(path), ref["sha256"])
+                report = ROOT / arm["trial_report"]["path"]
+                self.assertEqual(module.sha256(report), arm["trial_report"]["sha256"])
+
+        complete = json.loads((base / "isolated-agent-pair-v10/pair-summary.json").read_text())
+        for arm in complete["arms"].values():
+            self.assertTrue(arm["complete"])
+            self.assertEqual(arm["grader_results"]["outcomes"]["evidence-provenance"], "failed")
+            for key in ("evidence_result", "claim_result"):
+                ref = arm["grader_results"][key]
+                self.assertEqual(module.sha256(ROOT / ref["path"]), ref["sha256"])
+
+
 if __name__ == "__main__":
     unittest.main()

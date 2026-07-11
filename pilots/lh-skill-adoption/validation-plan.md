@@ -102,3 +102,23 @@ effect: one paired observation cannot distinguish treatment from run variance,
 and the rubric has not received independent human or expert calibration. The
 next empirical gate is replicated matched pairs plus independent rubric/expert
 review. Expert validity and release readiness remain false.
+
+Two additional pairs were predeclared and attempted without changing the v8
+launcher, task, configured system, Skill, or graders; see
+`ablation/replication-predeclaration-v9-v10.json` and
+`ablation/replication-summary-v9-v10.json`. Both v9 canaries passed, but both
+arms exhausted three provider calls without deliverables or token accounting.
+Both v10 canaries passed and both arms completed (37,217 no-skill versus 37,739
+public-skill tokens; six calls each; included cost reported as $0.00). Both v10
+outputs again failed deterministic evidence provenance. The no-skill arm failed
+contradiction reconciliation and passed causal scope; the public-skill arm
+passed contradiction reconciliation and failed causal scope. Every attempted
+arm, redacted log, usage record, artifact, replayed grader result, and hash is
+retained under `ablation/isolated-agent-pair-v9/` and `-v10/`.
+
+This is one complete pair out of two new attempts, not an adequate treatment
+estimate. The recurrent provenance failure is evidence of an artifact-convention
+or guidance-usability problem, but does not identify task, Skill, agent, or
+grader as root cause. Condition effect, professional capability, expert
+validity, and release readiness remain false pending independent rubric/expert
+review and a predeclared analysis with adequate valid replication.
