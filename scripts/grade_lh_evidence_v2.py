@@ -19,10 +19,49 @@ PILOT = ROOT / "pilots/lh-skill-adoption"
 DEFAULT_SOURCE = PILOT / "source-pack/decision-evidence.csv"
 CONTRACT = PILOT / "provenance-v2/public-artifact-contract-v2.md"
 CONFIG = PILOT / "graders/evidence-link-grader-v2.json"
-GRADER_VERSION = "1.0.0"
-CONTRACT_VERSION = "2.0.0"
+GRADER_VERSION = "1.1.0"
+CONTRACT_VERSION = "2.1.0"
 PROSPECTIVE_RE = re.compile(r"\{\{PROSPECTIVE:([^{}]+)\}\}")
 MALFORMED_MARKER_RE = re.compile(r"\{\{PROSPECTIVE|PROSPECTIVE:")
+
+_VALUE = r"\d+(?:\.\d+)?"
+_NUMERIC_FORMS = (
+    (re.compile(rf"(?<!\w)(?:>=|≥)\s*({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "ge"),
+    (re.compile(rf"(?<!\w)(?:<=|≤)\s*({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "le"),
+    (re.compile(rf"(?<!\w)>\s*({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "gt"),
+    (re.compile(rf"(?<!\w)<\s*({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "lt"),
+    (re.compile(rf"\b(?:at(?:\s+|-)least|no(?:\s+|-)less(?:\s+|-)than)(?:\s+|-)({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "ge"),
+    (re.compile(rf"\b(?:more(?:\s+|-)than|greater(?:\s+|-)than)(?:\s+|-)({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "gt"),
+    (re.compile(rf"\b(?:at(?:\s+|-)most|no(?:\s+|-)more(?:\s+|-)than)(?:\s+|-)({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "le"),
+    (re.compile(rf"\b(?:less(?:\s+|-)than|fewer(?:\s+|-)than)(?:\s+|-)({_VALUE})(\s*(?:%|percent)\b|%)?", re.I), "lt"),
+)
+_RANGE_RE = re.compile(rf"\b(?:between\s+)?({_VALUE})\s*(?:-|–|—|to|through|and)\s*({_VALUE})(\s*(?:%|percent)\b|%)?", re.I)
+_BARE_RE = re.compile(rf"(?<![A-Za-z0-9_.])({_VALUE})(\s*(?:%|percent)\b|%)?", re.I)
+
+
+def _numeric_tokens(text: str) -> set[str]:
+    """Canonicalize explicit numeric relations without inferring a lost comparator."""
+    tokens: set[str] = set()
+    consumed = [False] * len(text)
+
+    def add(match: re.Match[str], relation: str, values: tuple[str, ...]) -> None:
+        unit_group = match.group(match.lastindex or 0) or ""
+        unit = "percent" if unit_group.strip().lower() in {"%", "percent"} else "number"
+        tokens.add(":".join((relation, *values, unit)))
+        for index in range(match.start(), match.end()):
+            consumed[index] = True
+
+    for match in _RANGE_RE.finditer(text):
+        add(match, "range", (match.group(1), match.group(2)))
+    for pattern, relation in _NUMERIC_FORMS:
+        for match in pattern.finditer(text):
+            if not any(consumed[match.start():match.end()]):
+                add(match, relation, (match.group(1),))
+    masked = "".join(" " if used else char for char, used in zip(text, consumed))
+    for match in _BARE_RE.finditer(masked):
+        unit = "percent" if (match.group(2) or "").strip().lower() in {"%", "percent"} else "number"
+        tokens.add(f"eq:{match.group(1)}:{unit}")
+    return tokens
 
 
 def _sha(path: Path) -> str:
@@ -39,7 +78,7 @@ def _split_numbers(text: str, location: str, diagnostics: list[Diagnostic]) -> s
         body = match.group(1).strip()
         if not body or not _numbers(body):
             diagnostics.append(Diagnostic("INVALID_PROSPECTIVE_MARKER", location, "marker must contain a program-set numeric value"))
-    return _numbers(stripped)
+    return _numeric_tokens(stripped)
 
 
 def grade(source_path: Path, matrix_path: Path, memo_path: Path) -> dict[str, object]:
@@ -70,7 +109,7 @@ def grade(source_path: Path, matrix_path: Path, memo_path: Path) -> dict[str, ob
                 if (row.get(field) or "").strip() != source[field]:
                     diagnostics.append(Diagnostic("VALUE_SCOPE_MISMATCH", location, f"{field} differs from {evidence_id}"))
             testable = _split_numbers((row.get("claim") or "") + " " + (row.get("decision_use") or ""), location, diagnostics)
-            unsupported = testable - _numbers(source["reported_value"] + " " + source["scope"])
+            unsupported = testable - _numeric_tokens(source["reported_value"] + " " + source["scope"])
             if unsupported:
                 diagnostics.append(Diagnostic("UNSUPPORTED_NUMERIC_VALUE", location, f"{sorted(unsupported)} absent from {evidence_id} reported_value/scope"))
 
@@ -96,7 +135,7 @@ def grade(source_path: Path, matrix_path: Path, memo_path: Path) -> dict[str, ob
         if not citation_ids:
             diagnostics.append(Diagnostic("UNCITED_MATERIAL_CLAIM", location, f"numeric tokens {sorted(numbers)} have no [E##] citation"))
             continue
-        available = set().union(*(_numbers(sources[e]["reported_value"] + " " + sources[e]["scope"]) for e in citation_ids if e in sources))
+        available = set().union(*(_numeric_tokens(sources[e]["reported_value"] + " " + sources[e]["scope"]) for e in citation_ids if e in sources))
         unsupported = numbers - available
         if unsupported:
             diagnostics.append(Diagnostic("UNSUPPORTED_NUMERIC_VALUE", location, f"{sorted(unsupported)} absent from cited source values/scope"))

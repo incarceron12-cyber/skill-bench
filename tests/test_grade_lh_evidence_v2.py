@@ -8,7 +8,9 @@ import unittest
 from pathlib import Path
 
 from scripts.grade_lh_evidence import grade as grade_legacy
-from scripts.grade_lh_evidence_v2 import CONTRACT, CONFIG, CONTRACT_VERSION, GRADER_VERSION, grade
+from scripts.grade_lh_evidence_v2 import (
+    CONTRACT, CONFIG, CONTRACT_VERSION, GRADER_VERSION, _numeric_tokens, grade,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 PILOT = ROOT / "pilots/lh-skill-adoption"
@@ -57,6 +59,26 @@ class LhEvidenceV2Tests(unittest.TestCase):
         self.assertEqual(CONTRACT_VERSION, instrument["contract_version"])
         self.assertEqual(hashlib.sha256(CONFIG.read_bytes()).hexdigest(), instrument["grader_config_sha256"])
         self.assertEqual(hashlib.sha256(CONTRACT.read_bytes()).hexdigest(), instrument["public_contract_sha256"])
+
+    def test_planted_numeric_normalization_cases(self) -> None:
+        corpus = json.loads(CORPUS.read_text(encoding="utf-8"))
+        for case in corpus["numeric_normalization_cases"]:
+            with self.subTest(case=case["id"]):
+                self.assertEqual(case["equivalent"], _numeric_tokens(case["source"]) == _numeric_tokens(case["artifact"]))
+
+    def test_real_e10_natural_comparator_passes_but_bare_value_fails(self) -> None:
+        self.memo.write_text("Readiness required at least 4 [E10].\n", encoding="utf-8")
+        self.assertEqual("passed", grade(SOURCE, self.matrix, self.memo)["outcome"])
+        self.memo.write_text("Readiness required 4 [E10].\n", encoding="utf-8")
+        result = grade(SOURCE, self.matrix, self.memo)
+        self.assertEqual("failed", result["outcome"])
+        self.assertIn("UNSUPPORTED_NUMERIC_VALUE", self.codes(result))
+
+    def test_unmarked_prospective_95_percent_still_fails(self) -> None:
+        self.memo.write_text("Require 95% confidence.\n", encoding="utf-8")
+        result = grade(SOURCE, self.matrix, self.memo)
+        self.assertEqual("failed", result["outcome"])
+        self.assertIn("UNCITED_MATERIAL_CLAIM", self.codes(result))
 
     def test_marker_abstains_only_value_check(self) -> None:
         self.memo.write_text("Unsupported source {{PROSPECTIVE:30 runs}} [E99].\n", encoding="utf-8")
