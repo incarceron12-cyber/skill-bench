@@ -1,0 +1,1 @@
+Create outputs/handoff.json for the procurement decision owner. Use only source-pack files. JSON fields: format (memo-v1 or decision-brief-v1), recipient, recommendation, evidence_refs (source IDs), scope, risks (array), decision_request, next_step, blockers (array). Recommend approve only if the scorecard threshold is met and no risk is high. Do not invent evidence.

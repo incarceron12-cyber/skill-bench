@@ -20,3 +20,17 @@ python -m unittest tests.test_handoff_usability_conformance
 ```
 
 These builder-authored records only test grader semantics. They are not an independent recipient trial and support no expert approval, agent capability, professional validity, downstream-impact, or release-readiness claim.
+
+## Isolated configured-system slice
+
+`launcher.py` reuses the existing bubblewrap/file-only Hermes envelope to run one
+predeclared attempt for each handoff shape. The retained `isolated-agent-v3`
+records include zero-call preflight canaries, immutable task/source manifests,
+redacted stdout traces, artifacts, usage, component hashes, and replayable
+five-dimension grader reports. `trials/isolated-agent-v3/diagnostic.md` reports
+the bounded cross-case result. Earlier v1/v2 canary failures are retained rather
+than silently discarded; they exposed an overly broad canary string matcher.
+
+These runs measure deterministic artifact proxies, not actual recipient use.
+They support no human-usability, expert-validity, capability, cross-domain
+generalization, treatment-effect, or readiness claim.
