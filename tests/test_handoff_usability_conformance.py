@@ -17,6 +17,7 @@ DOWNSTREAM = importlib.util.module_from_spec(DOWN_SPEC)
 DOWN_SPEC.loader.exec_module(DOWNSTREAM)
 TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/isolated-agent-v3"
 DOWN_TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/downstream-agent-v1"
+DOWN_TRIAL_V2 = ROOT / "pilots/handoff-usability-conformance/trials/downstream-agent-v2"
 
 class HandoffUsabilityTests(unittest.TestCase):
     def setUp(self): self.data = json.loads(FIXTURE.read_text())
@@ -78,4 +79,21 @@ class HandoffUsabilityTests(unittest.TestCase):
             for case_id, value in examples.items():
                 artifact = Path(directory) / f"{case_id}.json"; artifact.write_text(json.dumps(value))
                 self.assertEqual("pass", DOWNSTREAM.grade(case_id, artifact, DOWNSTREAM.CASES[case_id]["handoff"])["outcome"])
+    def test_corrected_downstream_operations_are_retained_and_replayable(self):
+        expected_failure = {
+            "analysis-to-decision-memo": "risk_preserved",
+            "incident-record-to-operations": "destination_owner",
+        }
+        for case_id, case in DOWNSTREAM.CASES.items():
+            root = DOWN_TRIAL_V2 / case_id
+            report = json.loads((root / "trial-report.json").read_text())
+            canary = json.loads((root / "preflight/canary-report.json").read_text())
+            self.assertTrue(report["valid_environment"]); self.assertTrue(report["complete"])
+            self.assertTrue(canary["passed"])
+            self.assertEqual(DOWNSTREAM.sha(case["handoff"]), report["lineage"]["consumer_input_sha256"])
+            self.assertTrue(all(value is False for value in report["claim_boundaries"].values()))
+            artifact = root / "trial/outputs" / case["output"]
+            self.assertEqual(report["grader"], DOWNSTREAM.grade(case_id, artifact, case["handoff"]))
+            self.assertEqual("fail", report["grader"]["outcome"])
+            self.assertEqual("fail", report["grader"]["checks"][expected_failure[case_id]])
 if __name__ == "__main__": unittest.main()

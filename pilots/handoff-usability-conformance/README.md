@@ -40,3 +40,12 @@ workspace containing no producer source pack, trace, private rubric, or
 repository. The predeclared single attempts and invalid outcomes are retained
 under `trials/downstream-agent-v1/`; its diagnostic separates an observed
 public-path contract defect from producer, environment, and grader evidence.
+
+The immutable `downstream-agent-v2` continuation changes only that public path
+from `inputs/handoff.json` to the mounted `handoff.json`; it retains the same
+producer bytes, configured system, operation contracts, checks, one-attempt
+policy, and zero retries. Both consumers produced operation artifacts after the
+repair, allowing substantive checks to run. See `downstream-diagnostic.md` for
+the bounded pass/fail comparison. These records support no human usability,
+expert validity, professional capability, generalization, treatment effect,
+productivity, downstream impact, or readiness claim.

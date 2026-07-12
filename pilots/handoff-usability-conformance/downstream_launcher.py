@@ -18,12 +18,12 @@ CASES = {
     "analysis-to-decision-memo": {
         "handoff": PRODUCERS / "analysis-to-decision-memo/trial/outputs/handoff.json",
         "output": "procurement-decision.json",
-        "task": "Use only inputs/handoff.json. Create outputs/procurement-decision.json with exactly these fields: decision (approve, reject, or return), scope, evidence_refs (copy source IDs from the handoff), recorded_action, risk_control. Approve only when the handoff recommends approval; preserve its scope and evidence boundary; state a concrete control for every disclosed risk. Do not access or infer original source files.\n",
+        "task": "Use only handoff.json. Create outputs/procurement-decision.json with exactly these fields: decision (approve, reject, or return), scope, evidence_refs (copy source IDs from the handoff), recorded_action, risk_control. Approve only when the handoff recommends approval; preserve its scope and evidence boundary; state a concrete control for every disclosed risk. Do not access or infer original source files.\n",
     },
     "incident-record-to-operations": {
         "handoff": PRODUCERS / "incident-record-to-operations/trial/outputs/handoff.json",
         "output": "operations-action.json",
-        "task": "Use only inputs/handoff.json. Create outputs/operations-action.json with exactly these fields: action (execute or block), scope, evidence_refs (copy source IDs from the handoff), owner, requested_confirmation, rationale. If the handoff reports an unmet precondition, block execution and request the named confirmation; do not invent environment state. Do not access or infer original source files.\n",
+        "task": "Use only handoff.json. Create outputs/operations-action.json with exactly these fields: action (execute or block), scope, evidence_refs (copy source IDs from the handoff), owner, requested_confirmation, rationale. If the handoff reports an unmet precondition, block execution and request the named confirmation; do not invent environment state. Do not access or infer original source files.\n",
     },
 }
 
@@ -132,7 +132,7 @@ def run(root: Path, case_id: str) -> dict[str, Any]:
         "component_hashes": {"launcher": sha(Path(__file__)), "task": sha(paths["inputs"] / "public-task.md"), "manifest": sha(paths["inputs"] / "manifest.json")},
         "artifacts": {p.name: {"sha256": sha(p), "bytes": p.stat().st_size} for p in (artifact, usage) if p.is_file()},
         "grader": score, "trace": {"path": "redacted-trace.log", "sha256": sha(root / "redacted-trace.log")},
-        "claim_boundaries": {k: False for k in ("human_recipient_usability", "expert_validity", "professional_capability", "cross_domain_generalization", "treatment_effect", "productivity", "readiness")},
+        "claim_boundaries": {k: False for k in ("human_recipient_usability", "expert_validity", "professional_capability", "cross_domain_generalization", "treatment_effect", "productivity", "downstream_impact", "readiness")},
     }
     shutil.rmtree(paths["profile"], ignore_errors=True)
     dump(root / "trial-report.json", report)
