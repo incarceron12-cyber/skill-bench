@@ -33,7 +33,25 @@ class CrossedEvaluatorAuditTests(unittest.TestCase):
     def test_hashes_and_model_claim_are_fail_closed(self):
         r=mod.replay(write=False)
         self.assertTrue(all(len(v)==64 for v in r["frozen_hashes"].values()))
-        self.assertEqual(r["model_condition"]["status"],"not_executed")
+        self.assertEqual(r["model_condition"]["status"],"executed")
+        self.assertEqual(len(r["model_condition"]["runs"]),4)
+        self.assertTrue(r["model_condition"]["all_verdict_signatures_identical"])
+        self.assertTrue(r["model_condition"]["budget_violation"])
         self.assertIn("evaluator_superiority",r["excluded_claims"])
+
+    def test_model_inputs_remain_oracle_separated_and_records_are_bound(self):
+        runner=(HERE/"run_model_judges.py").read_text()
+        self.assertNotIn('oracle-private.json',runner)
+        manifest=json.loads((HERE/"model-runs/manifest.json").read_text())
+        self.assertFalse(manifest["oracle_access"])
+        for name in manifest["records"]:
+            record=json.loads((HERE/"model-runs"/name).read_text())
+            self.assertTrue(record["valid"])
+            self.assertEqual(record["inputs_sha256"],manifest["inputs_sha256"])
+
+    def test_all_model_runs_match_reference_on_frozen_cases(self):
+        r=mod.replay(write=False)
+        for row in r["rows"]:
+            self.assertTrue(all(v==row["reference"] for v in row["model_judge_runs"].values()))
 
 if __name__=="__main__": unittest.main()
