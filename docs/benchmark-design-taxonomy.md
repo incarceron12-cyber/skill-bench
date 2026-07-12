@@ -488,6 +488,51 @@ parallel context schema is implied. This ladder licenses no faithful
 personalization, privacy safety, professional correctness, causal process,
 capability, or readiness claim.
 
+### 2.5d Delegation preference is a selection signal, not a worker outcome
+
+Demand from a worker perspective adds a distinct chain to production-demand
+provenance; it cannot be compressed into a scalar task weight:
+
+```text
+historical preference observation → duty-to-package transformation fidelity
+  → present consent and retained authority → configured-system task measurement
+    → observed workflow uptake → measured worker outcome
+```
+
+At the first link preserve the exact rating instrument, respondent and duty
+sampling frame, date/context, collaboration mode, distribution and disagreement,
+and selection transformations. At the package link preserve source duty, retained
+human decisions, scope expansion, files/environment, AI or developer rewrites,
+post-transformation disposition, and rejected alternatives. Present consent must
+name the actor, use, authority retained, review/escalation boundary, withdrawal,
+and affected parties; a historical automation rating supplies none of these by
+inheritance. Configured-system scores then remain bound to task, scaffold, tools,
+artifact/evidence views, execution isolation, grader, retries, and assembly.
+Workflow uptake requires observed use, review/correction burden, acceptance and
+downstream handling. Worker outcomes require a counterfactual and direct measures
+such as total time, severe defects, satisfaction, autonomy, distributional effect,
+or displacement—not score arithmetic or expert prediction [JB].
+
+Keep equal-task performance, preference-weighted selection, occupation inference,
+workflow adoption, and outcome metrics separate. JobBench contributes a real
+worker-reported upstream signal and rich cross-source packages, but its wage and
+benchmarkability filters are purposive; one to three Main tasks per occupation do
+not estimate occupational capability; and union-of-rubrics solvability conditions
+admission on sampled model outcomes without proving one coherent solution. Its
+GDPval comparison mixes tasks, graders, harnesses, and metrics. Aggregate proximity
+between two model judges does not validate criteria, especially when the inspected
+evidence view omits formula lineage and other native/visual state. The current
+Codex runner disables sandboxing, web/file retrieval remains mutable, and the
+post-v1 release has 128 tasks/4,576 criteria rather than the paper's 130/4,631;
+post-v1 code and metadata cannot reconstruct paper-time results [JB].
+
+**Invariant:** no preference, package, or benchmark-score record may license a
+later consent, uptake, benefit, occupational, or readiness claim without evidence
+at that edge. Use existing demand provenance, expert participation/consent,
+task-projection, artifact-admissibility, execution-validity, task-health, metric,
+and validity records; this ladder adds no parallel schema or profession-specific
+pilot.
+
 ### 2.6 Frame, content, assembly, and inference have different denominators
 
 Do not infer suite validity by adding healthy tasks or broad labels. Preserve
@@ -1755,6 +1800,12 @@ them:
   co-designed artifacts from one Siemens workflow support a bounded package effect,
   not tacit transfer, non-expert learning, expert equivalence, cross-domain
   generalization, operational benefit, or readiness.
+- **[JB]**
+  `papers/agent-benchmarks/2026-07-12-jobbench-delegation-desire-validity.md`;
+  reviewed immutable v1 PDF/text, pinned post-v1 evaluation release, and 128-row
+  dataset metadata audit are recorded there. Paper/release mismatch, purposive
+  selection, outcome-conditioned admission, incomplete judge views, disabled
+  sandboxing, and absent worker workflow/outcome evidence bound all claims.
 - **[HC]**
   `papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md`;
   reviewed immutable v1 PDF/text and inspected one-day-post-v1 official release

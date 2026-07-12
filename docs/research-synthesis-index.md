@@ -52,6 +52,7 @@ Most relevant sources:
 | [EnterpriseClawBench](../papers/agent-benchmarks/2026-07-11-enterpriseclawbench-session-derived-validity.md) | A | Separates observed workplace demand from the rewritten counterfactual task; requires projection deltas, hindsight controls, equivalence review, and a claim licensed to the evidence actually preserved |
 | [AlphaEval](../papers/agent-benchmarks/2026-07-11-alphaeval-production-grounded-validity.md) | A | Separates current company-demand provenance from requirement projection, grader validity, configured-package comparison, occupational inference, and economic value |
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Types codified knowledge by execution semantics and bounds a co-designed package effect away from tacit transfer, expert equivalence, and cross-domain generalization |
+| [JobBench](../papers/agent-benchmarks/2026-07-12-jobbench-delegation-desire-validity.md) | A | Makes worker-reported delegation preference a typed portfolio-selection signal while separating it from package fidelity, present consent, workflow uptake, and worker outcomes |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
 
@@ -71,6 +72,24 @@ tacit-transfer, expert-equivalence, and cross-domain claims. Confidentiality can
 legitimately prevent release, but it remains missing audit evidence rather than
 positive validity evidence. Existing participation, expertise-transfer, projection,
 configured-system, metric, task-health, and validity records are the durable homes.
+
+JobBench adds a distinct **delegation-demand ladder**:
+`historical preference observation → duty-to-package transformation fidelity →
+present consent and retained authority → configured-system task measurement →
+observed workflow uptake → measured worker outcome`. No rung inherits the next.
+Preference is one portfolio signal alongside construct coverage, feasibility,
+frequency, consequence, and economic value; it is not a capability weight or a
+benefit measure. The immutable v1 paper and pinned post-v1 release support a
+purposive, artifact-rich instrument, but not occupational estimates: the frame is
+filtered by wages and benchmarkability, occupations have only one to three Main
+tasks, and admission uses outcome-conditioned union solvability. Incompatible
+GDPval scores, aggregate-only model-judge comparison, incomplete structured and
+visual evidence views, a Codex runner with sandboxing disabled, mutable retrieval,
+and the paper/release mismatch (130 reported tasks/4,631 criteria versus 128
+released tasks/4,576 criteria) further bound interpretation. Existing demand,
+participation/consent, task-projection, artifact-admissibility, execution-validity,
+task-health, metric, and validity records should carry the links; no new schema or
+occupational scope commitment follows.
 
 ## 2. The benchmark should represent broad knowledge work without pretending a small suite represents all work
 
