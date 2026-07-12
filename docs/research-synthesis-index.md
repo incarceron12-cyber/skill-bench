@@ -54,6 +54,7 @@ Most relevant sources:
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Types codified knowledge by execution semantics and bounds a co-designed package effect away from tacit transfer, expert equivalence, and cross-domain generalization |
 | [JobBench](../papers/agent-benchmarks/2026-07-12-jobbench-delegation-desire-validity.md) | A | Makes worker-reported delegation preference a typed portfolio-selection signal while separating it from package fidelity, present consent, workflow uptake, and worker outcomes |
 | [Benchmark-to-risk expert elicitation](../papers/agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | A | Makes the score-to-consequence warrant observable as structured disagreement and separates capability interpretation, scenario use, workflow effect, outcome composition, and decision loss |
+| [OfficeEval](../papers/agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | B | Separates external requirement/weight lineage from the validity of a transformed subset, administration, aggregate, or transported decision threshold |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
 
@@ -205,6 +206,17 @@ Existing consent, artifact-view, trace, workspace-state, task-health, metric, an
 validity records implement this ladder; no personal-computing scope commitment or
 personalization, professional-capability, privacy-safety, or readiness claim follows.
 
+External exams and certifications add an **instrument-transport chain**:
+`source purpose/population → licensed forms → selection/transformation → configured
+administration → score mapping → interpretation → decision threshold`. OfficeEval
+provides dense native-artifact checks and externally authored weights, but its
+selection, translation, coding interfaces, and aggregation create a new instrument.
+The full NCRE pass mark is only a reference line, and community solutions are
+positive witnesses rather than a human baseline. Dependent checks also need
+prerequisite/cascade graphs so one missing object is not counted as many independent
+capability deficits. Existing projection, artifact-view, task-health, metric, and
+validity records are the durable homes; no office-specific schema follows.
+
 Interactive families add a parallel boundary. Executable outcome checks are a
 real repair over action-sequence imitation because they admit alternative paths,
 but a passing selected predicate is not proof of complete, safe, or
@@ -264,6 +276,7 @@ simulator identity, reset health, and the claims that survive those choices.
 | [Rubric-modification interventions](../papers/agent-benchmarks/2026-07-11-rubric-modification-human-autorater-agreement.md) | B | Makes examples, context, criterion-call topology, score transformation, and aggregation part of instrument identity; agreement gains can coexist with shared cueing or construct change |
 | [AI Agent Reliability](../papers/agent-benchmarks/2026-07-11-agent-reliability-profile.md) | B | Separates accuracy from repeatability, perturbation sensitivity, confidence quality, and violation consequences while binding each estimate to a configured operational profile |
 | [LiveBench](../papers/agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | B | Makes benchmark renewal operational through rotating recent-source forms, temporary private roles, deterministic checks, and reruns, while exposing equivalent-form, outcome-conditioned selection, exposure, and grader-drift limits |
+| [WorkBench Revisited](../papers/agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | B | Shows why repaired current measurement and longitudinal continuity need linked forms and task-level score bridges rather than one homogeneous time series |
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
 | [BrowserGym](../papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md) | B | Separates useful runner/interface interoperability from unsupported evaluator, score, reset, or construct equivalence across adapted benchmark families |
 
@@ -299,6 +312,18 @@ Native-versus-adapted differential tests from frozen state—comparing score,
 termination, side effects, and evaluator evidence—are required before a semantic-
 preservation claim. API compatibility alone licenses no pooled capability,
 measurement-equivalence, safety, or professional-validity claim.
+
+Benchmark maintenance needs three linked products: a frozen **anchor form** for
+trend continuity, a corrected **operational form** for fair current measurement,
+and a private/recent **renewal form** for exposure and ceiling control. Transitions
+need changed-locus identity and old-pass/new-pass matrices from rescored frozen
+outputs where possible; only stable or bridged subsets license trends. WorkBench
+Revisited preserves valuable v1/v2 routing, but task, ground truth, evaluator, tool
+contract, harness, provider, and exposure all changed, so its headline delta is not
+a model-capability estimand. Side effects also need opportunity, conditional-on-
+failure, severity, reversibility, and affected-party denominators. Exercise existing
+task-health, longitudinal, reliability, metric, and validity machinery on a real
+revision before adding another lifecycle schema.
 
 ## 6. Failures should generate causal diagnostic evidence
 

@@ -25,6 +25,7 @@ The review files below are deep reviews unless their own evidence-status section
 | [Agent Psychometrics](agent-benchmarks/2026-07-09-agent-psychometrics.md) | How should task difficulty and configured-system ability be modeled? | calibration, IRT, response matrices |
 | [Benchmark Ceiling](agent-benchmarks/2026-07-10-benchmark-ceiling-expert-labor-scarcity.md) | What expert-labor and renewal constraints are hypothesized, and how strong is their evidence? | economics, expert scarcity, lifecycle |
 | [Benchmark-to-risk expert elicitation](agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | What evidence is required between a configured-system benchmark observation and a consequential workflow or stakeholder decision claim? | consequence validity, structured judgment, disagreement, decision loss |
+| [OfficeEval](agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | When does adapting an external standardized exam preserve lineage but require a new validity and threshold-transport argument? | external instruments, native artifacts, criterion dependence |
 
 **Benchmark-to-consequence synthesis:** Treat consequence promotion as a linked
 chain—observation → bounded capability interpretation → scenario applicability,
@@ -103,6 +104,7 @@ and elicitation machinery rather than a domain-specific schema.
 | [Anchor](agent-benchmarks/2026-07-10-anchor-artifact-drift-generation.md) | How can generated tasks keep instructions, environment, witness, and checker projections aligned? | task generation, conformance, drift |
 | [ClawArena](agent-benchmarks/2026-07-10-clawarena-evolving-information.md) | How should corrections, retractions, supersession, and consequential updates be represented? | evolving evidence, workspace, state |
 | [LongMemEval v2](agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md) | How should environment experience, memory access, adoption, retention, and downstream effect differ? | memory, longitudinal evaluation, experience |
+| [WorkBench Revisited](agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | How should corrected current forms, frozen anchors, renewed forms, and score bridges coexist? | lifecycle, instrument drift, side-effect denominators |
 
 OdysseyBench is indexed primarily with workplace workflows rather than duplicated
 here: it consumes a supplied synthetic history and acts on office state, but does
