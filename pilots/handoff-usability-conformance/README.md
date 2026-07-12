@@ -49,3 +49,19 @@ repair, allowing substantive checks to run. See `downstream-diagnostic.md` for
 the bounded pass/fail comparison. These records support no human usability,
 expert validity, professional capability, generalization, treatment effect,
 productivity, downstream impact, or readiness claim.
+
+## Criterion-defect adjudication
+
+`downstream-adjudication-v1.json` and `downstream_adjudication.py` preserve the
+v2 tasks, outputs, reports, and failed outcomes while replaying a separately
+versioned semantic grader. Both failed v2 checks were adjudicated as brittle:
+`risk_preserved` required the exact token `30-day` despite the artifact's
+affirmative “at least 30 days” control, and `destination_owner` incorrectly
+required the confirmation destination in the action-owner field. The v3
+criteria admit semantic duration alternatives, reject negated token copying,
+preserve the handoff's action owner, and separately verify confirmation routing.
+Six planted adversarial cases and both retained artifacts replay as declared.
+
+This is internal builder adjudication, not recipient testimony. Historical v2
+scores are not rewritten, and the replay supports no human-usability, expert,
+capability, productivity, impact, generalization, treatment, or readiness claim.

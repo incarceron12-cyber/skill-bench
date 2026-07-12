@@ -34,3 +34,15 @@ than handoff-access failures. This two-case, one-attempt builder-authored slice
 does **not** establish human-recipient usability, expert validity, professional
 capability, cross-domain generalization, treatment effect, productivity,
 downstream impact, or readiness.
+
+## Post-hoc criterion adjudication (new instrument; v2 retained)
+
+The versioned record `../../../downstream-adjudication-v1.json` adjudicates both
+failures as grader false negatives. The procurement control semantically keeps
+the minimum 30-day written-notice requirement; the incident artifact correctly
+keeps `primary on-call` as action owner while routing failover confirmation to
+`database on-call`. A separate v3 semantic replay passes both retained outputs
+and six adversarial builder cases, including rejection of negated token copying
+and incidental owner-field mention. The historical v2 reports and overall
+failures remain immutable. This post-hoc result is grader-defect evidence only,
+not human-recipient, capability, productivity, impact, or readiness evidence.

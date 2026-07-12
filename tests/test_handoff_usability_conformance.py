@@ -15,6 +15,11 @@ DOWN_SPEC = importlib.util.spec_from_file_location("handoff_downstream", ROOT / 
 assert DOWN_SPEC is not None and DOWN_SPEC.loader is not None
 DOWNSTREAM = importlib.util.module_from_spec(DOWN_SPEC)
 DOWN_SPEC.loader.exec_module(DOWNSTREAM)
+ADJ_SPEC = importlib.util.spec_from_file_location("handoff_adjudication", ROOT / "pilots/handoff-usability-conformance/downstream_adjudication.py")
+assert ADJ_SPEC is not None and ADJ_SPEC.loader is not None
+ADJUDICATION = importlib.util.module_from_spec(ADJ_SPEC)
+ADJ_SPEC.loader.exec_module(ADJUDICATION)
+ADJ_FIXTURE = ROOT / "pilots/handoff-usability-conformance/downstream-adjudication-v1.json"
 TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/isolated-agent-v3"
 DOWN_TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/downstream-agent-v1"
 DOWN_TRIAL_V2 = ROOT / "pilots/handoff-usability-conformance/trials/downstream-agent-v2"
@@ -96,4 +101,16 @@ class HandoffUsabilityTests(unittest.TestCase):
             self.assertEqual(report["grader"], DOWNSTREAM.grade(case_id, artifact, case["handoff"]))
             self.assertEqual("fail", report["grader"]["outcome"])
             self.assertEqual("fail", report["grader"]["checks"][expected_failure[case_id]])
+    def test_downstream_adjudication_replays_calibration_and_retained_outputs(self):
+        report = ADJUDICATION.replay(json.loads(ADJ_FIXTURE.read_text()), check_paths=True)
+        self.assertTrue(report["valid"], report["errors"])
+        self.assertEqual(6, report["calibration_cases_replayed"])
+        self.assertEqual({"pass"}, {row["v3_criterion"] for row in report["retained_replays"]})
+    def test_semantics_not_token_copy_or_incidental_owner_mention(self):
+        data = json.loads(ADJ_FIXTURE.read_text())
+        observed = {row["id"]: row["observed"] for row in ADJUDICATION.replay(data)["calibration_results"]}
+        self.assertTrue(observed["risk-semantic-equivalent"])
+        self.assertFalse(observed["risk-token-copy-negated"])
+        self.assertTrue(observed["owner-semantic-routing"])
+        self.assertFalse(observed["owner-incidental-database-mention"])
 if __name__ == "__main__": unittest.main()
