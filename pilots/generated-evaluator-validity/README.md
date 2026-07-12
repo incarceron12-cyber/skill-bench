@@ -65,3 +65,16 @@ Still unsupported: criterion equivalence, expert validity, professional capabili
 `criterion-adjudication.md` freezes the public-basis, evidence-view, accepted-alternative, and precedence decision. It finds the old null-incident oracle defective because the case contains neither observed refusal nor authoritative incident evidence; the conclusion-like `utility: "over_refusal"` cannot establish refusal. The immutable v1 matrix and scores remain untouched. `adjudication-cases-v2.json` relabels that copied case as `insufficient_evidence` and adds nine boundary cases. `adjudicate_criterion.py` independently implements the protocol and replays all six retained evaluators.
 
 The reference passed 10/10. Retained evaluator scores were 7/10, 7/10, 7/10, 6/10, 7/10, and 7/10, demonstrating that agreement on the original conflict did not establish broader criterion validity. Exact diagnostics and hashes are in `criterion-adjudication-report.json`. No expert, professional, capability, treatment-effect, production, or readiness claim is licensed.
+
+## Frozen natural-output replay
+
+`natural-output-cases-v1.json` freezes eight cases before any evaluator change. Its immutable base is the retained `vendor-incident-response` v2 agent brief, action plan, trial report, and redacted trace; each source hash and natural locator is recorded. Seven builder-authored mutations isolate a missing artifact, invalid environment, evidence-based refusal, stale severity, superficial success cue, one-field counterfactual, and unsafe authorization. The cases and labels were absent from all six generation prompts. The LH adoption outputs were inspected but not mixed into this criterion matrix: translating spreadsheet provenance into incident-response outcomes would change the construct rather than test natural parsing.
+
+`natural_output_replay.py` verifies source hashes, materializes mutations in memory, adapts the same admissible artifact/environment/trace view for every unchanged evaluator, and applies a separately implemented fail-closed reference protocol grounded in `public-task-v2.md`. Run:
+
+```bash
+python pilots/generated-evaluator-validity/natural_output_replay.py
+python -m unittest tests.test_generated_evaluator_validity -v
+```
+
+The reference passed 8/8. Attempts 1 and 3 passed 8/8 in both conditions; attempt 2 passed 4/8 in both conditions. All eight attempt-2 errors were criterion-priority errors: those two retained implementations classified the unsafe-authorization and stale-evidence variants differently from the frozen precedence, rather than failing to parse. Across 48 evaluator-case cells, 40 passed and eight failed. This result supplies natural artifact/trace parsing and counterfactual diagnostics, but no procedure-treatment difference, expert equivalence, professional validity, general evaluator validity, capability, production, or readiness claim.

@@ -79,4 +79,38 @@ class CriterionAdjudicationTests(unittest.TestCase):
   report=json.loads((self.mod.ROOT/'criterion-adjudication-report.json').read_text())
   self.assertIn('criterion equivalence',report['claim_limits'])
 
+class NaturalOutputReplayTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/natural_output_replay.py'
+  spec=importlib.util.spec_from_file_location('gev_natural',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(self.mod)
+  self.fixture=json.loads(self.mod.FIXTURE.read_text())
+ def test_source_hashes_and_prompt_exclusion(self):
+  base=self.mod.load_sources(self.fixture)
+  self.assertIn('INC-204',base['brief'])
+  prompts='\n'.join(p.read_text() for p in (self.mod.ROOT/'transfer-trials').glob('*/*/prompt.txt'))
+  for case in self.fixture['cases']:
+   self.assertNotIn(case['case_id'],prompts)
+ def test_categories_and_reference_labels(self):
+  categories={case['category'] for case in self.fixture['cases']}
+  self.assertTrue({'passing','substantive_failure','insufficient_evidence','invalid_environment','refusal_benign_incompletion','superficial_cue','minimally_edited_counterfactual'} <= categories)
+  base=self.mod.load_sources(self.fixture)
+  for case in self.fixture['cases']:
+   payload=self.mod.adapt(self.mod.mutate(base,case['mutation']))
+   self.assertEqual(self.mod.reference_evaluate(payload),case['oracle'])
+ def test_report_replays_six_unchanged_evaluators(self):
+  report=json.loads(self.mod.REPORT.read_text())
+  self.assertTrue(report['source_integrity_verified'])
+  self.assertFalse(report['generation_prompt_case_id_leakage'])
+  self.assertEqual(report['reference_replay'],{'passed':8,'total':8})
+  self.assertEqual(len(report['evaluators']),6)
+  self.assertEqual({row['total'] for row in report['evaluators']},{8})
+  self.assertEqual(sum(report['diagnostic_dimension_counts'].values()),48)
+ def test_claim_limits_remain_explicit(self):
+  report=json.loads(self.mod.REPORT.read_text())
+  self.assertIn('expert validity',report['claim_limits'])
+  self.assertIn('professional validity',report['claim_limits'])
+  self.assertIn('general evaluator validity',report['claim_limits'])
+
 if __name__=='__main__': unittest.main()
