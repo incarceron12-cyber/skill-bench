@@ -1048,6 +1048,31 @@ reset cadence, update budget, and which feedback may enter memory. Once one test
 item changes behavior on the next, the estimand is ordered-stream learning, not
 independent pass@1 [ACE, SE].
 
+### 4.0a Participation is a typed configured treatment, not a social-role label
+
+Separate a participant's assigned role from its realization: `real_human`, model
+simulator, scripted policy, hybrid, or replay. Pin the realization's model/prompt,
+profile/private state, sampling, availability, and failure policy. Represent the
+participation policy as independently versioned prompt/protocol, visible nodes,
+channels/tools, information access, action authority, initiative trigger, control
+threshold, interaction budget, and observer. An ordinal “agency level” is not an
+identified treatment when several of these change together [HAS].
+
+Every authority-bearing event should retain participant/role, observation basis,
+channel and trigger, requested information or action, decision right and scope,
+response, latency/expiry/failure, agent uptake evidence, environment consequence,
+burden, and observer view. Report four rungs separately: **availability** (could
+participate), **exercise** (did participate), **uptake** (was the contribution
+used appropriately), and **effect** (changed an outcome against a valid matched
+counterfactual). Simulator calls/tokens are system cost, not human active/waiting
+time, interruption, cognitive demand, correction work, privacy exposure, or
+accountability. A scenario-quality review does not validate simulator behavior or
+process judges. HAS-Bench provides this vocabulary but its model-backed users,
+single-run cells, bundled policy contrasts, unreported judge audit, and unverifiable
+release restrict it to synthetic configured-collaboration evidence [HAS]. Existing
+configured-system, trace, metric, task-health, validity, and expert-participation
+records are the implementation homes; no parallel subsystem is implied.
+
 ### 4.1 Execution validity is an observed boundary, not a directory name
 
 Separate three layers that are often collapsed under “harness” or “sandbox”:
@@ -1334,6 +1359,7 @@ fidelity separately from score calibration [EB, AP].
 | Dynamic professional grading (JADE) | separate fixed and response-triggered criterion populations, trigger lineage, typed evidence/dependency graph, and plural score families | answer-conditioned obligations, variable denominators, duplicate/shared-cue checks, live-web authority error, fail-open verification, and uncalibrated fusion | full immutable v1 paper plus inspected close post-v1 release; bounded evaluator-architecture and deterministic fallback evidence, not expert-equivalent, cross-domain, or readiness validation [JADE] |
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
+| Configurable participant systems (HAS-Bench) | participant realization, participation-policy vector, authority-event lineage, and availability/exercise/uptake/effect/burden separation | simulated social roles called humans; bundled prompt/tool/information/authority/budget contrasts; event counts mistaken for benefit or human cost | full immutable v1 paper and deep review; paper-reported scenarios/results only, no verifiable official artifact, real task participants, repeated cells, or reported process-judge audit [HAS] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
@@ -1487,6 +1513,11 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     authority, representation semantics, task projection, configured intervention,
     independent measurement, and claim ceiling; co-design, production origin, or a
     package effect cannot silently confer transfer, equivalence, readiness, or value.
+43. **A participant role is not a participant realization:** independently type
+    real humans, simulators, scripts, hybrids, and replays; version participation
+    policy components and keep availability, exercise, uptake, effect, and plural
+    burden separate. Simulator behavior cannot silently confer human-participation,
+    expert-substitution, collaboration-validity, or readiness claims.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1496,6 +1527,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Automated agreement vs professional validity | LH-Bench judges agree more under expert boundaries, yet individual human/automated concordance is weak [LH]. | Two-expert readiness labels and pairwise choices on a stratified pilot subset; calibrate each automated check against both. |
 | Mid-difficulty efficiency vs rare critical coverage | Psychometric work favors informative middle checks; benchmark mission requires hard safety and expert traps [EB, AP]. | Maintain separate ranking and critical diagnostic sets; test rank fidelity and primitive coverage independently. |
 | Workflow compliance vs latent expertise | Observable transitions are more judgeable, but exact procedure following can substitute for judgment [LH]. | Include at least two expert-approved procedures and held-out consequence variants. |
+| Configurable assistance vs identified human-participation effect | HAS-Bench makes roles/channels observable, but its A1/A3/A4 contrasts bundle prompt, tools, information, authority, initiative, and budget while all task participants are model simulators [HAS]. | On well-defined matched tasks, factorially vary one participation-policy component at a time; counterbalance consented humans and pinned simulators, repeat/equate forms, validate process observers independently, and report outcome, safety, latency, active/wait time, interruption, correction, privacy, and accountability separately. |
 | Learning from failures vs benchmark contamination | STRACE/ACE support localized lessons; ACE also degrades under weak feedback and changes the online estimand [ST, ACE]. | Quarantine lessons, validate on held-out scenario clusters, and audit private-evidence flow before promotion. |
 | Aggregate leaderboard vs diagnostic instrument | Reduced rankings are cheaper, while root-cause layers produce more actionable but uncertain claims [EB, ST]. | Report both without one composite; evaluate whether diagnoses predict expert-prescribed remediations on repeat trials. |
 | Evolving agent vs evolving benchmark | Longitudinal guidance requires persistent state, while living benchmarks must also revise tasks and graders; changing both makes ability and difficulty jointly endogenous [SE]. | Freeze an anchor instrument within each stream; when the benchmark changes, run a bridge panel and report version effects before resuming evolution claims. |
@@ -1701,6 +1733,12 @@ them:
 - **[EP]** `papers/agent-benchmarks/2026-07-10-domain-expert-participation-ethnography.md`;
   reviewed immutable v1 PDF/text paths and hashes are recorded there. Findings
   are bounded to one compensated university collaboration.
+- **[HAS]**
+  `papers/agent-benchmarks/2026-07-13-hasbench-configurable-human-participation-validity.md`;
+  reviewed immutable v1 PDF/text paths and hashes are recorded there. The reported
+  task participants are model simulators, the human study reviews scenario
+  artifacts, the planned process-judge audit has no reported results, and no
+  official benchmark/results artifact could be verified.
 - **[CT]** `papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md`;
   reviewed immutable v3 paper and inspected release paths/hashes are recorded
   there. The release lacked the reported task and grading artifacts.
