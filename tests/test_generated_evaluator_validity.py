@@ -113,4 +113,33 @@ class NaturalOutputReplayTests(unittest.TestCase):
   self.assertIn('professional validity',report['claim_limits'])
   self.assertIn('general evaluator validity',report['claim_limits'])
 
+class EvaluatorQualificationTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/qualify_evaluators.py'
+  spec=importlib.util.spec_from_file_location('gev_qualification',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(self.mod)
+  self.report=self.mod.build_report()
+ def test_immutable_component_hashes(self):
+  self.assertEqual(len(self.report['decisions']),6)
+  for row in self.report['decisions']:
+   path=self.mod.ROOT/'transfer-trials'/row['evaluator']/'evaluator.py'
+   self.assertEqual(self.mod.sha(path),row['implementation_sha256'])
+ def test_missing_and_invalid_evidence_fail_closed(self):
+  for row in self.report['decisions']:
+   self.assertTrue(row['gates']['invalid_insufficient_handling'])
+   self.assertEqual(row['matrices']['natural']['total'],8)
+ def test_critical_errors_reject_promotion(self):
+  self.assertEqual(self.report['summary'],{'promoted':0,'rejected':6})
+  for row in self.report['decisions']:
+   self.assertEqual(row['decision'],'reject')
+   self.assertTrue(any(error['severity'].startswith('critical_') for error in row['errors']))
+ def test_weaker_policies_admit_unsafe_implementations(self):
+  unsafe=[x for x in self.report['sensitivity'] if x['would_admit_critical_error']]
+  self.assertEqual(len(unsafe),6)
+  self.assertTrue(all(x['aggregate_60_percent']=='admit' for x in unsafe))
+ def test_claim_limits_remain_bounded(self):
+  self.assertIn('criterion equivalence',self.report['claim_limits'])
+  self.assertIn('production fitness',self.report['claim_limits'])
+
 if __name__=='__main__': unittest.main()

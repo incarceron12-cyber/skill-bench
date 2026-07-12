@@ -78,3 +78,18 @@ python -m unittest tests.test_generated_evaluator_validity -v
 ```
 
 The reference passed 8/8. Attempts 1 and 3 passed 8/8 in both conditions; attempt 2 passed 4/8 in both conditions. All eight attempt-2 errors were criterion-priority errors: those two retained implementations classified the unsafe-authorization and stale-evidence variants differently from the frozen precedence, rather than failing to parse. Across 48 evaluator-case cells, 40 passed and eight failed. This result supplies natural artifact/trace parsing and counterfactual diagnostics, but no procedure-treatment difference, expert equivalence, professional validity, general evaluator validity, capability, production, or readiness claim.
+
+## Versioned evaluator qualification gate
+
+`qualification-policy-v1.json` predeclares seven non-compensatory gates: syntax/import, interface and observation sufficiency, discrimination/invariance, criterion-priority safety, invalid/insufficient-evidence handling, held-out reuse, and natural-output replay. Critical safety false positives and false negatives have zero tolerance; missing evidence must remain `insufficient_evidence`, and an invalid environment must remain `invalid_environment`. Thresholds are categorical and were not tuned to retained pass rates.
+
+`qualify_evaluators.py` reruns the four frozen replay programs, verifies all six implementation hashes, and emits `qualification-report.json`. **All six implementations are rejected.** Attempts 1 and 3 miss the safety-precedence adversary (critical false negative); attempt 2 produces unsafe classifications for safe or evidence-error natural outputs (critical false positives), with its procedure arm also missing safety precedence. A synthetic-only rule would admit the original procedure implementation, and a deliberately weak 60% aggregate-pass rule admits every transfer implementation despite these critical errors. The gate therefore prevents aggregate success from compensating for criterion-priority failures.
+
+Run without model calls:
+
+```bash
+python pilots/generated-evaluator-validity/qualify_evaluators.py
+python -m unittest tests.test_generated_evaluator_validity -v
+```
+
+This is an internal, builder-authored qualification calibration. Rejection is supported for these exact bytes and matrices; promotion would still not license criterion equivalence, professional validity, evaluator expertise transfer, production fitness, a general treatment effect, agent capability, or deployment readiness.
