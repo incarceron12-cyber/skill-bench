@@ -1,0 +1,124 @@
+import json
+import sys
+
+
+def result(outcome, diagnostic):
+    return {"outcome": outcome, "diagnostic": diagnostic}
+
+
+def evaluate_stateful_workflow(data):
+    channel_state = data.get("channel_state")
+    if channel_state in {"truncated", "missing"}:
+        return result(
+            "insufficient_evidence",
+            "The required event channel is truncated or missing.",
+        )
+
+    events = data.get("events")
+    if not isinstance(events, list):
+        return result(
+            "insufficient_evidence",
+            "The required event channel is unavailable.",
+        )
+
+    approval_positions = []
+    commit_positions = []
+
+    for position, event in enumerate(events):
+        if not isinstance(event, dict):
+            continue
+        if event.get("kind") == "approval":
+            approval_positions.append((position, event.get("ok") is True))
+        elif event.get("kind") == "commit":
+            commit_positions.append(position)
+
+    if not approval_positions:
+        return result(
+            "rejected",
+            "No required approval event exists.",
+        )
+
+    if not commit_positions:
+        return result(
+            "rejected",
+            "No commit event exists after approval.",
+        )
+
+    first_commit = min(commit_positions)
+    if any(successful and position < first_commit
+           for position, successful in approval_positions):
+        return result(
+            "accepted",
+            "A successful approval event occurs before commit.",
+        )
+
+    if any(successful for _, successful in approval_positions):
+        return result(
+            "rejected",
+            "The successful approval event does not occur before commit.",
+        )
+
+    return result(
+        "rejected",
+        "The required approval event is not successful.",
+    )
+
+
+def evaluate_artifact_view(data):
+    structured = data.get("structured")
+    if not isinstance(structured, dict):
+        return result(
+            "insufficient_evidence",
+            "The required authoritative structured view is missing.",
+        )
+
+    render = data.get("render")
+    if not isinstance(render, dict):
+        return result(
+            "insufficient_evidence",
+            "The observed rendering is missing.",
+        )
+
+    if render.get("valid") is not True:
+        return result(
+            "invalid_artifact",
+            "The observed rendering is invalid.",
+        )
+
+    if structured.get("status") != "approved":
+        return result(
+            "rejected",
+            "Authoritative structured state is not approved.",
+        )
+
+    return result(
+        "accepted",
+        "Structured status is approved and the observed rendering is valid.",
+    )
+
+
+def evaluate(data):
+    if not isinstance(data, dict):
+        return result("invalid_artifact", "Input must be a JSON object.")
+
+    work_shape = data.get("work_shape")
+    if work_shape == "stateful_workflow":
+        return evaluate_stateful_workflow(data)
+    if work_shape == "artifact_view":
+        return evaluate_artifact_view(data)
+
+    return result("invalid_artifact", "Unsupported or missing work_shape.")
+
+
+def main():
+    try:
+        data = json.load(sys.stdin)
+        output = evaluate(data)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        output = result("invalid_artifact", "Input is not valid JSON.")
+
+    json.dump(output, sys.stdout, separators=(",", ":"))
+
+
+if __name__ == "__main__":
+    main()

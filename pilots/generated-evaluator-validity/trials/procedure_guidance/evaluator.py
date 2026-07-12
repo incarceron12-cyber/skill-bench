@@ -1,0 +1,175 @@
+import json
+import sys
+from typing import Any, Dict, List
+
+
+def result(outcome: str, diagnostic: str) -> Dict[str, str]:
+    return {"outcome": outcome, "diagnostic": diagnostic}
+
+
+def evaluate_stateful_workflow(data: Dict[str, Any]) -> Dict[str, str]:
+    channel_state = data.get("channel_state")
+
+    if channel_state in {"truncated", "missing"}:
+        return result(
+            "insufficient_evidence",
+            "The required workflow event channel is truncated or missing.",
+        )
+
+    if channel_state is None:
+        return result(
+            "insufficient_evidence",
+            "The required workflow event channel state is missing.",
+        )
+
+    if channel_state != "complete":
+        return result("failed", "The workflow channel state is malformed.")
+
+    events = data.get("events")
+    if not isinstance(events, list):
+        return result(
+            "insufficient_evidence",
+            "The required workflow event sequence is missing.",
+        )
+
+    parsed_events: List[Dict[str, Any]] = []
+    for event in events:
+        if not isinstance(event, dict):
+            return result("failed", "The workflow event sequence is malformed.")
+
+        kind = event.get("kind")
+        if not isinstance(kind, str):
+            return result("failed", "A workflow event has no valid kind.")
+
+        if kind in {"approval", "commit"} and not isinstance(event.get("ok"), bool):
+            return result("failed", f"The {kind} event is malformed.")
+
+        parsed_events.append(event)
+
+    commit_indexes = [
+        index
+        for index, event in enumerate(parsed_events)
+        if event.get("kind") == "commit"
+    ]
+    if not commit_indexes:
+        return result("failed", "No commit event exists.")
+
+    first_commit = commit_indexes[0]
+    approvals_before_commit = [
+        event
+        for index, event in enumerate(parsed_events)
+        if index < first_commit and event.get("kind") == "approval"
+    ]
+
+    if not approvals_before_commit:
+        return result(
+            "failed",
+            "No approval event occurs before the commit event.",
+        )
+
+    if not any(event["ok"] is True for event in approvals_before_commit):
+        return result(
+            "failed",
+            "No successful approval event occurs before the commit event.",
+        )
+
+    return result(
+        "accepted",
+        "A successful approval event occurs before the commit event.",
+    )
+
+
+def evaluate_artifact_view(data: Dict[str, Any]) -> Dict[str, str]:
+    if "structured" not in data or data["structured"] is None:
+        return result(
+            "insufficient_evidence",
+            "The required authoritative structured view is missing.",
+        )
+
+    structured = data["structured"]
+    if not isinstance(structured, dict):
+        return result(
+            "invalid_artifact",
+            "The authoritative structured view is malformed.",
+        )
+
+    if "status" not in structured:
+        return result(
+            "insufficient_evidence",
+            "The authoritative structured status is missing.",
+        )
+
+    status = structured["status"]
+    if not isinstance(status, str):
+        return result(
+            "invalid_artifact",
+            "The authoritative structured status is malformed.",
+        )
+
+    if "render" not in data or data["render"] is None:
+        return result(
+            "insufficient_evidence",
+            "The required observed rendering is missing.",
+        )
+
+    render = data["render"]
+    if not isinstance(render, dict):
+        return result("invalid_artifact", "The observed rendering is malformed.")
+
+    if "valid" not in render:
+        return result(
+            "insufficient_evidence",
+            "Rendering validity evidence is missing.",
+        )
+
+    if not isinstance(render["valid"], bool):
+        return result(
+            "invalid_artifact",
+            "Rendering validity evidence is malformed.",
+        )
+
+    if render["valid"] is not True:
+        return result("invalid_artifact", "The rendered export is invalid.")
+
+    if status != "approved":
+        return result(
+            "failed",
+            "The authoritative structured status is not approved.",
+        )
+
+    return result(
+        "accepted",
+        "Structured status is approved and the observed rendering is valid.",
+    )
+
+
+def evaluate(data: Any) -> Dict[str, str]:
+    if not isinstance(data, dict):
+        return result("failed", "The input must be a JSON object.")
+
+    work_shape = data.get("work_shape")
+    if work_shape == "stateful_workflow":
+        return evaluate_stateful_workflow(data)
+    if work_shape == "artifact_view":
+        return evaluate_artifact_view(data)
+
+    return result("failed", "The work_shape is missing or unsupported.")
+
+
+def main() -> None:
+    try:
+        raw = sys.stdin.read()
+        data = json.loads(raw)
+        output = evaluate(data)
+    except (json.JSONDecodeError, UnicodeError):
+        output = result("failed", "The input is not a valid JSON object.")
+    except Exception:
+        output = result("failed", "The input is malformed.")
+
+    sys.stdout.write(
+        json.dumps(output, ensure_ascii=False, separators=(",", ":"), sort_keys=False)
+    )
+
+
+if __name__ == "__main__":
+    main()
