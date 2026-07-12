@@ -172,4 +172,40 @@ class EvaluatorVersionBridgeTests(unittest.TestCase):
   bad=copy.deepcopy(self.report);bad['comparisons']['homogeneous_score_delta']['licensed']=True
   self.assertTrue(any('homogeneous' in e for e in self.mod.validate_bridge(bad)))
 
+class EvaluatorRepairPromotionTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/validate_repairs.py'
+  spec=importlib.util.spec_from_file_location('gev_repairs',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.mod)
+  self.report=self.mod.build()
+ def test_policy_and_lineage_are_immutable(self):
+  self.assertTrue(self.report['policy']['unchanged'])
+  protocol=json.loads(self.mod.PROTOCOL.read_text())
+  self.assertEqual(self.mod.sha(self.mod.POLICY),protocol['frozen_policy']['sha256'])
+  for row in self.report['decisions']:
+   self.assertTrue(row['lineage']['parent_preserved'])
+   self.assertNotEqual(row['lineage']['parent_sha256'],row['lineage']['child_sha256'])
+   self.assertTrue(row['lineage']['semantic_diff'])
+ def test_holdout_is_cross_shape_and_fail_closed(self):
+  fixture=json.loads(self.mod.HOLDOUT.read_text())
+  self.assertEqual(len(fixture['cases']),8)
+  self.assertEqual({x['work_shape'] for x in fixture['cases']},{'stateful_workflow','professional_artifact'})
+  self.assertEqual({x['mutation_family'] for x in fixture['cases']},{'criterion_priority','admissible_view'})
+  for row in self.report['decisions']:
+   holdout=next(x for x in row['matrices'] if x['name']=='repair_holdout')
+   self.assertEqual((holdout['passed'],holdout['total']),(8,8))
+   missing=next(x for x in holdout['results'] if x['case_id']=='repair-ho-workflow-missing-safety')
+   self.assertEqual(missing['observed'],'insufficient_evidence')
+ def test_critical_error_always_rejects(self):
+  self.assertEqual(self.report['summary'],{'promoted':2,'rejected':0})
+  for row in self.report['decisions']:
+   self.assertTrue(row['gates']['criterion_priority_safety'])
+   fake=dict(row['gates']);fake['criterion_priority_safety']=False
+   self.assertFalse(all(fake.values()) and row['holdout_gate'])
+ def test_holdout_exclusion_sensitivity_and_claim_limits(self):
+  self.assertTrue(all(x['sensitivity_excluding_holdout']=='promote' for x in self.report['decisions']))
+  self.assertIn('criterion equivalence',self.report['claim_limits'])
+  self.assertIn('production fitness',self.report['claim_limits'])
+
 if __name__=='__main__': unittest.main()
