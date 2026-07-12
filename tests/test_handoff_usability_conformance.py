@@ -19,7 +19,12 @@ ADJ_SPEC = importlib.util.spec_from_file_location("handoff_adjudication", ROOT /
 assert ADJ_SPEC is not None and ADJ_SPEC.loader is not None
 ADJUDICATION = importlib.util.module_from_spec(ADJ_SPEC)
 ADJ_SPEC.loader.exec_module(ADJUDICATION)
+CF_SPEC = importlib.util.spec_from_file_location("handoff_counterfactual", ROOT / "pilots/handoff-usability-conformance/counterfactual_launcher.py")
+assert CF_SPEC is not None and CF_SPEC.loader is not None
+COUNTERFACTUAL = importlib.util.module_from_spec(CF_SPEC)
+CF_SPEC.loader.exec_module(COUNTERFACTUAL)
 ADJ_FIXTURE = ROOT / "pilots/handoff-usability-conformance/downstream-adjudication-v1.json"
+CF_FIXTURE = ROOT / "pilots/handoff-usability-conformance/counterfactual-contrast-v1.json"
 TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/isolated-agent-v3"
 DOWN_TRIAL = ROOT / "pilots/handoff-usability-conformance/trials/downstream-agent-v1"
 DOWN_TRIAL_V2 = ROOT / "pilots/handoff-usability-conformance/trials/downstream-agent-v2"
@@ -113,4 +118,19 @@ class HandoffUsabilityTests(unittest.TestCase):
         self.assertFalse(observed["risk-token-copy-negated"])
         self.assertTrue(observed["owner-semantic-routing"])
         self.assertFalse(observed["owner-incidental-database-mention"])
+    def test_counterfactual_trials_replay_and_show_content_dependence(self):
+        report = COUNTERFACTUAL.replay(json.loads(CF_FIXTURE.read_text()), check_paths=True)
+        self.assertTrue(report["valid"], report["errors"])
+        self.assertEqual(6, report["trials_replayed"])
+        self.assertTrue(report["content_dependence_observed"])
+        self.assertEqual({"pass"}, {row["grader_outcome"] for row in report["results"]})
+    def test_counterfactual_variants_change_only_predeclared_fields(self):
+        plan = json.loads(CF_FIXTURE.read_text())
+        for case_id, case in plan["cases"].items():
+            original = json.loads(DOWNSTREAM.CASES[case_id]["handoff"].read_text())
+            for condition in ("critical_inversion", "sham"):
+                variant = json.loads((COUNTERFACTUAL.RUNS / case_id / condition / "variant-handoff.json").read_text())
+                edits = case[condition]["edits"]
+                self.assertEqual(edits, {key: variant[key] for key in edits})
+                self.assertEqual({key: value for key, value in original.items() if key not in edits}, {key: value for key, value in variant.items() if key not in edits})
 if __name__ == "__main__": unittest.main()

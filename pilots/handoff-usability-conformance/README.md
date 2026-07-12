@@ -65,3 +65,18 @@ Six planted adversarial cases and both retained artifacts replay as declared.
 This is internal builder adjudication, not recipient testimony. Historical v2
 scores are not rewritten, and the replay supports no human-usability, expert,
 capability, productivity, impact, generalization, treatment, or readiness claim.
+
+## Handoff-content counterfactual
+
+`counterfactual-contrast-v1.json` predeclares intact, targeted critical-fact
+inversion, and punctuation-only sham conditions for both handoff shapes.
+`counterfactual_launcher.py` reuses the isolated downstream envelope and the
+semantic v3 criteria. All six one-attempt, zero-retry runs are retained under
+`trials/downstream-counterfactual-v1/` with canaries, manifests, variant
+lineage, redacted traces, usage, outputs, and replayable reports. Both critical
+inversions changed the operation consequence, while both shams preserved it.
+
+This is content-dependence evidence only for the exact configured slice. It
+does not establish human usability, expertise, general or professional
+capability, productivity, downstream impact, broader treatment effects,
+generalization, or readiness.
