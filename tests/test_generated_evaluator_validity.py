@@ -208,4 +208,45 @@ class EvaluatorRepairPromotionTests(unittest.TestCase):
   self.assertIn('criterion equivalence',self.report['claim_limits'])
   self.assertIn('production fitness',self.report['claim_limits'])
 
+class CrossDomainEvaluatorChallengeTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/validate_cross_domain.py'
+  spec=importlib.util.spec_from_file_location('gev_cross_domain',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.mod)
+  self.protocol=json.loads(self.mod.PROTOCOL.read_text())
+  self.holdout=json.loads(self.mod.HOLDOUT.read_text())
+  self.report=self.mod.build()
+ def test_frozen_sources_implementations_and_disjointness(self):
+  self.assertEqual(self.mod.validate_preconditions(self.protocol,self.holdout),[])
+  self.assertTrue(self.report['preconditions']['source_integrity'])
+  self.assertTrue(self.report['preconditions']['implementation_integrity'])
+  self.assertTrue(self.report['preconditions']['prompt_and_source_disjointness'])
+  self.assertEqual({x['pilot'] for x in self.holdout['source_families']},{'lh-skill-adoption','handoff-usability-conformance'})
+ def test_required_boundaries_and_builder_authority(self):
+  categories={x['category'] for x in self.holdout['cases']}
+  self.assertTrue({'passing','substantive_failure','insufficient_evidence','invalid_evidence','superficial_cue','invariance','safety_authority_boundary'} <= categories)
+  self.assertTrue(all(x['reference_authority']=='builder_authored' for x in self.holdout['cases']))
+  self.assertTrue(all(value is False for value in self.holdout['claim_boundaries'].values()))
+ def test_descendants_fail_domain_invariance_and_scope_is_revoked(self):
+  self.assertEqual(self.report['summary'],{'retained':0,'cross_domain_scope_revoked':2,'parents_replayed':2})
+  for row in (x for x in self.report['evaluators'] if x['role']=='descendant'):
+   self.assertEqual((row['passed'],row['total']),(6,8))
+   self.assertEqual(row['cross_domain_decision'],'revoke_cross_domain_scope')
+   failures={x['case_id']:x['observed'] for x in row['results'] if not x['pass']}
+   self.assertEqual(failures,{'xd-lh-natural-pass':'evidence_error','xd-handoff-natural-safe-block':'evidence_error'})
+   self.assertEqual(row['sensitivity_excluding_cross_domain_holdout'],'promote')
+ def test_mutations_fail_closed(self):
+  import copy
+  bad=copy.deepcopy(self.protocol);bad['holdout']['sha256']='0'*64
+  self.assertIn('frozen holdout hash mismatch',self.mod.validate_preconditions(bad,self.holdout))
+  bad=copy.deepcopy(self.protocol);bad['implementations'][0]['sha256']='0'*64
+  self.assertTrue(any('implementation integrity' in x for x in self.mod.validate_preconditions(bad,self.holdout)))
+  bad=copy.deepcopy(self.holdout);bad['source_families'][0]['paths'][0]['sha256']='0'*64
+  self.assertTrue(any('source integrity' in x for x in self.mod.validate_preconditions(self.protocol,bad)))
+ def test_claim_limits_remain_bounded(self):
+  self.assertIn('criterion equivalence',self.report['claim_limits'])
+  self.assertIn('professional validity',self.report['claim_limits'])
+  self.assertIn('deployment readiness',self.report['claim_limits'])
+
 if __name__=='__main__': unittest.main()
