@@ -24,6 +24,18 @@ The review files below are deep reviews unless their own evidence-status section
 | [Efficient Benchmarking of AI Agents](agent-benchmarks/2026-07-09-efficient-benchmarking-ai-agents.md) | When can a reduced panel preserve useful comparisons, and what coverage is lost? | task selection, cost, rank fidelity |
 | [Agent Psychometrics](agent-benchmarks/2026-07-09-agent-psychometrics.md) | How should task difficulty and configured-system ability be modeled? | calibration, IRT, response matrices |
 | [Benchmark Ceiling](agent-benchmarks/2026-07-10-benchmark-ceiling-expert-labor-scarcity.md) | What expert-labor and renewal constraints are hypothesized, and how strong is their evidence? | economics, expert scarcity, lifecycle |
+| [Benchmark-to-risk expert elicitation](agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | What evidence is required between a configured-system benchmark observation and a consequential workflow or stakeholder decision claim? | consequence validity, structured judgment, disagreement, decision loss |
+
+**Benchmark-to-consequence synthesis:** Treat consequence promotion as a linked
+chain—observation → bounded capability interpretation → scenario applicability,
+access, and use → conditional workflow effect → outcome frequency/severity →
+stakeholder threshold/loss. The reviewed cyber pilot makes rival warrants and
+information-condition effects visible, but does not validate its probability
+ranges, calibrated uplift, cyber risk, expected harm, or decision use. Preserve
+packet/order identity, initial and revised rationales, deliberative dependence,
+estimand forks, calibration status, aggregation sensitivity, excluded links, and
+the next discriminating evidence; use the existing validity, metric, participation,
+and elicitation machinery rather than a domain-specific schema.
 
 ## 2. Expertise elicitation, transfer, participation, and skills
 

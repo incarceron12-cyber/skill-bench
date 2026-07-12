@@ -533,6 +533,51 @@ task-projection, artifact-admissibility, execution-validity, task-health, metric
 and validity records; this ladder adds no parallel schema or profession-specific
 pilot.
 
+### 2.5e Consequence promotion is a linked inference chain, not a score transform
+
+A configured-system observation does not directly estimate organizational benefit,
+risk, or decision value. Preserve independently warranted links:
+
+```text
+benchmark observation → bounded capability interpretation
+  → scenario applicability, access, and effective use
+    → conditional workflow effect relative to a counterfactual
+      → outcome composition, frequency, controls, and severity
+        → stakeholder threshold and loss
+```
+
+Each link needs its own target, population, conditions, counterfactual, evidence,
+uncertainty, supported/excluded interpretations, and next discriminating study.
+Benchmark success, capability availability/use, a conditional transition, final-
+outcome frequency/severity, and utility/loss are non-substitutable quantities.
+Prefer direct matched workflow-uplift evidence where feasible; an expert estimate
+of transfer is not causal uplift, and a conditional transition is not expected
+harm or a deployment decision.
+
+When experts assess a link, the **information condition is part of the instrument**.
+Hash the task packet, summaries, metadata, reliability wording, task order, and
+scenario/counterfactual specification. Retain initial estimates and rationales,
+peer estimates viewed, moderation and discussion-group membership, revised values,
+corrections/exclusions, and why each judgment moved. Before pooling, fork genuinely
+different estimands and type disagreement cruxes such as actor/environment
+ambiguity, benchmark-to-work transfer, access/use, baseline, causal mechanism, or
+stakeholder loss. Model repeated-task and discussion-group dependence; disclose
+calibration/seed status, pooling code and assumptions, missingness/exclusion rules,
+and sensitivity to subgroup and alternate aggregation. A wider interval cannot
+stand in for incompatible targets or rival warrants.
+
+The reviewed Cybench pilot usefully preserves some initial/revised rationales and
+shows two groups adopting rival isolated-task-to-operational-work warrants. Seven
+complete respondents, two deliberative clusters, five tasks always ordered by FST,
+generated solution-adjacent packets, an imported baseline, ambiguous access/scaffold
+conditions, missing calibration seeds, and an unreleased Bayesian specification do
+not validate its probability ranges, an FST effect, calibrated uplift, cyber risk,
+expected harm, or decision usefulness [BR]. **Invariant:** no later link is licensed
+by an earlier observation or by expert aggregation alone. Link existing validity-
+argument, metric-monitoring, expert-participation, and future elicitation-session
+records; do not create a parallel schema or implement the blocked session contract
+without a real consented session.
+
 ### 2.6 Frame, content, assembly, and inference have different denominators
 
 Do not infer suite validity by adding healthy tasks or broad labels. Preserve
@@ -1806,6 +1851,12 @@ them:
   dataset metadata audit are recorded there. Paper/release mismatch, purposive
   selection, outcome-conditioned admission, incomplete judge views, disabled
   sandboxing, and absent worker workflow/outcome evidence bound all claims.
+- **[BR]**
+  `papers/agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md`;
+  reviewed immutable v2 PDF/text hashes are recorded there. The small, ordered,
+  clustered expert workshop exposes benchmark-to-consequence warrant disagreement;
+  it does not establish calibrated uplift, cyber risk, expected harm, causal
+  transfer, decision usefulness, capability, professional validity, or readiness.
 - **[HC]**
   `papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md`;
   reviewed immutable v1 PDF/text and inspected one-day-post-v1 official release

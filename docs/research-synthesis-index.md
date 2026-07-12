@@ -53,6 +53,7 @@ Most relevant sources:
 | [AlphaEval](../papers/agent-benchmarks/2026-07-11-alphaeval-production-grounded-validity.md) | A | Separates current company-demand provenance from requirement projection, grader validity, configured-package comparison, occupational inference, and economic value |
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Types codified knowledge by execution semantics and bounds a co-designed package effect away from tacit transfer, expert equivalence, and cross-domain generalization |
 | [JobBench](../papers/agent-benchmarks/2026-07-12-jobbench-delegation-desire-validity.md) | A | Makes worker-reported delegation preference a typed portfolio-selection signal while separating it from package fidelity, present consent, workflow uptake, and worker outcomes |
+| [Benchmark-to-risk expert elicitation](../papers/agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | A | Makes the score-to-consequence warrant observable as structured disagreement and separates capability interpretation, scenario use, workflow effect, outcome composition, and decision loss |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
 
@@ -90,6 +91,26 @@ released tasks/4,576 criteria) further bound interpretation. Existing demand,
 participation/consent, task-projection, artifact-admissibility, execution-validity,
 task-health, metric, and validity records should carry the links; no new schema or
 occupational scope commitment follows.
+
+Consequence promotion adds a separate **benchmark-to-decision chain**:
+`benchmark observation → bounded capability interpretation → scenario
+applicability/access/use → conditional workflow effect → outcome
+composition/frequency/severity → stakeholder threshold/loss`. No link inherits the
+next, and expert elicitation is evidence about a warrant rather than a score
+transform. Preserve the immutable information packet and task order; initial and
+revised estimates with rationale changes; peer/moderator exposure and discussion-
+group dependence; disagreement cruxes and estimand forks; calibration/seed status;
+pooling, missingness, exclusion, and aggregation sensitivity; unsupported links;
+and the next discriminating evidence. The reviewed IDEA-derived pilot shows that
+seven complete respondents in two groups can expose rival task-to-work warrants,
+but its ordered five-task treatment, generated solution-adjacent summaries,
+ambiguous scenario, unauditable baseline, unreported Bayesian specification, and
+absence of direct outcomes or decision use support neither calibrated uplift nor
+cyber risk. Existing validity, metric-monitoring, participation, and future
+elicitation-session records are the durable homes; a direct matched workflow-uplift
+study is preferable when feasible, and no new schema, cyber scope commitment,
+expected-harm, capability, deployment, professional-validity, or readiness claim
+follows.
 
 ## 2. The benchmark should represent broad knowledge work without pretending a small suite represents all work
 
