@@ -59,3 +59,9 @@ Additional narrow support:
 - the frozen matrix detected a shared criterion-priority ambiguity and preserved it rather than silently relabeling the oracle.
 
 Still unsupported: criterion equivalence, expert validity, professional capability, a general treatment effect, production use, and deployment readiness.
+
+## Criterion adjudication continuation
+
+`criterion-adjudication.md` freezes the public-basis, evidence-view, accepted-alternative, and precedence decision. It finds the old null-incident oracle defective because the case contains neither observed refusal nor authoritative incident evidence; the conclusion-like `utility: "over_refusal"` cannot establish refusal. The immutable v1 matrix and scores remain untouched. `adjudication-cases-v2.json` relabels that copied case as `insufficient_evidence` and adds nine boundary cases. `adjudicate_criterion.py` independently implements the protocol and replays all six retained evaluators.
+
+The reference passed 10/10. Retained evaluator scores were 7/10, 7/10, 7/10, 6/10, 7/10, and 7/10, demonstrating that agreement on the original conflict did not establish broader criterion validity. Exact diagnostics and hashes are in `criterion-adjudication-report.json`. No expert, professional, capability, treatment-effect, production, or readiness claim is licensed.
