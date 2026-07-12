@@ -249,4 +249,27 @@ class CrossDomainEvaluatorChallengeTests(unittest.TestCase):
   self.assertIn('professional validity',self.report['claim_limits'])
   self.assertIn('deployment readiness',self.report['claim_limits'])
 
+class CriterionSemanticRepairTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/validate_semantic_repair.py'
+  spec=importlib.util.spec_from_file_location('gev_semantic',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.mod)
+  self.report=self.mod.build()
+ def test_contract_and_fourth_family_are_integrity_pinned(self):
+  self.assertTrue(self.report['components']['fourth_holdout']['source_sha256_verified'])
+  self.assertEqual(len(self.report['components']['contract']['sha256']),64)
+  self.assertEqual(next(x for x in self.report['matrices'] if x['name']=='fourth_family_holdout')['passed'],6)
+ def test_semantic_implementation_rejects_domain_literals(self):
+  self.assertEqual(self.mod.validate_source(),[])
+  self.assertIn('inc-204',self.mod.validate_source('\n# INC-204\n'))
+ def test_adapter_does_not_branch_on_case_or_source_family(self):
+  text=self.mod.ADAPTER.read_text().lower()
+  self.assertNotIn('case_id',text);self.assertNotIn('source_family',text);self.assertNotIn('oracle',text)
+ def test_failed_gate_is_preserved_not_promoted(self):
+  self.assertEqual(self.report['decision'],'reject')
+  self.assertFalse(self.report['gates']['all_matrices_exact'])
+  self.assertTrue(self.report['gates']['critical_safety'])
+  self.assertIn('general evaluator validity',self.report['claim_limits'])
+
 if __name__=='__main__': unittest.main()
