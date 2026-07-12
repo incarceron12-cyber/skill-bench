@@ -225,6 +225,27 @@ Existing task/check, artifact/state, action-safety, trace, task-health, metric, 
 validity records are the implementation homes; this evidence does not justify a
 parallel schema or pilot.
 
+#### Authorization ambiguity is not evidence insufficiency
+
+A fixed private intended transition may cease to be justified when a prompt hides
+the action, object, scope, or environment attributes that publicly license it.
+Record `private_intent`, `public_authorization`, `resolvable_uncertainty`, legitimate
+terminal actions, attempted action, realized effect, observer coverage, and verdict
+independently. `insufficient_evidence` means the observer cannot support a verdict;
+`authorization_ambiguous` means the agent-visible basis does not license one unique
+action. Neither is ordinary failure, and neither makes the other true [US].
+
+Cross specificity with authority completeness and consequence/permission policy.
+Include matched cases where inspection resolves uncertainty, clarification is
+required, conservative action is licensed, refusal/escalation is required, and
+unnecessary asking has cost. Report useful completion, calibrated clarification,
+over-refusal, wrong target, excess scope, invalid execution, and acted-run quality
+separately. UnderSpecBench's fixed-world matrix motivates this contract, but its
+unvalidated transformations, fixed private oracle, single permissive policy,
+apparent one-shot cells, and unavailable release support only a synthetic stress-
+test pattern—not professional or deployment safety [US]. Existing authority,
+action-safety, trace, evaluator-observation, metric, and validity records suffice.
+
 ### 2.3 A rubric is a dependency-aware evidence model
 
 Rubric decomposition makes expert attention inspectable, but does not make it
@@ -796,6 +817,19 @@ deterministic builder-authored fixture validates contract behavior only. Real cl
 upgrades require provenance-grounded unlike workflows, repeated trials, actor and
 recipient/expert validation, alternate-path and adversarial-observer tests, complete
 reset evidence, and lineage-clustered uncertainty.
+
+Interdependent sessions add a dependency-bearing action shape, not automatic
+memory causality. Preserve the edge from earlier observation/artifact/state through
+write payload and feedback authority, session reset/persistent state, retrieval,
+presented evidence, adoption, intermediate action, and final consequence. Compare
+matched reset/no-memory, raw-experience, answer-feedback, oracle-evidence,
+irrelevant-evidence, and corrupted-evidence conditions on equivalent-form held-out
+actions. MemoryArena demonstrates that configured memory–agent pipelines struggle
+on authored chains, but domain-specific feedback (including judge text and seeded
+plans), non-equivalent success semantics, no clean no-memory arm, brittle/model
+graders, and no repeats leave retrieval, state reconstruction, reasoning, and
+consequence causally entangled [MA]. Endpoint success licenses neither a root-cause
+memory diagnosis nor longitudinal learning, professional competence, or readiness.
 
 ## 3. Measurement stack: trial to defensible claim
 
@@ -1853,6 +1887,18 @@ them:
   reviewed immutable v1 PDF/text plus pinned code and dataset release are
   recorded there. Results concern retrospective evidence QA, not held-out action
   benefit, stale-memory safety, professional competence, or readiness.
+- **[MA]**
+  `papers/agent-benchmarks/2026-07-13-memoryarena-interdependent-experience-action.md`;
+  reviewed immutable v1 PDF/text and complete pinned post-v1 preview release are
+  recorded there. Results concern configured interdependent-session pipelines,
+  not isolated memory causality, longitudinal learning, professional competence,
+  or readiness.
+- **[US]**
+  `papers/agent-benchmarks/2026-07-13-underspecbench-action-boundary-validity.md`;
+  reviewed immutable v1 PDF/text are recorded there; no official release was
+  verifiable. Its authored prompt matrix supports an authorization-state stress-
+  test pattern, not population prevalence, professional validity, or deployment
+  safety.
 - **[KW]**
   `papers/agent-benchmarks/2026-07-11-kwbench-unprompted-problem-recognition.md`;
   reviewed immutable v1 PDF/text and inspected linked code/site snapshots are

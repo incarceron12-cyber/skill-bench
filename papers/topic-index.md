@@ -78,6 +78,7 @@ and elicitation machinery rather than a domain-specific schema.
 | [WorkArena L1](agent-benchmarks/2026-07-12-workarena-l1-knowledge-work-validity.md) | What do parameterized enterprise-UI tasks and native-state predicates establish, and where do work sampling, collateral-state, professional-use, and reset claims exceed the evidence? | browser agents, ServiceNow, state validators, task projection |
 | [WorkArena++](agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | What does executable workflow composition establish, and when do dependency, polling, reset, and provenance gaps block planning or realism claims? | composition, state validators, reset, construct validity |
 | [HippoCamp](agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | When do composite contextual files support retrieval and answer claims, and where do authorization, adoption, consequence, privacy, and affected-party validity remain unmeasured? | personal context, multimodal retrieval, authority, consequence |
+| [UnderSpecBench](agent-benchmarks/2026-07-13-underspecbench-action-boundary-validity.md) | When does an underspecified request justify inspection, clarification, refusal/escalation, or action rather than agreement with a fixed private oracle? | authorization, action boundary, side effects, observer coverage |
 
 **Cross-family synthesis:** [Professional knowledge-work benchmark evolution](../docs/concepts/professional-benchmark-evolution-matrix.md) compares the fully reviewed/release-audited professional families plus the official AA-Briefcase-Lite release. It records retain/repair/test decisions. OfficeBench remains an evidence gap; TheAgentCompany, OdysseyBench, WorkArena L1, and WorkArena++ now supply bounded substrate, evidence-to-action, atomic native-state, and composition evidence without licensing occupational, persistent-memory, collaboration, planning, professional-validity, or readiness claims.
 
@@ -108,11 +109,19 @@ and elicitation machinery rather than a domain-specific schema.
 | [Anchor](agent-benchmarks/2026-07-10-anchor-artifact-drift-generation.md) | How can generated tasks keep instructions, environment, witness, and checker projections aligned? | task generation, conformance, drift |
 | [ClawArena](agent-benchmarks/2026-07-10-clawarena-evolving-information.md) | How should corrections, retractions, supersession, and consequential updates be represented? | evolving evidence, workspace, state |
 | [LongMemEval v2](agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md) | How should environment experience, memory access, adoption, retention, and downstream effect differ? | memory, longitudinal evaluation, experience |
+| [MemoryArena](agent-benchmarks/2026-07-13-memoryarena-interdependent-experience-action.md) | When do interdependent sessions test memory-conditioned action, and what controls isolate retrieval, state reconstruction, adoption, and consequence? | memory, session dependency, feedback, action consequence |
 | [WorkBench Revisited](agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | How should corrected current forms, frozen anchors, renewed forms, and score bridges coexist? | lifecycle, instrument drift, side-effect denominators |
 
 OdysseyBench is indexed primarily with workplace workflows rather than duplicated
 here: it consumes a supplied synthetic history and acts on office state, but does
-not test memory accumulated persistently through executed experience.
+does not test memory accumulated persistently through executed experience.
+
+**Action-and-memory synthesis:** Read UnderSpecBench with AARRI for the distinction
+among private intent, public authorization, resolvable uncertainty, and calibrated
+terminal actions. Read MemoryArena with LongMemEval-V2 for the separate estimands of
+evidence delivery and held-out action benefit. Together they require link-level
+observation and matched controls; endpoint agreement or success alone supports no
+professional, longitudinal-learning, root-cause-memory, or deployment claim.
 
 ## 6. Safety, contamination, and integrity
 

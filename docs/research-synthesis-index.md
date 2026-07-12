@@ -339,8 +339,25 @@ revision before adding another lifecycle schema.
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Prevents launcher, permission, tool, and sandbox faults from being mislabeled as capability failures |
 | [Amazon production-agent evaluation](concepts/amazon-production-agent-evaluation.md) | B | Adds production-oriented decomposition of tool, memory, reasoning, and end-to-end operational failures |
 | [AARRI-Bench](../papers/agent-benchmarks/2026-07-11-aarri-research-judgment-lifecycle.md) | A | Makes stop, refuse, escalate, clarify, and preserve legitimate consequence-bearing outcomes while directly exposing lexical-verifier false rejection |
+| [UnderSpecBench](../papers/agent-benchmarks/2026-07-13-underspecbench-action-boundary-validity.md) | B | Separates private intended transition from public authorization, resolvable uncertainty, attempted action, realized effect, and observer coverage |
+| [MemoryArena](../papers/agent-benchmarks/2026-07-13-memoryarena-interdependent-experience-action.md) | B | Makes prior-session evidence consequential through dependency-bearing action while exposing feedback, state-reconstruction, retrieval, adoption, and grader confounds |
 
 **Repository consequence:** Root/surface attribution, causal trace slices, recovery records, invalid-trial handling, and task-health lifecycle records. Apparent requests should also admit a counterfactual action contract: observable disqualifying evidence, authority and threshold, legitimate alternatives, required state and communication consequences, abstention/escalation, and collateral harm. Decision, rationale, artifact preservation, communication, cost, and harm remain separate observations. Matched persist/stop and comply/dissent forms are required to distinguish calibrated judgment from generic quitting or contrarianism; substantive action must be tested independently of lexical realization, with paraphrase contrasts and retained semantic adjudication. AARRI's inspectable authored suite motivates this design but its missing sampling frame, contributor accounting, human baseline/agreement, repeats/uncertainty, verifier-wide audit, complete configuration, contamination-safe split, environment evidence, and paper-pinned release prevent researcher-quality or cross-domain capability claims.
+
+The combined evidence adds two non-substitutable boundaries. First, private intent,
+public authorization, resolvable uncertainty, legitimate terminal action, attempted
+action, realized consequence, and observer sufficiency must remain separate;
+clarification, refusal, escalation, and action are calibrated alternatives rather
+than an ordinal completion scale. UnderSpecBench contributes a controlled synthetic
+pattern but its fixed oracle may become unfair as visible authorization changes.
+Second, prior-session relevance does not identify memory causality: preserve
+observation → write/feedback → retrieval/presentation → adoption → state
+reconstruction → action → consequence, with reset, raw, answer-feedback, oracle,
+irrelevant, and corrupted-evidence controls. MemoryArena contributes the
+dependency-bearing action shape, while its heterogeneous feedback and graders block
+root-cause memory, professional, learning, or readiness claims. Existing contracts
+cover both boundaries; the queued cross-domain authority-to-consequence slice is the
+appropriate executable follow-up, not a DevOps- or memory-specific schema.
 
 ## 7. Task generation and evolution require conformance, provenance, and rollback
 
