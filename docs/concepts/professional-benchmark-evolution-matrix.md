@@ -37,7 +37,7 @@ No reviewed family closes every link. The strongest general direction is away fr
 
 ### OfficeBench / WorkArena boundary
 
-The existing corpus does not yet contain a full primary-source/release review sufficient for deep claims about OfficeBench or WorkArena. They therefore remain **anchor families requiring verified treatment**, not evidence-bearing rows in this matrix. The current SOTA map should not imply that their evaluation functions are robust merely because they are programmatic. A future update should add them only after verifying task/environment versions, reset semantics, evaluator coverage, adoption evidence, and successor fixes. This is an explicit evidence gap, not a fabricated comparison.
+OfficeBench remains an **anchor family requiring verified treatment**. The completed [WorkArena L1 review](../../papers/agent-benchmarks/2026-07-12-workarena-l1-knowledge-work-validity.md) closes the WorkArena source gap: its 33 atomic ServiceNow classes provide strong enterprise-UI and selected native-state evidence, but 19,912 template-clustered parameter configurations do not establish sampled work breadth. Fresh users and object-specific teardown are not full reset attestations; heterogeneous query, record, URL, identity, chart, and answer predicates omit broad collateral state and professional usability. WorkArena++ demonstrably composes this machinery, repairing horizon while inheriting the need to validate every atomic observer and work-provenance link.
 
 ## AA-Briefcase-Lite full-source audit
 
@@ -121,4 +121,4 @@ The current primary sources establish active benchmark construction and substant
 1. Use this matrix as the professional-work evolution view in the SOTA map and synthesis index; keep source-specific detail in full reviews.
 2. Do not add another schema task. Existing expertise-transfer, participation, benchmark-bundle, artifact-view, persistent-workspace, task-health, metric, validity, and execution records already house the repairs.
 3. Before a second pilot result is promoted, execute the six falsification families above and preserve invalid/insufficient outcomes.
-4. Keep OfficeBench/WorkArena as an explicit evidence gap until full primary-source and release audits support a row.
+4. Keep OfficeBench as an explicit evidence gap; use the completed WorkArena L1 and WorkArena++ audits to distinguish atomic native-state predicates from composed-workflow validity.

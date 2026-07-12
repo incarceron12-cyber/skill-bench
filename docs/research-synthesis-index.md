@@ -101,6 +101,7 @@ occupational scope commitment follows.
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
+| [WorkArena L1](../papers/agent-benchmarks/2026-07-12-workarena-l1-knowledge-work-validity.md) | B | Makes parameterized enterprise-UI setup, selected native-state predicates, and task-owned cleanup inspectable while separating atomic operation success from work sampling, collateral-state, professional-use, and readiness claims |
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
 | [OdysseyBench](../papers/agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md) | B | Connects dialogue-distributed requirements to office-state action while exposing persistent-memory, evaluator-dispatch, collateral-state, and professional-validity gaps |
@@ -131,8 +132,10 @@ workspace and state substrates (Workspace-Bench/SaaS-Bench), native artifact
 inspection (MBABench), and observable expert procedures (LH-Bench) more strongly
 than it supports occupational representativeness, longitudinal project work,
 counterfactual artifact integrity, checkpoint progress, or professional
-readiness. OfficeBench remains an explicit primary-source audit gap; the completed
-WorkArena++ audit closes the composition-method gap but not occupational validity.
+readiness. OfficeBench remains an explicit primary-source audit gap. The completed
+WorkArena L1 audit supports enterprise-UI and selected native-state operation claims,
+not representative knowledge work; WorkArena++ closes the composition-method gap but
+not occupational validity.
 
 Executable composition is therefore a construction mechanism, not a construct
 argument. A composite task needs a typed obligation DAG with prerequisites,
