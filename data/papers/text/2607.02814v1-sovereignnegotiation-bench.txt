@@ -1,0 +1,407 @@
+                                        arXiv preprint
+
+
+
+
+                                        S OVEREIGN N EGOTIATION -B ENCH : E VALUATING
+                                        U SER -OWNED P ERSONAL AGENTS IN D ELEGATED
+                                        BARGAINING UNDER P RIVACY, C ONSENT, E VIDENCE ,
+                                        AND I NSTITUTIONAL P RESSURE
+
+                                         Dylan Zongmin Liu
+                                         Stanford University
+                                         zongminl@stanford.edu
+
+
+
+
+arXiv:2607.02814v1 [cs.MA] 2 Jul 2026
+                                                                                      A BSTRACT
+
+                                                 Personal agents will increasingly negotiate on behalf of users: splitting costs
+                                                 with other personal agents, appealing platform decisions, escalating support dis-
+                                                 putes, requesting refunds, changing subscriptions, and negotiating deadlines or
+                                                 reimbursements. Existing negotiation benchmarks emphasize agreement, sur-
+                                                 plus, or strategic competence, but a user-owned agent can reach an agreement
+                                                 while harming the user through privacy leakage, consent violation, unsupported
+                                                 advocacy, over-concession, failed escalation, or poor auditability. We introduce
+                                                 SovereignNegotiation-Bench, a trace-level multi-turn benchmark for delegated
+                                                 personal-agent negotiation under private utilities, disclosure constraints, evidence
+                                                 requirements, and institutional asymmetry. The benchmark separates agent-visible
+                                                 observable state from evaluator-only labels and evaluates agreement success jointly
+                                                 with user utility, privacy, consent, evidence grounding, concession discipline, esca-
+                                                 lation, and auditability. We report an artifact-backed validation over 240 scenarios,
+                                                 4 model families, 14 baselines, 13,440 frozen-prompt live trajectories, 61,135
+                                                 parsed action rows, and a blinded 3-annotator audit over 300 items. The strongest
+                                                 agreement-maximizing baseline achieves the highest agreement rate but low user
+                                                 utility and high privacy/consent risk; FullSovereign does not maximize agreement,
+                                                 but obtains the best sovereign negotiation score by preserving utility, minimizing
+                                                 leakage, grounding claims, and reducing unauthorized commitments. The results
+                                                 show that agreement success is insufficient for user-owned negotiation agents.
+
+
+                                        1    I NTRODUCTION
+
+                                        A personal agent that negotiates for a user is not merely a chatbot that bargains. It is a representative. It
+                                        may know the user’s reservation value, private context, constraints, evidence, tolerance for escalation,
+                                        and consent boundaries. This creates a failure mode absent from ordinary negotiation benchmarks:
+                                        the agent can produce a deal and still violate the user’s interests. It might disclose a private medical
+                                        reason to get a scheduling change, reveal a reservation price to accelerate a sale, accept a lowball
+                                        settlement to end a support dispute, make unsupported claims in a refund appeal, or waive rights
+                                        without authorization.
+                                        We call this target sovereign negotiation: delegated bargaining that preserves the user’s current utility,
+                                        privacy, consent, evidence standards, escalation rights, and auditability. The central thesis is that
+                                        agreement rate is an incomplete metric for user-owned personal agents. Agreement-only evaluation
+                                        can reward agents that are efficient for counterparties but poor representatives for users.
+                                        SovereignNegotiation-Bench evaluates this target in two settings. Symmetric scenarios involve one
+                                        user-owned personal agent negotiating with another personal agent, such as splitting shared costs or
+                                        coordinating schedules. Asymmetric scenarios involve a user-owned personal agent facing a company
+                                        or institution-side agent, such as a support escalation, refund request, platform appeal, subscription
+                                        cancellation, or reimbursement claim. All policies see only observable negotiation state; private utili-
+                                        ties, forbidden disclosures, acceptable evidence, concession thresholds, escalation labels, and internal
+
+
+                                                                                             1
+arXiv preprint
+
+
+
+
+pressure types are evaluator-only. The v3 prompt construction exposes only neutral counterparty
+profiles such as personal counterparty and company support agent; strategy labels
+are not agent-visible.
+
+Contributions. (1) We define sovereign negotiation as an evaluation target for user-owned personal
+agents. (2) We introduce a no-oracle benchmark schema that separates observable negotiation
+state from hidden private-utility and consent labels. (3) We report artifact-backed experiments over
+240 scenarios, 4 model families, 14 baselines, and 13,440 frozen-prompt live trajectories with raw
+prompts, outputs, provider-form responses, parsed actions, metrics, hashes, and blinded audit labels.
+(4) We show that agreement success decouples from user-sovereign behavior: AgreementMaximizer
+reaches more deals but leaks more information and yields lower utility than FullSovereign. (5) We
+provide an artifact-gate protocol for prompt-leakage scans, metric recomputation, and anonymous
+release.
+
+
+2   R ELATED W ORK
+
+Agent benchmarks. WebArena, VisualWebArena, OSWorld, AndroidWorld, WorkArena, Tool-
+Bench, API-Bank, SWE-bench, τ -bench, and TheAgentCompany make agent evaluation executable,
+stateful, or workplace-realistic (Zhou et al., 2024; Koh et al., 2024; Xie et al., 2024; Rawles et al.,
+2024; Drouin et al., 2024; Qin et al., 2023; Li et al., 2023; Jimenez et al., 2024; Yao et al., 2025;
+TheAgentCompany Authors, 2025). These works measure tool use, web/OS action, coding, customer-
+service, or professional task completion. SovereignNegotiation-Bench focuses on representation
+under bargaining pressure, where successful completion may be user-harmful.
+
+Personalization and personal agents. Generative Agents, MemGPT, LongMem, PersonaLens,
+ASTRA-bench, and Persona2Web study persistent context, memory, personalization, and ambiguous
+user-history reasoning (Park et al., 2023; Packer et al., 2023; Wang et al., 2023; Zhao et al., 2025;
+Xiu et al., 2026; Persona2Web Authors, 2026). They motivate user-owned agents but do not directly
+evaluate negotiation actions under private utilities, consent, disclosure, evidence, and institutional
+pressure.
+
+Negotiation and social-agent benchmarks. Deal-or-No-Deal, CraigslistBargain, CaSiNo, Diplo-
+macy, SOTOPIA, and NegotiationArena evaluate bargaining, social interaction, agreement, strategy,
+or surplus (Lewis et al., 2017; He et al., 2018; Chawla et al., 2021; Bakhtin et al., 2022; Zhou
+et al., 2024; Fu et al., 2024). SovereignNegotiation-Bench differs by treating the agent as a user
+representative whose disclosure, concession, evidence, and escalation behavior are evaluated even
+when agreement is reached.
+
+Privacy, consent, and agent protocols. Contextual integrity and data minimization frame privacy
+as appropriate information flow (Nissenbaum, 2004; 2009). Recent agent privacy benchmarks such
+as MAGPIE, AgentLeak, PrivacyLens-Live, and ToolPrivacyBench show that privacy risk can occur
+through internal messages, tool arguments, memory, logs, and downstream sinks (MAGPIE Authors,
+2025; AgentLeak Authors, 2026; PrivacyLens-Live Authors, 2025; ToolPrivacyBench Authors,
+2026). A2A and MCP make inter-agent communication and tool/context access more realistic
+deployment substrates (Google, 2025; Anthropic, 2024). SovereignNegotiation-Bench does not
+propose a protocol; it evaluates whether agent-to-agent or agent-to-company negotiation behavior
+preserves user sovereignty.
+
+
+3   B ENCHMARK
+
+Each scenario is a tuple (O, H). O contains the user’s visible goal, current message, evidence snippets,
+consent instructions, prior preference summaries, tool affordances, and a neutral counterparty profile.
+H contains evaluator-only labels: private utility, reservation value, forbidden disclosures, minimum
+acceptable outcome, required evidence, escalation appropriateness, pressure type, and safe concession
+range. A policy π : O → A∗ produces an auditable multi-round negotiation trajectory. We evaluate
+trace-level multi-turn policies: the model emits an auditable trajectory from the observable state
+
+
+                                                   2
+arXiv preprint
+
+
+
+
+Table 1: Main validation results. Agreement alone is misleading: AgreementMaximizer reaches the
+most deals, but FullSovereign obtains the best sovereign negotiation score (SNS) by preserving utility
+and reducing privacy/consent failures.
+
+    Baseline                                   Agreement                   User utility                      Privacy↓               Consent↓                   SNS
+    AgreementMaximizer                                   0.861                    0.480                            0.160                   0.096             0.554
+    Direct                                               0.766                    0.507                            0.129                   0.073             0.557
+    Consent                                              0.693                    0.551                            0.056                   0.018             0.581
+    Evidence                                             0.710                    0.568                            0.093                   0.048             0.611
+    LLMJudgeGuard                                        0.751                    0.651                            0.060                   0.036             0.642
+    FairnessAware                                        0.740                    0.672                            0.081                   0.036             0.645
+    FullSovereign                                        0.789                    0.805                            0.031                   0.004             0.720
+
+
+        FullSovereign                                                                         0.150                                                       PrivacyLeak
+                                                                                                                                                          ConsentViolation
+       FairnessAware                                                                          0.125
+      LLMJudgeGuard                                                                           0.100
+                                                                                  Risk rate
+             Evidence
+                                                                                              0.075
+              Consent
+                                                                                              0.050
+                Direct
+                                                                                              0.025
+ AgreementMaximizer
+                                                                                              0.000
+                     0.0   0.1   0.2    0.3     0.4      0.5   0.6   0.7                              AgreementMaximizer   Direct         LLMJudgeGuard     FullSovereign
+                                   Sovereign Negotiation Score                                                                      Baseline
+
+                (a) Sovereign negotiation score.                                                             (b) Privacy and consent risks.
+
+Figure 1: FullSovereign improves the joint risk-utility profile rather than simply maximizing agree-
+ment.
+
+
+and opening counterparty message. This is not claimed to be a fully deployed turn-by-turn A2A
+environment.
+
+Metrics. We compute agreement success, user utility, privacy leakage, consent violation, evidence
+grounding, unsupported claims, over-concession, escalation quality, manipulation capture, and
+auditability. The aggregate sovereign negotiation score is a reporting index,
+
+                  SNS = wa A + wu U + we E + wq Q − wp P − wc C − wo O − wm M − wb B,
+
+where positive components reward agreement, user utility, evidence, and auditability, and risk
+components penalize privacy leakage, consent violation, over-concession, manipulation capture, and
+unnecessary burden. The aggregate is not a universal utility function; all tables report components
+and paired comparisons.
+
+Artifact. The v3 validation package contains 240 scenarios, split evenly between symmetric
+personal-agent negotiation and asymmetric user-agent-to-company negotiation; 4 model families;
+14 policy baselines; 13,440 live trajectories; 61,135 parsed action rows; 13,440 raw logs, prompts,
+outputs, and provider-form responses; 300 blinded audit items; and 900 audit labels. The prompt-
+leakage scan reports 0 strategy-label hits, and metric recomputation from trajectories matches
+packaged metrics in the recorded audit.
+
+
+4      E XPERIMENTS
+
+Baselines. We compare agreement-oriented, direct, consent-only, evidence-only, fairness-aware,
+company-policy-following, judge-guarded, and full-sovereign wrappers. FullSovereign combines
+privacy minimization, consent checking, evidence grounding, concession discipline, escalation rules,
+and audit logging. It is a scaffolded policy baseline, not a new foundation model.
+
+
+                                                                              3
+arXiv preprint
+
+
+
+
+ Table 2: Bootstrap confidence intervals and paired comparisons from the recorded v3 validation.
+
+      Baseline          SNS with 95% CI
+                                              Comparison                               ∆ SNS    Positive pairs
+      Direct           0.557 [0.550,0.564]
+      Consent          0.581 [0.573,0.588]    FullSovereign vs AgreementMaximizer       0.166        856/960
+      Evidence         0.611 [0.604,0.618]    FullSovereign vs Direct                   0.163        862/960
+      LLMJudgeGuard    0.642 [0.635,0.650]    FullSovereign vs CompanyPolicyFollower    0.174        859/960
+      FairnessAware    0.645 [0.639,0.652]    FullSovereign vs LLMJudgeGuard            0.078        761/960
+      FullSovereign    0.720 [0.713,0.725]
+
+
+Table 3: Symmetric vs asymmetric setting. The company-facing gap is largest for agreement-oriented
+and direct policies and smallest for FullSovereign.
+
+                      Baseline               Symmetric        Asymmetric               Gap
+                      AgreementMaximizer          0.604                0.503       -0.101
+                      Direct                      0.603                0.511       -0.092
+                      FullSovereign               0.731                0.708       -0.023
+
+
+4.1     AGREEMENT IS INSUFFICIENT
+
+Table 1 shows the core decoupling. AgreementMaximizer has the highest agreement rate (0.861) but
+low user utility (0.480), high privacy leakage (0.160), high consent violation (0.096), and low SNS
+(0.554). FullSovereign has lower agreement (0.789) but much higher user utility (0.805), substantially
+lower privacy leakage (0.031), and near-zero consent violation (0.004), yielding the best SNS (0.720).
+Thus an agent can negotiate successfully while being a poor user representative.
+Paired tests support the same conclusion. FullSovereign improves over AgreementMaximizer by
+0.166 SNS with 856/960 positive paired cells, over Direct by 0.163 with 862/960 positive cells, over
+CompanyPolicyFollower by 0.174 with 859/960 positive cells, and over LLMJudgeGuard by 0.078
+with 761/960 positive cells. The smaller but stable margin over judge-guarding shows that generic
+LLM judging captures part of the safety boundary but not the full utility/privacy/consent/evidence
+tradeoff.
+
+4.2     I NSTITUTIONAL ASYMMETRY INCREASES RISK
+
+Asymmetric company-facing cases are harder than symmetric PA-to-PA cases. Direct drops from
+0.603 SNS in symmetric cases to 0.511 in asymmetric cases, while AgreementMaximizer drops from
+0.604 to 0.503. FullSovereign drops less, from 0.731 to 0.708, indicating that the integrated policy
+better withstands institutional pressure.
+
+4.3     H UMAN AUDIT
+
+A blinded audit over 300 items and 900 labels shows high agreement for concrete boundary violations
+and lower agreement for normative judgments. Privacy leakage has pairwise agreement 0.947 and
+Fleiss κ = 0.888; consent violation has 0.958 and κ = 0.904. Unsupported claims are moderate
+(κ = 0.599), and over-concession is lower (κ = 0.213). We therefore report concession and
+manipulation as separate components and avoid hiding normative uncertainty inside a single scalar.
+
+4.4     Q UALITATIVE CASES
+
+In a subscription-cancellation case, the counterparty asks for an unnecessary private reason to
+process cancellation. Direct discloses private context to accelerate resolution; FullSovereign refuses
+unnecessary disclosure, cites the account record, and asks for cancellation without extra personal
+details. In a refund case, Direct accepts a partial credit under company pressure; FullSovereign cites
+receipt evidence, avoids unsupported claims, and escalates only after the visible policy path fails. In
+a roommate cost-sharing case, AgreementMaximizer reaches an agreement by revealing the user’s
+maximum payment tolerance; FullSovereign proposes an evidence-grounded split without exposing
+reservation value. These cases illustrate why agreement rate alone is not a user-sovereignty metric.
+
+
+                                                  4
+arXiv preprint
+
+
+
+
+Table 4: Blinded audit reliability. Concrete privacy/consent violations are highly reliable; over-
+concession is more normative.
+
+                      Dimension               Pairwise agreement        Fleiss κ
+                      privacy leakage                        0.947        0.888
+                      consent violation                      0.958        0.904
+                      unsupported claim                          –        0.599
+                      over-concession                            –        0.213
+
+
+5    L IMITATIONS
+The benchmark uses synthetic but controlled negotiation scenarios rather than real user disputes. It
+evaluates trace-level multi-turn trajectory generation, not fully deployed turn-by-turn A2A interaction.
+The artifact provides raw prompts, outputs, provider-form responses, timestamps, response identifiers,
+hashes, parser/evaluator scripts, and audit labels, but reviewers cannot independently verify provider-
+side authenticity without provider access or signed receipts. Human audit is reliable on privacy and
+consent but less reliable on over-concession and manipulation, reflecting the normative nature of
+these judgments. Future work should add interactive A2A runs, larger naturalistic company-policy
+corpora, multimodal GUI evidence, and user studies with appropriate ethics review.
+
+6    C ONCLUSION
+SovereignNegotiation-Bench evaluates whether user-owned personal agents negotiate as faithful
+representatives rather than merely deal-makers. Across artifact-backed multi-model trajectories,
+agreement-oriented baselines often reach deals while leaking private information, violating consent,
+over-conceding, or failing to ground claims. FullSovereign does not maximize agreement, but it
+produces the strongest joint utility/privacy/consent/evidence profile. Personal-agent negotiation
+should therefore be evaluated by sovereign representation, not agreement alone.
+
+E THICS S TATEMENT
+The benchmark concerns agents acting in privacy-sensitive and consent-sensitive settings. Scenarios
+are synthetic and contain no real user accounts, payments, emails, or platform credentials. Potential
+misuse includes training agents to manipulate counterparties or bypass consent. We frame the
+benchmark for auditing, data minimization, consent preservation, evidence grounding, and escalation
+discipline.
+
+R EPRODUCIBILITY S TATEMENT
+The intended anonymous artifact release contains scenarios, prompts, outputs, provider-form re-
+sponses, raw logs, parsed actions, metrics, hashes, recomputation code, blinded audit items, labels,
+and an unblinding key managed outside the anonymous main text. The included local artifact gate
+checks file counts, prompt leakage, hash manifests, and recomputation commands.
+
+LLM U SAGE D ISCLOSURE
+LLMs were used for ideation, drafting assistance, editing, and code-generation guidance. The authors
+remain responsible for all claims, data, artifact boundaries, and release decisions. LLMs are not
+authors.
+
+R EFERENCES
+Zhou, S. et al. WebArena: A realistic web environment for building autonomous agents. ICLR, 2024.
+Koh, J. Y. et al. VisualWebArena: Evaluating multimodal agents on realistic visual web tasks. ICLR,
+  2024.
+
+
+                                                   5
+arXiv preprint
+
+
+
+
+Xie, T. et al. OSWorld: Benchmarking multimodal agents for open-ended tasks in real computer
+  environments. NeurIPS, 2024.
+Rawles, C. et al. AndroidWorld: A dynamic benchmarking environment for autonomous agents.
+  arXiv, 2024.
+Drouin, A. et al. WorkArena: How capable are web agents at solving common knowledge work
+  tasks? arXiv, 2024.
+Qin, Y. et al. ToolBench: A benchmark for language model tool learning. arXiv, 2023.
+Li, M. et al. API-Bank: A benchmark for tool-augmented LLMs. EMNLP, 2023.
+Jimenez, C. E. et al. SWE-bench: Can language models resolve real-world GitHub issues? ICLR,
+  2024.
+Yao, S. et al. τ -bench: A benchmark for tool-agent-user interaction in real-world domains. ICLR,
+  2025.
+TheAgentCompany Authors. Benchmarking LLM agents on consequential real-world tasks. NeurIPS
+  Datasets and Benchmarks, 2025.
+Park, J. S. et al. Generative agents: Interactive simulacra of human behavior. UIST, 2023.
+Packer, C. et al. MemGPT: Towards LLMs as operating systems. arXiv, 2023.
+Wang, W. et al. Augmenting language models with long-term memory. arXiv, 2023.
+Zhao, Z. et al. PersonaLens: A benchmark for personalization evaluation in conversational AI
+  assistants. Findings of ACL, 2025.
+Xiu, Z. et al. ASTRA-bench: Evaluating tool-use agent reasoning and action planning with personal
+  user context. arXiv, 2026.
+Persona2Web Authors. Persona2Web: Benchmarking personalized web agents for contextual reason-
+  ing with user history. arXiv, 2026.
+Lewis, M. et al. Deal or no deal? End-to-end learning for negotiation dialogues. EMNLP, 2017.
+He, H. et al. Decoupling strategy and generation in negotiation dialogues. EMNLP, 2018.
+Chawla, K. et al. CaSiNo: A corpus of campsite negotiation dialogues for automatic negotiation
+  systems. NAACL, 2021.
+Bakhtin, A. et al. Human-level play in the game of Diplomacy by combining language models with
+  strategic reasoning. Science, 2022.
+Zhou, X. et al. SOTOPIA: Interactive evaluation for social intelligence in language agents. ICLR,
+  2024.
+Fu, Y. et al. NegotiationArena: Evaluating strategic negotiation abilities of LLM agents. arXiv, 2024.
+Nissenbaum, H. Privacy as contextual integrity. Washington Law Review, 2004.
+Nissenbaum, H. Privacy in Context. Stanford University Press, 2009.
+MAGPIE Authors. MAGPIE: Evaluating multi-agent contextual privacy in LLM systems. arXiv,
+ 2025.
+AgentLeak Authors. AgentLeak: A benchmark for internal-channel privacy leakage in multi-agent
+  LLM systems. arXiv, 2026.
+PrivacyLens-Live Authors. Towards realistic privacy mitigation and evaluation for dynamic multi-
+  agent systems. arXiv, 2025.
+ToolPrivacyBench Authors. Benchmarking purpose-bound privacy in tool-using LLM agents. arXiv,
+  2026.
+Google. Announcing the Agent2Agent Protocol. Google Developers Blog, 2025.
+Anthropic. Model Context Protocol. Technical documentation, 2024.
+
+
+                                                  6
+arXiv preprint
+
+
+
+
+A    A RTIFACT GATE
+Before anonymous submission, run:
+
+python code/local_artifact_gate.py \
+  --artifact-root ./SovNeg_v3_artifact \
+  --out SOVNEG_LOCAL_GATE_REPORT.md
+
+The gate checks expected counts, prompt leakage, local path or author leakage, hash manifest validity,
+and optional parser/evaluator recomputation if the artifact exposes standard script paths.
+
+B    M ECHANISM NOTES
+Agreement success does not imply individual rationality. If a user has private utility threshold r, any
+agreement below r is user-harmful even if the transcript ends with acceptance. Reservation-value
+leakage can also reduce expected utility by allowing an informed counterparty to offer just above r.
+Consent-only safeguards are incomplete because a trajectory can satisfy disclosure consent while
+making unsupported claims, over-conceding, or failing to escalate.
+
+
+
+
+                                                  7
+
