@@ -154,8 +154,11 @@ workspace and state substrates (Workspace-Bench/SaaS-Bench), native artifact
 inspection (MBABench), and observable expert procedures (LH-Bench) more strongly
 than it supports occupational representativeness, longitudinal project work,
 counterfactual artifact integrity, checkpoint progress, or professional
-readiness. OfficeBench remains an explicit primary-source audit gap. The completed
-WorkArena L1 audit supports enterprise-UI and selected native-state operation claims,
+readiness. The completed [OfficeBench audit](../papers/agent-benchmarks/2026-07-11-officebench-cross-application-office-validity.md)
+supports typed cross-store state-transition and selected task-predicate claims, but
+its synthetic tasks, app-count confounding, narrow evidence views, and mutable
+environment do not establish professional-work validity. The completed WorkArena L1
+audit supports enterprise-UI and selected native-state operation claims,
 not representative knowledge work; WorkArena++ closes the composition-method gap but
 not occupational validity.
 
