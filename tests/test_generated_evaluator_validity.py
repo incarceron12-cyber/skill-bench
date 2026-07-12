@@ -296,4 +296,27 @@ class EvidenceViewSemanticRepairV2Tests(unittest.TestCase):
   self.assertEqual({x['name'] for x in self.report['parent_child_deltas']},{x['name'] for x in self.report['matrices']})
   self.assertIn('criterion equivalence',self.report['claim_limits'])
 
+class VersionedObservationInputContractTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/validate_observation_input_contract.py'
+  spec=importlib.util.spec_from_file_location('gev_observation_contract',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.mod)
+  self.fixture=json.loads((ROOT/'pilots/generated-evaluator-validity/observation-input-contract-calibration.json').read_text())
+ def test_calibration_contract_is_pinned_and_valid(self):
+  self.assertEqual(self.mod.validate(self.fixture),[])
+ def test_source_hash_mismatch_fails_closed(self):
+  changed=json.loads(json.dumps(self.fixture));changed['observations'][0]['legacy_locator']['sha256']='0'*64
+  self.assertTrue(any('hash mismatch' in x for x in self.mod.validate(changed)))
+ def test_missing_evidence_locator_fails_closed(self):
+  changed=json.loads(json.dumps(self.fixture));changed['observations'][0]['comparisons']=[]
+  self.assertTrue(any('schema:' in x for x in self.mod.validate(changed)))
+ def test_oracle_and_identity_leakage_are_rejected(self):
+  for key in ('oracle','expected','case_id','family_id'):
+   changed=json.loads(json.dumps(self.fixture));changed['observations'][0][key]='leak'
+   self.assertTrue(any('forbidden leakage key' in x for x in self.mod.validate(changed,check_paths=False)))
+ def test_domain_token_dependence_is_rejected(self):
+  changed=json.loads(json.dumps(self.fixture));changed['observations'][0]['observation_id']='INC-204'
+  self.assertTrue(any('forbidden domain token' in x for x in self.mod.validate(changed,check_paths=False)))
+
 if __name__=='__main__': unittest.main()

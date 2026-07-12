@@ -122,6 +122,12 @@ The first fail-closed replay is intentionally **rejected**, not tuned after seei
 
 No criterion-equivalence, expert/professional-validity, general-evaluator, capability, production-fitness, or readiness claim is licensed.
 
+## Versioned observation-input contract (bounded prerequisite slice)
+
+`observation-input-contract.schema.json` and `validate_observation_input_contract.py` define the fail-closed boundary needed before another descendant can be implemented. Each observation must bind an anonymous observation ID to hash-pinned legacy and public-basis locators, typed source comparisons, a pinned transformation identity, builder-authored status, and separate environment/safety/evidence/action/completion sufficiency. Recursive semantic checks reject oracle or expected-outcome fields, case/family identity fields, known domain literals, duplicate observation IDs, stale hashes, missing files, and invalid JSON pointers. `observation-input-contract-calibration.json` exercises the contract on one builder-authored adjudication record only; it is not the seven-matrix predeclaration and is not evaluator input evidence.
+
+This run deliberately stopped before authoring normalized observations from already-known outcome labels. Useful continuation requires evidence-by-evidence review of all seven frozen matrices and source artifacts, freezing the complete provenance-pinned mapping before descendant adapter/evaluator code exists. Only then may unchanged outcome references be replayed. The rejected v2 adapter/evaluator and every prior fixture/report remain byte-for-byte unchanged. No criterion equivalence, expert/professional validity, general evaluator validity, capability, production fitness, or readiness claim is licensed by this prerequisite contract.
+
 ## Versioned evidence-view adapter continuation
 
 The rejected v1 report remains immutable. `semantic-repair-v2/` adds a generic adapter that derives observation sufficiency and currentness from typed payload presence and explicit source-value comparisons; its implementation contains no oracle, case, source-family, pilot, or domain branches. The pre-implementation `fifth-family-holdout-v1.json` pins a retained experience-memory transfer artifact, public basis, admissible views, builder authority, disjointness, and source hash.
