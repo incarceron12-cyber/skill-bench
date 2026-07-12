@@ -272,4 +272,28 @@ class CriterionSemanticRepairTests(unittest.TestCase):
   self.assertTrue(self.report['gates']['critical_safety'])
   self.assertIn('general evaluator validity',self.report['claim_limits'])
 
+class EvidenceViewSemanticRepairV2Tests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/validate_semantic_repair_v2.py'
+  spec=importlib.util.spec_from_file_location('gev_semantic_v2',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.mod)
+  self.report=self.mod.build()
+ def test_parent_and_fresh_holdout_are_integrity_pinned(self):
+  self.assertTrue(self.report['lineage']['parent_preserved'])
+  self.assertTrue(self.report['fresh_holdout']['source_integrity'])
+  fresh=next(x for x in self.report['matrices'] if x['name']=='fifth_family_holdout')
+  self.assertEqual((fresh['passed'],fresh['total']),(6,6))
+ def test_implementation_rejects_identity_and_domain_leakage(self):
+  self.assertEqual(self.mod.validate_source(),[])
+  for mutation in ('oracle','case_id','source_family','INC-204','experience-memory'):
+   self.assertTrue(self.mod.validate_source('\n# '+mutation+'\n'))
+ def test_replay_is_fail_closed_and_reports_deltas(self):
+  self.assertEqual(len(self.report['matrices']),7)
+  self.assertEqual(self.report['decision'],'reject')
+  self.assertFalse(self.report['gates']['all_matrices_exact'])
+  self.assertTrue(self.report['gates']['critical_safety'])
+  self.assertEqual({x['name'] for x in self.report['parent_child_deltas']},{x['name'] for x in self.report['matrices']})
+  self.assertIn('criterion equivalence',self.report['claim_limits'])
+
 if __name__=='__main__': unittest.main()
