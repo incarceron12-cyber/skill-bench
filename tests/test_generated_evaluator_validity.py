@@ -319,4 +319,24 @@ class VersionedObservationInputContractTests(unittest.TestCase):
   changed=json.loads(json.dumps(self.fixture));changed['observations'][0]['observation_id']='INC-204'
   self.assertTrue(any('forbidden domain token' in x for x in self.mod.validate(changed,check_paths=False)))
 
+class ObservationMappingReadinessAuditTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/audit_observation_mapping_readiness.py'
+  spec=importlib.util.spec_from_file_location('gev_mapping_audit',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(self.mod)
+  self.report=self.mod.build()
+ def test_all_immutable_rows_are_inventoried_without_outcome_access(self):
+  self.assertEqual(self.report['summary']['matrix_count'],7)
+  self.assertEqual(self.report['summary']['row_count'],54)
+  self.assertFalse(self.report['method']['outcome_labels_read'])
+  self.assertEqual(self.mod.validate(self.report),[])
+ def test_incomplete_source_comparisons_block_descendant(self):
+  self.assertEqual(self.report['summary']['ready_matrices'],0)
+  self.assertEqual(self.report['summary']['decision'],'do_not_implement_descendant')
+  self.assertTrue(all(row['blockers'] for row in self.report['matrices']))
+ def test_fixture_hash_mutation_fails_closed(self):
+  changed=json.loads(json.dumps(self.report));changed['matrices'][0]['fixture']['sha256']='0'*64
+  self.assertTrue(any('fixture integrity failed' in error for error in self.mod.validate(changed)))
+
 if __name__=='__main__': unittest.main()
