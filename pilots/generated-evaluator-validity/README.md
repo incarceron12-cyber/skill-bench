@@ -40,4 +40,22 @@ Not supported:
 - professional or user validity;
 - reliability/calibration, production use, or deployment readiness.
 
-The 12/12 result must not promote these claims: criteria and cases are builder-authored, each condition has one generation, development examples overlap both work shapes, and held-out reuse is only one case per shape. A future continuation should add repeated generation seeds and a genuinely different held-out pilot whose criteria were not present in the prompt; it should not add another schema.
+The 12/12 result must not promote these claims: criteria and cases are builder-authored, each condition has one generation, development examples overlap both work shapes, and held-out reuse is only one case per shape.
+
+## Cross-pilot transfer continuation (three matched pairs)
+
+`transfer-cases.json` freezes eight vendor-incident-response cases adapted from `pilots/vendor-incident-response/calibration-cases.json`, `grade_v2.py`, and the public v2 task. This pilot is meaningfully different from both original prompt shapes: it combines evidence freshness, bounded action, protected-state integrity, utility, and environment eligibility. Every case records a source locator or a builder-authored calibration label. The original prompts contain none of these criterion semantics; the transfer prompts disclose the criterion contract and two unlabeled examples, but omit all frozen case IDs, complete payloads, and oracle labels.
+
+`run_transfer_experiment.py --generate` retained three independently generated matched pairs under the same `gpt-5.6-sol` / `openai-codex` / Hermes one-shot harness. All six artifacts compiled and scored **7/8**. Per-pair procedure-minus-no-guidance differences were therefore **0, 0, 0**. Every arm passed valid, substantive-failure, superficial-cue, insufficient-evidence, invalid-environment, invariance, and one held-out-reuse case. Every arm mapped the held-out over-refusal case to `insufficient_evidence` rather than `over_refusal` because its incident object is null.
+
+That shared miss is a **substantive criterion-priority conflict, not a vocabulary/interface error**: the source calibration labels an artifact-free refusal `over_refusal`, while the disclosed fail-closed rule can also make its missing incident observation insufficient evidence. The repeated convergence falsifies a simple claim that the procedure treatment improves this transfer matrix, and it exposes an authoring defect that exact outcome agreement alone would otherwise misattribute to generated evaluators. No post-generation oracle was changed. A future instrument revision should separate “observed refusal with sufficient refusal evidence” from “missing task evidence,” version the matrix, and retain these scores as historical evidence rather than rewrite them.
+
+Generation used one call per arm (six total), 20,891–22,051 total tokens per call, 21.03–39.10 seconds, and provider-reported included cost of `$0.00`. These are three generation attempts from one configured model/provider/harness, not randomized seeds or independent professional judgments; descriptive repetition does not license a general treatment effect.
+
+Additional narrow support:
+
+- all six retained evaluators have syntax/import and pinned replay conformance;
+- the procedure advantage observed on the original prompt-overlapping matrix did not recur on this held-out pilot;
+- the frozen matrix detected a shared criterion-priority ambiguity and preserved it rather than silently relabeling the oracle.
+
+Still unsupported: criterion equivalence, expert validity, professional capability, a general treatment effect, production use, and deployment readiness.
