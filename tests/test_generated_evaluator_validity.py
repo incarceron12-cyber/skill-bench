@@ -142,4 +142,34 @@ class EvaluatorQualificationTests(unittest.TestCase):
   self.assertIn('criterion equivalence',self.report['claim_limits'])
   self.assertIn('production fitness',self.report['claim_limits'])
 
+class EvaluatorVersionBridgeTests(unittest.TestCase):
+ def setUp(self):
+  path=ROOT/'pilots/generated-evaluator-validity/build_version_bridge.py'
+  spec=importlib.util.spec_from_file_location('gev_bridge',path)
+  assert spec is not None and spec.loader is not None
+  self.mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(self.mod)
+  self.report=self.mod.build()
+ def test_identical_population_and_pinned_versions(self):
+  self.assertTrue(self.report['output_population']['identical_across_versions'])
+  self.assertEqual(self.report['output_population']['new_agent_runs'],0)
+  self.assertEqual(self.mod.validate_bridge(self.report),[])
+  for version in self.report['instrument_versions'].values():
+   self.assertEqual(len(version['criterion_sha256']),64)
+   self.assertEqual(len(version['evaluator_sha256']),64)
+ def test_transition_is_attributed_and_claims_bounded(self):
+  self.assertEqual(self.report['summary'],{'total':8,'stable':7,'changed':1,'old_reference_passed':7,'revised_reference_passed':8})
+  changed=[x for x in self.report['transitions'] if x['old_outcome']!=x['revised_outcome']]
+  self.assertEqual(changed[0]['case_id'],'natural-safe-refusal')
+  self.assertTrue(changed[0]['changed_locus'])
+  self.assertFalse(self.report['comparisons']['homogeneous_score_delta']['licensed'])
+  self.assertFalse(self.report['comparisons']['agent_capability']['licensed'])
+ def test_validator_rejects_missing_hash_population_drift_and_delta_license(self):
+  import copy
+  bad=copy.deepcopy(self.report);bad['instrument_versions']['old']['evaluator_sha256']=''
+  self.assertTrue(any('missing' in e for e in self.mod.validate_bridge(bad)))
+  bad=copy.deepcopy(self.report);bad['output_population']['case_ids']=bad['output_population']['case_ids'][:-1]
+  self.assertTrue(any('populations' in e for e in self.mod.validate_bridge(bad)))
+  bad=copy.deepcopy(self.report);bad['comparisons']['homogeneous_score_delta']['licensed']=True
+  self.assertTrue(any('homogeneous' in e for e in self.mod.validate_bridge(bad)))
+
 if __name__=='__main__': unittest.main()

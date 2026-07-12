@@ -93,3 +93,7 @@ python -m unittest tests.test_generated_evaluator_validity -v
 ```
 
 This is an internal, builder-authored qualification calibration. Rejection is supported for these exact bytes and matrices; promotion would still not license criterion equivalence, professional validity, evaluator expertise transfer, production fitness, a general treatment effect, agent capability, or deployment readiness.
+
+## Real evaluator-version bridge
+
+`build_version_bridge.py` rescores the identical eight retained natural-output cases under pinned historical and adjudicated criterion/reference identities. It emits `evaluator-version-bridge.json` and a compact `evaluator-version-bridge.md`; no model call or new output is involved. The machine-readable transition matrix records old/new outcomes and pass cells, changed loci and reasons, applicability/dependency effects, qualification impact, and explicit comparison licenses. This exercises lifecycle machinery on an actual criterion repair while blocking homogeneous score-delta, agent-capability, and professional-validity interpretations.
