@@ -1,0 +1,114 @@
+{
+  "schema_version": "0.1.0",
+  "status": "frozen_builder_authored_relation_conformance_only",
+  "frozen_at": "2026-07-13T18:05:00Z",
+  "source_review": "papers/agent-benchmarks/2026-07-13-slbench-skill-relation-validity.md",
+  "source_evidence": {
+    "pdf": {"path": "data/papers/pdfs/2607.09016v1-slbench.pdf", "sha256": "0415ac33d4e840f3c82495f203fa156c6f0d65d20b08eff10102a7e4e81bdc73"},
+    "text": {"path": "data/papers/text/2607.09016v1-slbench.txt", "sha256": "7fa73e17a15ffd89456f4c5d202b368bde44ef4b884621f16339b8470d7f1703"},
+    "prior_projection_fixture": {"path": "tests/fixtures/valid-task-projection-manifest.json", "sha256": "130bf9cd521de7bcf83ee728a525e8a64486533b38b8909934103e0413caf88b"}
+  },
+  "design_hypotheses": [
+    "A relation contrast family can distinguish applicability, priority resolution, execution evidence, observer sufficiency, and consequence interpretation.",
+    "All criterion-level evidence must survive final-verdict policy, including mixed realization and repair evidence.",
+    "A missing required evidence view must produce inconclusive rather than satisfaction or violation."
+  ],
+  "worlds": [
+    {
+      "world_id": "procurement-release-memo",
+      "work_shape": "evidence-grounded procurement release memo",
+      "source_authority": {"status": "builder_authored_synthetic", "professional_authority": false},
+      "clauses": [
+        {"clause_id": "proc-approval", "text": "Release a supplier recommendation only after the procurement lead records approval.", "span": {"start": 0, "end": 83}, "sha256": "a180d5c5febd03c393fc2bdd09eb929167b031278d19a40e91a5e7bc1fbb347d"},
+        {"clause_id": "proc-hold", "text": "A legal hold overrides any recorded approval and requires the recommendation to remain internal.", "span": {"start": 0, "end": 96}, "sha256": "f44648e0f93134133b6955f01312ab137e0ce4aa0f840bd67d99174375201eeb"}
+      ],
+      "relations": [
+        {
+          "relation_id": "proc-precondition", "type": "precondition", "clause_ids": ["proc-approval"], "governing_clause_id": "proc-approval", "priority": 10,
+          "trigger": {"all": [{"fact": "release_requested", "equals": true}, {"fact": "legal_hold", "equals": false}]},
+          "normalized_propositions": [{"actor": "analyst", "action": "release recommendation", "object": "supplier memo", "modality": "permitted only if", "condition": "approval_recorded=true", "scope": "external release"}],
+          "public_basis": ["skill:proc-approval", "environment:approval-record"],
+          "environment_projection": ["release_requested", "approval_recorded", "legal_hold"],
+          "accepted_paths": [
+            {"path_id": "approved-release", "all": [{"fact": "approval_recorded", "equals": true}, {"event": "release_realized", "equals": true}]},
+            {"path_id": "hold-for-approval", "all": [{"event": "release_realized", "equals": false}, {"event": "approval_requested", "equals": true}]}
+          ],
+          "violation": {"all": [{"fact": "approval_recorded", "equals": false}, {"event": "release_realized", "equals": true}]},
+          "observer": {"required_views": ["approval-ledger", "outbound-log"], "covered_events": ["release_realized", "approval_requested", "recall_completed"]},
+          "consequence_claim": {"type": "synthetic_workflow_defect", "claim": "recommendation released before recorded approval", "safety_claim": false}
+        },
+        {
+          "relation_id": "proc-override", "type": "override", "clause_ids": ["proc-approval", "proc-hold"], "governing_clause_id": "proc-hold", "priority": 20,
+          "trigger": {"all": [{"fact": "release_requested", "equals": true}, {"fact": "legal_hold", "equals": true}]},
+          "normalized_propositions": [{"actor": "analyst", "action": "retain recommendation internally", "object": "supplier memo", "modality": "required", "condition": "legal_hold=true", "scope": "all approval states"}],
+          "public_basis": ["skill:proc-hold", "environment:legal-hold-flag"],
+          "environment_projection": ["release_requested", "approval_recorded", "legal_hold"],
+          "accepted_paths": [{"path_id": "retain-under-hold", "all": [{"event": "release_realized", "equals": false}, {"event": "hold_noted", "equals": true}]}],
+          "violation": {"all": [{"event": "release_realized", "equals": true}]},
+          "observer": {"required_views": ["hold-register", "outbound-log"], "covered_events": ["release_realized", "hold_noted", "recall_completed"]},
+          "consequence_claim": {"type": "synthetic_workflow_defect", "claim": "recommendation released while synthetic legal hold applied", "safety_claim": false}
+        }
+      ],
+      "task_projection_manifest": {"requirements": ["proc-approval", "proc-hold"], "projection_kinds": ["instruction", "source_environment", "witness", "check"], "reciprocal_coverage": true, "checker_only_obligations": []},
+      "artifact_views": [{"view_id": "approval-ledger", "representation": "structured ledger"}, {"view_id": "hold-register", "representation": "structured register"}, {"view_id": "outbound-log", "representation": "append-only event log"}],
+      "validity": {"executable": "internal_conformance_only", "professional_validity": "unsupported", "capability_evidence": false, "readiness_evidence": false}
+    },
+    {
+      "world_id": "research-source-memo",
+      "work_shape": "source-grounded research memo with fallback evidence",
+      "source_authority": {"status": "builder_authored_synthetic", "professional_authority": false},
+      "clauses": [
+        {"clause_id": "research-primary", "text": "Use the current registry record when it is available.", "span": {"start": 0, "end": 53}, "sha256": "962197e65ef0a7ddc707eeaf03d35baba7b5c8aeb4e5b5a2cb0f97f8f4e2a617"},
+        {"clause_id": "research-fallback", "text": "If the registry is unavailable, a cached record may be used only when it is no more than 30 days old and the memo labels it provisional.", "span": {"start": 0, "end": 136}, "sha256": "55cfb1866e1581b09b927e91c34ad95b1ff60e79a93a87e1626ee7fb39d68d0b"}
+      ],
+      "relations": [
+        {
+          "relation_id": "research-fallback", "type": "fallback", "clause_ids": ["research-primary", "research-fallback"], "governing_clause_id": "research-fallback", "priority": 10,
+          "trigger": {"all": [{"fact": "registry_available", "equals": false}, {"fact": "cache_age_days_lte_30", "equals": true}]},
+          "normalized_propositions": [{"actor": "researcher", "action": "use cached record", "object": "registry evidence", "modality": "permitted only if", "condition": "registry unavailable and cache age <=30 days", "scope": "provisional memo"}],
+          "public_basis": ["skill:research-fallback", "environment:registry-status", "environment:cache-date"],
+          "environment_projection": ["registry_available", "cache_age_days_lte_30"],
+          "accepted_paths": [
+            {"path_id": "labeled-cache", "all": [{"event": "cached_record_used", "equals": true}, {"event": "provisional_label_present", "equals": true}]},
+            {"path_id": "clarify-without-claim", "all": [{"event": "cached_record_used", "equals": false}, {"event": "clarification_requested", "equals": true}]}
+          ],
+          "violation": {"all": [{"event": "cached_record_used", "equals": true}, {"event": "provisional_label_present", "equals": false}]},
+          "observer": {"required_views": ["retrieval-log", "memo-bytes"], "covered_events": ["cached_record_used", "provisional_label_present", "clarification_requested", "label_repaired"]},
+          "consequence_claim": {"type": "synthetic_evidence_status_defect", "claim": "cached evidence represented without required provisional status", "safety_claim": false}
+        },
+        {
+          "relation_id": "research-primary", "type": "exception", "clause_ids": ["research-primary", "research-fallback"], "governing_clause_id": "research-primary", "priority": 20,
+          "trigger": {"all": [{"fact": "registry_available", "equals": true}]},
+          "normalized_propositions": [{"actor": "researcher", "action": "use current registry record", "object": "registry evidence", "modality": "required", "condition": "registry available", "scope": "research memo"}],
+          "public_basis": ["skill:research-primary", "environment:registry-status"],
+          "environment_projection": ["registry_available"],
+          "accepted_paths": [{"path_id": "current-record", "all": [{"event": "current_record_used", "equals": true}, {"event": "cached_record_used", "equals": false}]}],
+          "violation": {"all": [{"event": "cached_record_used", "equals": true}]},
+          "observer": {"required_views": ["retrieval-log", "memo-bytes"], "covered_events": ["current_record_used", "cached_record_used"]},
+          "consequence_claim": {"type": "synthetic_source_selection_defect", "claim": "cache used despite current registry availability", "safety_claim": false}
+        }
+      ],
+      "task_projection_manifest": {"requirements": ["research-primary", "research-fallback"], "projection_kinds": ["instruction", "source_environment", "witness", "check"], "reciprocal_coverage": true, "checker_only_obligations": []},
+      "artifact_views": [{"view_id": "retrieval-log", "representation": "append-only event log"}, {"view_id": "memo-bytes", "representation": "authoritative markdown bytes"}],
+      "validity": {"executable": "internal_conformance_only", "professional_validity": "unsupported", "capability_evidence": false, "readiness_evidence": false}
+    }
+  ],
+  "cases": [
+    {"case_id": "proc-applicable-approved", "world_id": "procurement-release-memo", "facts": {"release_requested": true, "approval_recorded": true, "legal_hold": false}, "views": {"approval-ledger": "available", "outbound-log": "available"}, "events": [{"event": "release_realized", "value": true}]},
+    {"case_id": "proc-trigger-absent", "world_id": "procurement-release-memo", "facts": {"release_requested": false, "approval_recorded": false, "legal_hold": false}, "views": {"approval-ledger": "available", "outbound-log": "available"}, "events": []},
+    {"case_id": "proc-override-hold", "world_id": "procurement-release-memo", "facts": {"release_requested": true, "approval_recorded": true, "legal_hold": true}, "views": {"hold-register": "available", "outbound-log": "available"}, "events": [{"event": "release_realized", "value": false}, {"event": "hold_noted", "value": true}]},
+    {"case_id": "proc-alternative-hold", "world_id": "procurement-release-memo", "facts": {"release_requested": true, "approval_recorded": false, "legal_hold": false}, "views": {"approval-ledger": "available", "outbound-log": "available"}, "events": [{"event": "release_realized", "value": false}, {"event": "approval_requested", "value": true}]},
+    {"case_id": "proc-planted-violation", "world_id": "procurement-release-memo", "facts": {"release_requested": true, "approval_recorded": false, "legal_hold": false}, "views": {"approval-ledger": "available", "outbound-log": "available"}, "events": [{"event": "release_realized", "value": true}]},
+    {"case_id": "proc-observer-insufficient", "world_id": "procurement-release-memo", "facts": {"release_requested": true, "approval_recorded": false, "legal_hold": false}, "views": {"approval-ledger": "available", "outbound-log": "missing"}, "events": []},
+    {"case_id": "proc-mixed-repair", "world_id": "procurement-release-memo", "facts": {"release_requested": true, "approval_recorded": false, "legal_hold": false}, "views": {"approval-ledger": "available", "outbound-log": "available"}, "events": [{"event": "release_realized", "value": true}, {"event": "recall_completed", "value": true}]},
+    {"case_id": "research-primary-available", "world_id": "research-source-memo", "facts": {"registry_available": true, "cache_age_days_lte_30": true}, "views": {"retrieval-log": "available", "memo-bytes": "available"}, "events": [{"event": "current_record_used", "value": true}, {"event": "cached_record_used", "value": false}]},
+    {"case_id": "research-fallback-applicable", "world_id": "research-source-memo", "facts": {"registry_available": false, "cache_age_days_lte_30": true}, "views": {"retrieval-log": "available", "memo-bytes": "available"}, "events": [{"event": "cached_record_used", "value": true}, {"event": "provisional_label_present", "value": true}]},
+    {"case_id": "research-trigger-absent", "world_id": "research-source-memo", "facts": {"registry_available": false, "cache_age_days_lte_30": false}, "views": {"retrieval-log": "available", "memo-bytes": "available"}, "events": []},
+    {"case_id": "research-alternative-clarify", "world_id": "research-source-memo", "facts": {"registry_available": false, "cache_age_days_lte_30": true}, "views": {"retrieval-log": "available", "memo-bytes": "available"}, "events": [{"event": "cached_record_used", "value": false}, {"event": "clarification_requested", "value": true}]},
+    {"case_id": "research-planted-violation", "world_id": "research-source-memo", "facts": {"registry_available": false, "cache_age_days_lte_30": true}, "views": {"retrieval-log": "available", "memo-bytes": "available"}, "events": [{"event": "cached_record_used", "value": true}, {"event": "provisional_label_present", "value": false}]},
+    {"case_id": "research-observer-insufficient", "world_id": "research-source-memo", "facts": {"registry_available": false, "cache_age_days_lte_30": true}, "views": {"retrieval-log": "available", "memo-bytes": "missing"}, "events": [{"event": "cached_record_used", "value": true}]},
+    {"case_id": "research-mixed-repair", "world_id": "research-source-memo", "facts": {"registry_available": false, "cache_age_days_lte_30": true}, "views": {"retrieval-log": "available", "memo-bytes": "available"}, "events": [{"event": "cached_record_used", "value": true}, {"event": "provisional_label_present", "value": false}, {"event": "label_repaired", "value": true}]}
+  ],
+  "claim_ceiling": ["Exact relation selection, evidence retention, three-way verdict, and failure-localization behavior for fourteen frozen builder-authored cases."],
+  "excluded_claims": ["general skill following", "expert authority", "professional validity", "agent capability", "safety", "production fitness", "deployment readiness"]
+}
