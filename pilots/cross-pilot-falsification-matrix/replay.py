@@ -7,7 +7,9 @@ agents or reinterpret internal conformance cases as capability evidence.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
+import importlib.util
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -17,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 MANIFEST = HERE / "coverage-manifest.json"
 REPORT = HERE / "report.json"
+CONTINUATION_MANIFEST = HERE / "continuation-manifest-v0.2.json"
+CONTINUATION_REPORT = HERE / "report-v0.2.json"
 
 REQUIREMENTS = {
     "evidence_chain": {
@@ -39,6 +43,7 @@ REQUIREMENTS = {
     "claim_ladder": {"task_package_claim", "workflow_family_upgrade", "occupational_upgrade", "readiness_upgrade"},
 }
 ALLOWED_STATUSES = {"satisfied", "missing", "invalid", "insufficient_evidence", "not_applicable"}
+CONTINUATION_ROWS = {"sd-title-only", "sd-shared-cause", "sd-dirty-output", "ab-recalculation"}
 
 
 def sha256(path: Path) -> str:
@@ -65,6 +70,154 @@ def resolve_pointer(document: Any, pointer: str) -> Any:
         else:
             raise ValueError(f"cannot descend through {type(value).__name__}")
     return value
+
+
+def _forbidden_fields(value: Any, forbidden: set[str], prefix: str = "") -> list[str]:
+    """Return JSON Pointer-like paths to forbidden evaluator-input keys."""
+    found: list[str] = []
+    if isinstance(value, dict):
+        for key, child in value.items():
+            path = f"{prefix}/{key}"
+            if key in forbidden:
+                found.append(path)
+            found.extend(_forbidden_fields(child, forbidden, path))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            found.extend(_forbidden_fields(child, forbidden, f"{prefix}/{index}"))
+    return found
+
+
+def _evaluate_title_only(before: dict[str, Any], task_input: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    del task_input
+    existed_before = before.get("authoritative_artifact", {}).get("exists") is True
+    title = output.get("metadata", {}).get("title")
+    content = output.get("authoritative_artifact", {}).get("content")
+    metadata_only = isinstance(title, str) and bool(title.strip()) and isinstance(content, str) and not content.strip()
+    failed = not existed_before and metadata_only
+    return {
+        "outcome": "failed" if failed else "passed",
+        "failure_class": "empty_authoritative_artifact" if failed else "none",
+        "metadata_only": metadata_only,
+        "substantive_score": 0 if failed else 1,
+    }
+
+
+def _evaluate_shared_cause(before: dict[str, Any], task_input: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    del before
+    if task_input.get("attribution_policy") != "count_failed_roots_not_descendant_symptoms":
+        raise ValueError("shared-cause attribution policy drift")
+    failures = output.get("failures", [])
+    by_id = {item.get("failure_id"): item for item in failures}
+    if len(by_id) != len(failures) or None in by_id:
+        raise ValueError("shared-cause failure ids must be unique strings")
+    children: dict[str, set[str]] = defaultdict(set)
+    parents: dict[str, set[str]] = defaultdict(set)
+    for edge in output.get("causal_edges", []):
+        parent, child = edge.get("parent"), edge.get("child")
+        if parent not in by_id or child not in by_id or parent == child:
+            raise ValueError("shared-cause edge has invalid endpoint")
+        children[parent].add(child)
+        parents[child].add(parent)
+    failed_ids = {key for key, item in by_id.items() if item.get("failed") is True}
+    roots = {key for key in failed_ids if by_id[key].get("kind") == "root" and not parents[key]}
+    descendants = {key for key in failed_ids if by_id[key].get("kind") == "descendant"}
+    reachable: set[str] = set()
+    frontier = list(roots)
+    while frontier:
+        node = frontier.pop()
+        for child in children[node]:
+            if child not in reachable:
+                reachable.add(child)
+                frontier.append(child)
+    if not descendants <= reachable:
+        raise ValueError("failed descendant lacks a path from a failed root")
+    attributed = output.get("attributed_root_failure_ids", [])
+    if len(attributed) != len(set(attributed)) or set(attributed) != roots:
+        raise ValueError("shared-cause attribution must count each failed root exactly once")
+    return {
+        "outcome": "failed" if failed_ids else "passed",
+        "failure_class": "shared_cause" if failed_ids else "none",
+        "failed_nodes": len(failed_ids),
+        "root_failures": len(roots),
+        "descendant_symptoms": len(descendants),
+        "attributed_failures": len(attributed),
+        "double_count_prevented": len(attributed) == len(roots) < len(failed_ids),
+    }
+
+
+def _evaluate_dirty_output(before: dict[str, Any], task_input: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    if task_input.get("invalid_environment_policy") != "exclude_from_substantive_denominator":
+        raise ValueError("dirty-output invalid-run policy drift")
+    required = task_input.get("required_canaries", [])
+    canaries = output.get("canaries", {})
+    if set(required) != set(canaries):
+        raise ValueError("dirty-output canary inventory drift")
+    failed = sorted(key for key in required if canaries.get(key) is not True)
+    dirty_entries = before.get("entries", [])
+    if bool(dirty_entries) != (canaries.get("output_root_clean") is False):
+        raise ValueError("dirty-output snapshot and canary disagree")
+    invalid = bool(failed)
+    if invalid and (output.get("substantive_denominator_included") is True or output.get("agent_failure_count", 0) != 0):
+        raise ValueError("invalid dirty-output run cannot enter the substantive failure denominator")
+    return {
+        "outcome": "invalid" if invalid else "valid",
+        "failure_class": "dirty_output_environment" if invalid else "none",
+        "failed_canaries": failed,
+        "substantive_denominator_included": not invalid,
+        "agent_failure_count": 0,
+    }
+
+
+def _load_formula_engine(engine: dict[str, Any]) -> Any:
+    path = (ROOT / engine.get("path", "")).resolve()
+    try:
+        path.relative_to(ROOT.resolve())
+    except ValueError as exc:
+        raise ValueError("formula engine escapes repository") from exc
+    if not path.is_file() or sha256(path) != engine.get("sha256"):
+        raise ValueError("formula engine identity mismatch")
+    spec = importlib.util.spec_from_file_location("cross_pilot_pinned_formula_engine", path)
+    if spec is None or spec.loader is None:
+        raise ValueError("formula engine cannot be loaded")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if module.ENGINE_ID != engine.get("component_id") or module.ENGINE_VERSION != engine.get("version"):
+        raise ValueError("formula engine declared identity mismatch")
+    return module
+
+
+def _evaluate_recalculation(before: dict[str, Any], task_input: dict[str, Any], output: dict[str, Any]) -> dict[str, Any]:
+    mutation = task_input.get("mutation", {})
+    if mutation.get("pointer") != "/workbook/inputs/units":
+        raise ValueError("unsupported authoritative-input mutation")
+    mutated_inputs = copy.deepcopy(before["workbook"]["inputs"])
+    mutated_inputs["units"] = mutation.get("value")
+    engine = _load_formula_engine(task_input.get("engine", {}))
+    computed = engine.calculate(task_input.get("formula", {}).get("expression"), mutated_inputs)
+    stale = output.get("stale_candidate", {})
+    recalculated = output.get("recalculated_candidate", {})
+    if stale.get("inputs") != mutated_inputs or recalculated.get("inputs") != mutated_inputs:
+        raise ValueError("candidate inputs do not realize the authoritative mutation")
+    before_preserved = before["workbook"]["preserved"]
+    preserved = stale.get("preserved") == before_preserved and recalculated.get("preserved") == before_preserved
+    stale_passed = stale.get("cached", {}).get("total") == computed
+    recalculated_passed = recalculated.get("cached", {}).get("total") == computed
+    return {
+        "outcome": "passed_after_recalculation" if (not stale_passed and recalculated_passed and preserved) else "failed",
+        "failure_class": "stale_cached_value" if not stale_passed else "none",
+        "computed_value": computed,
+        "stale_candidate_passed": stale_passed,
+        "recalculated_candidate_passed": recalculated_passed,
+        "preserved_regions_unchanged": preserved,
+    }
+
+
+CASE_EVALUATORS = {
+    "title-only-empty-artifact": _evaluate_title_only,
+    "shared-cause-root-descendants": _evaluate_shared_cause,
+    "dirty-output-invalid-run": _evaluate_dirty_output,
+    "pinned-engine-recalculation": _evaluate_recalculation,
+}
 
 
 def replay(manifest: dict[str, Any] | None = None, *, write: bool = True) -> dict[str, Any]:
@@ -212,13 +365,180 @@ def replay(manifest: dict[str, Any] | None = None, *, write: bool = True) -> dic
     return report
 
 
+def replay_continuation(manifest: dict[str, Any] | None = None, *, write: bool = True) -> dict[str, Any]:
+    """Replay the v0.2 deterministic continuation without altering v0.1 evidence."""
+    package = manifest if manifest is not None else json.loads(CONTINUATION_MANIFEST.read_text())
+    errors: list[str] = []
+    parent = package.get("parent_evidence", {})
+    for label in ("manifest", "report"):
+        path = (ROOT / parent.get(f"{label}_path", "")).resolve()
+        try:
+            path.relative_to(ROOT.resolve())
+        except ValueError:
+            errors.append(f"parent {label} escapes repository")
+            continue
+        if not path.is_file() or sha256(path) != parent.get(f"{label}_sha256"):
+            errors.append(f"parent {label} hash mismatch")
+
+    legacy = replay(write=False)
+    if not legacy["integrity_valid"]:
+        errors.append("parent replay is not integrity-valid")
+
+    forbidden = set(package.get("evaluator_contract", {}).get("forbidden_evaluator_input_fields", []))
+    seen_cases: set[str] = set()
+    closed_rows: set[str] = set()
+    case_results: list[dict[str, Any]] = []
+    for case in package.get("cases", []):
+        case_id = case.get("case_id")
+        case_errors: list[str] = []
+        if case_id in seen_cases or case_id not in CASE_EVALUATORS:
+            case_errors.append("duplicate or unknown case_id")
+        seen_cases.add(case_id)
+        row_id = case.get("closes_row_id")
+        if row_id in closed_rows or row_id not in CONTINUATION_ROWS:
+            case_errors.append("duplicate or unknown continuation row")
+        closed_rows.add(row_id)
+        documents: dict[str, Any] = {}
+        for role in ("before", "input", "output", "expected"):
+            record = case.get("records", {}).get(role, {})
+            path = (ROOT / record.get("path", "")).resolve()
+            try:
+                path.relative_to(ROOT.resolve())
+            except ValueError:
+                case_errors.append(f"{role} record escapes repository")
+                continue
+            if not path.is_file():
+                case_errors.append(f"{role} record missing")
+                continue
+            if sha256(path) != record.get("sha256"):
+                case_errors.append(f"{role} hash mismatch")
+                continue
+            try:
+                document = json.loads(path.read_text())
+                documents[role] = resolve_pointer(document, record.get("pointer", ""))
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+                case_errors.append(f"{role} pointer or JSON mismatch: {exc}")
+        for role in ("before", "input", "output"):
+            if role in documents:
+                for pointer in _forbidden_fields(documents[role], forbidden):
+                    case_errors.append(f"forbidden evaluator-input field: {role}{pointer}")
+        basis = case.get("public_basis", {})
+        if basis.get("role") not in documents:
+            case_errors.append("public basis record unavailable")
+        else:
+            try:
+                basis_text = resolve_pointer(documents[basis["role"]], basis.get("pointer", ""))
+                if not isinstance(basis_text, str) or not basis_text.strip():
+                    case_errors.append("public basis is empty")
+            except ValueError as exc:
+                case_errors.append(f"public basis pointer mismatch: {exc}")
+        transform = case.get("transformation_identity")
+        if transform:
+            role = transform.get("role")
+            if role not in documents:
+                case_errors.append("transformation identity record unavailable")
+            else:
+                try:
+                    declared = resolve_pointer(documents[role], transform.get("pointer", ""))
+                except ValueError as exc:
+                    case_errors.append(f"transformation identity pointer mismatch: {exc}")
+                else:
+                    frozen_identity = {key: transform.get(key) for key in ("component_id", "version", "sha256")}
+                    observed_identity = {key: declared.get(key) for key in frozen_identity} if isinstance(declared, dict) else {}
+                    if observed_identity != frozen_identity:
+                        case_errors.append("transformation identity differs from frozen manifest")
+        observed = None
+        if not case_errors and all(role in documents for role in ("before", "input", "output", "expected")):
+            try:
+                observed = CASE_EVALUATORS[case_id](documents["before"], documents["input"], documents["output"])
+            except (KeyError, TypeError, ValueError) as exc:
+                case_errors.append(f"case logic error: {exc}")
+            else:
+                if observed != documents["expected"]:
+                    case_errors.append("observed value differs from frozen expected observation")
+                if observed.get("failure_class") != case.get("failure_class"):
+                    case_errors.append("failure class differs from frozen manifest")
+        errors.extend(f"{case_id}: {message}" for message in case_errors)
+        case_results.append({
+            "case_id": case_id,
+            "closes_row_id": row_id,
+            "observed": observed,
+            "integrity": "failed" if case_errors else "verified",
+            "errors": case_errors,
+        })
+    if seen_cases != set(CASE_EVALUATORS):
+        errors.append(f"continuation case inventory mismatch: {sorted(set(CASE_EVALUATORS) - seen_cases)}")
+    if closed_rows != CONTINUATION_ROWS:
+        errors.append(f"continuation row inventory mismatch: {sorted(CONTINUATION_ROWS - closed_rows)}")
+
+    rows = copy.deepcopy(legacy["rows"])
+    result_by_row = {item["closes_row_id"]: item for item in case_results}
+    for row in rows:
+        if row["row_id"] in result_by_row:
+            case_result = result_by_row[row["row_id"]]
+            row["coverage_status"] = "satisfied"
+            row["observed"] = case_result["observed"]
+            row["integrity"] = case_result["integrity"]
+            row["errors"] = case_result["errors"]
+    counts = Counter(row["coverage_status"] for row in rows)
+    family_reports = []
+    for family in REQUIREMENTS:
+        family_rows = [row for row in rows if row["family"] == family]
+        blockers = [row["row_id"] for row in family_rows if row["coverage_status"] != "satisfied"]
+        family_reports.append({
+            "family": family,
+            "rows": len(family_rows),
+            "satisfied": sum(row["coverage_status"] == "satisfied" for row in family_rows),
+            "blockers": blockers,
+            "promotion_ready": not blockers and all(row["integrity"] == "verified" for row in family_rows),
+        })
+    blockers = [row["row_id"] for row in rows if row["coverage_status"] != "satisfied" or row["integrity"] != "verified"]
+    report = {
+        "report_version": "0.2.0",
+        "manifest_sha256": sha256(CONTINUATION_MANIFEST) if manifest is None else None,
+        "parent_manifest_sha256": parent.get("manifest_sha256"),
+        "parent_report_sha256": parent.get("report_sha256"),
+        "integrity_valid": not errors,
+        "errors": errors,
+        "summary": {
+            "families": len(REQUIREMENTS),
+            "rows": len(rows),
+            "continuation_cases": len(case_results),
+            "coverage_status_counts": dict(sorted(counts.items())),
+            "promotion_ready_families": sum(item["promotion_ready"] for item in family_reports),
+        },
+        "family_results": family_reports,
+        "continuation_cases": case_results,
+        "rows": rows,
+        "promotion_decision": "blocked",
+        "promotion_blockers": blockers,
+        "claim_boundaries": {
+            "professional_capability": False,
+            "cross_domain_capability": False,
+            "skill_treatment_effect": False,
+            "real_world_safety": False,
+            "production_fitness": False,
+            "deployment_readiness": False,
+        },
+    }
+    if blockers != [package.get("continuation_policy", {}).get("remaining_blocker")]:
+        report["integrity_valid"] = False
+        report["errors"].append("remaining blocker differs from frozen continuation policy")
+    if write:
+        CONTINUATION_REPORT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    return report
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="Verify report is current without rewriting it")
+    parser.add_argument("--continuation", action="store_true", help="Replay the v0.2 deterministic continuation")
     args = parser.parse_args()
-    report = replay(write=not args.check)
+    runner = replay_continuation if args.continuation else replay
+    report_path = CONTINUATION_REPORT if args.continuation else REPORT
+    report = runner(write=not args.check)
     if args.check:
-        if not REPORT.is_file() or json.loads(REPORT.read_text()) != report:
+        if not report_path.is_file() or json.loads(report_path.read_text()) != report:
             print("REPORT_STALE")
             return 1
     print(json.dumps({

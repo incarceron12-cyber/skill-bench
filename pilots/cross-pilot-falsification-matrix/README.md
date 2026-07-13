@@ -26,24 +26,34 @@ Hashes establish byte identity, and JSON Pointers establish the recorded field. 
 ## Replay
 
 ```bash
+# Frozen v0.1 inventory (retained byte-for-byte)
 python pilots/cross-pilot-falsification-matrix/replay.py
 python pilots/cross-pilot-falsification-matrix/replay.py --check
+
+# Versioned deterministic v0.2 continuation
+python pilots/cross-pilot-falsification-matrix/replay.py --continuation
+python pilots/cross-pilot-falsification-matrix/replay.py --continuation --check
 python -m unittest tests.test_cross_pilot_falsification_matrix
 ```
 
-The replay fails on source hash drift, broken pointers, changed expected observations, absent/extra frozen requirement rows, or an attempted supported claim above the task-package rung. It may exit successfully while `promotion_decision` remains `blocked`: successful replay means the audit is internally intact, not that coverage is complete.
+The replay fails on source hash drift, broken pointers, changed expected observations, absent/extra frozen requirement rows, leaked `oracle`/`expected`/`rationale` fields in evaluator inputs, or an attempted supported claim above the task-package rung. It may exit successfully while `promotion_decision` remains `blocked`: successful replay means the audit is internally intact, not that coverage is complete.
 
-## Current result and continuation boundary
+## v0.2 deterministic continuation
 
-The frozen audit contains 29 rows: 24 satisfied, 2 missing, and 3 insufficient. Three of six families are promotion-ready. Promotion remains blocked by:
+`continuation-manifest-v0.2.json` preserves SHA-256 identities for the v0.1 manifest/report and binds each new case's `before`, public `input`, `output`, and comparison-only `expected` record by repository path, SHA-256, and JSON Pointer. `continuation-v0.2/` contains four isolated builder-authored probes:
 
-1. no isolated title-only empty-artifact mutation;
-2. no explicit shared-cause root/descendant graph case;
-3. dirty-output policy without a retained planted outcome;
-4. no authoritative-input mutation plus pinned-engine recalculation case; and
-5. a packaged 2×2 Skill/rubric fixture replay that cannot estimate treatment effects.
+1. **Title-only empty artifact:** non-empty title metadata cannot substitute for empty authoritative content.
+2. **Shared cause:** one failed root has two explicit descendant symptoms, but attribution counts the root once.
+3. **Dirty output:** a retained residual file fails the clean-root canary, classifies the run `invalid`, and excludes it from the substantive denominator.
+4. **Pinned recalculation:** changing units from 10 to 12 makes cached total 50 stale; the hash-bound engine recomputes 60, while owner/currency must remain unchanged.
 
-A continuation should add only deterministic planted mutations for the first four gaps. The fifth requires valid matched execution and must not be filled by relabeling fixture replay or rerunning models merely to complete this matrix. Existing pilot bytes must remain unchanged.
+`report-v0.2.json` is the exact replay. It records 28 satisfied rows and one `insufficient_evidence` row; five of six families are promotion-ready. The remaining blocker is `si-treatment-effect-ceiling`: the retained 2×2 fixture proves packaging parity only and still cannot estimate a Skill or rubric effect.
+
+The formula engine supports one predeclared arithmetic expression and uses no dynamic evaluation. The replay never supplies comparison-only expected records to case evaluators, and rejects oracle/rationale fields in before/input/output records.
+
+## Frozen v0.1 result and continuation boundary
+
+The original frozen audit contains 29 rows: 24 satisfied, 2 missing, and 3 insufficient. Three of six families were promotion-ready. Its five original blockers and `report.json` remain preserved as historical evidence. The v0.2 continuation closes only the four deterministic gaps above; it does not rewrite those old bytes or source-pilot artifacts.
 
 ## Claim boundary
 
