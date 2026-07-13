@@ -97,6 +97,7 @@ and elicitation machinery rather than a domain-specific schema.
 | Review | Primary question | Secondary tags |
 |---|---|---|
 | [ResearchRubrics](agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | How can expert criteria be authored and reviewed, and what dependence, applicability, and threshold problems remain? | rubrics, examples, judging |
+| [BigFinanceBench](agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | When does a stepwise financial rubric observe an audited derivation rather than narrated agreement with one reference decomposition? | source provenance, criterion dependence, traces, judge validity |
 | [JADE](agent-benchmarks/2026-07-11-jade-dynamic-professional-grading.md) | How should fixed obligations differ from response-triggered claims and consequences in dynamic grading? | adaptive criteria, applicability, evidence |
 | [AgentRewardBench](agent-benchmarks/2026-07-10-agentrewardbench-judge-reliability.md) | How reliable are judge models under different observer views and trajectory evidence? | judge reliability, trajectories, annotations |
 | [Many-Facet Human/AI Rater Effects](agent-benchmarks/2026-07-11-many-facet-human-ai-rater-effects.md) | How should task, system, rater, criterion, and interaction effects be separated? | rater modeling, psychometrics, human-AI |
