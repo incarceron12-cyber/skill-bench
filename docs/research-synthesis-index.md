@@ -242,8 +242,32 @@ simulator identity, reset health, and the claims that survive those choices.
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Makes the harness and execution boundary explicit so a skill effect is not confused with launcher, tool, or isolation differences |
 | [KWBench](../papers/agent-benchmarks/2026-07-11-kwbench-unprompted-problem-recognition.md) | A | Identifies situation framing before named-workflow execution, while showing that a cold final-artifact gate does not isolate recognition from inquiry, action, domain knowledge, or grading |
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Demonstrates a bounded package effect while exposing representation semantics, authorship overlap, missing component ablations, and the need for held-out independent measurement |
+| [UniClawBench](../papers/agent-benchmarks/2026-07-13-uniclawbench-proactive-closed-loop-validity.md) | A | Makes executor, private supervisor, public simulator, released signal, and repair cycle inspectable while showing that requested-task repair is not proactivity and structural isolation is not semantic non-leakage |
+| [EdgeBench](../papers/agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | A | Separates agent-visible feedback from evaluator-only snapshots and exposes adaptive-query, persistence, censoring, and best-so-far boundaries; its smooth suite fits are not task-level or universal learning laws |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
+
+Feedback adds another non-substitutable intervention boundary. Preserve the
+role-separated chain from private observation through released signal and
+feedback proposition to executor uptake and consequence; publish each channel's
+authority, visibility, payload/cardinality, cadence, latency, query budget,
+stochasticity, and leakage rationale. Cross no feedback, generic nudge,
+public-visible critique, private-derived signal, and authorized ecological
+feedback where the claim requires them. Report first attempt, current/endpoint,
+fixed-cadence hidden, and best-so-far quality separately with new errors, cost,
+run-at-risk counts, invalidity, and censoring. State persistence and reset are
+independent treatments. UniClawBench supports role-separated synthetic repair but
+not proactivity, natural-user fidelity, semantic non-leakage, or causal benefit;
+EdgeBench supports dual-channel day-scale measurement and concrete evaluator-
+hacking risks but not task-level/universal learning or professional readiness.
+The frozen internal [24-cell report](../pilots/closed-loop-feedback-audit/report.json)
+(SHA-256 `20deddde50fd93fc32b7af5b8f7eb69b9e9ffdab71c9cc3dd1ea421a41e335be`)
+and [six-case adaptive report](../pilots/closed-loop-feedback-audit/adaptive-report.json)
+(SHA-256 `0b9f068dfdc9d2b808caa761090415dab294b9eb15ed84dbca49d74f43a30339`)
+validate only deterministic builder-authored fixture behavior—not expert or
+participant evidence, general detection, capability, learning, causal benefit,
+professional validity, production fitness, or readiness. Existing contracts
+cover the boundary; no feedback-specific schema follows.
 
 ## 4. Professional outputs require plural evidence views, not one score
 

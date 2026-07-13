@@ -113,6 +113,8 @@ and elicitation machinery rather than a domain-specific schema.
 | [LongMemEval v2](agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md) | How should environment experience, memory access, adoption, retention, and downstream effect differ? | memory, longitudinal evaluation, experience |
 | [MemoryArena](agent-benchmarks/2026-07-13-memoryarena-interdependent-experience-action.md) | When do interdependent sessions test memory-conditioned action, and what controls isolate retrieval, state reconstruction, adoption, and consequence? | memory, session dependency, feedback, action consequence |
 | [WorkBench Revisited](agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | How should corrected current forms, frozen anchors, renewed forms, and score bridges coexist? | lifecycle, instrument drift, side-effect denominators |
+| [UniClawBench](agent-benchmarks/2026-07-13-uniclawbench-proactive-closed-loop-validity.md) | When does role-separated synthetic feedback measure requested-task repair rather than proactivity, natural-user behavior, or non-leaking evaluation? | feedback firewall, repair, simulators, information flow |
+| [EdgeBench](agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | What do day-scale visible-feedback and hidden-snapshot trajectories establish, and how do adaptive search, persistence, best-so-far selection, and censoring bound learning claims? | longitudinal evaluation, feedback budget, persistence, estimands |
 
 OdysseyBench is indexed primarily with workplace workflows rather than duplicated
 here: it consumes a supplied synthetic history and acts on office state, but does
@@ -124,6 +126,15 @@ terminal actions. Read MemoryArena with LongMemEval-V2 for the separate estimand
 evidence delivery and held-out action benefit. Together they require link-level
 observation and matched controls; endpoint agreement or success alone supports no
 professional, longitudinal-learning, root-cause-memory, or deployment claim.
+
+**Feedback-intervention synthesis:** Read UniClawBench with EdgeBench to separate
+ecological support, evaluator-generated intervention, and hidden measurement.
+Preserve role/component identity, proposition-level information flow, channel
+authority and adaptive-query budget, state-persistence/reset policy, current and
+best-so-far outcomes, new errors, cost, run-at-risk denominators, and censoring.
+Requested-task repair is not proactivity; cumulative selected quality is not
+endpoint quality; and improvement under evaluator feedback estimates a configured
+adaptive package rather than unaided capability or a universal learning law.
 
 ## 6. Safety, contamination, and integrity
 

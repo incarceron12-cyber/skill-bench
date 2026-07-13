@@ -1107,6 +1107,73 @@ release restrict it to synthetic configured-collaboration evidence [HAS]. Existi
 configured-system, trace, metric, task-health, validity, and expert-participation
 records are the implementation homes; no parallel subsystem is implied.
 
+### 4.0b Feedback is a role- and channel-specific intervention
+
+Feedback can be ecologically legitimate support—a client's correction, a test
+failure, or an observed operational consequence—and still be an experimental
+intervention. Keep it separate from evaluator-only measurement and record the
+full chain rather than labeling a run merely `with_feedback`:
+
+```text
+public/environment evidence + private evaluator observation
+  → private decision → released signal fields
+    → participant/simulator evidence view → feedback proposition and authority
+      → executor-visible message → uptake → action/artifact/state delta
+        → current outcome + retained state + later consequence
+```
+
+Hash executor, supervisor/evaluator, simulator or human participant, rewriter,
+observer, task, and environment independently. For every channel preserve its
+source authority; agent/evaluator visibility; exact payload fields and
+cardinality; granularity, latency, cadence, and adaptive query budget;
+stochasticity and seed policy; disclosure to the agent; and a leakage rationale.
+Classify each released proposition as public-entailed, independently visible,
+private-signal-inferred, hidden-criterion-equivalent, new authority-bearing
+preference, or non-informative. Filesystem separation is not semantic separation:
+a score, status, continuation decision, or benchmark-shaped critique can expose
+private reward gradients [UC].
+
+State persistence is a second treatment axis. Record whether context, files,
+artifacts, feedback history, plans, and learned procedures survive each turn or
+restart; pin compaction and stop/resume policy; and include reset, irrelevant-
+feedback, corrupted-feedback, and no-authoritative-feedback controls where the
+claim requires them. Improvement under a persistent feedback loop estimates the
+configured package—executor × adaptive search × feedback bandwidth × retained
+state × evaluator robustness—not unaided capability or a generic learning rate.
+An unrequested-opportunity/proper-nonintervention contrast is additionally
+required before calling repair after an explicit request **proactivity** [UC,
+EDGE].
+
+Longitudinal reporting must retain first-attempt, endpoint/current, fixed-cadence
+hidden, and best-so-far outcomes separately, plus time-to-threshold, submissions,
+cost, new errors, run-at-risk counts, censoring, invalidity, and service incidents.
+Best-so-far is a selection estimand that rewards search and suppresses regression;
+it must never overwrite current quality. Smooth macro-averaged best-so-far curves
+may support a suite-specific budget forecast after task-cluster uncertainty and
+held-out validation, but not a task-level mechanism or universal learning law.
+EdgeBench supplies high-value dual-channel harness and evaluator-hacking evidence,
+yet its selected 134-task frame, 51-task category-shifted release, heterogeneous
+normalized scores, valid-run filtering, bundled scaffolds/state, absent raw
+trajectories, and nearly tied sigmoid fits bound its claims [EDGE]. UniClawBench
+supplies an inspectable executor–supervisor–simulator repair loop, but explicit
+requests, synthetic follow-ups, no feedback ablation, partial observer views,
+single runs, unreleased result records, and unvalidated semantic non-leakage block
+proactivity, natural-user, causal-repair, root-cause, and readiness claims [UC].
+
+The internal two-shape feedback audit exercises four feedback arms over 24
+deterministic builder-authored cells; its frozen report (SHA-256
+`20deddde50fd93fc32b7af5b8f7eb69b9e9ffdab71c9cc3dd1ea421a41e335be`)
+records proposition labels, uptake, repair, leakage, and new errors. Its six-case
+adaptive red-team report (SHA-256
+`0b9f068dfdc9d2b808caa761090415dab294b9eb15ed84dbca49d74f43a30339`)
+exercises query-budget, repeated-seed, and current-versus-best checks [CF]. These
+are internal contract/replay evidence only—not expert or participant evidence,
+general exploit-detection accuracy, agent learning/capability, professional
+validity, causal feedback benefit, production fitness, or readiness. Existing
+information-flow, configured-system, trace, task-health, longitudinal, metric,
+plural-judgment, and validity records suffice; no parallel feedback schema is
+justified.
+
 ### 4.1 Execution validity is an observed boundary, not a directory name
 
 Separate three layers that are often collapsed under “harness” or “sandbox”:
@@ -2030,3 +2097,20 @@ them:
   hashes are recorded there. External testbeds, absent paper trajectories, generated
   histories, and narrow/invalid predicates block persistent-memory, occupational,
   professional-validity, capability, safety, and readiness claims.
+- **[UC]**
+  `papers/agent-benchmarks/2026-07-13-uniclawbench-proactive-closed-loop-validity.md`;
+  reviewed immutable v1 PDF/text and complete pinned one-day-post-v1 official
+  release are recorded there. The release supports role-separated repair-loop
+  inspection, not paper-time result reproduction, semantic non-leakage,
+  proactivity, natural-user fidelity, causal repair, professional validity, or
+  readiness.
+- **[EDGE]**
+  `papers/agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md`;
+  reviewed immutable v1 PDF/text and pinned official code plus 51-task dataset
+  release are recorded there. The paper reports a selected 134-task analysis,
+  while trajectories, fitting artifacts, 83 tasks, and complete valid-run evidence
+  are unavailable; suite-level best-so-far fits do not establish task-level or
+  universal learning laws.
+- **[CF]** `pilots/closed-loop-feedback-audit/README.md`, `report.json`, and
+  `adaptive-report.json`; 24 feedback-arm cells and six adaptive red-team cases
+  are deterministic builder-authored synthetic replay evidence only.
