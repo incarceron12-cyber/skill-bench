@@ -291,6 +291,7 @@ simulator identity, reset health, and the claims that survive those choices.
 |---|---:|---|
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Directly motivates public-skill versus private-check boundaries and skill/rubric factorial comparisons |
 | [SkillsBench](../papers/agent-benchmarks/2026-07-10-skillsbench-paired-skill-efficacy.md) | A | Sharpens matched skill/no-skill comparisons and the need for repeated paired trials and uncertainty |
+| [AFTER](../papers/agent-benchmarks/2026-07-13-after-procedural-memory-transfer-validity.md) | A | Separates source-context gain, equivalent-form reuse, changed-context transport, and cross-model consumption while exposing complete-case selection, configured-system gaps, feedback/authoring overlap, and trace-diversity/volume confounding |
 | [SLBench](../papers/agent-benchmarks/2026-07-13-slbench-skill-relation-validity.md) | B | Makes precondition, postcondition, constraint, conjunction, fallback, exception, override, and conflict relations executable, while exposing that LLM-co-designed extraction, case generation, and evidence contracts need independent projection and grader validation |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Shows why expert-written examples and criteria can improve judge agreement while also anchoring outputs |
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Makes the harness and execution boundary explicit so a skill effect is not confused with launcher, tool, or isolation differences |
@@ -334,6 +335,31 @@ witness, not evidence of extraction validity, grader completeness, general skill
 reliability, field safety, or professional readiness. Existing procedural-skill,
 task-projection, evidence-view, task-health, validity, trace, and root/surface
 records already host this chain; no separate skill-logic subsystem follows.
+
+Procedural adaptation adds a typed source-to-target edge rather than one
+“evolution” score: source-context gain, equivalent-form cross-task reuse,
+changed-context/role transport, and cross-model consumption have different
+denominators and claims. Bind source and target task/form plus authoring/verifier
+lineage, procedure versions, source and target solver/harness, trace and feedback
+views, updater and candidate/promotion history, attempts, invalid/missing rows,
+paired outcomes, clustered uncertainty, cost, forgetting, and negative transfer.
+Define context shifts by changed artifact, audience, evidence authority,
+threshold, tool, consequence, and obligations—not nominal role alone. Match trace
+volume, task coverage, and success/failure composition before attributing gains
+to model or task diversity.
+
+AFTER supplies this high-leverage design vocabulary but weak effect evidence.
+Its `M1`/`M2` tables conflict; 382 claimed tasks reduce to 129 released test
+packages and 111 unexplained complete-case refinement IDs; its 73.1% cross-model
+condition lacks target solver, task/Skill and trace denominators, updater,
+attempts, failures, and uncertainty. Pooled traces confound diversity with volume
+and coverage, while main configurations, traces, evolved procedures, promotion
+history, and results are unreleased; oracle isolation is declarative and author
+review does not establish expert or occupational authority. The source therefore
+supports typed transfer-edge instrumentation, not expert transfer, professional
+capability, production fitness, or readiness. Existing procedural-skill,
+longitudinal, configured-system, firewall, task-health, metric, and validity
+contracts suffice; no parallel schema follows.
 
 Feedback adds another non-substitutable intervention boundary. Preserve the
 role-separated chain from private observation through released signal and

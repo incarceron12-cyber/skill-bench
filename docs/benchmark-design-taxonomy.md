@@ -1518,6 +1518,61 @@ ability change and difficulty drift are not identified. Record both events, but
 do not call their joint score movement self-improvement without a frozen anchor
 panel or a calibrated bridge design.
 
+### 4.5a Procedural adaptation is a typed source-to-target transfer edge
+
+A revised procedure has no context-free “transfer score.” Keep four estimands
+separate because each changes a different boundary:
+
+| Edge type | Source/target relation | Bounded interpretation |
+|---|---|---|
+| Source-context gain | same task/form, work context, solver, and harness before versus after revision | local adaptation under the observed feedback/update policy |
+| Equivalent-form cross-task reuse | held-out task forms share a declared operation while task instance and surface evidence change | reuse within a frozen task/authoring population |
+| Changed-context transport | intended artifact, audience/role, evidence authority, threshold, tool, verifier consequence, or obligations change explicitly | transport across the named changed primitives, not across a profession label in general |
+| Cross-model consumption | a different configured solver/harness consumes the frozen revised procedure | package consumption by that target configuration, not model-independent knowledge |
+
+The atomic record is a **versioned transfer edge** linking existing objects:
+
+```text
+source task/form + authoring lineage + active procedure hash
+  + source solver/harness/environment + trace and feedback views
+    → updater/configuration + candidate parent/child + changed clauses
+      + validation/promotion/rollback history
+        → frozen target task/verifier + authoring/overlap lineage
+          + target solver/harness/environment
+            → paired attempt/outcome distribution
+```
+
+For every edge retain the eligible, attempted, valid paired, invalid, missing,
+and excluded task/attempt counts; target-verifier and metric identity; all
+attempts and selection rules; task/Skill/author/verifier clusters; paired and
+clustered uncertainty; cost; per-task deltas; negative-effect rate; worst-group
+change; forgotten or contraindicated clauses; and prohibited claims. A positive
+macro mean cannot erase forgetting or negative transfer. Promotion should use a
+declared bounded-harm/non-inferiority gate on protected equivalent forms, not
+only average source or validation gain.
+
+Trace diversity and trace volume are separate treatments. Cross same-model
+versus mixed-model sources with same-task versus mixed-task sources while
+matching trace count, success/failure mix, and task coverage; include duplicated
+or shuffled volume controls and multiple sampled source pools. Feedback derived
+from private target checks is criterion-aligned coaching unless separately
+authorized and measured; repeated validation requires equivalent-form renewal.
+
+AFTER motivates this edge model but does not validate its reported transfers:
+its static tables contradict their own `M1`/`M2` identities; the paper claims
+382 tasks, the pinned post-v1 release contains 129 test packages, and refinement
+uses 111 unexplained complete-case IDs; the reported 73.1% cross-model condition
+omits the target solver, task/Skill and trace denominators, updater, attempts,
+failures, and uncertainty; pooled traces confound diversity with volume and
+coverage. Main configurations, traces, evolved procedures, promotion records,
+and results are unreleased, oracle isolation is declarative, and author review
+does not establish occupational or expert authority. The evidence therefore
+supports a transfer-design vocabulary and an inspectable static substrate—not
+expert transfer, occupational representativeness, professional capability,
+production fitness, or readiness [AFTER]. Existing procedural-skill,
+longitudinal-stream, configured-system, feedback-firewall, task-health, metric,
+and validity records are the implementation homes; no new schema follows.
+
 ## 5. Operating layer: task bank to living instrument
 
 | Object | Purpose | Required controls |
@@ -1563,6 +1618,7 @@ fidelity separately from score calibration [EB, AP].
 | Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
+| Procedural-memory transfer (AFTER) | typed source-context, equivalent-form, changed-context, and cross-model transfer edges with paired outcomes and harm gates | shared authoring/verifier lineage, feedback leakage, complete-case selection, diversity/volume confounding, missing configured-system identity, and macro gains hiding negative transfer | full immutable v1 paper plus pinned post-v1 release audit; 129 released test packages are inspectable, but the 382-task instrument, evolution machinery, traces, configurations, evolved procedures, and result rows are unavailable [AFTER] |
 | Production agent evaluation (Anthropic, Amazon) | task/trial/grader/trace separation, task-health lifecycle, metric/monitoring contract, and operational failure taxonomy | engineering guidance may not establish construct validity; named metrics omit populations/estimands; synthetic and online samples drift | full official Anthropic and Amazon articles and concept reviews; experience/prescription evidence, not controlled effectiveness studies [AN, AM] |
 | Expert-authored criterion evaluation (ResearchRubrics) | reviewed criterion inventory, criterion-level judge observation, rubric transformation lineage | task-design authority mistaken for domain authority; bundled/dependent or hidden criteria; artifact-only source checks; uncalibrated additive score | full immutable v1 paper plus inspected post-paper official code/dataset releases; authoring and agreement evidence, not professional-readiness validation [RR] |
 | Dynamic professional grading (JADE) | separate fixed and response-triggered criterion populations, trigger lineage, typed evidence/dependency graph, and plural score families | answer-conditioned obligations, variable denominators, duplicate/shared-cue checks, live-web authority error, fail-open verification, and uncalibrated fusion | full immutable v1 paper plus inspected close post-v1 release; bounded evaluator-architecture and deterministic fallback evidence, not expert-equivalent, cross-domain, or readiness validation [JADE] |
@@ -1923,6 +1979,11 @@ them:
 - **[SE]** `papers/agent-benchmarks/2026-07-10-self-evolving-agents-survey.md`;
   reviewed immutable v4 full text/PDF paths and hash are recorded there. Its
   protocol is prescriptive synthesis, not an empirically validated benchmark.
+- **[AFTER]**
+  `papers/agent-benchmarks/2026-07-13-after-procedural-memory-transfer-validity.md`;
+  reviewed immutable v1 PDF/text and pinned official GitHub/Hugging Face release
+  paths and hashes are recorded there. The release exposes 129 static test
+  packages but not the paper's evolution experiments or transfer results.
 - **[ST]** `papers/agent-benchmarks/2026-07-09-strace.md`; local extracted text
   path is recorded there.
 - **[EB]** `papers/agent-benchmarks/2026-07-09-efficient-benchmarking-ai-agents.md`;
