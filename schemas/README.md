@@ -41,6 +41,7 @@ Version 0.2 also recomputes each local procedural skill's SHA-256 when
 | Checks can fail closed through an admissibility envelope | Missing views, invalid exports, control/renderer mismatches, and inapplicable criteria are not ordinary zero scores. | SciVisAgentBench review, Sections 5.2–5.5 (pp. 5–6) and Concrete changes 1, 5 |
 | Persistent workspace identity, placement, dependency hypotheses, process observations, mutations, and cleanup are separate | File existence, authored relevance, observed access/write, and causal use are different claims; a correct deliverable can coexist with destructive workspace state. | `papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md` §§ Representative task trace, Unique insight, Transferable benchmark design lessons 1–8 |
 | Source authority, exposure, adoption, attempted action, intercepted/realized state, recovery, and utility are separate | Source placement is not exposure; exposure is not adoption; a tool call is not a realized consequence; and refusal is not secure useful completion. | `papers/agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md` §§ Unique insight, Transferable benchmark-design lessons 1–5 |
+| Context compression is a versioned, trace-linked state transformation with immutable raw evidence | Terminal reward or token savings cannot establish fidelity, alternate-future sufficiency, or auditability; reset and reformatting are confounds rather than compression effects. | `papers/agent-benchmarks/2026-07-13-acon-context-compression-validity.md` §§ The paper's own examples falsify a strong fidelity claim, Transfer to skill-bench |
 
 The fixture `tests/fixtures/valid-benchmark-bundle.json` is deliberately a
 failed completed trial. It demonstrates that a score of zero can still preserve
@@ -148,6 +149,34 @@ traversal paths; its preserved output is
 `tests/fixtures/action-safety-preflight-report.json`. This proves fixture and
 adapter conformance only—not a live host sandbox, expert validity, agent
 capability, real-world safety, or readiness.
+
+## Context-compression fidelity conformance
+
+Optional `task.context_compression`, `trial.context_compression`, and
+`context_compression` trace events extend the existing bundle rather than define
+a separate benchmark subsystem. The task contract pins an authoritative raw
+record, nine typed invariant families, required next-action and alternate-future
+probes, treatment arms, and strict non-claims. Each trial event records raw,
+previous-summary, and output identities; trigger and compressor configuration;
+trace lineage; invariant and probe evidence; and three outcomes that may not be
+collapsed: state/evidence fidelity, decision sufficiency, and efficiency.
+
+The semantic validator requires matched full-context, reset-only,
+structured-reformat-only, and compression treatments; checks trace and raw-hash
+lineage; requires compression configuration only in the compression arm; and
+derives fidelity fail-closed from complete invariant evidence. A task-sufficient
+event can therefore pass the realized next-action probe while failing fidelity
+and an alternate-future probe, even when it records token savings.
+
+`tests/fixtures/valid-context-compression-conformance.json` is internal synthetic
+calibration grounded in the complete ACON paper/release audit. Its lossy case
+plants entity, answer/value, modality, valid-time, provenance, contradiction,
+required-literal, secure-handle, and artifact-state corruption while preserving
+the immutable raw fixture at `tests/fixtures/context-compression-raw.json`.
+Mutation tests reject fidelity upgrades over failed invariants, missing treatment
+controls or trace lineage, raw-input and compressor drift, and incomplete
+invariant coverage. These fixtures make no agent-capability, professional-
+validity, reliability, production-fitness, or readiness claim.
 
 ## Required 2×2 ablation
 

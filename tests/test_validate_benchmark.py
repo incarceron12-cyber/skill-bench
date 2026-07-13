@@ -14,6 +14,7 @@ ADMISSIBILITY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-artifact-admissibil
 PROJECTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-task-projection-manifest.json"
 WORKSPACE_FIXTURE = ROOT / "tests" / "fixtures" / "valid-persistent-workspace-conformance.json"
 ACTION_SAFETY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-adversarial-action-conformance.json"
+CONTEXT_COMPRESSION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-context-compression-conformance.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
@@ -24,6 +25,7 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         cls.projection_manifest = json.loads(PROJECTION_FIXTURE.read_text(encoding="utf-8"))
         cls.workspace = json.loads(WORKSPACE_FIXTURE.read_text(encoding="utf-8"))
         cls.action_safety = json.loads(ACTION_SAFETY_FIXTURE.read_text(encoding="utf-8"))
+        cls.context_compression = json.loads(CONTEXT_COMPRESSION_FIXTURE.read_text(encoding="utf-8"))
 
     def projection_bundle(self):
         bundle = copy.deepcopy(self.valid)
@@ -44,6 +46,13 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         bundle["task"]["policies"]["network"] = "denied"
         bundle["trials"][0]["action_safety"] = copy.deepcopy(self.action_safety["trial_action_safety"])
         bundle["trials"][0]["trace"]["events"].extend(copy.deepcopy(self.action_safety["synthetic_trace_events"]))
+        return bundle
+
+    def context_compression_bundle(self):
+        bundle = copy.deepcopy(self.valid)
+        bundle["task"]["context_compression"] = copy.deepcopy(self.context_compression["task_context_compression"])
+        bundle["trials"][0]["context_compression"] = copy.deepcopy(self.context_compression["trial_context_compression"])
+        bundle["trials"][0]["trace"]["events"].extend(copy.deepcopy(self.context_compression["synthetic_trace_events"]))
         return bundle
 
     def validate_mutation(self, mutation) -> None:
@@ -344,6 +353,59 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         errors = semantic_errors(bundle)
         self.assertTrue(any("attempt-to-realization" in error for error in errors))
         self.assertTrue(any("utility metric does not replay" in error for error in errors))
+
+    def test_valid_context_compression_conformance_keeps_outcomes_separate(self) -> None:
+        bundle = self.context_compression_bundle()
+        self.assertEqual([], semantic_errors(bundle))
+        corrupt = bundle["trials"][0]["context_compression"]["events"][3]["outcomes"]
+        self.assertEqual("failed", corrupt["fidelity"])
+        self.assertEqual("passed", corrupt["decision_sufficiency"]["next_action"])
+        self.assertEqual("failed", corrupt["decision_sufficiency"]["alternate_future"])
+        self.assertEqual("savings", corrupt["efficiency"]["outcome"])
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_context_compression_rejects_fidelity_upgrade_over_corruption(self) -> None:
+        bundle = self.context_compression_bundle()
+        bundle["trials"][0]["context_compression"]["events"][3]["outcomes"]["fidelity"] = "passed"
+        self.assertTrue(any("does not fail closed" in error for error in semantic_errors(bundle)))
+
+    def test_context_compression_requires_matched_controls_and_trace_lineage(self) -> None:
+        bundle = self.context_compression_bundle()
+        events = bundle["trials"][0]["context_compression"]["events"]
+        events[:] = [item for item in events if item["treatment"] != "reset_only"]
+        self.assertTrue(any("treatment coverage" in error for error in semantic_errors(bundle)))
+        bundle = self.context_compression_bundle()
+        bundle["trials"][0]["context_compression"]["events"][3]["trace_event_id"] = "missing-compression-event"
+        self.assertTrue(any("mismatched context_compression trace" in error for error in semantic_errors(bundle)))
+
+    def test_context_compression_rejects_raw_evidence_or_compressor_drift(self) -> None:
+        bundle = self.context_compression_bundle()
+        event = bundle["trials"][0]["context_compression"]["events"][3]
+        event["raw_input_sha256"] = "9" * 64
+        event["compressor"] = None
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("raw evidence was not preserved" in error for error in errors))
+        self.assertTrue(any("compressor configuration" in error for error in errors))
+
+    def test_context_compression_missing_invariant_is_not_scoreable(self) -> None:
+        bundle = self.context_compression_bundle()
+        event = bundle["trials"][0]["context_compression"]["events"][3]
+        event["invariant_results"].pop()
+        self.assertTrue(any("invariant result coverage mismatch" in error for error in semantic_errors(bundle)))
+
+    def test_context_compression_recomputes_immutable_raw_hash(self) -> None:
+        bundle = self.context_compression_bundle()
+        bundle["task"]["context_compression"]["raw_evidence"]["sha256"] = "8" * 64
+        for event in bundle["trials"][0]["context_compression"]["events"]:
+            event["raw_input_sha256"] = "8" * 64
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            with self.assertRaisesRegex(ValidationFailure, "raw evidence sha256 mismatch"):
+                validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
 
 
 if __name__ == "__main__":

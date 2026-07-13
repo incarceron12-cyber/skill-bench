@@ -368,6 +368,7 @@
         "projection_manifest": {"$ref": "#/$defs/taskProjectionManifest"},
         "workspace": {"$ref": "#/$defs/workspaceInstrument"},
         "action_safety": {"$ref": "#/$defs/actionSafetyInstrument"},
+        "context_compression": {"$ref": "#/$defs/contextCompressionInstrument"},
         "checks": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/check"}},
         "difficulty": {
           "type": "object",
@@ -515,6 +516,72 @@
         }}
       }
     },
+    "compressionInvariant": {
+      "type": "object", "additionalProperties": false,
+      "required": ["invariant_id", "kind", "severity", "description", "source_locator"],
+      "properties": {
+        "invariant_id": {"$ref": "#/$defs/identifier"},
+        "kind": {"enum": ["entity", "value", "modality", "valid_time", "provenance", "contradiction", "required_literal", "secret_handle", "artifact_state"]},
+        "severity": {"enum": ["low", "medium", "high", "critical"]},
+        "description": {"$ref": "#/$defs/nonEmpty"},
+        "source_locator": {"$ref": "#/$defs/nonEmpty"}
+      }
+    },
+    "contextCompressionInstrument": {
+      "type": "object", "additionalProperties": false,
+      "required": ["instrument_id", "version", "raw_evidence", "treatments", "invariants", "required_probes", "claim_boundaries", "provenance"],
+      "properties": {
+        "instrument_id": {"$ref": "#/$defs/identifier"}, "version": {"$ref": "#/$defs/nonEmpty"},
+        "raw_evidence": {"type": "object", "additionalProperties": false, "required": ["path", "sha256", "immutable", "authoritative"], "properties": {
+          "path": {"$ref": "#/$defs/relativePath"}, "sha256": {"$ref": "#/$defs/sha256"}, "immutable": {"const": true}, "authoritative": {"const": true}
+        }},
+        "treatments": {"type": "array", "minItems": 4, "items": {"enum": ["full_context", "reset_only", "structured_reformat_only", "compression"]}, "uniqueItems": true},
+        "invariants": {"type": "array", "minItems": 9, "items": {"$ref": "#/$defs/compressionInvariant"}},
+        "required_probes": {"type": "array", "minItems": 2, "items": {"enum": ["next_action", "alternate_future", "audit", "recovery", "handoff"]}, "uniqueItems": true},
+        "claim_boundaries": {"type": "object", "additionalProperties": false, "required": ["internal_calibration_only", "capability_evidence", "professional_validity", "reliability_evidence", "production_fitness", "readiness_evidence"], "properties": {
+          "internal_calibration_only": {"const": true}, "capability_evidence": {"const": false}, "professional_validity": {"const": false}, "reliability_evidence": {"const": false}, "production_fitness": {"const": false}, "readiness_evidence": {"const": false}
+        }},
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}}
+      }
+    },
+    "compressionInvariantResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["invariant_id", "outcome", "evidence"],
+      "properties": {"invariant_id": {"$ref": "#/$defs/identifier"}, "outcome": {"enum": ["passed", "failed", "insufficient_evidence"]}, "evidence": {"$ref": "#/$defs/nonEmpty"}}
+    },
+    "compressionProbeResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["probe", "outcome", "evidence"],
+      "properties": {"probe": {"enum": ["next_action", "alternate_future", "audit", "recovery", "handoff"]}, "outcome": {"enum": ["passed", "failed", "insufficient_evidence"]}, "evidence": {"$ref": "#/$defs/nonEmpty"}}
+    },
+    "compressionEventObservation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["compression_event_id", "trace_event_id", "treatment", "raw_input_sha256", "previous_summary_sha256", "output_sha256", "trigger", "compressor", "raw_evidence_preserved", "invariant_results", "probe_results", "outcomes"],
+      "properties": {
+        "compression_event_id": {"$ref": "#/$defs/identifier"}, "trace_event_id": {"$ref": "#/$defs/identifier"},
+        "treatment": {"enum": ["full_context", "reset_only", "structured_reformat_only", "compression"]},
+        "raw_input_sha256": {"$ref": "#/$defs/sha256"}, "previous_summary_sha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]}, "output_sha256": {"$ref": "#/$defs/sha256"},
+        "trigger": {"type": "object", "additionalProperties": false, "required": ["kind", "threshold_tokens", "observed_tokens"], "properties": {
+          "kind": {"enum": ["none", "session_reset", "manual_reformat", "token_threshold"]}, "threshold_tokens": {"oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0}]}, "observed_tokens": {"type": "integer", "minimum": 0}
+        }},
+        "compressor": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/versionedComponent"}]},
+        "raw_evidence_preserved": {"const": true},
+        "invariant_results": {"type": "array", "minItems": 9, "items": {"$ref": "#/$defs/compressionInvariantResult"}},
+        "probe_results": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/compressionProbeResult"}},
+        "outcomes": {"type": "object", "additionalProperties": false, "required": ["fidelity", "decision_sufficiency", "efficiency"], "properties": {
+          "fidelity": {"enum": ["passed", "failed", "insufficient_evidence"]},
+          "decision_sufficiency": {"type": "object", "additionalProperties": false, "required": ["next_action", "alternate_future"], "properties": {"next_action": {"enum": ["passed", "failed", "insufficient_evidence"]}, "alternate_future": {"enum": ["passed", "failed", "insufficient_evidence"]}}},
+          "efficiency": {"type": "object", "additionalProperties": false, "required": ["outcome", "input_tokens", "output_tokens", "compressor_calls", "latency_ms"], "properties": {
+            "outcome": {"enum": ["baseline", "no_savings", "savings"]}, "input_tokens": {"type": "integer", "minimum": 0}, "output_tokens": {"type": "integer", "minimum": 0}, "compressor_calls": {"type": "integer", "minimum": 0}, "latency_ms": {"type": "number", "minimum": 0}
+          }}
+        }}
+      }
+    },
+    "contextCompressionObservation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["instrument_id", "version", "events"],
+      "properties": {"instrument_id": {"$ref": "#/$defs/identifier"}, "version": {"$ref": "#/$defs/nonEmpty"}, "events": {"type": "array", "minItems": 4, "items": {"$ref": "#/$defs/compressionEventObservation"}}}
+    },
     "traceEvent": {
       "type": "object",
       "additionalProperties": false,
@@ -524,12 +591,13 @@
         "sequence": {"type": "integer", "minimum": 0},
         "timestamp": {"type": "string", "format": "date-time"},
         "actor": {"enum": ["agent", "tool", "environment", "grader", "human"]},
-        "kind": {"enum": ["observation", "reasoning_summary", "tool_call", "tool_result", "artifact_write", "checkpoint", "error", "verifier_feedback", "repair", "verification", "grader_decision"]},
+        "kind": {"enum": ["observation", "reasoning_summary", "tool_call", "tool_result", "artifact_write", "checkpoint", "context_compression", "error", "verifier_feedback", "repair", "verification", "grader_decision"]},
         "summary": {"$ref": "#/$defs/nonEmpty"},
         "tool_name": {"type": "string"},
         "artifact_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
         "source_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
         "payload_path": {"$ref": "#/$defs/relativePath"},
+        "compression_event_id": {"$ref": "#/$defs/identifier"},
         "diagnostic_code": {"type": "string"},
         "feedback_specificity": {"enum": ["structured_actionable", "actionable", "ambiguous", "non_actionable"]},
         "feedback_visibility": {"enum": ["agent_visible", "grader_only"]},
@@ -544,6 +612,10 @@
         {
           "if": {"properties": {"kind": {"const": "verification"}}, "required": ["kind"]},
           "then": {"required": ["verification_outcome"]}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "context_compression"}}, "required": ["kind"]},
+          "then": {"required": ["compression_event_id", "payload_path"]}
         }
       ]
     },
@@ -774,6 +846,7 @@
         "artifact_views": {"type": "array", "items": {"$ref": "#/$defs/observedArtifactView"}},
         "workspace": {"$ref": "#/$defs/workspaceObservation"},
         "action_safety": {"$ref": "#/$defs/actionSafetyObservation"},
+        "context_compression": {"$ref": "#/$defs/contextCompressionObservation"},
         "trace": {"$ref": "#/$defs/trace"},
         "check_results": {"type": "array", "items": {"$ref": "#/$defs/checkResult"}},
         "aggregate_score": {"type": "number", "minimum": 0, "maximum": 1},

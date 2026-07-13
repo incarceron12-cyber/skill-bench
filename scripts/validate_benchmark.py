@@ -342,6 +342,76 @@ def _validate_action_safety(
         errors.append(f"{prefix}.action_safety: utility metric does not replay from eligible cases")
 
 
+def _validate_context_compression(
+    contract: dict[str, Any], observation: dict[str, Any] | None,
+    event_by_id: dict[str, dict[str, Any]], errors: list[str], prefix: str,
+) -> None:
+    """Validate lossy-state lineage without collapsing fidelity, sufficiency, and cost."""
+    invariants = contract["invariants"]
+    _check_unique(invariants, "invariant_id", "task.context_compression.invariants", errors)
+    invariant_by_id = {item["invariant_id"]: item for item in invariants}
+    required_kinds = {"entity", "value", "modality", "valid_time", "provenance", "contradiction", "required_literal", "secret_handle", "artifact_state"}
+    if {item["kind"] for item in invariants} != required_kinds:
+        errors.append("task.context_compression: invariants must cover every planted corruption kind")
+    required_treatments = {"full_context", "reset_only", "structured_reformat_only", "compression"}
+    if set(contract["treatments"]) != required_treatments:
+        errors.append("task.context_compression: require full-context, reset-only, structured-reformat-only, and compression treatments")
+    required_probes = set(contract["required_probes"])
+    if not {"next_action", "alternate_future"} <= required_probes:
+        errors.append("task.context_compression: next-action and alternate-future probes are mandatory")
+    if observation is None:
+        return
+    if (observation["instrument_id"], observation["version"]) != (contract["instrument_id"], contract["version"]):
+        errors.append(f"{prefix}.context_compression: instrument identity/version mismatch")
+    events = observation["events"]
+    _check_unique(events, "compression_event_id", f"{prefix}.context_compression.events", errors)
+    if not required_treatments <= {item["treatment"] for item in events}:
+        errors.append(f"{prefix}.context_compression: matched treatment coverage is incomplete")
+    raw_hash = contract["raw_evidence"]["sha256"]
+    for item in events:
+        label = f"{prefix}.context_compression event {item['compression_event_id']}"
+        trace_event = event_by_id.get(item["trace_event_id"])
+        if trace_event is None or trace_event.get("kind") != "context_compression" or trace_event.get("compression_event_id") != item["compression_event_id"]:
+            errors.append(f"{label}: missing or mismatched context_compression trace event")
+        if item["raw_input_sha256"] != raw_hash or not item["raw_evidence_preserved"]:
+            errors.append(f"{label}: immutable authoritative raw evidence was not preserved")
+        treatment = item["treatment"]
+        expected_trigger = {"full_context": "none", "reset_only": "session_reset", "structured_reformat_only": "manual_reformat", "compression": "token_threshold"}[treatment]
+        if item["trigger"]["kind"] != expected_trigger:
+            errors.append(f"{label}: trigger is confounded with declared treatment")
+        compressor = item["compressor"]
+        if (treatment == "compression") != (compressor is not None):
+            errors.append(f"{label}: compressor configuration must appear only in compression treatment")
+        if treatment == "compression" and item["output_sha256"] == item["raw_input_sha256"]:
+            errors.append(f"{label}: compression output identity cannot equal raw input identity")
+
+        invariant_results = item["invariant_results"]
+        _check_unique(invariant_results, "invariant_id", f"{label}.invariant_results", errors)
+        if {row["invariant_id"] for row in invariant_results} != set(invariant_by_id):
+            errors.append(f"{label}: invariant result coverage mismatch")
+        invariant_outcomes = [row["outcome"] for row in invariant_results]
+        expected_fidelity = "insufficient_evidence" if "insufficient_evidence" in invariant_outcomes else "failed" if "failed" in invariant_outcomes else "passed"
+        if item["outcomes"]["fidelity"] != expected_fidelity:
+            errors.append(f"{label}: fidelity outcome does not fail closed from invariant evidence")
+
+        probe_results = item["probe_results"]
+        _check_unique(probe_results, "probe", f"{label}.probe_results", errors)
+        probe_by_kind = {row["probe"]: row for row in probe_results}
+        if set(probe_by_kind) != required_probes:
+            errors.append(f"{label}: probe result coverage mismatch")
+        for probe in ("next_action", "alternate_future"):
+            if probe in probe_by_kind and item["outcomes"]["decision_sufficiency"][probe] != probe_by_kind[probe]["outcome"]:
+                errors.append(f"{label}: {probe} sufficiency outcome does not replay from probe evidence")
+
+        efficiency = item["outcomes"]["efficiency"]
+        if treatment == "full_context" and efficiency["outcome"] != "baseline":
+            errors.append(f"{label}: full-context efficiency must remain the baseline")
+        if treatment != "compression" and efficiency["compressor_calls"] != 0:
+            errors.append(f"{label}: control treatment cannot include compressor calls")
+        if treatment == "compression" and efficiency["compressor_calls"] < 1:
+            errors.append(f"{label}: compression treatment requires measured compressor calls")
+
+
 def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     """Return cross-reference and completed-trial invariant violations."""
     errors: list[str] = []
@@ -387,6 +457,9 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     action_safety_contract = task.get("action_safety")
     if action_safety_contract:
         _validate_action_safety(action_safety_contract, None, source_ids, {}, errors, "task")
+    context_compression_contract = task.get("context_compression")
+    if context_compression_contract:
+        _validate_context_compression(context_compression_contract, None, {}, errors, "task")
 
     requirement_by_id: dict[str, dict[str, Any]] = {}
     for skill in skills:
@@ -569,6 +642,14 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
                 errors.append(f"{prefix}.action_safety: task contract requires a trial observation")
             else:
                 _validate_action_safety(action_safety_contract, action_safety_observation, source_ids, event_by_id, errors, prefix)
+        context_compression_observation = trial.get("context_compression")
+        if context_compression_observation and not context_compression_contract:
+            errors.append(f"{prefix}.context_compression: observation has no task contract")
+        elif context_compression_contract:
+            if context_compression_observation is None:
+                errors.append(f"{prefix}.context_compression: task contract requires a trial observation")
+            else:
+                _validate_context_compression(context_compression_contract, context_compression_observation, event_by_id, errors, prefix)
         recovery_relations: dict[str, list[tuple[str, str]]] = {}
         for edge in trace["dependencies"]:
             if edge["from_event_id"] not in event_ids or edge["to_event_id"] not in event_ids:
@@ -778,6 +859,14 @@ def validate_file(bundle_path: Path, schema_path: Path, check_paths: bool = Fals
                 errors.append(f"procedural skill content_path does not exist: {skill['content_path']}")
             elif hashlib.sha256(content_path.read_bytes()).hexdigest() != skill["sha256"]:
                 errors.append(f"procedural skill sha256 mismatch: {skill['skill_id']}")
+        compression = bundle.get("task", {}).get("context_compression")
+        if compression:
+            raw = compression["raw_evidence"]
+            raw_path = ROOT / raw["path"]
+            if not raw_path.is_file():
+                errors.append(f"context compression raw evidence does not exist: {raw['path']}")
+            elif hashlib.sha256(raw_path.read_bytes()).hexdigest() != raw["sha256"]:
+                errors.append("context compression raw evidence sha256 mismatch")
     if errors:
         raise ValidationFailure("\n".join(f"- {error}" for error in errors))
 
