@@ -165,6 +165,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
 | [OdysseyBench](../papers/agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md) | B | Connects dialogue-distributed requirements to office-state action while exposing persistent-memory, evaluator-dispatch, collateral-state, and professional-validity gaps |
+| [LongMedBench](../papers/agent-benchmarks/2026-07-14-longmedbench-longitudinal-clinical-validity.md) | B | Separates history volume and factual access from history necessity and consequence validity; its no-history result and retrospective next-event oracle show why a long record alone does not establish longitudinal decision competence |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
 | [Design Report for Knowledge-Work Benchmarks](../papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | A | Adds a work-activity → tested-setting → persistent-product → licensed-claim reporting chain and makes omitted responsibilities and downstream handoffs explicit; its preliminary 18-label inventory is a revisable vocabulary, not validated coverage |
@@ -232,6 +233,20 @@ separates raw-history success, summary omission, stale adoption, required-state
 failure, collateral mutation, and unavailable-evaluator invalidity in one
 deterministic synthetic fixture only; it is implementation evidence, not empirical
 support for the planted causal story or any workplace claim.
+
+Longitudinal claims need a further **volume → access → necessity → consequence**
+ladder. Many prior records establish history volume; finding an old fact establishes
+access; neither shows that the fact changes a justified later action. LongMedBench's
+reported no-history aggregate matches or exceeds every memory condition, while its
+released decision generator labels the next recorded EHR event or actual discharge
+time. That is useful workflow-sequence evidence but not an independently authorized
+appropriateness oracle. A longitudinal-decision task should hold immediate context
+fixed while substituting correct, stale, irrelevant, contradictory, or absent prior
+evidence; bind each atom's event/availability/valid time and transformation; admit
+alternative valid actions or partial orders; and measure the downstream consequence
+with trajectory-clustered denominators. Until then, classify evidence as long-input,
+retrieval, archive reconstruction, or recorded-behavior prediction rather than
+professional longitudinal competence.
 
 Context-heavy tasks add an authority boundary before the workplace ladder:
 **availability → authorization → access → observation → interpretation → adoption
