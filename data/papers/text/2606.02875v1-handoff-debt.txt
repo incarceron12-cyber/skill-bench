@@ -1,0 +1,972 @@
+                                            Handoff Debt: The Rediscovery Cost When Coding Agents Take Over
+                                                                    Interrupted Tasks
+
+                                                                             Dipesh KC1 , Anjila Budathoki2
+                                                                 1
+                                                                     Independent Researcher, 2 Georgia State University
+                                                                             Correspondence: kcdipesh429@gmail.com
+
+
+
+
+                                                              Abstract                                 We call this cost handoff debt and introduce a
+                                                                                                   protocol to measure it. Handoff debt arises when
+                                            Coding-agent benchmarks evaluate whether a
+                                                                                                   an agent makes visible progress but leaves state
+
+
+
+
+arXiv:2606.02875v1 [cs.AI] 1 Jun 2026
+                                            single uninterrupted agent can resolve a reposi-
+                                            tory issue. Real software work is messier: tasks
+                                                                                                   that a successor cannot readily continue from, such
+                                            are interrupted, reassigned, reviewed, and re-         as unexplained edits, scratch files, hidden assump-
+                                            sumed from partial states left by another agent        tions, or missing validation evidence. A metric
+                                            or engineer. We study this missing dimension           based solely on final resolution cannot distinguish
+                                            through handoff debt: the rediscovery cost im-         between costly rediscovery and efficient continua-
+                                            posed when a predecessor’s work is opaque or           tion. Two predecessor agents may leave the same
+                                            incomplete. Our takeover protocol interrupts           checkpointed repository, yet their successors can
+                                            a coding agent at deterministic handoff points,
+                                                                                                   face very different continuation costs: one may
+                                            freezes the repository, and evaluates succes-
+                                            sor agents under four handoff views: reposi-           continue immediately, while another must spend
+                                            tory state only, raw trace, summary notes, and         many tool interactions rediscovering intent from
+                                            structured notes. Across 75 source tasks, the          scratch files and incomplete command history.
+                                            protocol generates 181 handoff-point tasks and             We run experiments on SWE-bench Verified
+                                            724 takeover runs per successor model. Across          (Jimenez et al., 2024; Chowdhury et al., 2024) us-
+                                            three successor models, context-bearing hand-          ing an OpenHands-style coding-agent environment
+                                            offs reduce median agent events by 20–59%
+                                                                                                   (Wang et al., 2025). A predecessor agent begins a
+                                            and cumulative prompt tokens by 42–63% rel-
+                                            ative to repository-only takeover. Solved-rate
+                                                                                                   source task. We interrupt the agent at observable
+                                            effects are smaller and model-dependent, but           handoff points: After first source edit, After first val-
+                                            efficiency gains are consistent. These findings        idation result, or After first post-failure edit. Each
+                                            suggest that coding-agent evaluation should re-        handoff point becomes a takeover task in which
+                                            port not only whether a task is solved, but also       a successor resumes from the same checkpointed
+                                            how costly that work is for another agent to           repository under four handoff views, meaning four
+                                            resume.                                                context formats about what the predecessor did.
+                                                                                                       The four views differ in how much predecessor
+                                        1   Introduction
+                                                                                                   context the successor receives. Repository only
+                                        Recent software-engineering benchmarks have                asks whether the filesystem state alone is enough.
+                                        made coding agents measurable by asking whether,           Raw trace exposes the predecessor event log, but
+                                        given a repository issue, an agent can produce a           it is large, unstructured, and unbounded. Summary
+                                        patch that passes the official tests. This abstrac-        notes test whether free-form compression can pre-
+                                        tion is effective and reproducible for evaluating          serve intent and evidence from the trace. Structured
+                                        agents on real repositories (Jimenez et al., 2024;         notes test whether a fixed continuation contract can
+                                        Yang et al., 2024). However, this abstraction leaves       make the handoff bounded and auditable. The cen-
+                                        out a common real-world case: takeover, where              tral question is:
+                                        one agent inherits an interrupted repository from              Which handoff view lets a successor agent cor-
+                                        another and must reconstruct what was changed,             rectly and efficiently resume interrupted coding
+                                        what was already attempted, and which interme-             work?
+                                        diate artifacts can be trusted. In such handoffs,              Figure 1 summarizes the resulting evaluation
+                                        partial work is only valuable if the successor can         architecture. Our contributions are:
+                                        understand it well enough to resume from it.
+
+                                                                                               1
+Figure 1: Handoff debt evaluation architecture. A predecessor produces repository state and trajectory evidence
+before interruption. At a detected handoff point, the checkpointed repository is held fixed while the successor
+receives one of four handoff views. Final states are scored by official SWE-bench validation and efficiency metrics,
+including agent events and prompt tokens.
+
+
+    • We formulate handoff debt as a measurable              state st and a predecessor trajectory τ≤t , includ-
+      property of coding-agent takeovers, capturing          ing commands, file edits, observations, validation
+      the cost of inheriting partial work.                   results, and model messages observed before the
+                                                             interruption. We later measure successor effort in
+    • We introduce a takeover protocol that converts         agent events, OpenHands trajectory records com-
+      SWE-bench Verified tasks into handoff-point            prising LLM actions and tool observations. A suc-
+      tasks, each evaluated under multiple handoff           cessor agent B receives the original task prompt,
+      views.                                                 the checkpointed repository st , and a handoff view
+    • We compare four handoff views while holding            ht derived from some subset or transformation of
+      the checkpointed repository fixed, isolating           τ≤t .
+      the effect of the handoff view.                           The takeover succeeds if B produces a final
+                                                             repository state that is officially resolved by the
+    • We propose a structured handoff schema as              SWE-bench harness, meaning that the patched
+      a bounded continuation contract, with fixed            repository passes the official validation. Handoff
+      fields for changed files, validation evidence,         debt is the additional successor effort induced by
+      uncertainty, rollback risk, and verification.          an insufficient handoff view. In our experiments,
+                                                             this effort is quantified by agent events and cumula-
+    • We show that predecessor context primarily re-
+                                                             tive prompt tokens, while official validation checks
+      duces rediscovery effort, cutting median agent
+                                                             whether the takeover resolves the task. During
+      events and prompt tokens even when solved-
+                                                             continuation, the debt can appear as repeated val-
+      rate gains are modest.
+                                                             idation, redundant file inspection, regressions, or
+2     Problem Setup                                          ambiguity about predecessor intent.
+                                                                This definition of handoff debt separates resum-
+2.1    Handoff Debt                                          ability from raw model capability. A strong suc-
+We use predecessor for the agent that begins a task          cessor agent may solve a task without predecessor
+and successor for the agent that resumes it after            context, but only after reconstructing the state. A
+interruption. A handoff is the transfer of partial-          weaker successor agent may fail even with a good
+work state between them, and the successor’s con-            handoff. Our primary comparisons isolate handoff-
+tinuation episode is a takeover. Let a predecessor           format effects. We hold the predecessor, handoff
+agent A operate on task x and reach an intermediate          point, repository state, and successor model fixed,
+checkpoint t. The checkpoint contains a repository
+
+                                                         2
+varying only the handoff view.                                fails tests that were passing before the predeces-
+                                                              sor’s edit, and a successful takeover must repair the
+2.2   Handoff Point Detection                                 task without keeping that regression.
+We derive handoff points deterministically from
+observable predecessor events rather than from the            3   Handoff Context Formats
+official solution. A handoff point is eligible only           Each takeover run starts from the same check-
+if it has a checkpointed repository state, an event           pointed repository st and original task prompt. The
+boundary, and precomputed handoff-view records                intervention is the handoff view ht , the predecessor
+(defined in Section 3). These eligibility rules keep          context given to the successor. The four formats
+the protocol implementable using only logs avail-             below differ only in how much of the predecessor
+able at handoff time.                                         trajectory τ≤t they expose or compress.
+   The current handoff-point types are:
+                                                              Repository only. The successor receives the
+After first source edit the first non-test source-            checkpointed repository and the original task
+     code edit made by the predecessor;                       prompt, but no explicit predecessor history. The
+                                                              condition is still a handoff, but it transfers only
+After first validation result the first observed vali-
+                                                              filesystem state to the successor. It measures how
+     dation, build, lint, or test result after a source
+                                                              much of the predecessor’s progress is recoverable
+     edit;
+                                                              from code alone.
+After first post-failure edit the first source edit           Raw trace. The successor receives the predeces-
+     made after the first observed failed validation          sor event trace up to the checkpoint, marked as
+     result                                                   historical context. This condition maximizes ob-
+   Not all predecessor runs fail validation before            servable information, including commands, obser-
+finishing or timing out. In our selected pool, 31 of          vations, edits, and failed attempts. It is an upper
+75 source tasks contain an eligible post-failure-edit         bound on available context, but not a scalable doc-
+handoff point.                                                umentation strategy.
+   We run all detected handoff points for the                 Summary notes. The successor receives natural-
+selected source tasks rather than selecting only              language notes generated from the predecessor
+promising or failed states. Our comparisons are               event timeline before the checkpoint. A prede-
+therefore over handoff points, not only over origi-           cessor agent generates these notes from the event
+nal SWE-bench issues.                                         log before takeover begins and the successor does
+                                                              not participate in writing them. This format
+2.3   Handoff States
+                                                              tests whether free-form compression can preserve
+We use handoff states later to separate two takeover          enough intent and evidence without exposing every
+cases that can share the same final solved label:             event.
+finishing unresolved work and preserving work
+that is already correct. We therefore label the               Structured notes. The successor receives a con-
+checkpointed repository state before takeover. We             cise structured handoff note that records the in-
+call these labels handoff states, which describe the          formation needed to resume the task using prede-
+repository state the successor receives at a handoff          fined fields. Some fields are filled deterministi-
+point.                                                        cally from checkpoint metadata and logs, includ-
+                                                              ing changed source files, non-source artifacts, lat-
+Needs completion. The checkpointed repository                 est source change, latest validation command, and
+is unresolved and a successful takeover resolves it.          handoff state. The predecessor agent completes the
+Already solved; preserve. The checkpointed                    remaining fields using only predecessor-observable
+repository is already resolved and a successful               evidence such as the original issue, event logs, com-
+takeover keeps it resolved.                                   mand outputs, and checkpoint repository state.
+                                                                 Takeover prompts present handoff text as histor-
+Existing behavior broken. This rare diagnostic                ical evidence rather than ground truth and instruct
+class contains 10 instances and is used only for di-          successors to inspect and verify the repository be-
+agnostic breakdowns. The checkpointed repository              fore relying on it. In Appendix B, we provide
+
+
+                                                          3
+ Stage              Breakdown                          Count        and official SWE-bench validation. Provider-native
+ Source tasks       SWE-bench Verified                    75        tool calling is disabled, but models still use tools
+ Predecessor runs   Qwen                                  75        through OpenHands’ textual action protocol, keep-
+                                                                    ing the tool interface consistent across successors
+ Handoff points     After first source edit               75
+                    After first validation result         75        while retaining a realistic full-agent runtime.
+                    After first post-failure edit         31
+                    Total handoff points                 181        4.3    Models
+ Handoff states     Needs completion                     110        In the main study, all handoff points come from
+                    Already solved; preserve              61
+                    Existing behavior broken              10        Qwen predecessor runs. This fixes the predecessor
+                    Total state-labeled                  181        distribution so the main intervention is the succes-
+                    handoff points                                  sor’s handoff view. We evaluate Qwen, Gemma,
+ Handoff views      Repository only                        1        and Devstral successors.1 All are served through
+                    Raw trace                              1
+                    Summary notes                          1
+                                                                    OpenAI-compatible local endpoints, ensuring a
+                    Structured notes                       1        consistent runtime protocol across successors.
+                    Views per handoff                      4           We evaluate Qwen-to-Qwen, Qwen-to-Gemma,
+ Takeover runs      181 handoffs × 4 views          724/model       and Qwen-to-Devstral takeover pairs. Cross-model
+ Total takeover     724/model × 3                       2,172       takeover tests whether handoff effects persist when
+ runs               successors                                      the successor changes. We do not interpret these
+                                                                    conditions as a model leaderboard because the in-
+Table 1: Construction of the takeover benchmark.                    tervention is handoff format, not model selection.
+The selected-75 task pool expands into 181 handoff
+points and 2,172 takeover runs across the three successor           4.4    Validation and Metrics
+models.
+                                                                    We use the same scoring procedure for every hand-
+                                                                    off view. The primary outcome is official SWE-
+the note-generation settings, while Appendix C                      bench resolution after takeover. The primary cost
+presents the prompt templates, full schema, and an                  metrics are cumulative prompt tokens and agent
+example structured handoff excerpt.                                 events, which measure how much interaction the
+                                                                    successor needs after receiving the handoff. We de-
+4     Experimental Design                                           tail the runtime limits and note-generation settings
+4.1    Source Tasks and Handoff Tasks                               in Appendix B.
+We start from SWE-bench Verified tasks (Jimenez                     5     Results
+et al., 2024; Chowdhury et al., 2024). We retain
+the 15 minutes–1 hour and 1–4 hour difficulty tiers,                Context-bearing handoffs reduce rediscovery cost
+create a fixed random order with seed 20260430,                     across all three successors. The key pattern is
+and use the first 75 source tasks. These tiers are                  that context helps effort more than final resolu-
+long enough to produce meaningful handoff points                    tion: it sharply reduces rediscovery work, while
+while keeping full takeover evaluation feasible.                    solved-rate gains are smaller and less uniform. A
+The takeover benchmark is larger than the source-                   repository-only successor receives the same check-
+task count because each predecessor trajectory can                  pointed files st as every other view, but no record
+yield multiple deterministic handoff points, and                    of what the predecessor did. Without predecessor
+each handoff point is evaluated under four views.                   context, the successor must reconstruct what was
+The selected-75 source pool yields 181 handoff-                     changed, tested, and observed.
+point tasks and 724 takeover runs per successor
+                                                                    5.1    Rediscovery Cost
+across four views, or 2,172 takeover runs across
+the three successor models. The resulting bench-                    Across all three successors and all handoff views,
+mark construction is summarized in Table 1.                         context-bearing handoffs reduce both agent events
+                                                                    and prompt tokens relative to repository-only
+4.2    Runtime                                                      takeover at the same handoff point, as shown in
+We use an OpenHands-style coding-agent environ-                     Table 2. Raw trace reduces median agent events
+ment (Wang et al., 2025) with terminal actions,                        1
+                                                                         Model pages: Qwen/Qwen3.6-27B,
+file editing, repository freezing at handoff points,                google/gemma-4-31B-it, and
+                                                                    mistralai/Devstral-Small-2-24B-Instruct-2512.
+
+
+                                                                4
+by 57–59%, while Summary notes and Structured              5.3   Handoff Format Tradeoffs
+notes reduce events by 20–46% (Figure 3). Prompt-          Raw trace is the highest-information view and often
+token reductions are also consistent, at 42–63%.           produces the strongest solved-rate improvements,
+   Repository-only takeover can start from a com-          especially for Devstral. It also produces much
+pact prompt, but the successor must reconstruct            larger initial prompts, with a median of 87k charac-
+predecessor intent, evidence, and failure history          ters compared with 7.2k for Repository only, 9.8k
+through additional interaction. These events are           for Summary notes, and 10.0k for Structured notes,
+not wall-clock time; reducing them by dozens per           before any takeover interaction begins (Appendix
+takeover means fewer repeated runtime interac-             Figure 4; Appendix Table 7). The larger initial
+tions. Raw traces and notes move some of that              context can still reduce total prompt tokens, since
+information into the handoff, reducing the succes-         the successor needs fewer exploratory turns later.
+sor’s rediscovery work. In Figure 4, we report the
+first-prompt sizes associated with this tradeoff.          5.4   Where Handoff Debt Is Largest
+   We use a matched comparison that pairs each             Handoff debt is not uniform across handoff-point
+context-bearing run with the repository-only run           types. At the After first post-failure edit handoff
+from the same handoff point and successor. Each            point, the predecessor has accumulated failure evi-
+pair shares the same repository state, predecessor         dence, including a validation result, a changed file,
+trajectory, and successor model, while only the            and a first response to negative feedback. A suc-
+handoff view changes. We then report bootstrap             cessor seeing only repository files cannot tell what
+confidence intervals for matched run-level event           was tested, what failed, or why the file changed.
+reductions in Table 3. All intervals remain below          Repository-only successors at these handoff points
+zero, supporting that event reductions hold across         require the most interaction, with median costs
+matched runs rather than only in aggregate medi-           from 122 agent events for Qwen-to-Qwen to 191
+ans.                                                       for Qwen-to-Devstral (Appendix Table 8). Context-
+   The first supplementary robustness check repeats        bearing handoffs also show large solved-rate gains
+Qwen-to-Qwen takeovers on a stratified subset,             here, reaching +12.9 percentage points for Qwen-
+with three attempts per handoff point. The event           to-Qwen and +19.4 points for Qwen-to-Devstral.
+reductions persist under reruns: across context-              We also group handoff points by handoff state,
+bearing views, median agent events fall by 43–59%          meaning what kind of repository state the successor
+relative to repository-only takeover (Appendix Ta-         receives. Among the 110 Needs completion hand-
+ble 4). In Appendix A.1, we report the selection           off points, repository-only successors resolve only
+rule.                                                      13.6–23.6% of tasks (Appendix Table 9). Context-
+                                                           bearing views raise completion rates across all
+5.2   Solved-Rate Effects
+                                                           three successors, with the best view reaching 23.6–
+Solved-rate gains are positive but less consistent         28.2%. These gains matter most here because
+than the efficiency reductions. Matched compar-            Needs completion is the core handoff scenario,
+isons against repository-only takeover show raw-           where a predecessor stopped before finishing and a
+trace gains for all successors (+6.1 to +14.9 per-         successor must carry the work forward.
+centage points). Note-based gains for Qwen and
+Gemma successors are not statistically significant         5.5   Cross-Model Checks
+at α = 0.05, while note-based gains for Devs-              Across Qwen-to-Qwen, Qwen-to-Gemma, and
+tral are significant (+9.4 to +10.5 points). The           Qwen-to-Devstral takeovers, the main pattern is
+accuracy-effort tradeoff is shown in Figure 2. We          stable, but the preferred handoff format differs
+therefore treat solved-rate gains as supporting ev-        by successor. Raw traces, summaries, and struc-
+idence. Predecessor context usually preserves or           tured notes do not produce one universal ranking.
+improves final resolution, while its most stable ef-       The cross-model comparison therefore supports
+fect is reducing successor effort. We present the          the rediscovery-cost result while showing that re-
+full matched-run solved-rate confidence intervals          sumability depends on the successor as well as the
+in Appendix Table 6.                                       handoff artifact.
+                                                              The second supplementary robustness check
+                                                           asks whether the pattern depends on which model
+
+
+                                                       5
+View                               Runs            Solved rate (∆pp)                       Agent events (∆%)                    Prompt tokens (∆%)
+Qwen→Qwen
+Repository only                     181                              46.4%                                    99                                 1.63M
+With predecessor context
+  Raw trace                         181                52.5% (+6.1 pp)                              41 (-59%)                             811k (-50%)
+  Summary notes                     181                51.4% (+5.0 pp)                              53 (-46%)                             602k (-63%)
+  Structured notes                  181                50.8% (+4.4 pp)                              55 (-44%)                             660k (-60%)
+Qwen→Gemma
+Repository only                     181                              42.5%                                    49                                  738k
+With predecessor context
+  Raw trace                         181                49.2% (+6.6 pp)                              21 (-57%)                             300k (-59%)
+  Summary notes                     181                44.2% (+1.7 pp)                              33 (-33%)                             319k (-57%)
+  Structured notes                  181                43.6% (+1.1 pp)                              39 (-20%)                             317k (-57%)
+Qwen→Devstral
+Repository only                     181                              34.3%                                   175                                 3.94M
+With predecessor context
+  Raw trace                         181               49.2% (+14.9 pp)                             73 (-58%)                             1.66M (-58%)
+  Summary notes                     181                43.6% (+9.4 pp)                            123 (-30%)                             2.30M (-42%)
+  Structured notes                  181               44.8% (+10.5 pp)                            125 (-29%)                             2.30M (-42%)
+
+Table 2: Repository-only handoff versus handoffs that include predecessor context, by successor model.
+Baseline rows report absolute values; context rows report deltas in parentheses. Solved-rate deltas are percentage-
+point changes; cost deltas are relative changes against repository-only for the same successor.
+
+                                          Repo only           Raw trace          Summary notes    Structured notes
+
+
+                            Qwen → Qwen                                   Qwen → Gemma                                    Qwen → Devstral
+                55%
+                                                                                                          50%
+                                                       50%
+               52.5%
+
+
+
+ Solved rate
+                                                                                                          45%
+                                                      47.5%
+                50%
+
+                                                       45%                                                40%
+               47.5%
+                                                      42.5%                                               35%
+                45%
+                       40    60     80       100              20            30           40       50                 75   100      125     150    175
+                                                                          Median agent events
+
+
+Figure 2: Solved rate versus median agent events for each successor and handoff view. Dashed crosshairs
+mark the repository-only baseline within each successor condition. Axis ranges differ across panels, reflecting each
+model’s repository-only rediscovery cost and solved-rate range.
+
+
+generates the handoff, rather than which succes-                                  6     Analysis
+sor model receives it. For the first 40 source tasks,
+                                                                                  6.1     Rediscovery and Evidence
+Qwen, Gemma, and Devstral predecessor trajecto-
+ries are evaluated with a fixed Devstral successor,                               Without predecessor context, successors recon-
+yielding 720 takeover runs in the reported robust-                                struct intent from the repository state alone, in-
+ness set. We evaluate whether the same pattern                                    specting changed files, rerunning checks, and re-
+holds when the predecessor model changes (Ta-                                     deriving what was attempted. Repository-only
+ble 5). This study does not replace broader prede-                                takeover receives the files, but the successor must
+cessor coverage, but it checks whether the main                                   infer why they changed, what evidence was ob-
+result is specific to Qwen-authored handoff points.                               served, and which assumptions are still valid.
+                                                                                  Repository-only runs can therefore have com-
+                                                                                  pact initial prompts while still accumulating more
+                                                                                  model actions, tool interactions, and prompt to-
+
+
+                                                                             6
+                      Matched           Repo-only            Agent events          95% CI            Prompt tokens
+View
+                       runs            agent events             (∆%)             for ∆ events           (∆%)
+Qwen→Qwen
+Raw trace                  181                  99              41 (-59%)        [-50%, -42%]           798k (-51%)
+Summary notes              181                  99              53 (-46%)        [-38%, -28%]           572k (-65%)
+Structured notes           181                  99              55 (-44%)        [-34%, -24%]           646k (-60%)
+Qwen→Gemma
+Raw trace                  181                  49              21 (-57%)        [-47%, -33%]           300k (-59%)
+Summary notes              181                  49              33 (-33%)          [-25%, -8%]          319k (-57%)
+Structured notes           181                  49              39 (-20%)          [-18%, -1%]          317k (-57%)
+Qwen→Devstral
+Raw trace                  181                 175              73 (-58%)        [-45%, -22%]         1.65M (-58%)
+Summary notes              181                 175             123 (-30%)        [-28%, -15%]         2.28M (-42%)
+Structured notes           181                 175             125 (-29%)        [-28%, -17%]         2.29M (-42%)
+
+Table 3: Matched-run uncertainty analysis for the efficiency reductions in Table 2. Each context-bearing run is
+paired with the repository-only run from the same handoff point and successor; deltas are relative to that matched
+baseline. Agent event and prompt token columns report medians over matched pairs. Confidence intervals are
+bootstrapped over matched run-level event reductions; all intervals remain below zero.
+
+
+kens over the full takeover. The debt is paid during         time, but the successor pays later by repeating tests
+reconstruction.                                              and re-deriving intent. Handoff debt is therefore
+   The value of context-bearing handoffs depends             measured over the whole takeover, not only by the
+on the type of evidence available at the handoff             first prompt.
+point. At After first source edit, the successor re-            Summary notes are competitive in several experi-
+ceives a patch but little feedback. At After first           mental conditions, showing that free-form compres-
+validation result and After first post-failure edit,         sion can preserve useful state on benchmark-scale
+the handoff point often contains failure evidence,           tasks. Structured notes expose a different tradeoff.
+including what was checked, what failed, and what            They make the handoff a bounded continuation con-
+changed in response. Context-bearing handoffs are            tract rather than a free-form narrative. A structured
+most useful here because they pass along evidence            record contains the same continuation fields for
+the successor would otherwise have to reconstruct.           each takeover, including what changed, what evi-
+For diagnostic reference, Appendix Tables 8 and 9            dence was observed, what remains uncertain, what
+report the handoff-point and handoff-state break-            should be verified, and what may need rollback.
+downs separately.                                            That regular structure makes the handoff easier to
+                                                             inspect, filter, and reuse.
+6.2    Choosing a Handoff Format                                Context can still hurt when compressed notes
+The four formats trade off how much predecessor              omit crucial evidence or when a successor over-
+evidence they transfer against how much that evi-            trusts the predecessor’s interpretation. For Gemma
+dence burdens the successor’s initial context. Raw           note-based handoffs in the Needs completion state,
+trace reduces rediscovery because it exposes com-            we observe small negative solved-rate deltas (Ap-
+mands, observations, and failed attempts directly,           pendix Table 9). These cases motivate verification
+but it is large, noisy, and unbounded. Even in our           of handoff text rather than blind trust. The observed
+takeover experiments, its first prompts are far larger       failure modes are summarized in Section C.2. They
+than those of note-based handoffs (Appendix Fig-             also explain why Needs completion and Already
+ure 4). In longer-running work, replaying the full           solved; preserve handoff points should be separated
+event history becomes impractical and makes it               in diagnostics. Taking over solved work and tak-
+harder to control what information is passed for-            ing over unresolved work are different continuation
+ward.                                                        problems.
+   This contrast reflects how costs are distributed             The same missing context can affect successors
+across the takeover. Raw trace starts with a large           differently. For some successors, missing context
+prompt, but the successor often needs fewer ex-              mainly increases effort; for others, missing evi-
+ploratory turns later, reducing total token use.             dence becomes a final-resolution loss. Resumabil-
+Repository-only takeover appears cheap at handoff            ity is therefore a joint property of predecessor state,
+
+
+                                                         7
+handoff artifact, and successor behavior. Structured        Agent memory and summarization. Long-
+notes are most useful at handoff points with val-           running agents rely on memory compression, tra-
+idation evidence, especially After first validation         jectory summarization, and context management.
+result and After first post-failure edit, where the         MemGPT treats context as managed memory;
+repository alone cannot convey what the predeces-           StreamingLLM and Longformer show that long
+sor tested, what failed, and how it responded.              context is also a systems and architecture constraint
+                                                            (Packer et al., 2023; Xiao et al., 2024; Beltagy et al.,
+7   Related Work                                            2020). Our handoff views differ from generic mem-
+Human handoff and coordination. Human soft-                 ory compression because the compressed state is
+ware teams use tickets, reviews, commit mes-                consumed by a potentially different successor and
+sages, and design notes to make work resum-                 must support validated continuation from a con-
+able. Software-engineering research has long stud-          crete repository state.
+ied how coordination and distributed knowledge              Summaries and repair evidence. Handoff notes
+shape software work (Brooks, 1987; Herbsleb and             are related to code summarization and developer
+Mockus, 2003). Structured handoff notes are in-             documentation, but their purpose is operational
+spired by this practice, but our recipient is another       rather than descriptive. Prior work studies natural-
+coding agent, and outcomes are measured by offi-            language summaries of source code, comments,
+cial validation plus continuation cost.                     and changes (Haiduc et al., 2010; Iyer et al., 2016).
+Coding-agent evaluation. SWE-bench evaluates                Handoff is also related to repair systems that use
+whether language models can resolve real GitHub             history or evidence. HAFixAgent injects curated
+issues by editing repository code and passing held-         repository history into agentic automated program
+out tests (Jimenez et al., 2024); SWE-bench Veri-           repair, while REFINE and TraceRepair use patch,
+fied refines that task set for more reliable scoring        review, or execution evidence to improve repair
+(Chowdhury et al., 2024). SWE-agent, Agentless,             loops (Shi et al., 2025; Pabba et al., 2025; Wu et al.,
+and OpenHands show how interfaces and full-agent            2026). We instead measure whether predecessor-
+runtimes affect software-agent performance (Yang            generated evidence helps a separate successor con-
+et al., 2024; Xia et al., 2024; Wang et al., 2025).         tinue from an interrupted repository state.
+ContextBench adds process-oriented metrics for
+                                                            8   Conclusion
+repository-context use (Li et al., 2026). Our focus
+is complementary. Given an interrupted trajectory,          We introduced handoff debt as a way to evaluate
+we measure whether the resulting state is resumable         whether another agent can take over partially com-
+by a separate successor.                                    pleted work correctly and efficiently. In SWE-
+                                                            bench Verified takeover experiments, repository
+Agent state and tool use. AgentBench, MINT,
+                                                            state alone often leaves successors to rediscover
+WebArena, and τ -bench evaluate multi-turn tool
+                                                            predecessor context, producing substantially more
+use and simulated user interaction (Liu et al., 2024;
+                                                            agent events and prompt tokens. Raw trace is in-
+Wang et al., 2024; Zhou et al., 2024; Yao et al.,
+                                                            formative but unbounded; compact handoff arti-
+2024). ReAct, Toolformer, and ToolLLM show that
+                                                            facts offer a practical middle ground. Coding-agent
+external actions and observations reshape model
+                                                            evaluation should therefore measure whether agent
+behavior (Yao et al., 2023; Schick et al., 2023; Qin
+                                                            work remains understandable, verifiable, and re-
+et al., 2024); Reflexion and Voyager use feedback
+                                                            sumable, not only whether it is eventually finished.
+or self-generated programs to improve later behav-
+                                                               The findings suggest two practical implications.
+ior (Shinn et al., 2023; Wang et al., 2023). Multi-
+                                                            First, benchmarks should report handoff debt along-
+agent systems such as AutoGen, LangGraph, Cre-
+                                                            side final resolution, asking whether another agent
+wAI, and Agyn make state transfer operationally
+                                                            can understand, verify, and continue the work with-
+important (Wu et al., 2023; LangChain, 2024; Cre-
+                                                            out paying a large rediscovery cost. Second, agent
+wAI, 2024; Benkovich and Valkov, 2026), but they
+                                                            systems should make handoff output a deliberate
+do not isolate the handoff artifact itself by holding
+                                                            part of the workflow, not merely a log produced
+the repository checkpoint fixed and varying only
+                                                            when a run stops.
+the continuation context.
+
+
+
+                                                        8
+Limitations                                                 resolution measure while agent events and prompt
+                                                            tokens quantify rediscovery cost.
+Runtime scope. Our conclusions are within an
+OpenHands-style coding-agent runtime. We chose              Ethical Considerations
+OpenHands because it models real coding-agent
+work and produces the trajectory evidence our pro-          This work uses public SWE-bench Verified tasks
+tocol needs, including file edits, terminal output,         and generated agent trajectories. It does not involve
+validation results, and multi-turn tool interactions.       human-subject data or private user data, and the
+Simple shell-only runtimes are useful for model             results should be read as benchmark evidence about
+comparisons, but they expose less of the trajec-            validation and continuation cost rather than as a
+tory evidence our protocol studies. The observed            guarantee of deployment safety.
+resolution-rate values may change across runtimes.
+We therefore use within-runtime comparisons to
+                                                            References
+isolate handoff-format effects rather than rank mod-
+els universally.                                            Iz Beltagy, Matthew E Peters, and Arman Cohan. 2020.
+                                                               Longformer: The long-document transformer. arXiv
+Predecessor diversity. The main experiments de-                preprint arXiv:2004.05150.
+rive all handoff points from one Qwen predecessor           Nikita Benkovich and Vitalii Valkov. 2026. Agyn: A
+trajectory per source task, so they do not cover all          multi-agent system for team-based autonomous soft-
+predecessor styles. The matched comparison is                 ware engineering. arXiv preprint arXiv:2602.01465.
+still well controlled because every handoff view            Frederick P. Brooks. 1987. No silver bullet: Essence
+begins from the same repository state and uses                and accidents of software engineering. Computer,
+the same successor model. Predecessor behavior                20(4):10–19.
+shapes the handoff artifact, but not the compari-
+                                                            Neil Chowdhury, James Aung, Chan Jun Shern, Oliver
+son baseline. A predecessor-robustness study (Ta-             Jaffe, Dane Sherburn, Giulio Starace, Evan Mays,
+ble 5) with Qwen, Gemma, and Devstral predeces-               Rachel Dias, Marwan Aljubeh, Mia Glaese, Car-
+sors across 40 source tasks (180 handoff points,              los E. Jimenez, John Yang, Leyton Ho, Tejal Patward-
+720 runs) shows the same rediscovery-cost pattern             han, Kevin Liu, and Aleksander Madry. 2024. Intro-
+                                                              ducing SWE-bench verified. https://openai.com/
+across all three; broader predecessor coverage re-            index/introducing-swe-bench-verified/.
+mains future work.
+                                                            CrewAI. 2024. CrewAI: Framework for orchestrat-
+Single-run handoffs. Each handoff point is eval-              ing role-playing autonomous AI agents. https:
+uated once per handoff view in the main study                 //github.com/crewAIInc/crewAI.
+rather than with repeated independent attempts. A           Sonia Haiduc, Jairo Aponte, Laura Moreno, and An-
+robustness study with three attempts on each of               drian Marcus. 2010. On the use of automated text
+40 stratified handoff points shows the same pat-              summarization techniques for summarizing source
+tern. Context-bearing views require 43–59% fewer              code. In Proceedings of the 17th Working Conference
+                                                              on Reverse Engineering, pages 35–44.
+agent events across repeated runs (Table 4). This
+suggests that the primary efficiency result is not an       James D. Herbsleb and Audris Mockus. 2003. An em-
+artifact of one attempt per handoff view.                     pirical study of speed and communication in globally
+                                                              distributed software development. IEEE Transac-
+Source task pool. We use 75 tasks from SWE-                   tions on software engineering, 29(6):481–494.
+bench Verified as source tasks. The handoff bench-          Srinivasan Iyer, Ioannis Konstas, Alvin Cheung, and
+mark is substantially larger because each source               Luke Zettlemoyer. 2016. Summarizing source code
+task yields multiple deterministic handoff points,             using a neural attention model. In Proceedings of the
+producing 181 handoff-point tasks and 2,172 total              54th Annual Meeting of the Association for Compu-
+runs across all views and successors.                          tational Linguistics, pages 2073–2083.
+                                                            Carlos E Jimenez, John Yang, Alexander Wettig,
+Validation coverage. We use official SWE-                     Shunyu Yao, Kexin Pei, Ofir Press, and Karthik
+bench validation, which scores whether the sub-               Narasimhan. 2024. SWE-bench: Can language mod-
+mitted patch passes the held-out tests. This covers           els resolve real-world github issues? In International
+patch correctness but not maintainability or broader          Conference on Learning Representations, volume
+                                                              2024, pages 54107–54157.
+human usefulness. For our primary question this is
+sufficient because test passage provides a common
+
+
+                                                        9
+LangChain. 2024. LangGraph: Build resilient lan-               Xingyao Wang, Zihan Wang, Jiateng Liu, Yangyi Chen,
+  guage agents as graphs. https://github.com/                    Lifan Yuan, Hao Peng, and Heng Ji. 2024. Mint:
+  langchain-ai/langgraph.                                        Evaluating llms in multi-turn interaction with tools
+                                                                 and language feedback. In International Conference
+Han Li, Letian Zhu, Bohan Zhang, Rili Feng, Ji-                  on Learning Representations, volume 2024, pages
+  aming Wang, Yue Pan, Earl T Barr, Federica Sarro,              32593–32627.
+  Zhaoyang Chu, and He Ye. 2026. Contextbench:
+  A benchmark for context retrieval in coding agents.          Jiaqing Wu, Tong Wu, Manqing Zhang, Yunwei Dong,
+  arXiv preprint arXiv:2602.05892.                                and Bo Shen. 2026. Runtime execution traces guided
+                                                                  automated program repair with multi-agent debate.
+Xiao Liu, Hao Yu, Hanchen Zhang, Yifan Xu, Xuanyu                 arXiv preprint arXiv:2604.02647.
+  Lei, Hanyu Lai, Yu Gu, Hangliang Ding, Kaiwen
+  Men, Kejuan Yang, and 1 others. 2024. AgentBench:            Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu,
+  Evaluating llms as agents. In International Con-               Beibin Li, Erkang Zhu, Li Jiang, Xiaoyun Zhang,
+  ference on Learning Representations, volume 2024,              Shaokun Zhang, Jiale Liu, Ahmed Hassan Awadal-
+  pages 52989–53046.                                             lah, Ryen W. White, Doug Burger, and Chi Wang.
+                                                                 2023. AutoGen: Enabling next-gen LLM applica-
+Anvith Pabba, Simin Chen, Alex Mathai, Anindya                   tions via multi-agent conversation. arXiv preprint
+  Chakraborty, and Baishakhi Ray. 2025. Refine: En-              arXiv:2308.08155.
+  hancing program repair agents through context-aware
+  patch refinement. arXiv preprint arXiv:2510.03588.           Chunqiu Steven Xia, Yinlin Deng, Soren Dunn, and
+                                                                 Lingming Zhang. 2024. Agentless: Demystifying
+Charles Packer, Vivian Fang, Shishir G. Patil, Kevin             LLM-based software engineering agents. arXiv
+  Lin, Sarah Wooders, and Joseph E. Gonzalez. 2023.              preprint arXiv:2407.01489.
+  MemGPT: Towards LLMs as operating systems.
+  arXiv preprint arXiv:2310.08560.                             Guangxuan Xiao, Yuandong Tian, Beidi Chen, Song
+                                                                 Han, and Mike Lewis. 2024. Efficient streaming lan-
+Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan              guage models with attention sinks. In International
+  Yan, Yaxi Lu, Yankai Lin, Xin Cong, Xiangru Tang,              Conference on Learning Representations, volume
+  Bill Qian, and 1 others. 2024. ToolLLM: Facilitating           2024, pages 21875–21895.
+  large language models to master 16000+ real-world
+  apis. In International Conference on Learning Rep-           John Yang, Carlos E Jimenez, Alexander Wettig, Kilian
+  resentations, volume 2024, pages 9695–9717.                    Lieret, Shunyu Yao, Karthik Narasimhan, and Ofir
+                                                                 Press. 2024. SWE-agent: Agent-computer interfaces
+Timo Schick, Jane Dwivedi-Yu, Roberto Dessì, Roberta             enable automated software engineering. Advances in
+  Raileanu, Maria Lomeli, Eric Hambro, Luke Zettle-              Neural Information Processing Systems, 37:50528–
+  moyer, Nicola Cancedda, and Thomas Scialom. 2023.              50652.
+  Toolformer: Language models can teach themselves
+  to use tools. Advances in neural information process-        Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik
+  ing systems, 36:68539–68551.                                   Narasimhan. 2024. τ -bench: A benchmark for tool-
+                                                                 agent-user interaction in real-world domains. arXiv
+Yu Shi, Hao Li, Bram Adams, and Ahmed E Hassan.                  preprint arXiv:2406.12045.
+  2025. HAFixAgent: History-aware automated pro-
+  gram repair agent. arXiv preprint arXiv:2511.01047.          Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak
+                                                                 Shafran, Karthik Narasimhan, and Yuan Cao. 2023.
+Noah Shinn, Federico Cassano, Ashwin Gopinath,                   ReAct: Synergizing reasoning and acting in language
+  Karthik Narasimhan, and Shunyu Yao. 2023. Re-                  models. In International Conference on Learning
+  flexion: Language agents with verbal reinforcement             Representations.
+  learning. Advances in neural information processing
+  systems, 36:8634–8652.                                       Shuyan Zhou, Frank F Xu, Hao Zhu, Xuhui Zhou,
+                                                                 Robert Lo, Abishek Sridhar, Xianyi Cheng, Tianyue
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Man-                  Ou, Yonatan Bisk, Daniel Fried, and 1 others. 2024.
+  dlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan, and                 WebArena: A realistic web environment for build-
+  Anima Anandkumar. 2023. Voyager: An open-ended                 ing autonomous agents. In International Conference
+  embodied agent with large language models. arXiv               on Learning Representations, volume 2024, pages
+  preprint arXiv:2305.16291.                                     15585–15606.
+Xingyao Wang, Boxuan Li, Yufan Song, Frank F Xu, Xi-
+  angru Tang, Mingchen Zhuge, Jiayi Pan, Yueqi Song,           A    Diagnostic Breakdowns
+  Bowen Li, Jaskirat Singh, and 1 others. 2025. Open-          These tables provide additional views of the same
+  Hands: An open platform for ai software developers
+  as generalist agents. In International Conference            selected-75 source-task takeover runs reported in
+  on Learning Representations, volume 2025, pages              the main paper. They are diagnostic rather than
+  65882–65919.                                                 central to the main claim.
+
+
+
+                                                          10
+                                                             Agent events                      Prompt tokens
+View                               Runs
+                                                                (∆%)                              (∆%)
+Qwen→Qwen repeated takeovers: 40 handoff points × 3 repeats
+Repository only                   120                            102.5                                       1.62M
+With predecessor context
+  Raw trace                       120                       42 (-59%)                                  906k (-44%)
+  Summary notes                   120                       52 (-49%)                                  591k (-64%)
+  Structured notes                120                       58 (-43%)                                  677k (-58%)
+
+Table 4: Repeated-takeover sensitivity on 40 Qwen-to-Qwen handoff points. Each view contains 120 takeover
+runs: three repeated takeovers for each handoff point. Agent events and prompt tokens report medians over takeover
+runs; cost parentheses report relative changes against repository-only.
+
+                                                                   Agent events                     Prompt tokens
+View                                   Runs
+                                                                      (∆%)                             (∆%)
+Qwen→Devstral
+Repository only                           60                                165                              3.65M
+With predecessor context
+  Raw trace                               60                         66 (-60%)                        1.53M (-58%)
+  Summary notes                           60                       107.5 (-35%)                       1.86M (-49%)
+  Structured notes                        60                        115 (-30%)                        2.11M (-42%)
+Gemma→Devstral
+Repository only                           60                                177                              4.14M
+With predecessor context
+  Raw trace                               60                         94 (-47%)                        2.22M (-46%)
+  Summary notes                           60                        136 (-23%)                        2.52M (-39%)
+  Structured notes                        60                       134.5 (-24%)                       2.62M (-37%)
+Devstral→Devstral
+Repository only                           60                                169                              3.85M
+With predecessor context
+  Raw trace                               60                         89 (-47%)                        2.76M (-28%)
+  Summary notes                           60                       132.5 (-22%)                       2.48M (-35%)
+  Structured notes                        60                       142.5 (-16%)                       3.01M (-22%)
+
+Table 5: Predecessor-robustness sensitivity. Each predecessor model contributes 60 handoff points from the first
+40 source tasks, yielding 180 handoff points and 720 takeover runs across three predecessors and four handoff views
+with a fixed Devstral successor. The reported set is balanced by predecessor and view. Agent events and prompt
+tokens report medians over takeover runs; cost parentheses report relative changes against repository-only for the
+same predecessor.
+
+
+A.1    Robustness-Study Selection                            runs overall. The reported set is balanced by prede-
+Repeated-takeover sensitivity. This study uses 40            cessor and view.
+Qwen-to-Qwen handoff points selected from the
+main selected-75 pool: 30 Needs completion hand-
+off points, balanced across the three handoff-point
+types, and 10 Already solved; preserve handoff
+points split across After first source edit and Af-
+ter first validation result. Each handoff point is
+evaluated under all four handoff views with three
+attempts, yielding 120 takeover runs per view.
+   Predecessor robustness. This study uses the
+first 40 source tasks from the same source-task or-
+der as the main study. It reports 60 handoff points
+per predecessor, each evaluated under all four hand-
+off views with a fixed Devstral successor, yielding
+240 takeover runs per predecessor and 720 takeover
+
+
+                                                        11
+                                                       ∆ solved                   95%               Context-only                  Repo-only
+View                                    Runs                                                                                                                   p
+                                                          pp                       CI                  solves                       solves
+Qwen→Qwen
+Raw trace                                 181                   +6.1           [1.1, 11.0]                     17                             6         0.035
+Summary notes                             181                   +5.0             [0.0, 9.9]                    16                             7         0.093
+Structured notes                          181                   +4.4            [-0.6, 9.4]                    15                             7         0.134
+Qwen→Gemma
+Raw trace                                 181                   +6.6           [1.1, 12.2]                     19                           7           0.029
+Summary notes                             181                   +1.7            [-3.9, 6.6]                    13                          10           0.678
+Structured notes                          181                   +1.1            [-3.3, 5.5]                    10                           8           0.815
+Qwen→Devstral
+Raw trace                                 181                  +14.9           [8.8, 21.0]                     33                             6        <.001
+Summary notes                             181                   +9.4           [3.3, 15.5]                     25                             8        0.005
+Structured notes                          181                  +10.5           [5.0, 16.0]                     23                             4        <.001
+
+Table 6: Solved-rate uncertainty against repository-only takeover. Each comparison uses matched runs from
+the same handoff point for the successor model. Confidence intervals are nonparametric bootstrap intervals over
+matched runs. The p column reports the McNemar test p-value for the discordant pairs. The final columns report
+the McNemar discordant pairs: context-only solves are runs solved by the context view but not repository-only, and
+repo-only solves are the reverse.
+
+
+
+
+View                                                 Runs                               Median                              P90                           Max
+Repository only                                        543                                 7.2k                          10k                               30k
+Raw trace                                              543                                  87k                         150k                              471k
+Summary notes                                          543                                 9.8k                          13k                               32k
+Structured notes                                       543                                10.0k                          13k                               33k
+
+Table 7: Rendered first-prompt size by handoff view, aggregated over all successor conditions. Size columns
+report prompt characters. Raw trace carries substantially more initial context than repository-only or note-based
+views, before any takeover interaction begins.
+
+
+
+
+                                    Qwen → Qwen                                Qwen → Gemma                                  Qwen → Devstral
+                       60   59%                                        57%                                          58%
+
+
+                       50               46%
+                                                    44%
+
+
+
+
+ Event reduction (%)
+                       40
+                                                                                      33%
+                                                                                                                                     30%            29%
+                       30
+
+                                                                                                    20%
+                       20
+
+                       10
+
+                       0
+                            Raw       Summary     Structured           Raw          Summary       Structured        Raw             Summary       Structured
+                            trace       notes        notes             trace          notes          notes          trace             notes          notes
+
+
+
+Figure 3: Reduction in median agent events relative to repository-only takeover. Context-bearing handoffs
+consistently reduce rediscovery effort across successor models. Repository-only baselines are 99, 49, and 175
+median agent events per takeover run for Qwen-to-Qwen, Qwen-to-Gemma, and Qwen-to-Devstral, respectively.
+
+
+
+
+                                                                                   12
+                      Structured notes                      10.0k
+
+
+
+                       Summary notes                        9.8k
+
+
+
+                                Raw trace                                                   87k
+
+
+
+                                Repo only            7.2k
+
+
+                                                       104                                  105
+                                                     Initial prompt size (characters, log scale)
+
+Figure 4: Log-scale chart of rendered first-prompt size by handoff view. Bars show median initial prompt
+characters and whiskers show the 90th percentile; the pattern is consistent across successors. Raw trace is much
+larger than repository-only and note-based handoffs before the successor takes any action.
+
+
+         Handoff                                                                                                         Repo-only
+                                  Runs     Repository only           Raw trace    Summary notes     Structured notes
+          point                                                                                                         agent events
+Qwen→Qwen
+After first source edit             75              49.3%       50.7% (+1.3)         52.0% (+2.7)        49.3% (0.0)            101
+After first validation result       75              48.0%       56.0% (+8.0)         53.3% (+5.3)       54.7% (+6.7)             93
+After first post-failure edit       31              35.5%      48.4% (+12.9)         45.2% (+9.7)       45.2% (+9.7)            122
+Qwen→Gemma
+After first source edit             75              41.3%          48.0% (+6.7)      48.0% (+6.7)       40.0% (-1.3)             49
+After first validation result       75              45.3%          52.0% (+6.7)       45.3% (0.0)       49.3% (+4.0)             43
+After first post-failure edit       31              38.7%          45.2% (+6.5)      32.3% (-6.5)        38.7% (0.0)             63
+Qwen→Devstral
+After first source edit             75              38.7%      49.3% (+10.7)         44.0% (+5.3)      42.7% (+4.0)             169
+After first validation result       75              36.0%      53.3% (+17.3)         45.3% (+9.3)     50.7% (+14.7)             171
+After first post-failure edit       31              19.4%      38.7% (+19.4)        38.7% (+19.4)     35.5% (+16.1)             191
+
+Table 8: Solved-rate breakdown by handoff point. Deltas are percentage-point changes relative to repository-only
+for the same successor and handoff point type. Run counts are per view. The final column shows the median
+repository-only agent events, a direct measure of rediscovery effort.
+
+
+Handoff state                      Runs        Repository only                Raw trace     Summary notes         Structured notes
+Qwen→Qwen
+Needs completion                     110                    23.6%           27.3% (+3.6)       28.2% (+4.5)             26.4% (+2.7)
+Already solved; preserve              61                    88.5%           93.4% (+4.9)       91.8% (+3.3)             95.1% (+6.6)
+Existing behavior broken              10                    40.0%          80.0% (+40.0)      60.0% (+20.0)            50.0% (+10.0)
+Qwen→Gemma
+Needs completion                     110                    17.3%           23.6% (+6.4)       15.5% (-1.8)             16.4% (-0.9)
+Already solved; preserve              61                    95.1%           96.7% (+1.6)       98.4% (+3.3)             98.4% (+3.3)
+Existing behavior broken              10                     0.0%          40.0% (+40.0)      30.0% (+30.0)            10.0% (+10.0)
+Qwen→Devstral
+Needs completion                     110                    13.6%          24.5% (+10.9)       16.4% (+2.7)             20.9% (+7.3)
+Already solved; preserve              61                    77.0%          95.1% (+18.0)      98.4% (+21.3)            93.4% (+16.4)
+Existing behavior broken              10                     0.0%          40.0% (+40.0)      10.0% (+10.0)            10.0% (+10.0)
+
+Table 9: Official solved outcomes by handoff state. Each cell reports the official solved rate for that view and
+state. Run counts are per view within the state. Parenthesized deltas are percentage-point changes relative to
+repository-only for the same successor and handoff state. The Existing behavior broken row has only 10 instances
+and should be interpreted as diagnostic.
+
+
+
+                                                                      13
+B   Reproducibility Details                                 effects by handoff view and successor rather than
+                                                            selecting a single winning condition.
+Runtime. All reported model conditions use
+local OpenAI-compatible endpoints through the               Task selection. The selected source-task order
+same OpenHands-style runtime. Provider-native               is fixed with random seed 20260430 after filtering
+tool calling is disabled; models still use tools            SWE-bench Verified to the 15 minute–1 hour and
+through OpenHands’ textual action protocol.                 1–4 hour difficulty tiers. The main study contains
+Experiments were run on NVIDIA RTX PRO 6000                 75 source tasks, 181 deterministic handoff points,
+Blackwell Max-Q Workstation Edition GPUs using              four handoff views, and three successor models,
+local vLLM model servers. The model servers                 for 2,172 main takeover runs. Repeated-takeover
+use the same serving pattern across conditions:             sensitivity uses 40 Qwen-to-Qwen handoff points
+–max-num-seqs 16, –gpu-memory-utilization                   with three repeated takeovers per view. Predeces-
+0.95, –dtype auto, and –language-model-only.                sor robustness uses the first 40 source tasks and
+We do not force a shared context length beyond              reports 60 handoff points per predecessor from
+each model’s respective serving configuration.              Qwen, Gemma, and Devstral predecessor trajec-
+Takeover runs use a 4-hour conversation timeout             tories, each evaluated under all four handoff views
+and a cap of 500 agent steps. The canoni-                   with a fixed Devstral successor.
+cal model identifiers are Qwen/Qwen3.6-27B,
+google/gemma-4-31B-it, and mistralai/
+Devstral-Small-2-24B-Instruct-2512.
+Handoff generation. Before takeover, the
+predecessor-side model writes the free-form sum-
+mary notes and the model-filled fields of structured
+notes. The main study uses Qwen for this step; the
+predecessor-robustness study uses the correspond-
+ing predecessor model. The calls use temperature
+0 with a 1600-token cap. The remaining structured-
+note fields are filled deterministically from check-
+point metadata and logs. Note-generation cost is
+not included in successor agent-event or prompt-
+token metrics, which measure takeover effort after
+the handoff is presented. Per-run output files log
+prompt tokens, completion tokens, and wall-clock
+time. We report prompt tokens and agent events as
+the primary cost metrics because they directly mea-
+sure context consumption and rediscovery effort
+after takeover. Completion tokens and wall-clock
+time are retained for reproducibility, but we do not
+use wall-clock time or GPU-hours for cross-view
+comparisons because they depend on local serv-
+ing load, Docker scheduling, and parallel worker
+contention.
+Statistical tests. For statistical uncertainty, we
+use 95% nonparametric percentile bootstrap inter-
+vals with 5,000 resamples and fixed seed 20260518.
+Solved-rate intervals resample matched binary run
+deltas, while efficiency intervals resample matched
+run-level relative event reductions. McNemar p-
+values are exact two-sided binomial tests over
+discordant pairs. We do not apply a multiple-
+comparison correction; the tests characterize paired
+
+
+                                                       14
+C   Prompt and Handoff Schemas
+We show the takeover prompt templates used in the experiments. The base task prompt follows the
+OpenHands SWE-bench prompt format (Wang et al., 2025) and includes the original SWE-bench issue
+text, which is inserted verbatim in every view but replaced below with [ORIGINAL TASK PROMPT]. Raw
+traces and generated notes are abbreviated with placeholders; they are produced before takeover from
+predecessor-observed events only.
+Shared takeover instructions.            Every takeover prompt begins with the same instruction block:
+     === Takeover context ===
+     You are continuing a coding task in a repository that already contains work from a previous agent. The task may
+     already be solved, partially solved, or incorrectly solved. Inspect the current repository state before editing. Treat
+     handoff details as historical notes from the previous agent, not ground truth. Treat the original task prompt as the
+     source of truth for requirements. Verify important claims against the current repository state before relying on them.
+     If the existing changes already satisfy the task, preserve them and finish once verification is sufficient. Avoid
+     restarting from scratch unless the current changes are clearly wrong.
+
+Repository only.      Repository-only takeover appends only the original issue:
+     === Original task prompt ===
+     [ORIGINAL TASK PROMPT]
+     === End original task prompt ===
+
+Raw trace.     Raw-trace takeover provides the predecessor event history before the original issue:
+     === Previous-agent raw trace ===
+     The following raw trace is historical context from the previous agent. Use it to understand what has been tried and
+     what remains. Continue from the current repository state.
+     [EVENTS UP TO HANDOFF: step, source, event type, text]
+     === End previous-agent raw trace ===
+     === Original task prompt ===
+     [ORIGINAL TASK PROMPT]
+     === End original task prompt ===
+
+Summary notes. Summary-note takeover inserts a concise generated summary before the original issue:
+     === Previous-agent summary notes ===
+     Natural-language summary of the previous agent work log:
+     [GENERATED SUMMARY: investigation, edits, validation attempts, uncertainty, next steps]
+     === End previous-agent summary notes ===
+     === Original task prompt ===
+     [ORIGINAL TASK PROMPT]
+     === End original task prompt ===
+
+Structured notes. Structured-note takeover provides a fixed-field handoff record before the original
+issue. The experiment code computes the deterministic fields from checkpoint metadata, event logs,
+and the frozen repository state. A predecessor-side summarizer fills the remaining note fields from
+predecessor-observable evidence. The model-filled fields are treated as historical notes rather than ground
+truth.
+     === Previous-agent structured handoff notes ===
+     Structured handoff prepared from previous-agent evidence.
+     Deterministic continuation-state fields: repository change state; changed source files; non-source artifacts
+     observed; validation outcome after latest source change; latest predecessor validation command; latest validation
+     evidence; continuation-state label.
+     Model-generated note fields: problem understanding; work completed; evidence observed; observed failures or
+     error evidence; remaining uncertainty; rollback notes; recommended next action.
+     === End previous-agent structured handoff notes ===
+     === Original task prompt ===
+     [ORIGINAL TASK PROMPT]
+     === End original task prompt ===
+
+  Summary notes and the model-filled structured-note fields are generated from predecessor-observable
+evidence: the task prompt, event log, command outputs, and checkpoint repository state. They do not
+include official solutions, hidden tests, or events after handoff.
+
+                                                              15
+C.1    Example Structured Handoff
+The following excerpt illustrates the kind of information a structured handoff passes to the successor. It
+is shortened for space, but preserves the distinction between deterministic checkpoint state and model-
+generated predecessor notes.
+      === Previous-agent structured handoff notes ===
+      Deterministic continuation state
+      Changed source files: [package/module.py]
+      Non-source artifacts: NONE OBSERVED
+      Latest validation command: pytest path/to/test.py -q
+      Latest validation evidence: failed assertion in edge-case behavior
+      Continuation state: unresolved; needs completion
+      Previous-agent notes
+      Problem understanding: the issue concerns an edge case in input handling.
+      Work completed: adjusted the branch that normalizes the affected value.
+      Evidence observed: targeted validation still fails on the edge case.
+      Remaining uncertainty: whether the change preserves existing behavior.
+      Recommended next action: inspect the failing assertion, revise the source change, and rerun
+      targeted validation.
+      === End previous-agent structured handoff notes ===
+
+  Repository-only takeover receives none of this historical context; raw-trace takeover receives the
+underlying event history instead of this bounded record.
+
+C.2    Observed Failure Modes
+Context-bearing handoffs are beneficial but not uniformly reliable. Manual inspection revealed three
+recurring failure modes. The first arises when a compact note preserves the high-level story while omitting
+an exact validation command or warning that matters for the next edit. The second occurs when a successor
+over-trusts a predecessor interpretation and continues along an unproductive path instead of rechecking
+the repository state. The third is specific to raw traces, they can contain enough low-level noise that the
+successor spends effort separating historical dead ends from useful evidence. These cases motivate the
+prompt instruction to treat handoff text as evidence to verify rather than as ground truth.
+
+D     Use of AI Assistants
+We used AI assistants to help polish the writing and debug code. All ideas, analyses, claims, and final
+content presented in this paper remain the sole responsibility of the authors.
+
+
+
+
+                                                    16
+
