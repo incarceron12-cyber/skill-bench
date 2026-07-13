@@ -33,6 +33,10 @@ python pilots/cross-pilot-falsification-matrix/replay.py --check
 # Versioned deterministic v0.2 continuation
 python pilots/cross-pilot-falsification-matrix/replay.py --continuation
 python pilots/cross-pilot-falsification-matrix/replay.py --continuation --check
+
+# Versioned prospective v0.3 Skill×rubric continuation
+python pilots/cross-pilot-falsification-matrix/replay.py --matrix-continuation
+python pilots/cross-pilot-falsification-matrix/replay.py --matrix-continuation --check
 python -m unittest tests.test_cross_pilot_falsification_matrix
 ```
 
@@ -50,6 +54,24 @@ The replay fails on source hash drift, broken pointers, changed expected observa
 `report-v0.2.json` is the exact replay. It records 28 satisfied rows and one `insufficient_evidence` row; five of six families are promotion-ready. The remaining blocker is `si-treatment-effect-ceiling`: the retained 2×2 fixture proves packaging parity only and still cannot estimate a Skill or rubric effect.
 
 The formula engine supports one predeclared arithmetic expression and uses no dynamic evaluation. The replay never supplies comparison-only expected records to case evaluators, and rejects oracle/rationale fields in before/input/output records.
+
+## v0.3 prospective Skill × rubric continuation
+
+`continuation-manifest-v0.3.json` preserves v0.2 byte identity and binds the
+prospectively committed vendor-v2 matrix protocol and exact replay report. Six
+opaque randomized attempts (three no-Skill, three public-Skill) all passed their
+zero-call condition/private-rubric canaries, completed at provider-reported
+included `$0.00`, and were graded on identical output bytes by both frozen
+rubrics. All twelve scores were 1.0, so the independent-rubric Skill contrast,
+shared-rubric Skill contrast, within-output rubric contrast, and interaction
+were each 0.0. This closes the **executable coverage** gap represented by
+`si-treatment-effect-ceiling`; it does not establish equivalence or a null
+general Skill effect because the single synthetic task is at ceiling.
+
+`report-v0.3.json` therefore has 29/29 satisfied coverage rows and six
+promotion-ready coverage families, while `promotion_decision` remains
+`blocked`. Coverage completeness is not expert/professional validity,
+capability, safety, production fitness, cross-domain generality, or readiness.
 
 ## Frozen v0.1 result and continuation boundary
 

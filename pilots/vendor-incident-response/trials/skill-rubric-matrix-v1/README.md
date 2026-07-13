@@ -28,3 +28,18 @@ python scripts/report_vendor_skill_rubric_matrix.py replay
 ## Claim boundary
 
 This single synthetic source-task cluster can describe retained attempt outcomes, no-Skill/public-Skill score contrasts under each rubric, within-output rubric contrasts, and their interaction. With three attempts per condition and one source task it cannot establish a general Skill effect, capability, expert/professional validity, safety, production fitness, cross-domain generality, or readiness.
+
+## Retained result
+
+All six declared attempts ran once with no replacement or adaptation. Every
+zero-call canary and environment check passed; each provider invocation reported
+included usage and `estimated_cost_usd: 0.0`; 31 calls and 164,647 total reported
+tokens were retained. All six base outcomes were
+`secure_useful_completion`. Both frozen rubrics scored every identical output
+pair 1.0, yielding 0.0 for the Skill contrast under each rubric, the mean
+within-output rubric contrast, and the Skill-by-rubric interaction.
+
+This is a ceiling result on one synthetic task, not evidence that the guide has
+no effect generally or that the two rubrics are equivalent. Exact evidence is
+in `matrix-report.json` and
+`attempts/*/{execution-manifest.json,dual-rubric-grade.json}`.

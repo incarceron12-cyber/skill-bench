@@ -21,6 +21,8 @@ MANIFEST = HERE / "coverage-manifest.json"
 REPORT = HERE / "report.json"
 CONTINUATION_MANIFEST = HERE / "continuation-manifest-v0.2.json"
 CONTINUATION_REPORT = HERE / "report-v0.2.json"
+MATRIX_CONTINUATION_MANIFEST = HERE / "continuation-manifest-v0.3.json"
+MATRIX_CONTINUATION_REPORT = HERE / "report-v0.3.json"
 
 REQUIREMENTS = {
     "evidence_chain": {
@@ -529,13 +531,139 @@ def replay_continuation(manifest: dict[str, Any] | None = None, *, write: bool =
     return report
 
 
+def replay_matrix_continuation(manifest: dict[str, Any] | None = None, *, write: bool = True) -> dict[str, Any]:
+    """Replay v0.3 against v0.2 and the prospective vendor matrix."""
+    package = manifest if manifest is not None else json.loads(MATRIX_CONTINUATION_MANIFEST.read_text())
+    errors: list[str] = []
+    parent = package.get("parent_evidence", {})
+    for role in ("manifest", "report"):
+        path = (ROOT / parent.get(f"{role}_path", "")).resolve()
+        try:
+            path.relative_to(ROOT.resolve())
+        except ValueError:
+            errors.append(f"parent {role} escapes repository")
+            continue
+        if not path.is_file() or sha256(path) != parent.get(f"{role}_sha256"):
+            errors.append(f"parent {role} hash mismatch")
+
+    parent_report = replay_continuation(write=False)
+    if not parent_report["integrity_valid"]:
+        errors.append("v0.2 parent replay is not integrity-valid")
+
+    matrix = package.get("matrix_evidence", {})
+    matrix_documents: dict[str, Any] = {}
+    for role in ("protocol", "report"):
+        path = (ROOT / matrix.get(f"{role}_path", "")).resolve()
+        try:
+            path.relative_to(ROOT.resolve())
+        except ValueError:
+            errors.append(f"matrix {role} escapes repository")
+            continue
+        if not path.is_file() or sha256(path) != matrix.get(f"{role}_sha256"):
+            errors.append(f"matrix {role} hash mismatch")
+            continue
+        try:
+            matrix_documents[role] = json.loads(path.read_text())
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            errors.append(f"matrix {role} is not valid JSON: {exc}")
+
+    observations: dict[str, Any] = {}
+    if "report" in matrix_documents:
+        for observation_id, requirement in matrix.get("required_observations", {}).items():
+            try:
+                observed = resolve_pointer(matrix_documents["report"], requirement.get("pointer", ""))
+            except ValueError as exc:
+                errors.append(f"matrix observation {observation_id} pointer mismatch: {exc}")
+                continue
+            observations[observation_id] = observed
+            if observed != requirement.get("expected"):
+                errors.append(f"matrix observation {observation_id} differs from frozen expectation")
+
+    if "protocol" in matrix_documents and "report" in matrix_documents:
+        scorer_path = ROOT / "scripts/report_vendor_skill_rubric_matrix.py"
+        spec = importlib.util.spec_from_file_location("cross_pilot_vendor_matrix", scorer_path)
+        if spec is None or spec.loader is None:
+            errors.append("matrix scorer cannot be loaded")
+        else:
+            scorer = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(scorer)
+            try:
+                scorer.verify_protocol(matrix_documents["protocol"])
+                replayed_matrix = scorer.build_report(matrix_documents["protocol"])
+            except (KeyError, TypeError, ValueError) as exc:
+                errors.append(f"matrix exact replay failed: {exc}")
+            else:
+                if replayed_matrix != matrix_documents["report"]:
+                    errors.append("matrix report differs from exact scorer replay")
+
+    rows = copy.deepcopy(parent_report["rows"])
+    closed_row_id = matrix.get("closed_row_id")
+    matching = [row for row in rows if row["row_id"] == closed_row_id]
+    if len(matching) != 1 or closed_row_id != "si-treatment-effect-ceiling":
+        errors.append("matrix continuation closes an unknown or duplicate row")
+    else:
+        matching[0].update({
+            "coverage_status": "satisfied" if not errors else "invalid",
+            "observed": {
+                "declared_attempts": observations.get("declared_attempts"),
+                "retained_attempts": observations.get("retained_attempts"),
+                "valid_attempts": observations.get("valid_attempts"),
+                "skill_under_independent": observations.get("skill_under_independent"),
+                "skill_under_shared": observations.get("skill_under_shared"),
+                "rubric_mean_difference": observations.get("rubric_mean_difference"),
+                "interaction": observations.get("interaction"),
+                "scope": "one synthetic source-task cluster",
+            },
+            "integrity": "verified" if not errors else "failed",
+            "errors": list(errors),
+        })
+
+    counts = Counter(row["coverage_status"] for row in rows)
+    family_reports = []
+    for family in REQUIREMENTS:
+        family_rows = [row for row in rows if row["family"] == family]
+        blockers = [row["row_id"] for row in family_rows if row["coverage_status"] != "satisfied" or row["integrity"] != "verified"]
+        family_reports.append({"family": family, "rows": len(family_rows), "satisfied": sum(row["coverage_status"] == "satisfied" for row in family_rows), "blockers": blockers, "promotion_ready": not blockers})
+    blockers = [row["row_id"] for row in rows if row["coverage_status"] != "satisfied" or row["integrity"] != "verified"]
+    expected_blockers = package.get("promotion_policy", {}).get("coverage_blockers_expected")
+    if blockers != expected_blockers:
+        errors.append("coverage blockers differ from frozen v0.3 policy")
+    claim_boundaries = package.get("claim_boundaries", {})
+    if not claim_boundaries or any(claim_boundaries.values()):
+        errors.append("unsupported v0.3 claim upgrade")
+    report = {
+        "report_version": "0.3.0",
+        "manifest_sha256": sha256(MATRIX_CONTINUATION_MANIFEST) if manifest is None else None,
+        "parent_manifest_sha256": parent.get("manifest_sha256"),
+        "parent_report_sha256": parent.get("report_sha256"),
+        "matrix_protocol_sha256": matrix.get("protocol_sha256"),
+        "matrix_report_sha256": matrix.get("report_sha256"),
+        "integrity_valid": not errors,
+        "errors": errors,
+        "summary": {"families": len(REQUIREMENTS), "rows": len(rows), "coverage_status_counts": dict(sorted(counts.items())), "promotion_ready_families": sum(item["promotion_ready"] for item in family_reports)},
+        "family_results": family_reports,
+        "matrix_observations": observations,
+        "rows": rows,
+        "promotion_decision": package.get("promotion_policy", {}).get("promotion_decision"),
+        "promotion_blockers": blockers,
+        "promotion_reason": package.get("promotion_policy", {}).get("reason"),
+        "claim_boundaries": claim_boundaries,
+    }
+    if write:
+        MATRIX_CONTINUATION_REPORT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    return report
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="Verify report is current without rewriting it")
     parser.add_argument("--continuation", action="store_true", help="Replay the v0.2 deterministic continuation")
+    parser.add_argument("--matrix-continuation", action="store_true", help="Replay the v0.3 prospective Skill×rubric continuation")
     args = parser.parse_args()
-    runner = replay_continuation if args.continuation else replay
-    report_path = CONTINUATION_REPORT if args.continuation else REPORT
+    if args.continuation and args.matrix_continuation:
+        parser.error("choose at most one continuation")
+    runner = replay_matrix_continuation if args.matrix_continuation else replay_continuation if args.continuation else replay
+    report_path = MATRIX_CONTINUATION_REPORT if args.matrix_continuation else CONTINUATION_REPORT if args.continuation else REPORT
     report = runner(write=not args.check)
     if args.check:
         if not report_path.is_file() or json.loads(report_path.read_text()) != report:

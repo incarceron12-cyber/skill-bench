@@ -17,6 +17,7 @@ class CrossPilotFalsificationMatrixTests(unittest.TestCase):
     def setUpClass(cls):
         cls.manifest = json.loads((HERE / "coverage-manifest.json").read_text())
         cls.continuation = json.loads((HERE / "continuation-manifest-v0.2.json").read_text())
+        cls.matrix_continuation = json.loads((HERE / "continuation-manifest-v0.3.json").read_text())
 
     def continuation_documents(self, case_id):
         case = next(item for item in self.continuation["cases"] if item["case_id"] == case_id)
@@ -91,6 +92,33 @@ class CrossPilotFalsificationMatrixTests(unittest.TestCase):
         expected = MODULE.replay_continuation(write=False)
         observed = json.loads((HERE / "report-v0.2.json").read_text())
         self.assertEqual(expected, observed)
+
+    def test_v03_matrix_closes_coverage_but_not_promotion_claims(self):
+        report = MODULE.replay_matrix_continuation(copy.deepcopy(self.matrix_continuation), write=False)
+        self.assertTrue(report["integrity_valid"], report["errors"])
+        self.assertEqual({"satisfied": 29}, report["summary"]["coverage_status_counts"])
+        self.assertEqual(6, report["summary"]["promotion_ready_families"])
+        self.assertEqual([], report["promotion_blockers"])
+        self.assertEqual("blocked", report["promotion_decision"])
+        self.assertTrue(all(value is False for value in report["claim_boundaries"].values()))
+
+    def test_checked_in_v03_report_is_exact_replay(self):
+        expected = MODULE.replay_matrix_continuation(write=False)
+        observed = json.loads((HERE / "report-v0.3.json").read_text())
+        self.assertEqual(expected, observed)
+
+    def test_v03_matrix_hash_drift_and_claim_upgrade_fail_closed(self):
+        manifest = copy.deepcopy(self.matrix_continuation)
+        manifest["matrix_evidence"]["report_sha256"] = "0" * 64
+        report = MODULE.replay_matrix_continuation(manifest, write=False)
+        self.assertFalse(report["integrity_valid"])
+        self.assertTrue(any("matrix report hash mismatch" in error for error in report["errors"]))
+
+        manifest = copy.deepcopy(self.matrix_continuation)
+        manifest["claim_boundaries"]["general_skill_treatment_effect"] = True
+        report = MODULE.replay_matrix_continuation(manifest, write=False)
+        self.assertFalse(report["integrity_valid"])
+        self.assertTrue(any("claim upgrade" in error for error in report["errors"]))
 
     def test_continuation_hash_and_pointer_drift_fail_closed(self):
         manifest = copy.deepcopy(self.continuation)
