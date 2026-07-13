@@ -286,6 +286,55 @@ apparent one-shot cells, and unavailable release support only a synthetic stress
 test pattern—not professional or deployment safety [US]. Existing authority,
 action-safety, trace, evaluator-observation, metric, and validity records suffice.
 
+### 2.2c Framing ambiguity is a public-set intervention, not a hidden-answer test
+
+An executable package can still leave several consequential interpretations
+compatible with the public evidence. Do not let one private reference framing
+silently become the only correct answer. Represent the intervention as:
+
+```text
+full public package + admissible-framing set
+  → immutable ambiguity edit and projection hashes
+    → unresolved variable and decision-relevant consequences
+      → resolvable inspection or authority-dependent clarification
+        → recognition → disclosure → question → authority routing
+          → answer/evidence uptake → commitment/action → artifact/state consequence
+```
+
+Before trials, blind-review at least two public-basis-compatible framings and show
+that resolving the omitted variable changes a target, objective, threshold,
+artifact semantics, cost, safety boundary, or stakeholder consequence. Hash the
+prompt, source pack, environment, artifact contract, evaluator, and policy in both
+forms; a paired delta identifies only the layers held fixed. Cross ambiguity
+presence with channel availability, answer authority, and action reversibility.
+Keep `resolvable_by_inspection`, `requires_authority`, `authority_unavailable`,
+`authority_disputed`, and `insufficient_observer_evidence` distinct [AD].
+
+A clarification is a typed authority event, not an answer string. Record who may
+resolve which claim, evidence scope, uncertainty, valid time, conflict, delay,
+cost, binding force, and whether the response was actually adopted. Null outcomes
+include abstain, escalate, wrong authority, unsupported assumption, timeout,
+invalid environment, and acceptable alternative. Report recognition, user-visible
+disclosure, question information gain, routing correctness, uptake, action,
+artifact/state quality, collateral effect, interruption burden, and useful
+completion separately. Include matched cases where asking is unnecessary or
+costly so generic caution cannot masquerade as calibration [AD, US].
+
+Ambig-DS supplies paired Full/Ambiguous/Ask evidence for one removed target or
+objective convention on filtered Kaggle-derived tasks, including valid-looking
+wrong-framing artifacts and partial recovery under a perfectly informed scoped
+oracle. Its target treatment bundles several edits; objective identity bundles
+representation and aggregation; alternatives lack independent professional
+validation; each cell appears one-shot; systems are proprietary; and released
+packages omit raw results, exact configurations, complete builders/data, and the
+archived multi-judge/human lineage. The oracle is not a stakeholder simulation.
+Together with UnderSpecBench's unavailable release and fixed-private-oracle flaw,
+this supports a controlled diagnostic pattern—not natural ambiguity prevalence,
+professional escalation validity, occupational capability, safety, or readiness
+[AD, US]. Existing public-basis, authority/participation, artifact/state, trace,
+task-health, metric, and validity contracts are the implementation homes; no
+ambiguity-specific schema follows.
+
 ### 2.3 A rubric is a dependency-aware evidence model
 
 Rubric decomposition makes expert attention inspectable, but does not make it
@@ -2038,6 +2087,15 @@ them:
   verifiable. Its authored prompt matrix supports an authorization-state stress-
   test pattern, not population prevalence, professional validity, or deployment
   safety.
+- **[AD]**
+  `papers/agent-benchmarks/2026-07-13-ambig-ds-task-framing-validity.md`;
+  reviewed immutable v1 PDF/text plus pinned pre-v1 official dataset revisions
+  and hashes are recorded there. The filtered synthetic target/objective
+  interventions and ideal oracle support a paired diagnostic pattern, not natural
+  ambiguity prevalence, realistic stakeholder authority, professional framing or
+  escalation validity, occupational capability, safety, or readiness; raw results,
+  exact configurations, complete Target reconstruction, and released human/panel
+  lineage are unavailable.
 - **[KW]**
   `papers/agent-benchmarks/2026-07-11-kwbench-unprompted-problem-recognition.md`;
   reviewed immutable v1 PDF/text and inspected linked code/site snapshots are

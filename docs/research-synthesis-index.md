@@ -295,11 +295,32 @@ simulator identity, reset health, and the claims that survive those choices.
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Shows why expert-written examples and criteria can improve judge agreement while also anchoring outputs |
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Makes the harness and execution boundary explicit so a skill effect is not confused with launcher, tool, or isolation differences |
 | [KWBench](../papers/agent-benchmarks/2026-07-11-kwbench-unprompted-problem-recognition.md) | A | Identifies situation framing before named-workflow execution, while showing that a cold final-artifact gate does not isolate recognition from inquiry, action, domain knowledge, or grading |
+| [Ambig-DS](../papers/agent-benchmarks/2026-07-13-ambig-ds-task-framing-validity.md) | A | Supplies paired full/ambiguous/ideal-clarification interventions and exposes valid-looking artifacts built on unsupported target or objective commitments, while bounding the result to synthetic Kaggle-derived ambiguity and an ideal oracle |
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Demonstrates a bounded package effect while exposing representation semantics, authorship overlap, missing component ablations, and the need for held-out independent measurement |
 | [UniClawBench](../papers/agent-benchmarks/2026-07-13-uniclawbench-proactive-closed-loop-validity.md) | A | Makes executor, private supervisor, public simulator, released signal, and repair cycle inspectable while showing that requested-task repair is not proactivity and structural isolation is not semantic non-leakage |
 | [EdgeBench](../papers/agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | A | Separates agent-visible feedback from evaluator-only snapshots and exposes adaptive-query, persistence, censoring, and best-so-far boundaries; its smooth suite fits are not task-level or universal learning laws |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
+
+Framing interventions add a public-set boundary: `full public package + reviewed
+admissible framings → immutable ambiguity edit → decision-relevant unresolved
+variable → inspection or authority-dependent question → answer uptake → commitment
+→ artifact/state consequence`. Preserve hashes for prompt, source pack, environment,
+artifact contract, evaluator, and interaction policy; distinguish publicly
+resolvable uncertainty from authority-dependent, unavailable, disputed, and
+observer-insufficient states. Recognition, user-visible disclosure, question
+information gain, authority routing, uptake, action, consequence, and interruption
+burden are separate observations. Include unnecessary-ask and wrong-authority
+neighbors; a private intended answer does not defeat another fair public framing.
+Ambig-DS supports this paired diagnostic pattern on 51/61 filtered Kaggle-derived
+target/objective suites, but its bundled synthetic edits, proprietary one-shot
+systems, ideal truthful oracle, absent professional alternative validation, and
+missing raw results/configurations/build evidence block natural-ambiguity,
+stakeholder, professional-framing, escalation, capability, safety, and readiness
+claims. Read it with UnderSpecBench: the latter's unavailable release and fixed
+private oracle show why public authorization cannot inherit hidden intent. Existing
+authority, participation, public-basis, artifact/state, task-health, metric, trace,
+and validity contracts suffice; no ambiguity subsystem follows.
 
 Procedural dependencies add a projection boundary inside the intervention. Preserve
 source authority and clause spans; normalized triggers, modalities, scope, valid
