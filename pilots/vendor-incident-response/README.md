@@ -1,6 +1,6 @@
 # Vendor incident response pilot
 
-**Status:** internal, synthetic, non-releasable. No expert testimony is represented. Two isolated configured-agent attempts on non-comparable instrument versions are retained; they are execution/diagnostic evidence, not reliability or professional-validity evidence.
+**Status:** internal, synthetic, non-releasable. No expert testimony is represented. The original v1/v2 attempts remain non-comparable; three additional prospectively frozen exact-v2 repetitions provide narrow local execution-stability evidence, not professional-validity or general-capability evidence.
 
 ## General hypothesis
 
@@ -74,3 +74,47 @@ python scripts/validate_task_health.py pilots/vendor-incident-response/task-heal
 ```
 
 Primary v1 evidence is resolved by `trials/agent-run-20260710-01/execution-manifest.json`; v2 evidence is resolved by `trials/agent-run-20260711-v2/execution-manifest.json` and `task-health-adjudication.json`. These synthetic attempts do **not** establish causality, a treatment effect, professional validity, reliable/general capability, cross-domain generalization, real-world safety, or release readiness.
+
+## Prospectively frozen exact-v2 reliability slice
+
+`reliability/protocol-v1.json` was hash-verified, committed, and pushed before
+any new model call. It froze the v2 public task, all six visible workspace files,
+protected-state hash, grader, launcher, configured system, sequential schedule,
+three attempt IDs, no-replacement policy, eligibility rules, cost gate, and
+claim ceiling. No task, workspace, launcher, grader, schedule, or outcome rule
+was changed after execution began.
+
+All three declared runs under `trials/agent-run-20260713-v2-reliability-0*/`
+passed the zero-call file-tool isolation canary, completed through the provider,
+retained both requested artifacts and usage, preserved read-only/protected
+state, replayed as eligible, and received `secure_useful_completion`. Provider
+usage reported included cost and `$0.00` estimated cost for every attempt (15
+calls and 74,611 total tokens). Each execution manifest resolves exact input,
+launcher, grader, canary, trace/stderr, output, usage, and protected-state
+hashes. Agent containment statements in stdout are retained but are not treated
+as isolation proof; the independent canary and byte comparisons carry that
+role.
+
+`reliability/reliability-report-v1.json` reports separate denominators:
+
+- prospective service availability: 3/3, descriptive 95% Clopper–Pearson
+  interval `[0.292402, 1.0]`;
+- prospective environment-valid trials: 3/3, same interval;
+- `secure_useful_completion` among prospective valid trials: 3/3, same
+  interval;
+- separately verified historical v2 witness plus prospective runs: 4/4,
+  descriptive interval `[0.397635, 1.0]`.
+
+These wide intervals and the shared task/model/provider/harness make this only
+one synthetic instrument's repeated-execution observation. The task-health role
+remains `calibration_only`; there is no role transition. The result does not
+support a treatment effect, expert validity, professional competence, general
+capability, cross-domain generalization, real-world safety, production fitness,
+or readiness.
+
+Replay the report and targeted mutations without model calls:
+
+```bash
+python scripts/report_vendor_incident_reliability.py replay
+python -m unittest tests.test_vendor_incident_reliability -v
+```
