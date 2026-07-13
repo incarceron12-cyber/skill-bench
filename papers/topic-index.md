@@ -26,6 +26,7 @@ The review files below are deep reviews unless their own evidence-status section
 | [Benchmark Ceiling](agent-benchmarks/2026-07-10-benchmark-ceiling-expert-labor-scarcity.md) | What expert-labor and renewal constraints are hypothesized, and how strong is their evidence? | economics, expert scarcity, lifecycle |
 | [Benchmark-to-risk expert elicitation](agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | What evidence is required between a configured-system benchmark observation and a consequential workflow or stakeholder decision claim? | consequence validity, structured judgment, disagreement, decision loss |
 | [OfficeEval](agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | When does adapting an external standardized exam preserve lineage but require a new validity and threshold-transport argument? | external instruments, native artifacts, criterion dependence |
+| [Nubank production evaluation](agent-benchmarks/2026-07-14-nubank-offline-online-production-validity.md) | When does an adaptively selected offline-to-online association support prospective production-validity claims rather than retrospective co-movement among treatment bundles? | production evaluation, A/B testing, metric funnels, selection, configured systems |
 
 **Benchmark-to-consequence synthesis:** Treat consequence promotion as a linked
 chain—observation → bounded capability interpretation → scenario applicability,
