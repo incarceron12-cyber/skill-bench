@@ -82,7 +82,47 @@ reviewed ethnography motivates this design from one compensated university
 case; it does not establish a free/near-zero-cost participation model or that
 developer/model substitution preserved expert judgment [EP].
 
-### 2.1a Elicitation is an instrumented intervention, not a neutral transcript
+### 2.1a Authority gates and nulls apply at claim level
+
+A contributor's role is not blanket authority over a workflow. For each claim,
+record the knowledge layer and decision right it requires; the contributor's
+scope, protocol relationship, evidence basis, and allowed use; and an explicit
+`unknown`, `not_authorized`, `disputed`, or `not_applicable` state when the gate
+is not met. A protocol operator may be authoritative about an execution symptom
+while unauthorized to infer design rationale or approve a consequential hidden
+check. Missing authority must remain null rather than being plausibly completed
+by an interviewer, model, graph editor, or benchmark author [LWT].
+
+Preserve the complete projection chain rather than attaching only a contributor
+name to the final assertion:
+
+```text
+testimony/source span + prompt/probe + channel
+  → claim wording, type, context, valid time, and disagreement
+    → correction/transformation/approval events
+      → graph or other intermediate view
+        → task requirement/public basis → artifact/check projection
+          → trial observation → bounded interpretation
+```
+
+Every edge needs its own author, timestamp, evidence locator, disposition, and
+purpose/consent/use boundary. Provenance, correction, approval, and permission
+to reuse testimony in an agent-visible intervention or private evaluator are
+non-substitutable. A query that returns an encoded edge establishes
+representational executability, not the claim's truth, completeness, currency,
+consensus, causal validity, or professional use [LWT].
+
+The laboratory workflow-twin study supplies a useful role-gated extraction
+design and mandatory null pattern, but its evidence is four reported assay
+sessions in one department, with proprietary prompts/load files and no released
+transcripts, claim-level transformations, graph instances, independent ground
+truth, operational outcome study, or cross-domain transfer test. Its language-
+derived confidence values are therefore neither calibrated probabilities nor
+benchmark weights [LWT]. Existing expertise-transfer, participation, evidence-
+state, projection, and validity records are the implementation homes; this does
+not justify a graph ontology or professional-validation claim.
+
+### 2.1b Elicitation is an instrumented intervention, not a neutral transcript
 
 An expert statement is conditioned by what the elicitor made salient. Preserve
 an unprompted opportunity window before structured or model-generated probes,
@@ -1048,6 +1088,25 @@ A surface build error may originate in source selection; an unattributed timeout
 may be environmental. Preserve event locators and attribution confidence so
 later adjudication can revise the diagnosis without changing raw evidence.
 
+An apparently successful execution channel can itself mask a substantive
+failure. Represent `MASKED_BY` as a diagnostic relation between a supported root
+condition or violated invariant and a surface signal that reports completion,
+health, or success despite the consequential artifact/state remaining invalid.
+Keep root-condition evidence, primary-channel status, an independent substantive
+check, artifact/state consequence, agent verification, recovery, and residual
+harm separate. A passing UI status, tool exit code, workflow close event, or
+file-open check is not a substantive-validity verdict when its observer cannot
+see the relevant invariant [LWT].
+
+The relation is an authored causal/observability hypothesis until supported by
+incident, intervention, or independently reviewed evidence. A graph traversal or
+successful query proves only that an edge was encoded. Diagnose the earliest
+supported root and misleading surface separately, retain `unknown` when the
+substantive view is absent, and never promote channel success into artifact,
+professional, safety, or readiness success [LWT]. Existing artifact-admissibility,
+evidence-view, trace, task-health, root/surface, and validity records carry this
+crosswalk; no masking-specific score or schema follows.
+
 ## 4. Intervention, instrument, and system identity
 
 A benchmark trial evaluates a configured system, not an abstract model. Version
@@ -1460,6 +1519,7 @@ fidelity separately from score calibration [EB, AP].
 | Dynamic professional grading (JADE) | separate fixed and response-triggered criterion populations, trigger lineage, typed evidence/dependency graph, and plural score families | answer-conditioned obligations, variable denominators, duplicate/shared-cue checks, live-web authority error, fail-open verification, and uncalibrated fusion | full immutable v1 paper plus inspected close post-v1 release; bounded evaluator-architecture and deterministic fallback evidence, not expert-equivalent, cross-domain, or readiness validation [JADE] |
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
+| Authority-gated workflow elicitation (laboratory workflow twins) | claim-level role gates and mandatory nulls; evidence→claim→projection lineage; root condition separated from a masking success channel | graph/query executability mistaken for knowledge truth, calibrated confidence, causal validity, operational benefit, or cross-domain transfer | full immutable 48-page v1 paper and deep review; four reported assay sessions in one department, proprietary substantive artifacts, and no ground-truth or operational-outcome validation [LWT] |
 | Configurable participant systems (HAS-Bench) | participant realization, participation-policy vector, authority-event lineage, and availability/exercise/uptake/effect/burden separation | simulated social roles called humans; bundled prompt/tool/information/authority/budget contrasts; event counts mistaken for benefit or human cost | full immutable v1 paper and deep review; paper-reported scenarios/results only, no verifiable official artifact, real task participants, repeated cells, or reported process-judge audit [HAS] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
@@ -1619,6 +1679,11 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     policy components and keep availability, exercise, uptake, effect, and plural
     burden separate. Simulator behavior cannot silently confer human-participation,
     expert-substitution, collaboration-validity, or readiness claims.
+44. **Channel success is not substantive validity:** preserve the root invariant,
+    primary-channel signal, independent evidence view, consequence, recovery, and
+    uncertainty separately; an encoded masking edge or passing execution surface
+    does not establish claim truth, artifact validity, professional success, safety,
+    or readiness.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1941,6 +2006,13 @@ them:
   reviewed immutable v3 PDF/text and inspected paper-linked OSF materials are
   recorded there. The source exposes mixed-initiative elicitation mechanics but
   does not identify capture fidelity, burden reduction, or benchmark utility.
+- **[LWT]**
+  `papers/agent-benchmarks/2026-07-13-laboratory-workflow-expert-elicitation.md`;
+  reviewed immutable 48-page v1 PDF/text hashes are recorded there. Four reported
+  assay sessions and a proprietary static graph support representation-design
+  lessons only; absent transcripts, claim-level transformations, graph instances,
+  independent ground truth, operational outcomes, and cross-domain tests block
+  substantive knowledge, professional-validity, benefit, and transfer claims.
 - **[ED]**
   `papers/agent-benchmarks/2026-07-11-expert-disagreement-human-feedback-validity.md`;
   reviewed immutable v3 PDF/text and complete pinned rating release are recorded

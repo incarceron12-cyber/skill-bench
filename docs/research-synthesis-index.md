@@ -55,6 +55,7 @@ Most relevant sources:
 | [JobBench](../papers/agent-benchmarks/2026-07-12-jobbench-delegation-desire-validity.md) | A | Makes worker-reported delegation preference a typed portfolio-selection signal while separating it from package fidelity, present consent, workflow uptake, and worker outcomes |
 | [Benchmark-to-risk expert elicitation](../papers/agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | A | Makes the score-to-consequence warrant observable as structured disagreement and separates capability interpretation, scenario use, workflow effect, outcome composition, and decision loss |
 | [OfficeEval](../papers/agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | B | Separates external requirement/weight lineage from the validity of a transformed subset, administration, aggregate, or transported decision threshold |
+| [Laboratory workflow twins](../papers/agent-benchmarks/2026-07-13-laboratory-workflow-expert-elicitation.md) | A | Adds claim-level authority gates, mandatory nulls, exact evidence→claim→projection lineage, and masking-channel diagnosis while separating graph executability from knowledge truth or operational validity |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
 
@@ -112,6 +113,28 @@ elicitation-session records are the durable homes; a direct matched workflow-upl
 study is preferable when feasible, and no new schema, cyber scope commitment,
 expected-harm, capability, deployment, professional-validity, or readiness claim
 follows.
+
+Authority and observability add another cross-cutting chain:
+`source span/probe/channel → authority-gated claim or explicit null → contextual,
+valid-time, disagreement-bearing transformation → intermediate representation →
+task/public basis/check projection → plural observation → bounded claim`. A role
+licenses only the claim layer and use for which it has evidence; provenance does
+not imply transformation approval or consent for agent/runtime or private-grader
+reuse. Execution-channel success must remain separate from substantive validity:
+a `MASKED_BY`-style relation links a supported root invariant to a misleading
+surface signal, but is itself a causal/observability hypothesis until incident,
+intervention, or independent review supports it. Preserve root evidence, channel
+status, independent artifact/state view, detection, recovery, residual consequence,
+and unknown states separately.
+
+The laboratory source demonstrates graph population and seven query patterns
+after four reported assay sessions in one department. Its proprietary prompts
+and load files, absent transcripts and claim-level transformations, uncalibrated
+confidence mapping, no independent ground truth, no operational outcomes, and no
+cross-domain test block knowledge-accuracy, professional-validity, benefit,
+transfer, and readiness claims. Existing expertise-transfer, participation,
+evidence-state, projection, artifact-admissibility, trace, root/surface, and
+validity records suffice; no graph or masking subsystem follows.
 
 ## 2. The benchmark should represent broad knowledge work without pretending a small suite represents all work
 
