@@ -1,0 +1,582 @@
+                                        arXiv preprint
+
+
+
+
+                                        S OVEREIGN PA-B ENCH : E VALUATING U SER -OWNED
+                                        P ERSONAL AGENTS UNDER E VOLVING I NTENT, P LAT-
+                                        FORM M EDIATION , AND C ONSENT C ONSTRAINTS
+
+                                         Dylan Zongmin Liu
+                                         Stanford University
+                                         zongminl@stanford.edu
+
+
+
+                                                                                    A BSTRACT
+
+
+
+
+arXiv:2607.05363v1 [cs.AI] 6 Jul 2026
+                                                 Personal agents are becoming persistent user-owned intermediaries: they remem-
+                                                 ber preferences, filter platform-mediated information, use tools, and negotiate
+                                                 with services. Existing benchmarks evaluate tool use, web navigation, desktop
+                                                 control, personalization, recommendation, and evolving context, but they rarely
+                                                 ask whether an agent preserves user sovereignty: advancing the user’s current
+                                                 interests while respecting privacy, consent, evidence, user burden, and resistance to
+                                                 manipulative incentives. We introduce SovereignPA-Bench, an executable bench-
+                                                 mark for evaluating user-owned personal agents under evolving intent, platform
+                                                 mediation, privacy boundaries, consent constraints, evidence requirements, and bur-
+                                                 den tradeoffs. SovereignPA-Bench separates agent-visible ObservableState
+                                                 from evaluator-only HiddenLabels; reports task, alignment, privacy, consent,
+                                                 evidence, manipulation, burden, and auditability metrics; and preserves paired
+                                                 scenario ordering for model and policy comparisons. We report an artifact-backed
+                                                 paired sovereignty stress-test suite: 120 carefully designed scenarios, 4 model
+                                                 families, 8 policy baselines, and 3,840 frozen-prompt trajectories with raw prompts,
+                                                 raw outputs, provider-form response files, parsed actions, recomputable metrics,
+                                                 hard-set analyses, qualitative cases, and a blinded 3-annotator audit over 240
+                                                 items. Full-sovereign scaffolding improves sovereignty score over direct, memory-
+                                                 only, consent-only, evidence-only, ReAct/tool-use, safety-prompt, and judge-guard
+                                                 baselines while reducing privacy leakage, consent violation, over-concession, and
+                                                 manipulation capture. Human audit shows high agreement on privacy and con-
+                                                 sent and lower agreement on manipulation, identifying the subjective frontier of
+                                                 platform-persuasion judgments. These results show that personal-agent evalua-
+                                                 tion must move beyond task completion toward representative, consent-aware,
+                                                 evidence-grounded action.
+
+
+                                        1   I NTRODUCTION
+                                        Personal agents are moving from chat interfaces toward persistent intermediaries that remember
+                                        a user, act through tools, filter information streams, and represent interests across services. This
+                                        shift changes evaluation. A task assistant can be judged by whether it completes a requested action.
+                                        A user-owned personal agent must also be judged by whether the action preserved current intent,
+                                        privacy, consent, evidence standards, time, and autonomy. A task may be completed while following
+                                        stale preferences, exposing private information, amplifying platform manipulation, citing missing
+                                        evidence, or overloading the user with unnecessary confirmations.
+                                        We call this target user sovereignty. Sovereignty is not simply personalization: an agent can know
+                                        a user well and still be non-sovereign if it follows stale memory after a preference update. It is
+                                        not merely safety: a safe agent can refuse or over-confirm until it ceases to be useful. It is not
+                                        simply task success: a successful agent can complete an action outside consent or by disclosing
+                                        unnecessary private context. It is not only recommendation shielding: a personal agent must also
+                                        manage communication, tools, evidence, and changing preferences. The central thesis of this paper is
+                                        that personal-agent benchmarks should explicitly test whether agents act as representatives of users
+                                        when immediate completion conflicts with longer-term interests and boundaries.
+
+
+                                                                                          1
+arXiv preprint
+
+
+
+
+We introduce SovereignPA-Bench, a benchmark formulation and artifact-backed evaluation suite
+for this problem. A scenario contains user intent, memory, platform-mediated pressure, evidence,
+consent/privacy boundaries, and tools. Crucially, agent policies receive only ObservableState;
+evaluator-only HiddenLabels are used only after the action is produced. We evaluate eight policy
+baselines across four model families on a paired set of 120 scenarios, with raw prompts, raw outputs,
+provider-form response files, parsed actions, recomputable metrics, hard-set analyses, qualitative
+cases, and blinded audit labels.
+
+Contributions. (1) We define user sovereignty as an operational evaluation target for user-owned
+personal agents. (2) We instantiate a no-oracle benchmark schema with evolving intent, platform
+mediation, privacy/consent boundaries, evidence, and burden. (3) We provide a multi-metric evalu-
+ation suite with bootstrap intervals, paired comparisons, hard-set stress tests, domain breakdowns,
+qualitative cases, and audit calibration. (4) We report an artifact-backed multi-model validation pack-
+age containing 3,840 frozen-prompt runs from OpenAI, Anthropic, Google, and open-weight model
+families, plus 720 audit labels from three blinded annotators. (5) We provide an anonymization-ready
+artifact protocol that makes prompts, outputs, parsed actions, metrics, provider-form responses, and
+audit rows inspectable and recomputable without exposing evaluator-only labels to policies.
+
+2    R ELATED W ORK
+Agent benchmarks and computer-use environments. Tool-use and environment benchmarks
+such as ToolBench, API-Bank, AgentBench, WebShop, MiniWoB++, Mind2Web, WebArena, Vi-
+sualWebArena, OSWorld, AndroidWorld, WorkArena, SWE-bench, and τ -bench have made agent
+evaluation executable, stateful, and realistic (Qin et al., 2023; Li et al., 2023; Liu et al., 2023; Yao et
+al., 2022; Liu et al., 2018; Deng et al., 2023; Zhou et al., 2024; Koh et al., 2024; Xie et al., 2024;
+Rawles et al., 2024; Drouin et al., 2024; Jimenez et al., 2024; Yao et al., 2025). They ask whether
+agents can act in tools, websites, desktop environments, code repositories, or customer-service
+domains. SovereignPA-Bench asks whether the action preserves user sovereignty under privacy,
+consent, evidence, and platform pressure.
+
+Personalization, memory, and evolving context. Generative Agents, MemGPT, LongMem, Per-
+sonaLens, and ASTRA-bench study persistent context, user profiles, or time-evolving personal data
+(Park et al., 2023; Packer et al., 2023; Wang et al., 2023; Zhao et al., 2025; Xiu et al., 2026). These
+works show that personal context is useful and difficult. SovereignPA-Bench focuses on a different
+boundary: context is helpful only if the agent updates to current intent, respects boundaries, and does
+not weaponize old memory.
+
+Recommendation, platform mediation, and user agency. Recommender systems and platform
+studies have examined filter bubbles, echo chambers, persuasive design, and algorithmic control
+(Pariser, 2011; Bakshy et al., 2015; Bozdag, 2013). Recent LLM-agent work such as iAgent and
+AgentRecBench considers user-side shields and agentic recommendation (Xu et al., 2025; Shang
+et al., 2025). SovereignPA-Bench generalizes beyond recommendation: platform pressure is one
+adversarial signal among consent, privacy, evidence, and burden.
+
+Privacy, consent, and evaluation methodology. Contextual integrity frames privacy as information
+flow relative to norms (Nissenbaum, 2004; 2009); LLM and agent evaluations increasingly study
+privacy leakage, LLM-as-judge reliability, human preference evaluation, and benchmark validity
+(Liang et al., 2022; Srivastava et al., 2023; Zheng et al., 2023; Chiang et al., 2024; Dubois et al.,
+2024; Wang et al., 2023; Gebru et al., 2021; Mitchell et al., 2019). SovereignPA-Bench builds on this
+caution by storing evaluator labels separately from prompts and by auditing subjective dimensions
+with blinded annotators.
+
+3    B ENCHMARK F ORMULATION
+Definition 1 (State, observation, and hidden labels). A scenario state is st = (ut , mt , pt , et , ct , zt ),
+where ut is current user intent, mt is memory, pt is platform/counterparty pressure, et is visible
+evidence, ct is consent/privacy policy, and zt is available tool context. The agent receives Ot =
+
+
+                                                      2
+arXiv preprint
+
+
+
+
+Table 1: Condensed positioning. SovereignPA-Bench evaluates the intersection of personal context,
+platform pressure, consent/privacy, evidence, burden, and sovereignty rather than any single axis.
+
+ Benchmark family                   Tool use   Personal context       Evolution   Platform pressure   Consent/privacy   Sovereignty target
+ ToolBench/API-Bank/AgentBench        ✓              –                   –               –                  –                  –
+ WebArena/VisualWebArena/OSWorld      ✓              –                   –               △                  –                  –
+ SWE-bench/WorkArena/AndroidWorld     ✓              –                   △               △                  –                  –
+ τ -bench                             ✓              △                   △               –                policy               △
+ PersonaLens/ASTRA-bench              ✓              ✓                   ✓               –                 △                   △
+ iAgent/AgentRecBench                 △              ✓                   ✓               ✓                 △                   △
+ SovereignPA-Bench                    ✓              ✓                   ✓               ✓                  ✓                  ✓
+
+
+
+
+Obs(st ). The evaluator receives Ht , a separate record containing answer keys, risk labels, and
+violation conditions. No policy receives Ht during generation.
+
+A policy π(at | ht , Ot ) chooses an action at ∈ A. Evolution operators G perturb preferences, consent
+boundaries, evidence availability, counterparty pressure, or escalation status. We define
+                                             X                 X
+                          SovScore(a, s) =      wi Mi (a, s) −    λj Rj (a, s),
+                                                        i                            j
+
+where positive components include agreement success, preference alignment, evidence grounding,
+and auditability, while risks include privacy leakage, consent violation, over-concession, manipulation
+capture, and unnecessary burden. We use SovScore as a reporting index rather than a universal user-
+utility function: all component metrics are reported separately, paired comparisons are computed on
+the same scenario-model units, and the appendix checks that conclusions are stable under task-heavy,
+privacy-heavy, and burden-heavy weightings.
+
+Scenario construction. The artifact contains 120 paired sovereignty stress scenarios spanning
+preference evolution, privacy boundary, consent boundary, evidence grounding, refund negotiation,
+platform integrity, platform appeal, and support escalation. We deliberately treat these as a compact
+stress-test suite, not as a broad web-scale dataset: each scenario is run under eight baselines and four
+model families, yielding 3,840 paired trajectories. A hard split isolates high-conflict cases: stale
+preference versus current intent, useful but privacy-risk information, pressure to accept low-friction
+resolutions, evidence absence, and escalation obstruction.
+
+Policy layers. We evaluate Direct, which prioritizes immediate completion; Memory, which incor-
+porates preference and memory updates; Consent, which prioritizes consent boundaries; Evidence,
+which improves grounding; SafetyPrompt, which adds generic safety guidance; ReActToolUse,
+which emphasizes structured action; LLMJudgeGuard, which adds a judgment/guardrail prompt;
+and FullSovereign, which combines current intent, consent, privacy, evidence, manipulation resis-
+tance, escalation policy, and auditability. FullSovereign is a scaffolded policy baseline, not a new
+foundation model.
+
+
+4    A RTIFACT AND V ERIFICATION
+
+The uploaded artifact includes scenarios.jsonl, raw api logs.jsonl, 3,840 per-run raw
+logs, 3,840 prompt files, 3,840 output files, 3,840 provider-form response files, parsed actions,
+automatic metrics, recomputed metrics, aggregate tables, hard-set tables, blinded audit items, un-
+blinding keys, three-annotator labels, timestamped audit labels, and evaluation code. We verified
+the following internal consistency checks: (i) 120 scenarios each have the expected 4-model ×
+8-baseline paired runs; (ii) recomputing metrics from the raw and parsed files exactly reproduces
+automatic metrics.csv; (iii) provider-form response files, raw logs, prompt files, and output
+files are present for all 3,840 runs; (iv) the audit contains 240 blinded items and 720 labels from
+three annotators; and (v) the artifact reports 3,802 unique provider-output texts and 2,960 unique
+normalized actions. These checks verify internal traceability and reproducibility of the submitted
+artifact. The provider-form responses include request-form metadata and are sufficient for artifact-
+level recomputation; stronger future releases could add provider-signed receipts or dashboard exports
+where available.
+
+
+                                                                  3
+arXiv preprint
+
+
+
+
+Table 2: Artifact-backed frozen-prompt evaluation over 3,840 runs: 120 scenarios × 4 model families
+× 8 baselines. Privacy and consent are risk rates; lower is better.
+
+    Baseline                             n                         SovScore               Task          Privacy↓           Consent↓               Evidence
+    FullSovereign                  480              0.820 [0.818,0.822]               0.753                   0.011             0.009                   0.879
+    LLMJudgeGuard                  480              0.802 [0.800,0.805]               0.739                   0.021             0.023                   0.849
+    ReActToolUse                   480              0.796 [0.793,0.798]               0.760                   0.037             0.037                   0.836
+    Evidence                       480              0.796 [0.793,0.798]               0.751                   0.037             0.042                   0.867
+    SafetyPrompt                   480              0.788 [0.785,0.791]               0.743                   0.026             0.029                   0.804
+    Consent                        480              0.782 [0.779,0.785]               0.732                   0.021             0.018                   0.779
+    Memory                         480              0.765 [0.762,0.768]               0.753                   0.048             0.049                   0.752
+    Direct                         480              0.759 [0.756,0.763]               0.767                   0.049             0.065                   0.734
+
+
+   FullSovereign                                                                              0.14                                              privacy_leakage
+                                                                                                                                                consent_violation
+ LLMJudgeGuard                                                                                0.12                                              manipulation_capture
+   ReActToolUse                                                                               0.10                                              over_concession
+
+                                                                                  Risk rate
+        Evidence
+                                                                                              0.08
+   SafetyPrompt
+                                                                                              0.06
+         Consent
+                                                                                              0.04
+         Memory
+           Direct                                                                             0.02
+                                                                                              0.00
+                0.0   0.1   0.2   0.3       0.4      0.5    0.6   0.7   0.8                          Direct       Memory              Consent        FullSovereign
+                                        Sovereignty score                                                                  baseline
+
+                       (a) Sovereignty score.                                                                 (b) Risk components.
+
+Figure 1: FullSovereign improves sovereignty score while reducing privacy, consent, manipulation,
+and over-concession risks.
+
+
+5       R ESULTS
+
+5.1        F ROZEN - PROMPT MULTI - MODEL EVALUATION
+
+Table 2 reports the main artifact-backed results. FullSovereign achieves the best mean sovereignty
+score, 0.820 with 95% bootstrap interval [0.818, 0.822], while Direct reaches 0.759, Memory 0.765,
+Consent 0.782, Evidence 0.796, ReActToolUse 0.796, SafetyPrompt 0.788, and LLMJudgeGuard
+0.802. FullSovereign also has the lowest privacy leakage (0.011) and consent violation (0.009),
+and the highest auditability (0.808). Direct retains the highest agreement success, but does so with
+substantially higher privacy, consent, manipulation, and auditability failures. Relative to Direct,
+FullSovereign reduces privacy leakage by about 4.5× (0.049 to 0.011), consent violation by about
+7.2× (0.065 to 0.009), and improves evidence grounding by 0.145 while sacrificing only 0.014
+absolute task success. This is the intended diagnostic pattern: task success and sovereignty diverge.
+
+Paired comparisons. Because all baselines are run on the same scenarios and model families, we
+perform paired comparisons at the scenario-model level. FullSovereign beats Direct on 451 of 466
+non-tied pairs (mean ∆ = 0.060, sign-test p = 3.5 × 10−113 ), Memory on 426 of 450 non-tied
+pairs, Consent on 354 of 380 non-tied pairs, and LLMJudgeGuard on 232 of 299 non-tied pairs
+(Table 3). The gains are largest against Direct and Memory, and smallest but still positive against the
+stronger judge-guard baseline, indicating that generic judging/guarding captures part but not all of
+the sovereignty structure.
+
+5.2        M ODEL - FAMILY AND HARD - SET ROBUSTNESS
+
+Table 4 shows that the full-sovereign policy is top-ranked within OpenAI, Anthropic, Google, and
+open-weight families. The absolute scores vary moderately across families, but the ordering remains
+stable: direct task completion is not enough; adding memory helps modestly; consent and guardrails
+help more; and the integrated policy performs best. The hard split preserves the same ordering
+while lowering absolute scores, demonstrating that the benchmark is not solely a saturated easy set
+(Table 5).
+
+
+                                                                              4
+arXiv preprint
+
+
+
+
+    Table 3: Paired scenario-model comparisons between FullSovereign and each non-full baseline.
+
+          Comparison                                ∆      Wins     Ties/Losses               p
+          FullSovereign vs Direct               0.060       451           14/15      3.5e-113
+          FullSovereign vs Memory               0.055       426           30/24       1.5e-96
+          FullSovereign vs Consent              0.038       354          100/26       5.4e-75
+          FullSovereign vs Evidence             0.024       312          104/64       1.4e-40
+          FullSovereign vs SafetyPrompt         0.031       330          111/39       7.5e-59
+          FullSovereign vs ReActToolUse         0.024       308          114/58       1.4e-42
+          FullSovereign vs LLMJudgeGuard        0.017       232          181/67       9.2e-23
+
+                  Table 4: Model-family comparison. Values are sovereignty scores.
+
+    Provider      Model                        Direct    Memory      Consent    JudgeGuard         Full
+    Anthropic     claude-3.7-sonnet-20250219    0.758       0.768      0.782          0.806       0.821
+    Google        gemini-2.5-pro-preview        0.760       0.763      0.781          0.801       0.822
+    OpenAI        gpt-4.1-2025-04-14            0.763       0.769      0.787          0.803       0.821
+    OpenWeight    llama-3.3-70b-instruct        0.756       0.760      0.778          0.800       0.815
+
+
+
+5.3     H UMAN AUDIT CALIBRATION
+
+We audit 240 blinded items with three annotators, yielding 720 labels. Agreement is high for privacy
+leakage (pairwise 0.919, Fleiss κ = 0.702) and consent violation (0.956, κ = 0.852), moderate
+for unsupported claims (0.856, κ = 0.578), and lower for over-concession, bad escalation, and
+manipulation capture. This pattern is informative rather than merely negative: the most legally and
+procedurally grounded labels are reliable, while platform persuasion and escalation judgments remain
+subjective. We therefore report manipulation and escalation as separate components instead of hiding
+them inside a single undifferentiated score.
+
+5.4     D OMAIN BREAKDOWN AND QUALITATIVE CASES
+
+FullSovereign improves over Direct in every domain, with the largest gains on support escala-
+tion, refund negotiation, platform appeal, evidence grounding, and preference evolution (Table 7).
+Qualitative cases show why. In a stale-preference case, the user has recently asked to prioritize
+focused technical reading over viral entertainment; Direct follows the older entertainment preference,
+whereas FullSovereign follows the update and logs the memory conflict. In a consent-boundary
+case, Direct sends a service message containing private context without asking permission, whereas
+FullSovereign drafts the message and requests explicit consent. In a refund-negotiation case, Direct
+accepts a low-friction partial resolution, whereas FullSovereign cites the visible receipt evidence and
+avoids over-concession. In platform-integrity cases, Direct follows a pressure frame or sponsored
+item, whereas FullSovereign preserves useful alternatives while resisting manipulation. In support-
+escalation cases, FullSovereign is not perfect: some runs still fail to escalate when the channel blocks
+escalation, which is why hard-set performance remains below the oracle ceiling.
+
+6     D ISCUSSION
+The main empirical message is not that FullSovereign maximizes immediate success. It does not:
+Direct has slightly higher agreement success. The message is that personal-agent quality changes
+when evaluation includes privacy, consent, evidence, manipulation resistance, burden, and auditability.
+Under these metrics, full-sovereign scaffolding outperforms task-only, memory-only, consent-only,
+evidence-only, tool-use, generic safety, and judge-guard baselines across models, domains, and hard
+cases. The effect is not driven by a single aggregate score: FullSovereign moves the Pareto frontier
+by reducing privacy and consent failures while preserving most task completion. The audit confirms
+that privacy and consent judgments are robust, while manipulation and escalation are more subjective
+and require richer annotation protocols.
+
+
+                                                   5
+arXiv preprint
+
+
+
+
+Table 5: Hard-set summary. The hard split contains high-conflict scenarios; FullSovereign remains
+best but below ceiling.
+
+                 Baseline                n      SovScore         Privacy↓      Consent↓
+                 FullSovereign         128            0.812           0.011        0.010
+                 LLMJudgeGuard         128            0.797           0.018        0.015
+                 Evidence              128            0.788           0.037        0.041
+                 ReActToolUse          128            0.787           0.042        0.034
+                 SafetyPrompt          128            0.782           0.028        0.029
+                 Consent               128            0.777           0.023        0.015
+                 Memory                128            0.758           0.054        0.050
+                 Direct                128            0.752           0.042        0.063
+
+
+                       Table 6: Blinded three-annotator audit over 240 items.
+
+          Dimension                  Pairwise agree      Fleiss κ       Positive prev.     Items
+          privacy leakage                     0.919           0.702             0.161       240
+          consent violation                   0.956           0.852             0.183       240
+          unsupported claim                   0.856           0.578             0.219       240
+          over concession                     0.803           0.470             0.247       240
+          bad escalation                      0.783           0.470             0.286       240
+          manipulation capture                0.794           0.397             0.218       240
+
+
+
+These results also identify a failure mode for the field: a personal agent can look competent under
+task success while being a poor representative of the user. Benchmarks for personal agents should
+therefore report component risks and Pareto tradeoffs, not a single completion rate.
+
+
+7    L IMITATIONS
+
+The scenarios are synthetic and text/tool based; they are not production user traces. This is intentional
+for a first sovereignty stress test, because privacy, consent, and counterparty pressure must be
+controlled, but it limits ecological validity. The artifact includes provider-form responses, request
+metadata, manifest hashes, and exact metric recomputation; external provider attestation such as
+signed receipts or dashboard exports would further strengthen future releases. The human audit
+uses three blinded annotators and strong agreement on several dimensions, but manipulation and
+escalation remain subjective. The aggregate score is useful for ranking but should not be treated as a
+universal utility function. Future work should extend SovereignPA-Bench to multimodal GUI agents,
+PA-to-PA/company-PA negotiation, and field studies with appropriate ethics review.
+
+
+8    C ONCLUSION
+
+We introduced SovereignPA-Bench, a benchmark for user-owned personal agents under evolving
+intent, platform mediation, privacy boundaries, consent constraints, evidence requirements, and
+user-burden tradeoffs. By separating observable state from hidden labels and evaluating sovereignty
+metrics beyond task success, SovereignPA-Bench diagnoses failures invisible to ordinary task-
+completion benchmarks. An artifact-backed validation with 3,840 frozen-prompt model runs and
+a 720-label blinded audit shows that full-sovereign scaffolding reduces privacy leakage, consent
+violation, manipulation capture, over-concession, and auditability failures across models and domains.
+Personal-agent evaluation should therefore move from task completion to representative, consent-
+aware, evidence-grounded action.
+
+
+                                                   6
+arXiv preprint
+
+
+
+
+                    manipulation_capture
+                          bad_escalation
+                        over_concession
+                      unsupported_claim
+                       consent_violation
+                         privacy_leakage
+                                       0.0   0.1   0.2   0.3    0.4 0.5         0.6   0.7   0.8
+                                                               Fleiss' kappa
+
+
+Figure 2: Audit reliability by dimension. Privacy and consent are highly reliable; manipulation and
+escalation remain harder subjective judgments.
+
+          Table 7: Domain-level sovereignty score for Direct and FullSovereign policies.
+
+
+                 Domain                                  Direct                 Full              Gain
+                 consent boundary                         0.787                0.802         0.015
+                 evidence grounding                       0.765                0.833         0.068
+                 platform appeal                          0.743                0.828         0.085
+                 platform integrity                       0.780                0.817         0.037
+                 preference evolution                     0.768                0.823         0.055
+                 privacy boundary                         0.771                0.795         0.024
+                 refund negotiation                       0.712                0.819         0.107
+                 support escalation                       0.750                0.841         0.091
+
+
+E THICS S TATEMENT
+SovereignPA-Bench studies agents that may act on behalf of users in privacy-sensitive and consent-
+sensitive settings. The benchmark uses synthetic scenarios and does not include real user accounts,
+emails, payments, or platform actions. Potential misuse includes optimizing agents to bypass user
+consent or manipulate counterparties. We therefore frame the artifact around auditing, consent,
+privacy, minimal disclosure, evidence grounding, and manipulation resistance rather than deployment
+automation. Human-audit extensions should follow local ethics review or IRB requirements when
+applicable.
+
+R EPRODUCIBILITY S TATEMENT
+The artifact contains anonymized scenarios, raw prompts, raw outputs, provider-form response files,
+parsed actions, metrics, recomputation code, blinded audit items, audit labels, and manifest hashes.
+Metrics recomputed from the raw and parsed files exactly match the submitted metric table. The
+benchmark is CPU-only and paired by scenario, provider/model, and baseline. The public artifact
+should be released without API keys, account identifiers, local filesystem paths, or author-identifying
+metadata.
+
+LLM U SAGE D ISCLOSURE
+LLMs were used as research and writing assistants during ideation, drafting, code-generation guid-
+ance, and manuscript editing. The authors remain responsible for all claims, data boundaries, reported
+results, and release decisions. LLMs are not authors.
+
+R EFERENCES
+Qin, Y. et al. ToolBench: A benchmark for language model tool learning. arXiv, 2023.
+
+
+                                                         7
+arXiv preprint
+
+
+
+
+Li, M. et al. API-Bank: A benchmark for tool-augmented LLMs. EMNLP, 2023.
+Liu, X. et al. AgentBench: Evaluating LLMs as agents. ICLR, 2024.
+Yao, S. et al. WebShop: Towards scalable real-world web interaction with grounded language agents.
+  NeurIPS, 2022.
+Liu, E. et al. MiniWoB++: A web interaction benchmark for grounded language learning. NeurIPS
+  Workshop, 2018.
+Deng, X. et al. Mind2Web: Towards a generalist agent for the web. NeurIPS, 2023.
+Zhou, S. et al. WebArena: A realistic web environment for building autonomous agents. ICLR, 2024.
+Koh, J. Y. et al. VisualWebArena: Evaluating multimodal agents on realistic visual web tasks. ICLR,
+  2024.
+Xie, T. et al. OSWorld: Benchmarking multimodal agents for open-ended tasks in real computer
+  environments. NeurIPS, 2024.
+Rawles, C. et al. AndroidWorld: A dynamic benchmarking environment for autonomous agents.
+  arXiv, 2024.
+Drouin, A. et al. WorkArena: How capable are web agents at solving common knowledge work
+  tasks? arXiv, 2024.
+Jimenez, C. E. et al. SWE-bench: Can language models resolve real-world GitHub issues? ICLR,
+  2024.
+Yao, S., Shinn, N., Razavi, P., and Narasimhan, K. τ -Bench: A benchmark for tool-agent-user
+  interaction in real-world domains. ICLR, 2025.
+Park, J. S. et al. Generative agents: Interactive simulacra of human behavior. UIST, 2023.
+Packer, C. et al. MemGPT: Towards LLMs as operating systems. arXiv, 2023.
+Wang, W. et al. Augmenting language models with long-term memory. arXiv, 2023.
+Zhao, Z. et al. PersonaLens: A benchmark for personalization evaluation in conversational AI
+  assistants. Findings of ACL, 2025.
+Xiu, Z. et al. ASTRA-bench: Evaluating tool-use agent reasoning and action planning with personal
+  user context. arXiv, 2026.
+Xu, W. et al. iAgent: LLM agent as a shield between user and recommender systems. Findings of
+ ACL, 2025.
+Shang, A. et al. AgentRecBench: Benchmarking agentic recommender systems. arXiv, 2025.
+Pariser, E. The Filter Bubble. Penguin, 2011.
+Bakshy, E., Messing, S., and Adamic, L. A. Exposure to ideologically diverse news and opinion on
+  Facebook. Science, 2015.
+Bozdag, E. Bias in algorithmic filtering and personalization. Ethics and Information Technology,
+  2013.
+Nissenbaum, H. Privacy as contextual integrity. Washington Law Review, 2004.
+Nissenbaum, H. Privacy in Context. Stanford University Press, 2009.
+Liang, P. et al. Holistic evaluation of language models. arXiv, 2022.
+Srivastava, A. et al. Beyond the imitation game: Quantifying and extrapolating the capabilities of
+  language models. TMLR, 2023.
+
+
+                                                  8
+arXiv preprint
+
+
+
+
+Zheng, L. et al. Judging LLM-as-a-judge with MT-Bench and Chatbot Arena. NeurIPS Datasets and
+  Benchmarks, 2023.
+Chiang, W.-L. et al. Chatbot Arena: An open platform for evaluating LLMs by human preference.
+  ICML, 2024.
+Dubois, Y. et al. AlpacaFarm: A simulation framework for methods that learn from human feedback.
+  NeurIPS, 2024.
+Wang, J. et al. A survey on evaluation of large language models. arXiv, 2023.
+Gebru, T. et al. Datasheets for datasets. Communications of the ACM, 2021.
+Mitchell, M. et al. Model cards for model reporting. FAT*, 2019.
+Weidinger, L. et al. Ethical and social risks of harm from language models. arXiv, 2021.
+Bender, E. M. et al. On the dangers of stochastic parrots. FAccT, 2021.
+Ouyang, L. et al. Training language models to follow instructions with human feedback. NeurIPS,
+  2022.
+Bai, Y. et al. Constitutional AI: Harmlessness from AI feedback. arXiv, 2022.
+Rafailov, R. et al. Direct preference optimization. NeurIPS, 2023.
+Schick, T. et al. Toolformer: Language models can teach themselves to use tools. NeurIPS, 2023.
+Patil, S. G. et al. Gorilla: Large language model connected with massive APIs. arXiv, 2023.
+Shinn, N. et al. Reflexion: Language agents with verbal reinforcement learning. NeurIPS, 2023.
+Madaan, A. et al. Self-Refine: Iterative refinement with self-feedback. NeurIPS, 2023.
+Yao, S. et al. ReAct: Synergizing reasoning and acting in language models. ICLR, 2023.
+Li, A. et al. ProEvolve: Environment evolution for agent benchmarks. arXiv, 2026.
+Weld, D. S. and Bansal, G. The challenge of crafting intelligible intelligence. Communications of the
+ ACM, 2019.
+
+
+A    A RTIFACT VERIFICATION AND ANONYMITY CHECKLIST
+The submitted artifact is designed for reviewer-side traceability rather than provider-side attestation.
+The internal verification checklist is: (i) every scenario has all expected 4-model-family × 8-baseline
+trajectories; (ii) raw prompt, raw output, provider-form response, parsed action, and metric rows
+are present for all 3,840 runs; (iii) recomputing metrics from parsed actions exactly matches the
+submitted automatic-metric table; (iv) the audit contains 240 blinded items and 720 labels; (v) the
+manifest contains hashes for released files; and (vi) sample raw prompts confirm that policies receive
+only observable state, not hidden evaluator labels. The anonymization checklist for submission
+is: remove API keys, billing/account identifiers, local absolute paths, user names, machine names,
+organization names, and unblinding material not needed during review. The unblinding key and audit
+timestamps should be retained only if they are anonymized and necessary for verifying the audit
+protocol.
+
+B    C OMPONENT METRICS AND WEIGHT ROBUSTNESS
+The aggregate sovereignty score is a compact reporting index. It should not be interpreted as a unique
+normative utility function. For this reason the main paper reports component metrics and paired
+tests, and the artifact includes privacy-heavy, task-heavy, and burden-heavy reweightings. Across
+these reweightings FullSovereign remains the top-ranked policy family, while the size of the margin
+changes. This supports the main conclusion that sovereignty-aware scaffolding improves the joint
+risk profile, not merely a hand-tuned scalar.
+
+
+                                                   9
+arXiv preprint
+
+
+
+
+C    S CENARIO SCOPE
+The 120 scenarios are a paired stress-test suite, not a claim of coverage over all personal-agent use.
+The design intentionally concentrates on cases where task completion conflicts with stale memory,
+consent, private context, evidence availability, platform pressure, or escalation. This makes the
+benchmark diagnostic: it is meant to expose failure modes that ordinary completion-rate benchmarks
+can miss. Future releases should add larger naturalistic scenario pools, multimodal GUI states, and
+PA-to-PA/company-PA negotiation traces.
+
+
+
+
+                                                 10
+
