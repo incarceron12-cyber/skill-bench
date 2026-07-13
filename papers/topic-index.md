@@ -128,6 +128,7 @@ and elicitation machinery rather than a domain-specific schema.
 | [WorkBench Revisited](agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | How should corrected current forms, frozen anchors, renewed forms, and score bridges coexist? | lifecycle, instrument drift, side-effect denominators |
 | [UniClawBench](agent-benchmarks/2026-07-13-uniclawbench-proactive-closed-loop-validity.md) | When does role-separated synthetic feedback measure requested-task repair rather than proactivity, natural-user behavior, or non-leaking evaluation? | feedback firewall, repair, simulators, information flow |
 | [EdgeBench](agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | What do day-scale visible-feedback and hidden-snapshot trajectories establish, and how do adaptive search, persistence, best-so-far selection, and censoring bound learning claims? | longitudinal evaluation, feedback budget, persistence, estimands |
+| [Signals trajectory triage](agent-benchmarks/2026-07-14-signals-trajectory-triage-sampling-validity.md) | When does signal-enriched trajectory review improve case-finding yield, and why can that queue not estimate prevalence or downstream utility without a probability sentinel and selection ledger? | review sampling, inclusion probabilities, annotation burden, production monitoring |
 
 OdysseyBench is indexed primarily with workplace workflows rather than duplicated
 here: it consumes a supplied synthetic history and acts on office state, but does
