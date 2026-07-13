@@ -1,0 +1,2231 @@
+                                             Federated Semantic Knowledge Graphs for
+                                            Laboratory Workflows: A Structured Expert
+                                          Elicitation Methodology Demonstrated Through
+                                                    Bioanalytical Workflow Twins
+
+                                               Luis F. Schachner1[0000−0001−6157−0937] , Vinith Thamizhazhagan2 , Sara
+                                              Tanenbaum2 , John C. Tran1 , Pamela P. F. Chan1 , Mandy Kwong1 , Andy
+
+
+
+
+arXiv:2605.23985v1 [cs.DB] 15 May 2026
+                                                       Chang1 , Maureen Beresini1 , and Margaret Porter Scott1
+                                          1
+                                            Biochemical and Cellular Pharmacology Department, Genentech, Inc., South San
+                                                                        Francisco, CA, USA
+                                                                        schachl1@gene.com
+                                         2
+                                           Computational Sciences Center of Excellence, Genentech, Inc., South San Francisco,
+                                                                             CA, USA
+
+
+                                                 Abstract. Laboratory workflows in pharmaceutical and biomedical re-
+                                                 search encode substantial tacit knowledge — expert judgment about
+                                                 failure conditions, decision branching logic, and contextual dependencies
+                                                 — that remains inaccessible to protocol documents, sensor streams, and
+                                                 existing biomedical ontologies. We present a repeatable structured ex-
+                                                 pert elicitation methodology and federated Semantic Knowledge Graph
+                                                 (SKG) architecture for capturing and querying this knowledge, demon-
+                                                 strated through deployment at the Biochemical and Cellular Pharmacol-
+                                                 ogy Department of Genentech, Inc. Knowledge is elicited via the Protocol
+                                                 Intelligence Co-pilot, a purpose-built AI interview agent that applies
+                                                 structured elicitation lenses to surface tacit procedural knowledge with
+                                                 expert-assigned confidence scores, producing graph representations across
+                                                 three tiers: program-level decision milestones, assay protocol knowledge,
+                                                 and physical execution infrastructure. Separately constructed subgraphs
+                                                 — exemplified by immunoassay (ELISA), quantitative mass spectrometry
+                                                 (LC-MS/PRM), and laboratory automation — are aligned through a
+                                                 shared upper ontology and queried as a single federated graph. Evalua-
+                                                 tion demonstrates seven query types structurally unavailable from any
+                                                 individual data source, including a cross-subgraph traversal that iden-
+                                                 tifies automation-masked silent failures — conditions where execution
+                                                 logs report success while scientific validity is actively compromised. Most
+                                                 critically, the MASKED_BY graph relationship encodes a class of laboratory
+                                                 risk invisible to current informatics platforms — the structural gap that
+                                                 prevents existing systems from reasoning about scientific validity. This
+                                                 architecture provides the semantic world model that AI laboratory agents
+                                                 currently lack: a queryable representation of where workflows fail silently,
+                                                 where human judgment is irreplaceable, and which execution assets mask
+                                                 rather than detect failure.
+
+                                                 Keywords: Semantic Knowledge Graph · Digital Twin · Expert Elicita-
+                                                 tion · Bioanalytical Workflows · Silent Failure Detection.
+2       L. F. Schachner et al.
+
+1    Introduction
+Laboratory workflows in pharmaceutical and biomedical research encode knowl-
+edge that resists all existing capture approaches. A bioanalytical scientist running
+an immunoassay does not simply execute a sequence of physical steps — she
+applies accumulated expert judgment about failure modes that manifest silently,
+decision logic that branches conditionally on results that look normal, and con-
+textual dependencies that no protocol document has ever articulated. When
+she leaves the organization, this knowledge leaves with her. When she trains a
+junior colleague, the knowledge degrades. When an AI agent is asked to interpret
+an anomalous result, it operates without the scientific world model required
+to reason the way she does. The fundamental problem is not a lack of data —
+modern laboratory systems produce enormous volumes of it. The problem is that
+none of the existing systems capture the semantic knowledge underneath: tacit
+procedural judgment, with its conditional structure, its confidence gradations,
+and its failure genealogy.
+    This gap is most sharply illustrated by automation-induced silent failures
+— conditions where the laboratory execution system reports a successful run
+while the underlying scientific validity of the assay is compromised. A plate
+washer completing six aspiration-dispense cycles logs a successful wash operation
+regardless of whether residual buffer remains in the wells; if it does, the standard
+curve is contaminated and the assay fails silently. The data system receives clean
+optical density values, passes them downstream, and the erroneous result is
+incorporated into a program decision. No existing informatics platform — ELN,
+instrument log, or LIMS — encodes the knowledge required to recognize this
+failure.
+    We present a federated Semantic Knowledge Graph (SKG) architecture and a
+repeatable structured expert elicitation methodology for capturing this knowledge
+and making it queryable, deployed at the Biochemical and Cellular Pharmacology
+(BCP) Department at Genentech. Three independently constructed subgraphs
+— immunoassay (ELISA), quantitative mass spectrometry (LC-MS/PRM), and
+laboratory automation infrastructure — are aligned through a shared upper
+ontology and deployed in a single Neo4j AuraDB instance [29]. To elicit tacit
+knowledge from domain experts, we built the Protocol Intelligence Co-pilot —
+an AI interview agent that applies structured elicitation lenses to surface tacit
+procedural knowledge, assigns confidence scores, and converts session outputs
+into MERGE-idempotent Cypher via a downstream annotator agent.
+    We evaluate the federation across six capability classes implemented as seven
+queries (Q1–Q7, §5), each demonstrating query types structurally unavailable
+from protocol documents, instrument sensors, or existing biomedical ontologies.
+Pipeline extraction is deterministic: independent re-runs on the same transcript
+yield identical failure mode identification (within-agent FM F1 = 1.0, zero
+variance, §5.3); cross-agent agreement is bounded by elicitation depth, reaching
+FM F1 = 1.0 on clean LC-MS transcripts and FM F1 = 0.43 on ELISA cross-
+agent comparison — a gap explained by multi-turn conversational probing versus
+single-shot extraction (§5.3).
+                                   Federated SKGs for Laboratory Workflows           3
+
+2     Related Work
+Our work sits at the intersection of five literature bodies: semantic digital twins
+with knowledge graphs, self-driving laboratories and lab automation, structured
+expert elicitation, biomedical workflow knowledge representation, and the formal
+treatment of automation-induced silent failures. ISWC In-Use Track deployments
+of knowledge graphs in industrial and scientific settings provide the direct venue
+context [22, 26, 34].
+
+2.1   Semantic Digital Twins with Knowledge Graphs
+Knowledge graphs increasingly back digital twins across manufacturing, smart
+infrastructure, and industrial cyber-physical systems [18, 21, 25, 27, 30, 32, 35, 36].
+These systems universally assume full observability via sensors. Our laboratory
+workflows violate this assumption: the scientific validity of a result is not observ-
+able from execution data. This observability gap is the representational problem
+that motivates our federated SKG.
+    The closest methodology to ours in spirit is D’Amico et al. [7], who propose
+a five-step framework for Cognitive Digital Twins, establishing the concept of
+expert knowledge encoded into a formal graph for reasoning and decision support.
+Jungmann and Lazarova-Molnar [19] independently identify the same integration
+gap — data-driven DTs lack systematic expert knowledge incorporation — but
+leave the elicitation mechanism and uncertainty representation as open problems.
+Our work addresses both.
+    The BCP upper ontology draws on the Allotrope Foundation Ontology
+(AFO) [2] and the Ontology for Biomedical Investigations (OBI) [24]. Both
+are grounded in the Basic Formal Ontology (BFO) — a realist ontology bounded
+by design to concretized objects and processes, not epistemic states or potential
+failure conditions. This realist boundary explains precisely why no BFO-grounded
+standard addresses the epistemic layer this work targets. BCP’s FailureMode,
+DecisionPoint, MASKED_BY, and confidence scoring infrastructure are additive
+extensions into that vocabulary space; all existing analytical data standard terms
+remain intact.
+
+2.2   Self-Driving Laboratories and Lab Automation
+Self-driving laboratories (SDLs) use KGs for autonomous orchestration [1,8,9,38].
+High-profile implementations include The World Avatar [4] — a distributed KG for
+cross-site autonomous synthesis — and MATTERIX [9], a GPU-accelerated simu-
+lation framework for robotics-assisted chemistry digital twins. In pharmaceutical
+bioanalysis specifically, Thieme et al. [37] describe deep Opentrons integration
+under FAIR principles; PyLabRobot [40] provides cross-platform liquid-handler
+interfaces that represent the infrastructure heterogeneity our UseCase vocabulary
+bridges.
+    SDLs are effective where the experimental objective — yield, purity, conver-
+sion — is directly measurable and the optimization function can be specified.
+4      L. F. Schachner et al.
+
+For bioanalytical science, neither condition holds: the objective involves ma-
+trix interference characterization, silent failure risk assessment, and cross-study
+comparability whose validity is not recoverable from execution logs.
+
+2.3   Expert Elicitation, Biomedical KGs, and Workflow Knowledge
+Structured expert elicitation (SEE) is an established methodology for formally cap-
+turing uncertain quantities from domain experts [6,10,13,14,33], but traditionally
+targets probability distributions for parameters, not procedural workflow struc-
+tures. Our work is, to our knowledge, the first application of SHELF-grounded [13]
+elicitation to encode laboratory procedural knowledge into a property graph with
+confidence scoring. The closest prior art is knowledge elicitation for medical
+laboratory diagnostic expert systems [23], which targets diagnostic rule extrac-
+tion rather than procedural workflow capture — a distinct problem. Zhang et
+al. [42] introduced conversational ontology requirements elicitation via LLMs;
+our Protocol Intelligence Co-pilot extends this direction into operational work-
+flow capture, targeting failure genealogy and decision logic rather than ontology
+schema. Confidence scoring uses linguistic approximation grounded in Lakoff [20]
+and Zadeh [41].
+    Large-scale biomedical KGs from literature mining [12, 43] and representation
+learning [28] establish KG infrastructure for biomedical entity relationships. Ours
+is a different kind: a procedural workflow graph encoding tacit expert knowledge
+about how assays are run, where they fail, and what judgment is required at each
+decision point. No published KG for bioanalytical assay workflows was identified
+in our literature search. The closest published work is Schröder et al. [31],
+who demonstrate structure-based knowledge acquisition from ELN protocols for
+provenance documentation; our contribution extends this into tacit procedural
+knowledge, automation-masked scientific validity, and explicit confidence scoring.
+
+2.4   Automation-Induced Silent Failures and the Observability Gap
+Avizienis et al. [3] define silent failures as components that fail without gener-
+ating any error signal — the formal backbone for our MASKED_BY relationship:
+an automation asset that logs successful operation while scientific validity is
+compromised produces exactly this behavior.
+    The closest formal ontology work is MALFO [5], a BFO-compatible ontol-
+ogy of malfunction-related occurrents (FOIS 2024), which formalizes a precise
+taxonomy of engineering failures aligned with BCP’s internal failure taxonomy.
+MALFO does not address the automation reporting layer — by design — the
+case where an instrument’s success log actively masks an underlying failure
+condition. The IMDRF adverse event terminology [17] recognizes device out-
+put errors from a regulatory reporting perspective but does not address the
+automation-masking pattern in experimental workflows. Regulatory guidance
+frameworks recognize that automation success does not guarantee scientific valid-
+ity but provide no encoding mechanism [11, 15, 16]. The MASKED_BY relationship
+and silent_failure_risk property are our encoding of exactly that divergence.
+                                 Federated SKGs for Laboratory Workflows         5
+
+3     Federated Architecture and Upper Ontology
+
+The Biochemical and Cellular Pharmacology Department (BCP) at Genentech,
+Inc. is the evidentiary backbone of the drug discovery pipeline: program milestones
+from candidate nomination through IND are gated on specific assay outputs that
+BCP designs, executes, and interprets. We use “Semantic Digital Twin” to denote
+a knowledge-anchored, query-first semantic model of a real system — static by
+design in this deployment, not a live-synchronized physical replica; transition to
+real-time agent-runtime querying is the primary future work direction (§7). The
+BCP SDT is a federated SKG deployed in Neo4j AuraDB [29] whose architecture
+mirrors BCP’s decision structure directly across three tiers, exemplified by three
+independently constructed subgraphs — immunoassay (ELISA), quantitative
+mass spectrometry (LC-MS/PRM), and laboratory automation infrastructure —
+coexisting in a single property graph database, aligned through a shared upper
+ontology.
+
+
+3.1   Three-Tier Knowledge Hierarchy
+
+The architecture organizes knowledge across three tiers that directly mirror the
+decision-making structure of a pharmaceutical research organization (Fig. 1):
+
+ – Tier 1 — Program Decision Layer. Maps how assay outputs feed into
+   program-level decisions. The defining edge type is SOURCED_FROM, where
+   each EvidentiaryInput node specifies the required assay output, quality
+   threshold, and decision consequence if unmet. A cross-tier traversal from
+   Tier 1 through Tier 3 therefore exposes whether the execution infrastructure
+   supporting a specific program milestone carries undetected silent failure risk
+  — a query unresolvable from any single-tier data source.
+ – Tier 2 — Assay Protocol Layer. The core scientific knowledge tier:
+   workflow steps, decision logic, and FailureMode risks.
+ – Tier 3 — Execution Infrastructure Layer. Models the physical automa-
+   tion environment and instrument logs (ErrorSignature), enabling representa-
+   tion of the gap between sensor scope and scientific consequence.
+
+   The three tiers are linked by a connection layer of cross-tier edge types
+described in §3.4.
+
+
+3.2   Upper Ontology Design and AFO Alignment
+
+The BCP upper ontology serves two purposes: enabling cross-subgraph query
+through shared superclasses, and grounding vocabulary in established laboratory
+analytical science terminology.
+6        L. F. Schachner et al.
+
+
+                                                Upper Ontology
+                 Superclass Constraints · Indexes · Cross-Subgraph Query Enablement
+
+          ELISA Subgraph                          LC-MS Subgraph                        Automation Subgraph
+    14 WorkflowSteps · 18 FailureModes ·   31 WorkflowSteps · 23 FailureModes ·       77 AutomationAssets · 7 FailureModes
+              127 nodes total                        100 nodes total                             · 15 UseCases
+         Representative Node Types:              Representative Node Types:
+                                                                                           Representative Node Types:
+               AssayWorkflow                            AssayWorkflow
+                                                                                                 AutomationAsset
+                WorkflowStep                             WorkflowStep
+                                                                                              AutomationFailureMode
+                FailureMode                              FailureMode
+                                                                                                    UseCase
+                DecisionPoint                            DecisionPoint
+               Expert/Scientist                         Expert/Scientist
+
+         Representative Edge Types:              Representative Edge Types:                Representative Edge Types:
+    CONTAINS_STEP, CAUSES_IF_INCOM-         CONTAINS_STEP, CAUSES_IF_INCOM-                       OCCURS_IN
+    PLETE, LEADS_TO, SOURCED_FROM           PLETE, LEADS_TO, SOURCED_FROM
+
+                                           CONDITIONAL extension: LC-MS acquisition
+
+
+                    REQUIRES_AUTOMATION (n=14), MASKED_BY
+
+                                                                 REQUIRES_AUTOMATION (n=17), MASKED_BY
+
+    AFO / OBI alignment: AssayWorkflow → OBI assay · InstrumentAsset → AFO equipment
+         MALFO alignment: 41 FailureMode nodes classified across 6 MALFO classes
+
+
+Fig. 1. BCP Semantic Digital Twin — federated architecture. Three subgraphs are
+linked through cross-subgraph edges; the shared upper ontology provides alignment
+anchors at the AssayWorkflow and AutomationAsset layers. The CONDITIONAL block
+marks the LC-MS modality-specific extension.
+
+
+Shared terminological layer (TBox). The upper ontology defines shared
+superclasses (TBox); domain-specific subgraphs contain contextual instantiated
+data (ABox). Observable entities (processes, instruments) are grounded in AFO [2]
+and OBI [24]; we extend these standards to capture epistemic states — conditional
+judgment, confidence gradations, automation-masked validity — that lie outside
+BFO’s intentional realist scope.
+
+
+Cross-subgraph query alignment. A query against the FailureMode su-
+perclass traverses both ELISA and LC-MS subgraphs without modification;
+domain-specific properties coexist on the same node without conflicting with
+universally defined properties.
+    Table 1 (supplemental) documents the domain vocabulary basis for each
+BCP upper ontology superclass. The coverage pattern is informative: established
+industry standards provide vocabulary for the observable layer — processes,
+instruments, analytes, measurement results — and have no vocabulary for the
+epistemic layer — failure genealogy, conditional expert judgment, tacit knowledge
+confidence, and automation-masked validity. This boundary is our contribution’s
+entry point.
+    A note on ontological scope: AFO and OBI are grounded in BFO, a de-
+liberately realist ontology that models concretized objects and processes but
+not epistemic states or potential failure conditions — the representational gap
+this work addresses. The BCP schema is an application-level property graph
+                                                                 Federated SKGs for Laboratory Workflows                               7
+
+vocabulary, not a formal ontology in the W3C/OBO sense (no minted IRIs, Aris-
+totelian definitions, or OWL axioms); formal OWL serialization with DOLCE or
+GFO alignment — more appropriate foundations for epistemic and dispositional
+concepts than BFO — is scoped as future work.
+
+
+3.3      Node Type Schema
+
+The node type vocabulary is shown in Fig. 2 and in full tabular form in Table
+2 (supplemental). Each node type carries a subgraph property identifying its
+domain scope and a per-subgraph id; namespace separation is enforced at the
+ID level.
+
+
+  Tier 2 - Assay Protocol
+
+
+           AssayWorkflow                 WorkflowStep
+                 id, name               id, name, subgraph
+                             CONTAINS_STEP
+
+
+             TRIGGERED_AT            CAUSES_IF_INCOMPLETE
+                                                                                           Tier 3 - Execution
+                                                                    REQUIRES_AUTOMATION
+
+             DecisionPoint               FailureMode                                                 AutomationAsset
+                                                                 LEADS_TO      MASKED_BY
+         condition, threshold_note     id, name, confidence                                        id, name, instrument_type
+           on_true/false_action          silent_failure_risk                                             building, room
+
+
+                                                               CANDIDATE_MASKED_BY                       OCCURS_IN
+
+
+
+                                        ELICITED_FROM
+                                                                                                  AutomationFailureMode SUITABLE_FOR
+                                                                                                     id, name, confidence
+
+
+
+      Provenance
+
+                                                                                                          UseCase
+                                                                                                           id, name
+                                       Expert / Scientist
+                                             id, subgraph
+
+
+
+
+Fig. 2. BCP SDT node and relationship schema. The MASKED_BY edge (dashed,
+Tier 2 → Tier 3) encodes automation-induced observability loss: a FailureMode linked
+to the AutomationAsset responsible for concealing it from execution logs.
+
+
+
+
+3.4      Edge Type Semantics
+
+Within-tier edges (Table 3, supplemental) define workflow structure and knowl-
+edge provenance; cross-tier edges (Table 4, supplemental) define the causal and
+masking connections that require the federated architecture to represent.
+    The MASKED_BY relationship encodes a condition with no structural equivalent
+in existing biomedical KG literature: a scientific failure mode that is invisible to the
+execution layer because the automation asset logs success while scientific validity is
+8       L. F. Schachner et al.
+
+compromised. The edge direction — from FailureMode toward AutomationAsset
+— encodes this asymmetry: the automation asset is not causing the failure; it is
+preventing the failure from being detected.
+   Two relationships form the capability bridge: REQUIRES_AUTOMATION links
+each WorkflowStep to an assay-agnostic UseCase, and SUITABLE_FOR links that
+UseCase to a physical AutomationAsset. The 15 UseCase nodes (Serial Dilution,
+Plate Washing, Precious Reagent Dispensing, etc.) allow workflow steps from any
+assay modality to reach automation assets through a shared vocabulary layer.
+
+
+3.5   Three-Subgraph Federation
+
+The federation spans an ELISA subgraph, an LC-MS/PRM subgraph, and an
+automation infrastructure subgraph. Graph provenance is fully tracked: nodes
+generated from text extraction carry metadata distinguishing them from expert-
+elicited nodes, ensuring traceability back to source scientist or protocol document.
+All class and edge type definitions belong in the shared upper ontology by default;
+instantiated edges with their assay-specific confidences reside in individual sub-
+graphs, ensuring future additions map to upper ontology classes at construction
+time.
+
+
+4     Elicitation Methodology
+
+The SKG is populated through a structured expert elicitation pipeline centered
+on the Protocol Intelligence Co-pilot — a purpose-built AI interview agent that
+extracts tacit procedural knowledge from domain experts and converts it into a
+machine-readable intermediate representation for graph ingestion. The pipeline
+comprises three stages: interview elicitation, structured annotation, and Cypher
+load into Neo4j AuraDB.
+
+
+4.1   Protocol Intelligence Co-pilot
+
+The Co-pilot’s core design principle is that the scientist is a co-author of the
+knowledge object, not a subject of interrogation. After each substantive exchange,
+the agent updates the structured representation and displays the changed section
+with an explicit invitation to correct it — surfacing misclassifications in real time
+while building trust in a process of explicit knowledge externalization.
+
+
+Session modes. The Co-pilot operates in three modes governing which knowl-
+edge layers may be populated: OPERATIONAL (execution-level knowledge,
+for scientists who run but did not design the protocol), DESIGN EXPERT
+(full elicitation including decision model layer, for protocol designers and domain
+owners), and DIRECTOR (strategic cross-domain elicitation via a companion
+Director Agent, no protocol anchor).
+                                 Federated SKGs for Laboratory Workflows        9
+
+Epistemic contamination guard. Decision model fields must never be popu-
+lated from an OPERATIONAL source. When session mode is OPERATIONAL,
+decision_model is set to _elicitation_scope: “operational_only” with all
+fields null, flagging the required follow-up: a DESIGN EXPERT session with the
+protocol’s designer. A null field is honest — it records that the knowledge has
+not yet been captured. A guessed field masquerading as design knowledge will be
+queried and treated as truth.
+
+Session structure. Sessions proceed through four phases: Orient (anchor on
+the decision the assay supports, not the protocol mechanism), Explore (failure
+genealogy, conditional decision logic, procedural dependencies, tacit knowledge
+boundaries), Generalize (decision model layer, DESIGN EXPERT only), and
+Close (knowledge not surfaced by the lens structure).
+
+4.2   Structured Extraction Object Schema
+Each elicitation session produces a Structured Extraction Object (SEO) — a
+typed JSON document that decouples elicitation from graph construction: the
+annotation agent operates on structured text rather than raw transcript, and the
+schema enforces completeness independently of which elicitation agent produced
+the interview.
+    The SEO comprises six independently grounded content layers (detailed in
+Appendix A); three session-mode gates govern which layers may be populated:
+Layer 1 (Protocol, all modes), Layer 2 (Decision Model, DESIGN EXPERT
+and DIRECTOR only), and Layer 3 (Strategic, DIRECTOR only: cross-domain
+knowledge, group capability gaps, future assay class design questions).
+    Every FailureMode and DecisionPoint node carries three mandatory per-
+node fields — confidence, confidence_method, and source_scientist — as
+specified in Layer 2 (Appendix A). Session-level provenance is recorded separately
+in the twin_metadata block (Layer 6), anchoring each claim to its source expert,
+session mode, and calibration status. Fields not yet elicited remain null.
+
+4.3   Expert-Assigned Confidence Scoring
+Every FailureMode and DecisionPoint node in the deployed KG carries a
+confidence property in [0.60, 1.00]. Two methods are in use:
+ – Linguistic approximation (primary method, both subgraphs): confidence
+   is assigned from the expert’s language during elicitation. Declarative language
+   (“always,” “definitely,” “every time”) maps to 0.85–0.92.
+ – SHELF elicitation [13]: for failure modes where silent_failure_risk:
+   true or is_critical_path: true, the Co-pilot elicits a three-point fre-
+   quency estimate (frequency_min, frequency_best, frequency_max) with
+   confidence_method: “SHELF_elicited”. SHELF and linguistic approxima-
+   tion populate distinct property fields: SHELF produces a frequency distri-
+   bution; the scalar confidence used throughout §5 is always linguistically
+10       L. F. Schachner et al.
+
+      approximated. SHELF elicitation was applied to four silent failure mode
+      candidates in the current deployment; formal Cooke weighting is deferred as
+      future work.
+
+
+4.4     Graph Generation and Transcript Fidelity
+
+The Annotator Agent translates validated SEOs into deterministic, MERGE-
+compatible Cypher for idempotent ingestion into Neo4j AuraDB. A pre-processing
+mode extracts a baseline protocol skeleton from SOP documents; automatically
+extracted properties are tagged [SCHEMA_DEFAULT], while expert-validated ad-
+ditions are tagged [INTERVIEW_CONFIRMED]. Cross-subgraph connections (e.g.,
+MASKED_BY) are flagged as PENDING CONVERGENCE and manually authored
+during a cross-domain validation phase, ensuring independent subgraph integrity
+before federation.
+    When elicitation uses spoken input, general-purpose ASR models introduce
+systematic errors by substituting phonetic approximations for scientific jargon —
+errors that confidence scoring then amplifies. A dedicated contextual agent reviews
+raw transcripts against assay-specific vocabulary before the annotation phase,
+logging all corrections to preserve pipeline traceability. Across both deployed
+subgraphs, this step identified and corrected 288 such errors (3.5 per 1,000
+characters).
+
+
+5     Evaluation: Three Subgraphs and Cross-Domain Queries
+
+We evaluate the federated SDT along three axes: (A) individual subgraph querying,
+demonstrating query types unavailable from protocol documents or sensor streams;
+(B) cross-subgraph federation, requiring traversal across the ELISA–Automation
+boundary; and (C) comparative analysis across subgraphs, showing that inter-
+domain variation in knowledge coverage is itself a retrievable finding.
+   All queries were executed against the live AuraDB deployment following full
+load of all three subgraphs and the upper ontology governance layer (statistics in
+Table 5, supplemental). All confidence scores were assigned using linguistic approx-
+imation from expert elicitation transcripts, as documented in the corresponding
+CalibrationRecord node.
+
+
+5.1     Demonstrated Query Capabilities
+
+Seven queries spanning six capability classes were evaluated against the live
+AuraDB deployment. Q1 and Q5 apply the same ranked-retrieval query to the
+ELISA and LC-MS subgraphs respectively; Q4 comprises two sub-queries (Q4a,
+Q4b) targeting distinct epistemic gap types. Full Cypher traversal queries and
+tabular results are provided in the Supplemental Material.
+                                  Federated SKGs for Laboratory Workflows         11
+
+Ranked Failure Mode Retrieval with Automation Visibility (Q1 &
+Q5): The graph returns confidence-ranked failure mode catalogs for both assay
+subgraphs, explicitly flagging risks classified as “SILENT” (undetectable by
+connected automation). In the ELISA subgraph, the highest-confidence SILENT
+failure mode is Washer Carryover (confidence = 0.90), linked to the EL406 Plate
+Washer — the second-ranked failure mode by expert confidence is simultaneously
+invisible to automated quality control. In the LC-MS subgraph, the highest-
+confidence failure mode is Recombinant/Endogenous Mismatch (0.90); full ranked
+results are in Table 6 (supplemental).
+
+Machine-Actionable Decision Logic (Q2): Traversals at critical workflow
+steps retrieve structured conditional logic including numeric thresholds, branching
+actions, and escalation triggers encoded from expert judgment. For the Plate
+Readout step in ELISA, six decision points are returned — each encoding a typed
+condition, a numeric threshold, and explicit pass, fail, and escalation actions.
+
+Causal Cascade Prediction (Q3): The graph reconstructs multi-step failure
+cascades tracing upstream procedural errors to terminal scientific invalidity. At
+maximum cascade depth 2 (Fig. 3): Washer Carryover → High Background /
+Nonspecific Signal → Standard Curve Failure. The causal chain is reconstructable
+only through graph traversal; neither the equipment log nor the intermediate
+anomaly individually signals the root cause.
+
+Epistemic Self-Audit — Coverage Gaps and Knowledge Boundaries
+(Q4): Q4 interrogates the graph’s own knowledge coverage — a capability
+structurally unavailable from any static document or sensor stream.
+     Q4a identifies ELISA workflow steps with no documented failure mode. Three
+steps are returned: Stop Reaction and Sample Dilution Strategy are genuine
+elicitation gaps; Plate Readout is structurally distinct — it carries six decision
+points encoding conditional logic, but no CAUSES_IF_INCOMPLETE edge, because
+at readout the scientist evaluates consequences rather than executing a procedure
+that can fail. The distinction between a step that executes and one that evaluates
+is itself a retrievable graph finding.
+     Q4b identifies LC-MS failure modes at the confidence floor (≤ 0.60), encoding
+a scientist scope limitation rather than a knowledge gap. Three failure modes carry
+0.60, assigned because these fell outside the elicited scientist’s direct operational
+experience — a structured epistemic signal, not missing data.
+
+Cross-Subgraph Federation Traversals: The EL406 Self-Masking Loop
+(Q6): The federation links scientific failure modes to the automation assets that
+conceal them. Both returned rows (Table 7, supplemental) resolve to the EL406
+Plate Washer, which simultaneously causes Washer Carryover and masks it from
+detection (Fig. 3) — a self-masking loop with no representation in any individual
+data source.
+12       L. F. Schachner et al.
+
+
+
+
+         WorkflowStep
+      Wash #1 (post-coating)
+
+
+                                   REQUIRES_AUTOMATION
+     CAUSES_IF_INCOMPLETE
+
+
+
+          FailureMode                                        AutomationAsset
+                                      MASKED_BY
+        Washer Carryover                                     EL406 Plate Washer
+      silent_failure_risk = true
+
+
+                 EL406 executes Wash #1 and masks the failure it causes
+
+
+
+Fig. 3. EL406 Plate Washer self-masking loop (Q3/Q6). The automated plate washer
+simultaneously causes Washer Carryover (CAUSES_IF_INCOMPLETE) and prevents its
+detection (MASKED_BY), creating an observability gap invisible to automation execution
+logs.
+
+
+Cross-Assay Capability Bridge: Instrument Sharing Query (Q7): Query-
+ing the 31 REQUIRES_AUTOMATION edges spanning both subgraphs identifies au-
+tomation assets shared by ELISA and LC-MS — candidates for cross-assay
+consolidation. The query returns 22 instruments across three overlap tiers (Table
+8, supplemental). The 15 assay-agnostic UseCase nodes ensure any modality pair
+can be queried for overlap without modification.
+
+
+5.2    Comparative Analysis: Knowledge Coverage Across Subgraphs
+
+The two completed assay subgraphs share construction methodology but exhibit
+structurally different knowledge profiles (Fig. 4, Table 9, supplemental). ELISA
+(n = 18, µ = 0.82) clusters toward high confidence; LC-MS/PRM (n = 23, µ =
+0.71) shows broader spread reflecting greater tacit knowledge uncertainty. The
+structural difference in failure mode count reflects genuine domain complexity:
+LC-MS/PRM involves more instrument-dependent failure modes and more sample
+preparation chemistry steps.
+    A notable silent failure analogue appears in the LC-MS subgraph. Sample
+Evaporation / Well Edge Effect (FM-LCMS-022, confidence = 0.65) was char-
+acterized by the elicited scientist as: “I don’t think that plays a big part — the
+IS corrects for all of that.” However, SIL-IS ratio normalization mathematically
+masks a concentration error from evaporation rather than correcting it — if
+                                  Federated SKGs for Laboratory Workflows          13
+
+
+
+
+Fig. 4. Expert-assigned confidence score distribution by subgraph. ELISA (n=18,
+µ = 0.82) clusters toward high confidence; LC-MS/PRM (n=23, µ = 0.71) shows
+broader spread reflecting greater tacit knowledge uncertainty. Dashed line: confidence
+floor (0.60).
+
+
+evaporation is uniform, the IS ratio appears normal while absolute concentration
+drifts. The graph holds both truths simultaneously: the scientist’s operational
+confidence (0.65) and the annotator’s silent_failure_risk: true.
+
+
+5.3   Pipeline Validation: Annotator Consistency and Transcript
+      Fidelity
+
+Within-agent consistency. The pipeline was run three times independently
+on each transcript with no shared state. All structural metrics reached 1.0 with
+zero variance (Table 10, supplemental). A critical distinction applies: FM F1 =
+1.0 across independent runs confirms that extraction is deterministic — governed
+by elicitation content rather than annotator stochasticity. Determinism is not the
+same as accuracy; cross-agent agreement operates at a different evidential level.
+
+
+Cross-agent agreement. The automated pipeline was compared against refer-
+ence annotations from manually-guided sessions (Table 11, supplemental). On
+the clean-session LC-MS comparison, it achieved FM F1 = 1.0, independently ex-
+tracting the identical 13 FailureMode nodes. The ELISA cross-agent comparison
+yielded FM F1 = 0.43 — the automated pipeline missed failure modes surfaced
+only through extended multi-turn probing in the reference session. Conversely,
+the automated pipeline generated structurally richer output, autonomously pro-
+ducing MASKED_BY edges that the manual sessions missed; MethodAlternative
+14      L. F. Schachner et al.
+
+recall (0.22) directly motivates the Co-pilot’s chunked, multi-turn design. The
+strongest cross-expert signal: recombinant/endogenous mismatch was indepen-
+dently recovered in both ELISA and LC-MS — different assay domains, different
+scientists, the same framework (§5.2).
+
+
+6     Discussion
+6.1   Challenges and Honest Limitations
+ – Elicitation time investment. Each structured session requires roughly 60
+   minutes of expert time plus load review — a front-loaded cost easily justified
+   for high-stakes assays (GLP studies, clinical biomarkers).
+ – Tacit knowledge that resists articulation. Some expert judgment relies
+   on pre-verbal pattern recognition. The graph encodes these boundaries via
+   AmbiguityFlag nodes and flagged_for_review properties, treating unar-
+   ticulated claims as investigational targets rather than certain knowledge.
+ – Confidence approximation. Linguistic approximation captures graded
+   certainty but not calibrated probability. Formal cross-scientist calibration
+   (Cooke [6]) is required before the graph can support autonomous, high-stakes
+   program decisions.
+ – Currency maintenance. Laboratory workflows evolve; equipment upgrades
+   or new reagent lots can invalidate existing failure modes. Mitigation relies
+   on periodic re-elicitation and versioned MERGE-idempotent Cypher loads;
+   automated staleness detection remains future work.
+
+6.2   Broader Applicability and Future Directions
+The core components — structured elicitation lenses, the SEO intermediate
+schema, and the MASKED_BY representation — are domain-agnostic. Direct candi-
+date domains include pharmaceutical manufacturing process validation (where
+tacit parameter interactions are high-stakes) and clinical diagnostics (where
+cross-laboratory variability often encodes undocumented procedural differences).
+As the field progresses toward agentic laboratory systems, the SDT provides the
+prerequisite semantic world model: a queryable representation of where workflows
+fail silently, where human judgment is irreplaceable, and which automation assets
+mask rather than detect failures.
+
+
+7     Conclusion and Future Work
+Laboratory workflows encode substantial tacit knowledge — expert judgment
+about failure conditions, decision branching logic, and contextual dependencies —
+that remains inaccessible to protocol documents, sensor streams, and existing
+biomedical ontologies. We have presented a federated Semantic Knowledge Graph
+and a reproducible, structured expert elicitation methodology to capture this
+knowledge across three workflow domains. The deployed federation produces
+                                    Federated SKGs for Laboratory Workflows            15
+
+capabilities unachievable in isolated systems: machine-actionable decision logic,
+epistemic self-auditing, and pipeline extraction that is structurally deterministic
+within-agent (FM F1 = 1.0) with cross-agent agreement bounded by elicitation
+depth. Most critically, this architecture introduces the MASKED_BY relationship —
+formalizing a class of risk previously invisible to laboratory informatics, where
+execution logs report success while scientific validity is actively compromised.
+    Future work proceeds in three directions:
+ – Multi-assay expansion. The methodology is being deployed across addi-
+   tional assay formats (MSD, TR-FRET, cell-based assays) with strict upper
+   ontology alignment; expansion beyond BCP to other Genentech departments
+   is underway.
+ – Agent-runtime querying. Transitioning the SKG to a dynamic reasoning
+   substrate, enabling AI agents to query failure modes, interpret anomalous
+   readouts, and identify masking risks in real time during experimental planning
+   and execution.
+ – Formal confidence calibration. Upgrading linguistic approximation scores
+   to calibrated probability distributions via Cooke’s classical model [6], pri-
+   oritizing nodes with silent_failure_risk: true to maximize calibration
+   yield while minimizing additional interview burden.
+
+Acknowledgments. The authors thank the domain scientists at the Biochemical and
+Cellular Pharmacology Department, Genentech, Inc., who contributed expert elicitation
+sessions. We also thank Arindam Sett, Kelly Loyet, Heather Jutila, Asif Jan, Zoe Piran,
+and Shirley Ng for critical reading and feedback, and Corey Bakalarski (Allotrope
+Foundation) for review of the ontology alignment sections.
+
+Supplemental Material Statement: The supplemental document includes archi-
+tecture reference tables (Tables 1–11), complete Cypher queries for all seven query
+types (Q1–Q7), the abridged SEO schema (Appendix A), and the upper ontology
+governance specification (Appendix B), submitted via EasyChair and available through
+the corresponding author’s institutional repository upon acceptance. Co-pilot system
+prompts, agent prompts, elicitation lens specifications, and Cypher load files are subject
+to a pending patent application and are available from the corresponding author for
+review purposes.
+
+Disclosure of Interests. The authors are employees of Genentech, Inc., a company
+that sells and manufactures medicines.
+
+
+Declaration of Use of Generative AI
+Generative AI tools were used in this work in two capacities. First, as core
+research instruments: the Protocol Intelligence Co-pilot, Annotator Agent, and
+domain correction preprocessing agent described in Section 4 are implemented
+as large language model-based agents using Claude (Anthropic) and Gemini
+(Google); their design, application, and outputs are described in the methodology
+and constitute the primary contribution of this paper. Second, large language
+16      L. F. Schachner et al.
+
+model tools — specifically ChatGPT (OpenAI), Claude (Anthropic), and Gemini
+(Google) — were used to support manuscript preparation, including deep re-
+search, literature review, structural editing, reference verification, and consistency
+checking. All scientific claims, experimental results, and interpretations are the
+sole responsibility of the human authors, who reviewed and verified all AI-assisted
+content.
+
+
+References
+ 1. Abolhasani, M., Kumacheva, E.: The rise of self-driving labs in chemical and mate-
+    rials sciences. Nat. Synth. 2(3), 197–206 (2023). https://doi.org/10.1038/s44160-
+    022-00231-0
+ 2. Allotrope       Foundation:      Allotrope      Foundation       Ontology     (AFO).
+    https://www.allotrope.org. Accessed April 2026.
+ 3. Avizienis, A., Laprie, J.-C., Randell, B., Landwehr, C.: Basic concepts and taxonomy
+    of dependable and secure computing. IEEE Trans. Dependable Secure Comput.
+    1(1), 11–33 (2004). https://doi.org/10.1109/TDSC.2004.2
+ 4. Bai, J., et al.: A dynamic knowledge graph approach to distributed self-driving
+    laboratories. Nat. Commun. 5, 462 (2024). https://doi.org/10.1038/s41467-023-
+    44599-9
+ 5. Compagno, D., Borgo, S.: MALFO: a BFO-grounded ontology of malfunction-
+    related occurrents. In: Formal Ontology in Information Systems – Proceedings of
+    FOIS 2024. IOS Press (2024). https://ebooks.iospress.nl/volumearticle/71401
+ 6. Cooke, R.M.: Experts in Uncertainty: Opinion and Subjective Probability in Science.
+    Oxford University Press, Oxford (1991).
+ 7. D’Amico, R.D., Sarkar, A., Karray, M.H., Addepalli, S., Erkoyuncu, J.A.:
+    Knowledge transfer in Digital Twins: The methodology to develop Cog-
+    nitive Digital Twins. CIRP J. Manuf. Sci. Technol. 52, 366–385 (2024).
+    https://doi.org/10.1016/j.cirpj.2024.06.007
+ 8. Dai, T., Vijayakrishnan, S., Szczypiński, F.T., et al.: Autonomous mobile robots
+    for exploratory synthetic chemistry. Nature 635, 890–897 (2024).
+ 9. Darvish, K., Sohal, A., Mandal, A., et al.: MATTERIX: toward a digital twin for
+    robotics-assisted chemistry laboratory automation. Nat Comput Sci 6, 67–82 (2026).
+    https://doi.org/10.1038/s43588-025-00924-4
+10. EFSA: Guidance on expert knowledge elicitation in food and feed safety risk
+    assessment. EFSA J. 12(6), 3734 (2014). https://doi.org/10.2903/j.efsa.2014.3734
+11. FDA: Bioanalytical Method Validation Guidance for Industry. U.S.
+    Food and Drug Administration, Silver Spring, MD (May 2018).
+    https://www.fda.gov/media/70858/download
+12. Gao, S., et al.: Large language model powered knowledge graph con-
+    struction for mental health exploration. Nat. Commun. 16, 7121 (2025).
+    https://doi.org/10.1038/s41467-025-62781-z
+13. Gosling, J.P.: SHELF: the Sheffield elicitation framework. In: Dias, L.C., Mor-
+    ton, A., Quigley, J. (eds.) Elicitation. International Series in Operations Re-
+    search & Management Science, vol. 261, pp. 61–93. Springer, Cham (2018).
+    https://doi.org/10.1007/978-3-319-65052-4_4
+14. Hanea, A.M., Hemming, V., Nane, G.F.: Uncertainty Quantification with Ex-
+    perts: Present Status and Research Needs. Risk Anal. 42(2), 254–263 (2022).
+    https://doi.org/10.1111/risa.13718
+                                   Federated SKGs for Laboratory Workflows           17
+
+15. ICH: ICH Harmonised Guideline M10: Bioanalytical Method Validation and Study
+    Sample Analysis. International Council for Harmonisation, Step 4 (May 2022).
+    https://www.ich.org/page/multidisciplinary-guidelines
+16. ICH: ICH Harmonised Guideline Q14: Analytical Procedure Development. Interna-
+    tional Council for Harmonisation, Step 4 (2023). https://www.ich.org/page/quality-
+    guidelines
+17. IMDRF: Machine Learning-enabled Medical Devices: Key Terms and
+    Definitions IMDRF/AIML WG/N67. International Medical Device Reg-
+    ulators      Forum       (2022).    https://www.imdrf.org/sites/default/files/2022-
+    05/IMDRF%20AIMD%20WG%20Final%20Document%20N67.pdf
+18. Inokuchi, K., Nakazato, J., Tsukada, M., Esaki, H.: Semantic digital
+    twin for interoperability and Comprehensive Management of Data Assets.
+    In: 2023 IEEE International Conference on Metaverse Computing, Net-
+    working and Applications (MetaCom), Kyoto, Japan, pp. 217–225 (2023).
+    https://doi.org/10.1109/MetaCom57706.2023.00049
+19. Jungmann, M., Lazarova-Molnar, S.: Towards Fusing Data and Expert Knowledge
+    for Better-Informed Digital Twins: An Initial Framework. Procedia Comput. Sci.
+    238, 639–646 (2024).
+20. Lakoff, G.: Hedges: A study in meaning criteria and the logic of fuzzy concepts. J.
+    Philos. Log. 2, 458–508 (1973).
+21. Meyers, B., et al.: Knowledge Graphs in Digital Twins for Manufacturing - Lessons
+    Learned from an Industrial Case at Atlas Copco Airpower. IFAC-PapersOnLine
+    55(10), 13–18 (2022). https://doi.org/10.1016/j.ifacol.2022.09.361
+22. Mihindukulasooriya, N., et al.: Knowledge graph induction enabling recommending
+    and trend analysis: a corporate research community use case. In: Sattler, U., et al.
+    (eds.) The Semantic Web – ISWC 2022. LNCS, vol. 13489, pp. 755–771. Springer,
+    Cham (2022). https://doi.org/10.1007/978-3-031-19433-7_47
+23. Osuagwu, C.C., Okafor, E.C.: Framework for eliciting knowledge for a medical
+    laboratory diagnostic expert system. Expert Syst. Appl. 37(7), 5009–5016 (2010).
+    https://doi.org/10.1016/j.eswa.2009.12.012
+24. OBI Consortium: The Ontology for Biomedical Investigations. PLOS ONE 11(4),
+    e0154556 (2016). https://doi.org/10.1371/journal.pone.0154556
+25. Odonkar, S., et al.: Towards a Semantic Digital Twin for Marine Robotics.
+    In: ISR Europe 2023 – 56th International Symposium on Robotics (2023).
+    https://doi.org/10.13140/RG.2.2.27995.13604
+26. Ploennigs, J., et al.: Scaling knowledge graphs for automating AI of digital twins.
+    In: Sattler, U., et al. (eds.) The Semantic Web – ISWC 2022. LNCS, vol. 13489, pp.
+    733–750. Springer, Cham (2022). https://doi.org/10.1007/978-3-031-19433-7_46
+27. Ramonell, C., et al.: Knowledge graph-based data integration system
+    for digital twins of built assets. Autom. Constr. 156, 105109 (2023).
+    https://doi.org/10.1016/j.autcon.2023.105109
+28. Remy, F., Demuynck, K., Demeester, T.: BioLORD-2023: semantic tex-
+    tual representations fusing large language models and clinical knowledge
+    graph insights. J. Am. Med. Inform. Assoc. 31(9), 1844–1855 (2024).
+    https://doi.org/10.1093/jamia/ocae029
+29. Robinson, I., Webber, J., Eifrem, E.: Graph Databases: New Opportunities for
+    Connected Data, 2nd edn. O’Reilly Media, Sebastopol, CA (2015).
+30. Sahlab, N., et al.: Knowledge graphs as enhancers of intelligent digital twins. In:
+    4th IEEE International Conference on Industrial Cyber-Physical Systems (ICPS
+    2021). IEEE (2021). https://doi.org/10.1109/ICPS49255.2021.9468219
+18      L. F. Schachner et al.
+
+31. Schröder, M., Staehlke, S., Groth, P., Nebe, J.B., Spors, S., Krüger, F.:
+    Structure-based knowledge acquisition from electronic lab notebooks for re-
+    search data provenance documentation. J. Biomed. Semantics 13(1), 4 (2022).
+    https://doi.org/10.1186/s13326-021-00257-x
+32. Shen, X., Wagg, D.J., Tipuric, M., et al.: Digital twins as self-models for intelligent
+    structures. Sci Rep 15, 30327 (2025). https://doi.org/10.1038/s41598-025-14347-8
+33. Soares, M., et al.: Recommendations on the use of structured expert elicitation proto-
+    cols for healthcare decision making: a good practices report of an ISPOR task force.
+    Value Health 27(10), 1393–1403 (2024). https://doi.org/10.1016/j.jval.2024.07.027
+34. Steenwinckel, B., et al.: Quality in color: using knowledge graphs for enhanced quality
+    control in an automotive paintshop. In: Dragoni, M., et al. (eds.) The Semantic Web –
+    ISWC 2024. LNCS, vol. 15233. Springer, Cham (2024). https://doi.org/10.1007/978-
+    3-031-77847-6_13
+35. Steinmetz, C., Schroeder, G.N., Sulak, A., Tuna, K., Binotto, A.P.D.,
+    Rettberg, A., Pereira, C.E.: A methodology for creating semantic digital
+    twin models supported by knowledge graphs. IEEE International Confer-
+    ence on Emerging Technologies and Factory Automation, pp. 1–7 (2022).
+    https://doi.org/10.1109/ETFA52439.2022.9921499
+36. Tao, F., Zhang, H., Liu, A., Nee, A.Y.C.: Digital twin in indus-
+    try: state-of-the-art. IEEE Trans. Ind. Inform. 15(4), 2405–2415 (2019).
+    https://doi.org/10.1109/TII.2018.2873186
+37. Thieme, A., Renwick, S., Marschmann, M., Guimaraes, P.I., Weissenborn, S.,
+    Clifton, J.: Deep integration of low-cost liquid handling robots in an industrial
+    pharmaceutical development environment. SLAS Technol. 29(5), 100180 (2024).
+    https://doi.org/10.1016/j.slast.2024.100180
+38. Tom, G., et al.: Self-driving laboratories for chemistry and materials science. Chem.
+    Rev. 124(16), 9633–9732 (2024). https://doi.org/10.1021/acs.chemrev.4c00055
+39. W3C: PROV-O: The PROV Ontology. W3C Recommendation (2013).
+    http://www.w3.org/TR/2013/REC-prov-o-20130430/
+40. Wierenga, R.P., et al.: PyLabRobot: an open-source, hardware-agnostic inter-
+    face for liquid-handling robots and accessories. Device 1(4), 100111 (2023).
+    https://doi.org/10.1016/j.device.2023.100111
+41. Zadeh, L.: A Fuzzy-Set-Theoretic Interpretation of Linguistic Hedges. J. Cybern. 3,
+    4–34 (1972). https://doi.org/10.1080/01969727208542910
+42. Zhang, B., et al.: OntoChat: a framework for conversational ontology engineering
+    using language models. In: The Semantic Web – ESWC 2024 Satellite Events.
+    LNCS. Springer, Cham (2025). https://doi.org/10.1007/978-3-031-78952-6_10
+43. Zhang, Y., Sui, X., Pan, F., et al.: A comprehensive large-scale biomedical knowledge
+    graph for AI-powered data-driven biomedical research. Nat. Mach. Intell. 7, 602–614
+    (2025). https://doi.org/10.1038/s42256-025-01014-w
+                                             Supplemental Material
+
+
+   Federated Semantic Knowledge Graphs for Laboratory Workflows: A Structured Expert
+      Elicitation Methodology Demonstrated Through Bioanalytical Workflow Twins
+                                              ISWC 2026 In-Use Track
+
+
+  Authors: Luis F. Schachner*,1, Vinith Thamizhazhagan2, Sara Tanenbaum2, John C. Tran1, Pamela P. F. Chan1,
+                    Mandy Kwong1, Andy Chang1, Maureen Beresini1, Margaret Porter Scott1
+
+                            *Corresponding author: Luis F. Schachner, schachl1@gene.com
+     1
+         Biochemical and Cellular Pharmacology Department, Genentech, Inc. South San Francisco, CA, USA
+
+           2
+               Computational Sciences Center of Excellence, Genentech, Inc. South San Francisco, CA, USA
+
+
+
+
+This Supplemental Material provides the detailed architecture documentation, evaluation data,
+elicitation schema, and ontology governance specification referenced in the main paper. It is
+organized in four parts.
+
+
+Part 1 — Architecture Reference Tables (Tables 1–11, §3–5)
+
+
+Detailed documentation supporting the architecture and evaluation sections of the main paper:
+upper ontology vocabulary basis and domain extensions (Table 1); node type schema by tier (Table
+2); within-tier edge semantics (Table 3); cross-tier edge semantics (Table 4); subgraph statistics at
+evaluation time (Table 5); LC-MS/PRM failure mode confidence ranking (Table 6); cross-subgraph
+silent failure query result (Table 7); cross-assay automation consolidation candidates (Table 8);
+cross-subgraph knowledge profile comparison (Table 9); within-agent consistency metrics (Table
+10); cross-agent agreement metrics (Table 11).
+
+
+Part 2 — Evaluation Query Implementations (Q1–Q7, §5)
+
+
+Complete Cypher traversal queries executed against the live Neo4j AuraDB deployment. Queries are
+provided verbatim and are executable against any Neo4j instance populated using the schema and
+governance specification in Parts 3–4. Q6 (cross-subgraph silent failure traversal) requires the
+federated architecture — it cannot be executed against either assay subgraph in isolation.
+Part 3 — Structured Extraction Object Schema (Appendix A, §4.2)
+
+
+The Structured Extraction Object (SEO) schema — the typed intermediate representation produced
+by each elicitation session and consumed by the Annotator Agent to generate Cypher. The schema is
+the primary reproducibility artifact: it defines what knowledge must be elicited, in what structure,
+and under what epistemological constraints. An abridged version organized by the six grounding
+layers is provided here. The complete machine-readable schema file is available from the
+corresponding author.
+
+
+Part 4 — Upper Ontology Governance Specification (Appendix B, §3.2–3.4)
+
+
+The governance contract that defines superclass membership requirements, universal property
+contracts, multi-label implementation pattern, ID namespace conventions, and cross-subgraph
+relationship semantics. Any research team constructing a federation-compatible subgraph for a new
+workflow domain must satisfy this contract; the compliance checklist in §B.5 operationalizes this
+requirement.
+
+
+Reproducibility note. The questioning frameworks and lenses, Protocol Intelligence Co-pilot
+system prompts, Annotator agent prompts, Director Agent prompt, and full Cypher load files for all
+three deployed subgraphs are available from the corresponding author upon request. An
+anonymized example Structured Extraction Object for a generic laboratory protocol is included at
+the end of Appendix A.
+Table 1 — Domain vocabulary basis for Biochemical and Cellular Pharmacology (BCP) upper
+ontology superclasses.
+BCP Superclass                    Domain vocabulary basis               BCP extension?
+`AssayWorkflow`                   A protocol that, when                 No
+                                  implemented, produces
+                                  information about the material
+                                  entity that is the evaluand, by
+                                  physically examining it or its
+                                  proxies (adapted from OBI).
+`WorkflowStep`                    A unit element in a procedure "       No
+                                  (adapted from AFO)
+`InstrumentAsset`                 AFO equipment taxonomy                Partial — BCP generalizes to
+                                  (autosampler, LC system, mass         superclass
+                                  spectrometer, plate reader, etc.) —
+                                  `InstrumentAsset` is a necessary
+                                  superclass given BCP's automation
+                                  platform diversity. Note: the
+                                  subclass labels `AutomationAsset`
+                                  and `InstrumentComponent` were
+                                  consolidated to
+                                  `InstrumentAsset:AutomationAsse
+                                  t` and
+                                  `InstrumentAsset:InstrumentCom
+                                  ponent`.
+`Reagent`                         AFO analyte/reagent role              Partial — BCP adds lot sensitivity,
+                                  vocabulary                            tacit knowledge properties
+`Expert` / `Scientist`            AFO: "agent" — the person             Partial — BCP adds calibration
+                                  performing an action                  method, expertise, provenance
+                                                                        scope
+`QualificationExperiment`         Partial: "analyte calibration"        Partial
+                                  (AFO); broader qualification
+                                  concept is BCP-specific
+`FailureMode`                     **BCP extension** — closest AFO       Yes
+                                  concept is "aborted state"
+                                  (abnormal process completion),
+                                  but AFO has no failure taxonomy,
+                                  no silent failure concept, no
+                                  confidence scoring
+`DecisionPoint`                   **BCP extension** — no                Yes
+                                  industry-standard vocabulary for
+                                  conditional expert judgment at
+                                  workflow branch points
+`QualityFlag` / `AmbiguityFlag`   **BCP extension** — no standard       Yes
+                                  vocabulary for epistemic gaps or
+                                  knowledge boundary markers
+`MASKED_BY` (edge)                **BCP extension** — no standard       Yes
+                                  vocabulary for
+                                  automation-masked scientific
+                                  invalidity
+`ELICITED_FROM` (edge)            **BCP extension** — W3C PROV-O        Partial
+                                  provides provenance vocabulary;
+                                  ELICITED_FROM is a
+                                  domain-specific instantiation
+Confidence scoring                **BCP extension** — no analytical     Yes
+                                  data standard models graded
+                                  epistemic certainty on knowledge
+                                  claims
+Table 2 — Node type schema by tier.
+Tier            Node Type             Key Properties           Subgraph             Vocabulary basis
+1               DecisionNode          decision_name,           Cross                BCP extension
+                                      program_phase,
+                                      gates_milestone
+1               EvidentiaryInput      assay_type,              Cross                BCP extension
+                                      required_quality_th
+                                      reshold,
+                                      min_confidence_for
+                                      _action
+1               ErrorCascade          error_magnitude,         Cross                BCP extension
+                                      downstream_conse
+                                      quence,
+                                      consequence_sever
+                                      ity
+1               ProgramMilestone      name, phase,             Cross                BCP extension
+                                      regulatory_context
+2               AssayWorkflow         name,                    ELISA / LCMS         Industry-standard
+                                      analyte_class,                                ("assay" — AFO,
+                                      platform,                                     OBI)
+                                      qualification,
+                                      twin_version
+2               WorkflowStep          name, order,             ELISA / LCMS         Industry-standard
+                                      description,                                  ("action" — AFO)
+                                      critical,
+                                      cv_target_pct
+2               FailureMode           name, confidence,        ELISA / LCMS         BCP extension —
+                                      confidence_method                             no standard
+                                      , silent_failure_risk,                        vocabulary
+                                      masked_by_candid
+                                      ate
+2               DecisionPoint         decision_name,           ELISA / LCMS         BCP extension —
+                                      condition,                                    no standard
+                                      on_true_action,                               vocabulary
+                                      on_false_action,
+                                      escalation_trigger
+2               Reagent               name, role,              Cross (upper         Partial
+                                      subgraph, variants       ontology)            industry-standard
+                                                                                    (AFO
+                                                                                    analyte/reagent
+                                                                                    roles)
+2               InstrumentAsset       name, subgraph,          Cross (upper         Industry-standard
+                                      read_modes;              ontology)            (AFO equipment
+                                      subclasses:                                   taxonomy)
+                                      ELISAInstrument,
+                                      LCMSInstrument,
+                                      AutomationAsset,
+                                      InstrumentCompon
+                                      ent
+2               QCMaterial            name, level,             Cross (upper         Partial
+                                      purpose,                 ontology) —          industry-standard
+                                      acceptance_criteria      instances in ELISA   (ICH M10, FDA
+                                                               / LCMS               BMV)
+2               QualificationExperi   name,                    Cross (upper         BCP Extension
+                ment                  stage_required,          ontology) —
+                                      acceptance_criteria      instances in ELISA
+                                      ,                        / LCMS
+                                      failure_modes_eval
+2   Tradeoff            name,                   Cross (upper         BCP extension
+                        optimized_for,          ontology) —
+                        sacrificed,             instances in ELISA
+                        decision_rule
+2   QualityFlag         description,            Cross (upper         BCP extension
+                        flag_type,              ontology)
+                        resolution_needed,
+                        status; subclasses:
+                        ELISAAmbiguityFla
+                        g,
+                        LCMSAmbiguityFla
+                        g,
+                        AutomationStandar
+                        dizationBarrier
+2   Expert              alias, expertise,       Cross (upper         Partial
+                        session_date,           ontology)            industry-standard
+                        calibration_method                           ("agent" — AFO)
+                        ; subclass: Scientist
+2   CalibrationRecord   confidence_method       Cross                BCP extension
+                        , session_date,
+                        cooke_weight
+2   SourceDocument      filename, format,       Cross                BCP extension —
+                        storage_path,                                partial alignment
+                        document_type,                               with W3C PROV-O
+                        schema_version,                              `Entity`
+                        extracted_by
+3   InstrumentAsset:A   name, category,         Cross (upper         Partial
+    utomationAsset      building, room,         ontology) —          industry-standard
+                        integration_status,     instances in         (AFO equipment
+                        api_available           Automation           taxonomy)
+3   IntegratedSystem    name,                   Automation           BCP extension
+                        scheduler_software
+                        , uptime_target_pct,
+                        integration_maturit
+                        y
+3   AutomationFailure   name,                   Automation           BCP extension
+    Mode                silent_failure_risk,
+                        downstream_risk,
+                        currently_logged
+3   ErrorSignature      error_type,             Automation           BCP extension
+                        signature_pattern,
+                        currently_logged,
+                        detection_latency
+3   UseCase             name,                   Cross                BCP extension
+                        capability_category
+Table 3 — Within Tier 2 (Assay Protocol Layer):
+Edge Type                   Source → Target                Semantic meaning
+`CONTAINS_STEP`             AssayWorkflow → WorkflowStep   Step belongs to this workflow
+`NEXT_STEP`                 WorkflowStep → WorkflowStep    Execution sequence
+`CAUSES_IF_INCOMPLETE`      WorkflowStep → FailureMode     Step execution failure causes this
+                                                           FM
+`TRIGGERED_AT`              DecisionPoint → WorkflowStep   Decision is evaluated at this step
+`LEADS_TO`                  FailureMode → FailureMode      Failure cascade
+`SUGGESTS_CHECK`            DecisionPoint → FailureMode    This decision should prompt FM
+                                                           investigation
+`USES`                      WorkflowStep → Reagent /       Step uses this physical asset
+                            Instrument
+`EVALUATES`                 QualificationExperiment →      Experiment tests this node
+                            WorkflowStep / FailureMode
+`ELICITED_FROM`             Any → Scientist                Provenance anchor — expert
+                                                           source of this knowledge claim
+`GENERATED_FROM`            AssayWorkflow →                Workflow graph was generated
+                            SourceDocument                 from this source (JSON or original
+                                                           document)
+`DERIVED_FROM`              SourceDocument (JSON) →        Structured extraction JSON was
+                            SourceDocument (original)      derived from this source protocol
+                                                           document
+
+
+
+Table 4 — Cross-tier edges (the connection layer):
+Edge Type                   Source → Target                Semantic meaning
+`MASKED_BY`                 FailureMode (Tier 2) →         FM is invisible to automation
+                            AutomationAsset (Tier 3)       logging — the silent failure edge
+`CANDIDATE_MASKED_BY`       AutomationFailureMode →        Automation FM is a candidate
+                            FailureMode                    cause of scientific FM — pending
+                                                           convergence validation
+`TRIGGERS`                  AutomationFailureMode →        Automation failure causally
+                            FailureMode                    produces scientific failure
+`OCCURS_IN`                 AutomationFailureMode →        Automation FM is associated with
+                            AutomationAsset                this instrument
+`REQUIRES_AUTOMATION`       WorkflowStep → UseCase         Step requires this automation
+                                                           capability
+`SUITABLE_FOR`              AutomationAsset → UseCase      Instrument satisfies this capability
+                                                           requirement
+`SOURCED_FROM`              EvidentiaryInput →             Program decision requires output
+                            AssayWorkflow                  from this assay
+Table 5 — Subgraph statistics at time of evaluation.
+Metric                    ELISA                      LC-MS/PRM                   Automation
+Total nodes               127                        100                         133+
+Failure modes             18                         23                          7
+Workflow steps            14                         31                          —
+Decision points           10                         29                          —
+Mean confidence           0.82                       0.71                        N/A
+Confidence range          0.70–0.92                  0.60–0.90                   —
+FMs at confidence floor   0                          3                           —
+(≤0.60)
+MASKED_BY edges           2                          —                           —
+(cross-subgraph)
+REQUIRES_AUTOMATIO        14                         17                          —
+N edges
+
+
+
+Table 6 — LC-MS/PRM failure modes by confidence (top 10 of 23).
+FM ID                              Failure Mode                         Confidence
+FM-LCMS-011                        Recombinant/Endogenous               0.90
+                                   Mismatch (Biomarker Assays)
+FM-LCMS-023                        Column Carryover                     0.88
+FM-LCMS-017                        Inadequate Sensitivity —             0.85
+                                   Qualification Phase Failure
+FM-LCMS-021                        Non-Specific Binding to LC Tubing    0.80
+                                   (Adsorption)
+FM-LCMS-019                        Column Clogging / Overpressure       0.78
+FM-LCMS-020                        Autosampler Aspiration Failure       0.77
+FM-LCMS-003                        Analyte Adsorption to Labware        0.75
+FM-LCMS-012                        Matrix-Induced Ion Suppression       0.75
+                                   or Enhancement
+FM-LCMS-013                        Reference Standard Failure / Lot     0.75
+                                   Change
+FM-LCMS-001                        Missed Cleavages                     0.72
+
+
+
+Table 7 — Cross-subgraph silent failure result (Q6).
+ELISA Failure Mode        Confidence                 Automation Asset            Contributing
+                                                                                 Automation Failures
+Washer Carryover          0.90                       EL406 (fume hood)           —
+Standard Curve Failure    0.88                       EL406 (fume hood)           Residual Wash Buffer
+                                                                                 Interference; EL406
+                                                                                 Head Configuration
+                                                                                 Mismatch
+
+
+
+Table 8 — Tier 1 cross-assay consolidation candidates.
+Instrument                Location                   Shared Capabilities         Overlap Count
+Bravo AssayMap            Building A                 Serial Dilution, Plate      3
+                                                     Washing/Aspiration,
+                                                     Titration /
+                                                     Normalization
+D300                      Building B                 Serial Dilution, Precious   3
+                                                     Reagent Dispensing,
+                                                       Titration /
+                                                       Normalization
+D300                        Building C                 Serial Dilution, Precious   3
+                                                       Reagent Dispensing,
+                                                       Titration /
+                                                       Normalization
+
+
+
+Table 9 — Cross-subgraph knowledge profile comparison.
+Metric                               ELISA                                LC-MS/PRM
+Failure modes (n)                    18                                   23
+Mean confidence                      0.82                                 0.71
+Confidence range                     0.70–0.92                            0.60–0.90
+FMs at confidence floor (≤ 0.60)     0                                    3
+Elicitation sessions                 2 (SCI-001, SCI-002)                 2 (SCI-003, SCI-004)
+Confidence method                    linguistic_approximation             linguistic_approximation
+
+
+
+Table 10 — Within-agent agreement.
+Metric                               ELISA (3 runs)                       LC-MS (3 runs)
+Node recall (mean pairwise, σ)       1.0 (σ = 0)                          1.0 (σ = 0)
+FM identification F1 (mean)          1.0                                  1.0
+Edge type agreement                  1.0 (14/14)                          1.0 (20/20)
+
+
+
+Table 11 — Cross-agent agreement.
+Metric                               ELISA                                LC-MS
+FM recall                            1.0                                  1.0
+FM F1                                0.43                                 1.0
+WorkflowStep F1                      1.0                                  0.89
+Tradeoff F1                          0.89                                 0.94
+Edge type coverage                   0.75                                 0.85
+Evaluation Queries
+
+Q1:
+      MATCH (w:AssayWorkflow)-[:CONTAINS_STEP]->(step:WorkflowStep)​
+            -[:CAUSES_IF_INCOMPLETE]->(f:FailureMode)​
+      WHERE f.subgraph = 'ELISA' AND f.confidence >= 0.7​
+      OPTIONAL MATCH (f)-[:MASKED_BY]->(a:AutomationAsset)​
+      RETURN f.name AS failure_mode, f.confidence AS confidence,​
+             f.severity AS severity, step.name AS workflow_step,​
+             CASE WHEN a IS NOT NULL THEN 'SILENT' ELSE 'detectable' END AS visibility,​
+             a.name AS masking_asset​
+      ORDER BY f.confidence DESC, visibility DESC
+
+Q2:
+      MATCH (dp:DecisionPoint)-[:TRIGGERED_AT]->(step:WorkflowStep {name: 'Plate
+      Readout'})​
+      RETURN dp.decision_name, dp.condition, dp.threshold_note,​
+             dp.on_true_action, dp.on_false_action, dp.escalation_trigger,​
+             dp.confidence​
+      ORDER BY dp.id
+
+Q3:
+      MATCH (step:WorkflowStep {name:
+      'Blocking'})-[:CAUSES_IF_INCOMPLETE]->(f:FailureMode)​
+      OPTIONAL MATCH path2 = (f)-[:LEADS_TO*1..3]->(downstream:FailureMode)​
+      RETURN step.name AS origin_step,​
+             f.name AS root_failure,​
+             f.confidence AS root_confidence,​
+             CASE WHEN path2 IS NULL THEN 0 ELSE length(path2) END AS cascade_depth,​
+             CASE WHEN downstream IS NULL THEN f.name ELSE downstream.name END AS
+      terminal_node,​
+             CASE WHEN path2 IS NULL THEN [f.name] ELSE [n IN nodes(path2) | n.name] END
+      AS cascade_path​
+      ORDER BY cascade_depth DESC
+
+Q4a:
+      MATCH (w:AssayWorkflow)-[:CONTAINS_STEP]->(step:WorkflowStep)​
+      WHERE NOT
+      (step)-[:CAUSES_IF_INCOMPLETE|TRIGGERS|RISKS|SUGGESTS_CHECK]->(:FailureMode)​
+      RETURN step.id, step.name, step.description​
+      ORDER BY step.id
+
+Q4b:
+      MATCH (f:FailureMode) WHERE f.confidence <= 0.60 AND f.subgraph IN ['ELISA',
+      'LCMS']​
+      RETURN f.id, f.name, f.subgraph, f.confidence​
+      ORDER BY f.confidence
+Q5:
+      MATCH (w:AssayWorkflow)-[:CONTAINS_STEP]->(step:WorkflowStep)​
+            -[:CAUSES_IF_INCOMPLETE]->(f:FailureMode)​
+      WHERE f.subgraph = 'LCMS' AND f.confidence >= 0.7​
+      OPTIONAL MATCH (f)-[:MASKED_BY]->(a:AutomationAsset)​
+      RETURN f.name AS failure_mode, f.confidence AS confidence,​
+             f.severity AS severity, step.name AS workflow_step,​
+             CASE WHEN a IS NOT NULL THEN 'SILENT' ELSE 'detectable' END AS visibility,​
+             a.name AS masking_asset​
+      ORDER BY f.confidence DESC, visibility DESC
+
+Q6:
+      MATCH (f_elisa:FailureMode)-[:MASKED_BY]->(asset:AutomationAsset)​
+      WHERE f_elisa.subgraph = 'ELISA'​
+      OPTIONAL MATCH (afm:AutomationFailureMode)-[:CANDIDATE_MASKED_BY]->(f_elisa)​
+      OPTIONAL MATCH (afm)-[:OCCURS_IN]->(ic)​
+      RETURN f_elisa.name AS elisa_failure_mode, f_elisa.confidence AS elisa_confidence,​
+             asset.name AS automation_asset, asset.instrument_type AS asset_type,​
+             collect(DISTINCT afm.name) AS contributing_auto_failures,​
+             collect(DISTINCT ic.name) AS occurs_in_components​
+      ORDER BY f_elisa.confidence DESC
+
+Q7:
+      MATCH (s_elisa:WorkflowStep
+      {subgraph:'ELISA'})-[:REQUIRES_AUTOMATION]->(uc:UseCase)​
+      MATCH (s_lcms:WorkflowStep {subgraph:'LCMS'})-[:REQUIRES_AUTOMATION]->(uc)​
+      MATCH (a:AutomationAsset)-[:SUITABLE_FOR]->(uc)​
+      RETURN a.name AS instrument, a.building AS building, a.room AS room,​
+             collect(DISTINCT uc.name) AS shared_capabilities,​
+             count(DISTINCT uc) AS overlap_count​
+      ORDER BY overlap_count DESC
+Appendix A — Structured Extraction Object Schema (Abridged)
+
+Structured Extraction Object: Six-Layer Architecture
+
+The SEO schema organizes elicited knowledge into six independently grounded layers. Each
+layer serves a distinct epistemological purpose; the layers are designed to be separable — a
+domain team deploying the methodology in manufacturing or clinical contexts would retain
+Layers 3–6 unchanged and adapt Layer 1–2 vocabulary to their domain.
+
+
+
+Appendix B — Upper Ontology Governance Specification
+
+Purpose
+
+The upper ontology is a governance contract: a set of superclass definitions and universal
+property requirements that every node in the federated graph must satisfy, regardless of which
+domain subgraph it belongs to. Its two purposes are:
+
+(1) enabling cross-subgraph query by defining shared superclasses that domain-specific
+variants extend; and (2) grounding the vocabulary in established formal ontologies (AFO, OBI)
+where they provide coverage, and extending into the epistemic layer where they do not.
+
+The key architectural boundary is TBox vs. ABox:
+
+ - TBox (upper ontology): Superclass definitions, universal properties, and edge type
+semantics. Shared across all subgraphs. Defined once.
+
+  - ABox (subgraphs): Instantiated knowledge — specific failure modes, workflow steps,
+instruments, and experts. Domain-specific. Defined per subgraph. New subgraphs add to the
+ABox. They extend but never modify the TBox. Schema divergence as the federation grows is
+prevented by this constraint.
+Appendix A: Structured Extraction Object Schema —
+Abridged Reference
+ISWC 2026 Supplemental Material — Schema Elicitation Instrument
+
+Overview
+Protocol Schema (the Structured Extraction Object schema, or SEO) is the structured elicitation instrument
+used to extract tacit expert knowledge from bioanalytical scientists. It is not a formal ontology — it is an
+interview scaffold rich enough to capture both explicit protocol structure and the tacit knowledge that
+underlies it. Formal ontological commitments reside in the downstream knowledge graph, where they are
+expressed as typed nodes and edges aligned to AFO, OBI, and MALFO.
+The schema is organized into six independently grounded layers. Layers 1–4 and 6 are domain-agnostic.
+Layer 5 (Decision Model) is gated by session mode. The LC-MS acquisition section is domain-specific and
+explicitly conditional.
+
+Layer 1 — Protocol Structure
+Grounding: Universal SOP structure — any laboratory protocol
+Captures the protocol's identity and physical execution sequence. These fields carry no domain
+assumptions; they apply equally to immunoassay, mass spectrometry, or semiconductor fabrication
+procedures.
+  {
+      "identity": {
+       "protocol_id": "unique identifier e.g. ELISA_PD_001",
+       "protocol_name": "human-readable name",
+       "assay_family": "e.g. ELISA, LC-MS, Lumit PPI, HiBiT, cell-viability",
+       "platform_type": "biochemical | cell-based | analytical",
+       "version": "protocol version",
+       "author": "scientist name",
+       "date_created": "ISO date or null",
+       "date_revised": "ISO date or null",
+       "validation_level": "exploratory | qualified | validated"
+      },
+
+
+      "inputs": {
+       "sample_matrices": [],
+       "proteins_or_targets": [],
+       "reagents": [
+           {
+               "reagent_name": null,
+               "role": "capture | detection | substrate | buffer | blocking | standard |
+  control | internal_standard",
+               "lot_sensitivity": "high | moderate | low | unknown",
+               "stability_window": null,
+               "storage_conditions": null
+        }
+    ],
+    "controls": [
+        {
+            "control_type": "positive | negative | blank | reference_standard |
+system_suitability",
+            "purpose": "what is this control actually telling you?",
+            "acceptance_criteria": null
+        }
+    ],
+    "equipment": [
+        {
+            "instrument_name": null,
+            "role": "required | recommended | optional",
+            "automation_candidate": "yes | no | partial"
+        }
+    ]
+  },
+
+
+  "workflow": {
+    "steps": [
+        {
+            "step_number": null,
+            "step_name": null,
+            "step_type": "sample_prep | reagent_addition | incubation | wash |
+measurement | data_processing | chromatography | ms_acquisition | other",
+            "description": null,
+            "parameters": {
+             "volume_ul": null,
+             "temperature": null,
+             "duration": null,
+             "concentration": null
+            },
+            "conditionality": {
+             "depends_on": "what prior step or condition gates this step",
+             "branches": "if X then Y, otherwise Z — or null if linear",
+             "failure_at_this_step_means": "consequence description"
+            },
+            "assumption_protected": "what assumption is this step protecting against?",
+            "is_irreversible": false,
+            "is_critical_path": false,
+            "automation_notes": "what would be required to automate this step, or null"
+        }
+    ],
+    "critical_path": "which steps form the minimum viable execution sequence?",
+    "timing_constraints": [
+        {
+            "constraint": "e.g. plate must be read within 20 min of substrate addition",
+            "consequence_of_violation": null,
+            "is_hard_constraint": true
+        }
+    ]
+      },
+
+
+      "outputs": {
+          "raw_readout": null,
+          "processed_metrics": [],
+          "normalization_method": null,
+          "reported_values": [],
+          "what_good_looks_like": null
+      }
+  }
+
+
+
+
+Layer 2 — Regulatory Quality Framework
+Grounding: FDA Bioanalytical Method Validation (2018), EMA BMV (2011), ICH M10; SHELF uncertainty
+quantification (Oakley & O'Hagan, 2010)
+Encodes quality control metrics, run acceptance criteria, and failure mode characterization. Confidence
+scores are elicited using linguistic approximation (Lakoff 1973; Zadeh 1972, 1975) or SHELF seed-question
+calibration. The silent_failure_risk field — and the downstream MASKED_BY graph relationship — are
+the primary novel contributions of this layer.
+  {
+      "quality_framework": {
+          "qc_metrics": [
+           {
+               "metric_name": null,
+               "threshold": null,
+               "evaluation_rule": null,
+               "what_happens_at_borderline": null
+           }
+          ],
+          "confidence_architecture": {
+           "minimum_passing_criteria": null,
+           "expert_intuition_signals": null,
+           "trust_point": null,
+           "borderline_handling": null
+          },
+          "failure_modes": [
+           {
+               "failure_mode": null,
+               "detection_signal": null,
+               "root_cause": null,
+               "frequency": "common | occasional | rare",
+               "recovery_action": null,
+               "misdiagnosis_risk": null,
+
+
+               "silent_failure_risk": false,
+               "silent_failure_mechanism": null,
+
+
+               "confidence": 0.0,
+               "confidence_lower": null,
+                  "confidence_upper": null,
+                  "confidence_method": "SHELF_elicited | linguistic_approximation |
+  single_source",
+                  "source_scientist": null
+              }
+          ]
+      }
+  }
+
+
+Note on silent_failure_risk : When true , this failure mode can produce results that appear valid but
+are scientifically incorrect — the failure does not self-announce. In the downstream graph, silent failures that
+are specifically masked by automation systems carry a MASKED_BY edge to the responsible
+ AutomationAsset node. No equivalent relationship exists in AFO, OBI, or MALFO; this is the claimed novel
+contribution.
+
+Layer 3 — Decision Epistemics
+Grounding: Decision theory — assays exist to reduce uncertainty in service of a specific decision, not to
+generate data per se
+Encodes the scientific purpose that justifies the protocol's existence. These three fields —
+ decision_supported , scientific_question , and hypothesis_structure — require the scientist to
+articulate what the assay is for, not just what it does. This framing prevents the knowledge graph from
+becoming a procedure catalog.
+  {
+      "scientific_purpose": {
+          "decision_supported": "What scientific or operational decision does this assay
+  exist to support?",
+          "scientific_question": "What biological or analytical uncertainty does this
+  assay reduce?",
+          "hypothesis_structure": "What must be true about the biology/chemistry for this
+  assay to be interpretable?",
+          "assay_position": "primary_screen | orthogonal_confirmation | mechanistic | PK |
+  PD | target_engagement | other",
+          "downstream_experiments": {
+              "positive_result_triggers": [],
+              "negative_result_triggers": []
+          }
+      }
+  }
+
+
+
+
+Layer 4 — Tacit Knowledge Capture
+Grounding: Knowledge acquisition (KA) literature — domain-agnostic; applies equally to scientific, clinical,
+and manufacturing contexts
+Captures the knowledge that does not appear in any SOP: the reasons behind steps, the substitution logic,
+the failure histories, and the boundary conditions of the protocol's applicability. These fields are elicited
+through structured counterfactual and dialectical interview techniques.
+  {
+      "tacit_knowledge": {
+          "counterfactual_steps": [
+              {
+                  "step": null,
+                  "what_would_have_to_be_true_for_this_to_be_unnecessary": null
+              }
+          ],
+          "substitution_map": {
+              "substitutable": [],
+              "non_substitutable": []
+          },
+          "expertise_gradient": null,
+          "failure_genealogy": null,
+          "boundary_conditions": {
+              "generalizability_assumptions": null,
+              "matrices_that_would_require_reoptimization": []
+          }
+      },
+
+
+      "dialectical_tensions": [],
+
+
+      "argumentation": {
+          "why_this_method": null,
+          "alternatives_considered": [],
+          "assumptions_embedded": [],
+          "known_limitations": []
+      },
+
+
+      "network_dependencies": {
+          "upstream_dependencies": null,
+          "downstream_consumers": null,
+          "causal_asymmetries": [],
+          "human_roles": []
+      },
+
+
+      "doe_layer": {
+          "primary_optimization_parameters": [],
+          "response_variable": null,
+          "confounding_variables": null,
+          "design_constraints": null,
+          "recommended_experimental_design": null
+      }
+  }
+
+
+
+
+Layer 5 — Decision Model (Session-Gated)
+Grounding: Empirical — emerged from elicitation practice. Operational-level scientists systematically
+contaminate design-level fields with execution-level inference when these fields are made available without
+gating.
+This layer captures the design logic behind a protocol: why this approach was chosen over alternatives,
+under what conditions it generalizes, and what would force a redesign. It is gated to prevent epistemic
+contamination — a concrete problem discovered during elicitation practice.
+Session mode table
+      Session              Accessible                        Who
+       Mode                  Layers                                                    _elicitation_scope
+
+
+
+
+                        Layers 1–4, 6      Contractor, CRO scientist, protocol
+  OPERATIONAL
+                                           runner                                      operational_only
+
+
+
+  DESIGN_EXPERT         Layers 1–6         Protocol designer, method developer         full
+
+
+                        Layer 5 +          Group head, program director
+  DIRECTOR
+                        strategic                                                      full
+
+
+
+When _elicitation_scope = operational_only , all Layer 5 fields must be set to null . A null value is
+preferable to a contaminated value.
+  {
+      "decision_model": {
+       "_elicitation_scope": "full | operational_only | deferred",
+       "_deferred_reason": "requires_designer | not_yet_elicited | null",
+       "_note": "GATED — populate only in DESIGN EXPERT or DIRECTOR sessions. In
+  OPERATIONAL sessions, set _elicitation_scope to 'operational_only' and leave all
+  fields null.",
+
+
+       "analyte_class": "oligonucleotide | small_molecule | peptide | intact_protein |
+  antibody | cell | other",
+       "analyte_class_constraints": [
+         "physicochemical properties of this analyte class that constrain all method
+  choices"
+       ],
+
+
+       "method_selection_logic": [
+         {
+             "condition": "if [matrix_complexity | analyte_property |
+  throughput_requirement] = [value]",
+             "preferred_approach": "SPE | LLE | PPT | dilute-and-shoot | immunocapture |
+  other",
+             "rationale": "mechanistic justification",
+             "rejected_alternatives": [
+                 {
+                     "approach": null,
+                     "reason": "why this alternative fails under this condition"
+                 }
+             ]
+         }
+       ],
+
+
+       "generalizability_envelope": {
+              "applies_when": [],
+              "breaks_when": [],
+              "redesign_triggers": [],
+              "analyte_properties_that_break_this": [],
+              "matrix_properties_that_break_this": []
+          },
+
+
+          "design_heuristics": [
+              {
+                  "heuristic": "the rule of thumb — stated as a decision rule",
+                  "domain": "sample_prep | chromatography | ms_detection | data_analysis |
+  assay_design",
+                  "applies_when": null,
+                  "exception_conditions": null,
+                  "is_principled_or_historical": "principled | historical | unknown"
+              }
+          ],
+
+
+          "new_analyte_design_questions": [
+              "if given a new analyte in this matrix tomorrow, what are the first 3-5
+  questions you would ask?"
+          ],
+
+
+          "cross_assay_transfer": {
+              "shared_principles_with": [],
+              "what_transfers": null,
+              "what_does_not_transfer": null
+          },
+
+
+          "knowledge_capture_gaps": [
+              "expert knowledge that is not captured anywhere — the things only certain
+  people know"
+          ]
+      }
+  }
+
+
+
+
+Layer 6 — Provenance
+Grounding: Standard knowledge management
+Records the source, session context, and calibration status of all knowledge captured in the schema.
+Anchors every claim to a traceable expert and session.
+  {
+      "twin_metadata": {
+          "extracted_by": "Protocol Intelligence Co-pilot",
+          "session_date": null,
+          "validated_by": null,
+          "confidence_level": "pre-processed_draft | partially_validated |
+  fully_validated",
+          "known_gaps": [],
+          "next_elicitation_targets": [],
+          "knowledge_source": {
+              "source_type": "protocol_document | scientist | director |
+  automation_specialist",
+              "expertise_level": "operational | design | director",
+              "protocol_relationship": "designer | inheritor | trainer | runner |
+  domain_owner",
+              "session_mode": "OPERATIONAL | DESIGN_EXPERT | DIRECTOR",
+              "session_id": null,
+              "calibration_score": null,
+              "domain_expertise": []
+          }
+      }
+  }
+
+
+
+
+LC-MS Conditional Extension
+This section is populated only when assay_family is LC-MS , mass_spectrometry , or proteomics .
+Set to null for all other assay types. The section is separable from the domain-agnostic core (Layers 3–
+5); a deployment in a non-MS context would omit it without affecting the schema structure.
+Key sub-sections:
+       lc_parameters — column chemistry, mobile phases, gradient profile, retention time targets,
+      carryover management
+       ms_parameters — instrument platform, ionization mode, acquisition mode, transition table
+      (MRM/PRM), internal standard type and purity assessment
+       data_analysis — calibration curve weighting, peak integration algorithm, IS area acceptance
+      window, run acceptance regulatory reference ( FDA_BMV_2018 | EMA_BMV_2011 | ICH_M10 )
+The internal_standard.silent_failure_note field within ms_parameters directly encodes a
+domain-specific silent failure risk: isotope impurity in the IS stock artificially suppresses apparent LLOQ
+without generating a visible signal that something is wrong.
+
+Schema vs. Graph — Separation of Concerns
+The schema functions as an elicitation intermediate: its purpose is to be rich enough to extract tacit
+knowledge from an expert during a structured interview session. The schema vocabulary is deliberately
+readable by scientists, not machines.
+Formal ontological commitments reside in the downstream knowledge graph:
+     Node type alignment: AssayWorkflow → OBI assay (planned process producing information
+     about a material entity); InstrumentAsset → AFO equipment taxonomy
+     Failure mode alignment: all FailureMode nodes carry malfo_class properties referencing
+     MALFO (Compagno & Borgo, FOIS 2024)
+      MASKED_BY relationship: not modeled by any existing standard; the claimed novel contribution
+
+The pipeline is: schema (elicitation) → Cypher (graph construction) → upper ontology alignment
+(formal).
+Complete example SEOs for Anti-Drug Antibody ELISA, and Peptide PK LC-MS/MS are available upon
+request.
+Appendix B: Upper Ontology Governance Specification
+ISWC 2026 Supplemental Material — Federated Knowledge Graph Architecture Version: 1.0
+
+
+Purpose
+This document defines the upper ontology for the BCP Semantic Digital Twin (SDT) — the shared conceptual
+layer governing consistent knowledge representation across all subgraphs (ELISA, LC-MS/PRM, Automation,
+and any future domain additions).
+It is a governance contract: every node claiming membership in a superclass must implement all universal
+properties listed here. Domain-specific extensions are permitted but must not conflict with universal
+properties.
+The formal implementation is in the companion Cypher file. This document explains what is modeled and
+why; the Cypher file explains how.
+
+Implementation: Multi-Label Pattern
+Neo4j does not support native class inheritance. Three patterns are available:
+       Pattern                       Mechanism                                      Decision
+                                                                      Chosen. Enables MATCH
+                     Node carries both superclass and domain          (n:FailureMode) across all
+  Multi-label ✓      subclass labels:                                 subgraphs without joins. Label-
+                     (n:FailureMode:ELISAFailureMode)                 indexed, fast, natural in property
+                                                                      graphs.
+  IS_A               Subclass node points to superclass node via      Rejected. Doubles node count,
+  relationship                                                        requires traversal for every cross-
+                     [:IS_A]
+                                                                      domain query.
+  Property                                          as a string       Rejected as primary mechanism.
+  convention         n.superclass = "FailureMode"
+                     property                                         Not indexed. Not enforceable. Used
+  only                                                                as a supplement only.
+The pattern in practice: every domain node carries two labels — the superclass label and a domain
+subclass label. Universal properties are defined here. Domain-specific properties are added on the same
+node without conflict.
+  (n:FailureMode:ELISAFailureMode {
+        id: "FM-ELISA-001",                // universal
+        name: "Reagent Degradation", // universal
+        frequency: "occasional",           // universal
+        silent_failure_risk: true,         // universal
+        subgraph: "ELISA",                 // universal
+        regulatory_ref: "FDA_2018"         // ELISA-specific extension
+  })
+ID Convention
+All nodes in the federated graph use a three-part ID format:
+ [DOMAIN]-[TYPEPREFIX]-[NNN]
+
+
+       Field                Values                                            Notes
+                    ELISA, LCMS, AUTO,           SHARED for concepts spanning multiple subgraphs (e.g., a
+
+                    CELL, SHARED                 physical instrument used in both ELISA and Automation)
+  DOMAIN
+
+
+
+                    FM, STEP, DP, RGT, QF,
+  TYPEPREFIX
+                    EXPERT, INST, IA
+                                                 See per-superclass sections below
+                    Three-digit zero-                     , ,
+  NNN
+                    padded integer               001 012 100
+
+
+
+Examples: FM-ELISA-001 , STEP-LCMS-031 , INST-SHARED-007 , EXPERT-LCMS-001
+
+Superclass Catalogue
+Seven superclasses govern the federated SDT. Each has a universal property contract (required across all
+subgraphs) and domain-specific extensions (informative).
+1. FailureMode
+What it represents: Any condition — arising from reagents, instruments, operators, environment, or
+protocol logic — that causes an assay to produce incorrect, unreliable, or undetectable results.
+All subgraphs contain failure modes. They differ by domain (immunoassay vs. mass spectrometry vs.
+robotics) but all answer the same questions: what went wrong, how often, can it be detected, and what is
+the recovery action.
+MALFO alignment: All FailureMode nodes carry a malfo_class property drawn from the six MALFO
+classes (Compagno & Borgo, FOIS 2024): FailureCondition , NonPerformanceEvent , Fault ,
+ MereSymptom , FailureMechanism , AbExtDisabledState . MALFO is BFO-grounded and domain-
+general, making these alignments cross-domain defensible.
+Universal Properties — FailureMode
+         Property               Type           Allowed          Required                Description
+                                               Values
+                              string         FM-[DOMAIN]-
+                                                                YES         Unique identifier across the
+  id
+                                             [NNN]                          federated graph
+  name                        string         free text          YES         Short human-readable failure name
+                              string         free text          YES         What the failure is and under what
+  description
+                                                                            conditions it occurs
+  frequency                   string         common   ,         YES         How often this failure manifests
+                                             occasional    ,                under normal operating conditions
+                                      rare
+
+
+                                                                       If true, this failure can produce
+                         boolean             ,            YES          results that appear valid but are
+  silent_failure_risk                 true false
+                                                                       scientifically incorrect — it does not
+                                                                       self-announce
+                                                                       What a scientist or operator does
+  recovery_action        string       free text           YES          when this failure is detected or
+                                                                       suspected
+                         string       see above           YES          MALFO ontology class for cross-
+  malfo_class
+                                                                       domain alignment
+
+                         string
+                                      EXPERT-
+                                                          YES          ID of the expert who provided this
+  elicitation_source                  [DOMAIN]-
+                                      [NNN]
+                                                                       knowledge
+
+                         string       ELISA LCMS ,    ,   YES          Which subgraph owns this node
+  subgraph
+                                             ,
+                                      AUTO SHARED
+
+
+
+Domain-Specific Extensions (informative)
+          Property          Domain Type                                      Description
+                            ELISA      float [0–          SHELF-calibrated confidence score
+  confidence
+                                       1]
+  confidence_lower          ELISA      float              Lower bound of SHELF elicitation interval
+  confidence_upper          ELISA      float              Upper bound of SHELF elicitation interval
+  confidence_n              ELISA      integer            Number of elicitation rounds
+                              LCMS               string   Specific mechanism by which failure evades
+  silent_failure_mechanism
+                                                          detection
+                              ELISA              string   FDA/EMA regulatory section governing this
+  regulatory_ref
+                                                          failure
+                              AUTO               string   Observable instrument signal or alert indicating
+  error_signature
+                                                          this failure
+                              AUTO               string   Functional category: WA (wash), DR (dispenser), LH
+  category
+                                                          (liquid handler), GEN (general)
+Domain subclass labels: ELISAFailureMode , LCMSFailureMode , AutomationFailureMode
+
+2. WorkflowStep
+What it represents: A discrete, named action in a protocol that transforms the state of a sample,
+instrument, or dataset. Steps are sequentially ordered and may depend on the outcome of prior steps.
+Universal Properties — WorkflowStep
+       Property           Type                   Allowed Values                   Required          Description
+  id                     string     STEP-[DOMAIN]-[NNN]                           YES           Unique identifier
+                         string     free text                                     YES           Human-readable step
+  step_name
+                                                                                                name
+                                    sample_prep            ,
+                         string     instrument_action                 ,           YES           Functional category
+  step_type
+                                    data_acquisition qc_check     ,        ,
+                                                   ,
+                                    analysis decision
+
+
+                                                                                                Whether failure at
+  is_critical_path       boolean         ,
+                                    true false                                    YES           this step blocks all
+                                                                                                subsequent steps
+                                                                                                Whether this step
+                         boolean         ,                                        YES           can be undone if an
+  is_irreversible                   true false
+                                                                                                error is detected
+                                                                                                afterward
+                                                                                                ID of the expert who
+  elicitation_source     string     EXPERT-[DOMAIN]-[NNN]                         YES           provided this
+                                                                                                knowledge
+                         string              ,         ,         ,                YES           Which subgraph
+  subgraph                          ELISA LCMS AUTO SHARED
+                                                                                                owns this node
+Domain-Specific Extensions
+        Property        Domain          Type                                          Description
+  incubation_time_min   ELISA          integer                 Incubation duration in minutes
+  wash_cycles           ELISA          integer                 Number of wash cycles
+  volume_ul             ELISA          float                   Dispensed or aspirated volume
+                           LCMS        string                  The tacit scientific assumption this step encodes — the
+  assumption_protected
+                                                               knowledge lost if the step becomes a black box
+  flow_rate_ul_min         LCMS        float                   Chromatographic flow rate
+Domain subclass labels: ELISAStep , LCMSWorkflowStep , AutomationStep
+
+3. DecisionPoint
+What it represents: An explicit choice a scientist or operator makes during protocol execution — one where
+the correct option depends on context and where the wrong choice causes downstream failure.
+DecisionPoints capture the judgment calls that standard SOPs typically omit.
+Universal Properties — DecisionPoint
+      Property          Type                     Allowed Values                   Required           Description
+  id                       string     DP-[DOMAIN]-[NNN]                         YES           Unique identifier
+                           string     free text                                 YES           Short name for the
+  decision_name
+                                                                                              decision
+                                                             ,
+                                      method_selection threshold        ,                     Kind of judgment
+  decision_type            string                       ,
+                                      substitution escalation       ,           YES           required
+                                      sequence
+
+
+
+                           string[]   list                                      YES           Available choices at
+  options
+                                                                                              this decision point
+                                                                                              The heuristic the
+  rule                     string     free text                                 YES           expert applies to
+                                                                                              select an option
+                                                                                              ID of the expert who
+  elicitation_source       string     EXPERT-[DOMAIN]-[NNN]                     YES           provided this
+                                                                                              knowledge
+                           string            ,      ,       ,                   YES           Which subgraph owns
+  subgraph                            ELISA LCMS AUTO SHARED
+                                                                                              this node
+Domain-Specific Extensions
+      Property         Domain              Type                                  Description
+                            ELISA       float [0–           SHELF-calibrated confidence in the decision rule as
+  confidence
+                                        1]                  stated
+                            ELISA       integer             Whether multiple experts agreed (1 = consensus, 0 =
+  scientist_consensus
+                                                            single source)
+                            LCMS        string              Prerequisite expertise a scientist must have to apply
+  epistemic_threshold
+                                                            this rule correctly
+Domain subclass labels: ELISADecisionPoint , LCMSDecisionPoint
+Note: confidence scores on DecisionPoint nodes are currently populated in the ELISA subgraph only.
+Extension to LC-MS and Automation is planned and represents a methodological contribution of the
+publication.
+4. Expert
+What it represents: A person whose tacit knowledge is the primary source for nodes in a given subgraph.
+The Expert node records who said what, under what conditions, and with what calibrated confidence —
+providing traceable provenance for every knowledge claim.
+Universal Properties — Expert
+  Property Type            Allowed Values                   Required                       Description
+                  string      EXPERT-[DOMAIN]-
+                                                            YES             Unique identifier. Cross-subgraph
+  id
+                              [NNN]                                         experts keep one ID.
+                 string         free text                           YES                Anonymous alias used in the graph (e.g.,
+                                                                                       Scientist_A)
+  alias
+
+
+
+  expertise      string[]       list                                YES                Areas of expertise relevant to the SDT
+  session_id     string         free text                           YES                Identifier for the elicitation session
+                                ELISA, LCMS, AUTO,
+  subgraph       string         SHARED
+                                                                    YES                Primary subgraph contributed to
+
+Domain-Specific Extensions
+     Property           Domain                      Type                                  Description
+                            ELISA/LCMS          float               SHELF calibration score — measures how well the
+  calibration_score
+                                                                    expert's probability estimates are calibrated
+                                                                    linguistic_approximation, seed_questions, or
+  calibration_method        ELISA/LCMS          string              cooke_method
+
+
+  session_date              ELISA/LCMS          string              Date of elicitation session (YYYY-MM)
+Domain subclass labels: Scientist , AutomationExpert
+
+5. AutomationAsset
+What it represents: A physical instrument, device, or hardware component that participates in assay
+execution. The same physical instrument may be referenced by multiple subgraphs — a liquid handler used
+in both the Automation and ELISA subgraphs, for instance. Shared physical assets carry a single shared ID
+across subgraphs.
+AFO alignment: AutomationAsset aligns to the AFO equipment taxonomy at the instrument level.
+Pending confirmation of specific AFO term mappings.
+Universal Properties — AutomationAsset
+     Property        Type           Allowed Values                                         Required            Description
+                                                                                                         Unique identifier. Use
+                       string      INST-[DOMAIN]-[NNN]              or INST-               YES           SHARED for cross-
+  id
+                                   SHARED-[NNN]                                                          subgraph
+                                                                                                         instruments.
+                       string      free text                                               YES           Human-readable
+  instrument_name
+                                                                                                         instrument name
+                                   mass_spectrometer            ,
+                                                        ,
+                                   liquid_handler plate_reader                 ,
+  instrument_type      string               ,
+                                   column dispenser washer  ,             ,                YES           Functional category
+                                                ,
+                                   incubator robot_arm autosampler  ,              ,
+                                   centrifuge
+
+
+  make                 string      free text                                               YES           Manufacturer name
+                        string       free text                                  YES          Model name or
+  model
+                                                                                             number
+                                                                                             Which subgraph(s)
+                        string            ,      ,      ,                       YES          reference this asset.
+  subgraph                           ELISA LCMS AUTO SHARED
+                                                                                             Use SHARED for cross-
+                                                                                             subgraph.
+Domain-Specific Extensions
+        Property        Domain                  Type                              Description
+  column_chemistry      LCMS                  string         Stationary phase chemistry
+  pore_size_angstrom    LCMS                  integer        Column pore size
+  integration_maturity  AUTO                  string         production, development, or retired
+
+
+
+                             AUTO             boolean        Whether this instrument supports barcode-tracked
+  barcode_tracking
+                                                             labware
+Domain subclass labels: LCMSInstrument , AutomationComponent , ELISAInstrument
+Note on shared assets: An instrument used across multiple subgraphs should have a single node with
+multiple subclass labels (e.g., InstrumentAsset:LCMSInstrument:AutomationComponent ) and ID
+ INST-SHARED-NNN . Both subgraphs reference this single node via relationships.
+
+
+
+6. UseCase
+What it represents: A scientific workflow or experimental objective that motivates the existence of one or
+more protocol subgraphs. UseCase nodes anchor the knowledge graph to its decision-theoretic purpose:
+assays exist to reduce uncertainty in service of specific decisions.
+Universal Properties — UseCase
+       Property         Type Required                                             Description
+  id                    string YES                          TO-[DOMAIN]-[NNN]
+
+
+  name                  string YES                          Short name for the use case
+                            string       YES                The scientific or operational decision this workflow
+  decision_supported
+                                                            exists to support
+  scientific_question       string       YES                The uncertainty this workflow is designed to reduce
+  subgraph                  string       YES                Which subgraph implements this use case
+Domain subclass labels: AssayUseCase , AutomationUseCase
+
+7. QualityFlag
+What it represents: An explicit marker that something in the subgraph is uncertain, unresolved, or known to
+be inconsistent with best practice. QualityFlags describe gaps in the knowledge graph itself — decisions not
+yet made, ambiguities not yet resolved — not failures in a protocol run.
+Universal Properties — QualityFlag
+      Property         Type           Allowed Values                         Required            Description
+  id                   string QF-[DOMAIN]-[NNN]                              YES            Unique identifier
+                          string     free text                               YES            Short name for the
+  name
+                                                                                            flag
+                          string                 ,
+                                     ambiguity standardization_gap      ,    YES            Nature of the quality
+  flag_type
+                                                   ,
+                                     knowledge_gap regulatory_gap                           issue
+  status                  string     open, resolved, accepted_risk           YES            Current disposition
+                                                                                            What action or
+  resolution_needed       string     free text                               YES            decision would close
+                                                                                            this flag
+                          string                                             YES            ID of the expert who
+  elicitation_source                 EXPERT-[DOMAIN]-[NNN]
+                                                                                            identified this flag
+                          string          ,          ,      ,                YES            Which subgraph
+  subgraph                           ELISA LCMS AUTO SHARED
+                                                                                            owns this node
+Domain subclass labels: ELISAAmbiguityFlag , LCMSAmbiguityFlag ,
+AutomationStandardizationBarrier
+
+
+
+InstrumentAction (Reified Relationship)
+InstrumentAction      is not a superclass. It is created only when a WorkflowStep → AutomationAsset
+relationship must carry scientifically significant parameters (volume, flow rate, head configuration) that vary
+across runs or conditions. If the relationship carries no meaningful parameters, use a direct USES edge.
+  (step:WorkflowStep)-[:USES_VIA]->(ia:InstrumentAction)-[:USES_INSTRUMENT]->
+  (inst:AutomationAsset)
+
+
+Required properties: id ( IA-[DOMAIN]-[NNN] ), parameter_name , parameter_value ,
+ parameter_unit , rationale .
+
+
+
+Cross-Superclass Relationships
+These relationship types should be used consistently across all subgraphs:
+      Relationship                 From                         To                        Meaning
+                            DecisionPoint                WorkflowStep       This decision determines how this
+  GOVERNS
+                                                                            step is executed
+                            WorkflowStep                 FailureMode        This step can cause this failure if
+  TRIGGERS
+                                                                            done incorrectly
+                           WorkflowStep        FailureMode           Incomplete or skipped execution of
+  CAUSES_IF_INCOMPLETE
+                                                                     this step causes this failure
+                           FailureMode         FailureMode           This failure cascades into another
+  LEADS_TO
+                                                                     failure
+                                                                     This failure is masked by this
+                           FailureMode         AutomationAsset       automation system — the system
+  MASKED_BY
+                                                                     reports success while the failure
+                                                                     persists
+  USES                     WorkflowStep        Reagent               This step requires this reagent
+  USES                     WorkflowStep        AutomationAsset       This step uses this instrument
+                                                                     Correct execution of this step
+                                                                     depends on automation — two-hop
+  REQUIRES_AUTOMATION      WorkflowStep        UseCase               bridge: WorkflowStep
+                                                                     →[REQUIRES_AUTOMATION]→ UseCase
+                                                                     →[SUITABLE_FOR]→ AutomationAsset
+
+
+  DETECTED_BY              FailureMode         WorkflowStep          This failure is detectable at this step
+                           QualityFlag         (any superclass       This flag marks uncertainty about
+  FLAGS
+                                               node)                 this node
+                           (any superclass     Expert                This knowledge claim came from
+  ELICITED_FROM
+                           node)                                     this expert
+                           AssayWorkflow       UseCase               This protocol implements this
+  IMPLEMENTS
+                                                                     scientific use case
+Relationship naming convention: verb phrases that read naturally in the direction of the arrow. The
+relationship type encodes the semantic; the direction encodes causality or dependency.
+Note on MASKED_BY : This edge type has no equivalent in AFO, OBI, or MALFO. It encodes automation-
+induced observability failure — a class of silent failure where an automation system's execution log reports
+success while the underlying assay validity is compromised. The relationship is directed from
+ FailureMode to AutomationAsset , not vice versa, reflecting that the failure exists independently of the
+masking instrument.
+
+Compliance Checklist
+Before merging a new node into any subgraph:
+         Node carries both the superclass label AND the domain subclass label
+         All universal properties for that superclass are populated (not null)
+          id follows the [DOMAIN]-[TYPEPREFIX]-[NNN] format
+          elicitation_source references a valid Expert node ID that exists in the graph
+          subgraph property is set correctly
+         At least one ELICITED_FROM edge connects this node to its source Expert
+         Any domain-specific properties are documented in the subgraph's local schema notes
+         If the node is a FailureMode , malfo_class is populated with a valid MALFO class name
+         If the node is shared across subgraphs, it uses the SHARED domain prefix
+
+TBox / ABox Separation
+The upper ontology defines superclasses (TBox — terminology): what kinds of things exist and what
+properties they must have. Individual subgraphs hold instantiated knowledge (ABox — assertions): the
+actual failure modes, workflow steps, and decision points elicited from specific experts.
+This separation is preserved in the Neo4j implementation via the multi-label pattern:
+     TBox constraints are documented here and enforced by the compliance checklist
+     ABox instantiation happens in each subgraph's Cypher file
+     Cross-subgraph queries operate at the TBox level ( MATCH (n:FailureMode) ) and retrieve ABox
+     instances from all subgraphs simultaneously
+Formal upper ontology alignment (AFO for equipment and workflow structure; OBI for assay processes;
+MALFO for failure modes) operates at the TBox level and is verifiable against each ontology independently
+of the ABox content.
+Companion files: implementation Cypher file available from the corresponding author | Appendix A
+(elicitation schema) | MALFO reference: Compagno & Borgo, FOIS 2024,
+https://ebooks.iospress.nl/volumearticle/71401
+
