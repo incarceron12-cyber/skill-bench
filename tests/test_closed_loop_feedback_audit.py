@@ -34,5 +34,25 @@ class FeedbackAuditTests(unittest.TestCase):
         p=copy.deepcopy(self.p); p['cases'][0]['public_feedback']='Resolve the visible inconsistency using any valid revision.'
         r=mod.replay(p,write=False); row=next(x for x in r['rows'] if x['case_id']=='memo-visible' and x['condition']=='visible-only')
         self.assertTrue(row['repair_correct']); self.assertEqual('pass',row['final_outcome'])
+    def test_adaptive_redteam_detects_all_frozen_cross_shape_probes(self):
+        r=mod.replay_adaptive(self.p,write=False)
+        self.assertEqual(6,len(r['rows'])); self.assertTrue(all(x['exploit_detected'] for x in r['rows']))
+        self.assertTrue(all(v=={'runs_at_risk':2,'detected':2} for v in r['metrics']['by_probe'].values()))
+        self.assertTrue(all('current_outcome' in x and 'best_so_far_outcome' in x for x in r['rows']))
+    def test_missing_channel_field_rejected(self):
+        p=copy.deepcopy(self.p); del p['feedback_channels'][0]['latency']
+        with self.assertRaisesRegex(ValueError,'missing fields'): mod.replay_adaptive(p,write=False)
+    def test_budget_overrun_rejected(self):
+        p=copy.deepcopy(self.p); p['adaptive_redteam_cases'][0]['accepted_queries']=5
+        with self.assertRaisesRegex(ValueError,'budget overrun'): mod.replay_adaptive(p,write=False)
+    def test_evaluator_only_disclosure_rejected(self):
+        p=copy.deepcopy(self.p); p['feedback_channels'][2]['agent_disclosed']=True
+        with self.assertRaisesRegex(ValueError,'disclosure'): mod.replay_adaptive(p,write=False)
+    def test_unrecorded_seed_reuse_rejected(self):
+        p=copy.deepcopy(self.p); p['adaptive_redteam_cases'][2]['seed_reuse_recorded']=False
+        with self.assertRaisesRegex(ValueError,'seed reuse'): mod.replay_adaptive(p,write=False)
+    def test_best_only_reporting_rejected(self):
+        p=copy.deepcopy(self.p); p['adaptive_redteam_cases'][4]['current_outcome']=.9
+        with self.assertRaisesRegex(ValueError,'current and best-only'): mod.replay_adaptive(p,write=False)
 
 if __name__=='__main__': unittest.main()
