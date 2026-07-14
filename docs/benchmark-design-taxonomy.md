@@ -1337,6 +1337,19 @@ calibration and discrimination, constraint frequency, severity, reversibility,
 remediation, and decision loss. Consistently failing is repeatable but not capable;
 an equal-weight dashboard is not a validated reliability or readiness scale [AR].
 
+Keep three commonly collapsed reliability objects distinct: **empirical repeat
+reliability** over matched attempts, **predicted success for one trial** from an
+evidence view available at a declared decision time, and **supported causal
+diagnosis** of an outcome. A predictor may rank failures while naming no valid cause;
+a repeat rate may be valid but useless for choosing which current artifact to review;
+and a diagnosis need not be a calibrated probability [ACC, ST]. A derived-confidence
+record therefore binds task/trial/configuration and trajectory hashes, target
+predicate and label authority, prefix versus post-hoc time, available channels,
+extractor/tokenizer/provider/logprob semantics, missingness, calibration population,
+transport boundary, uncertainty, and prohibited interpretations. Unavailable or
+incomparable logprobs yield `insufficient_evidence`, not zero or a silently
+substituted verbal score.
+
 A perturbation is an instrument with two defeasible warrants: a **preservation
 claim** that the intended requirement and difficulty remain invariant, and an
 **exposure claim** that its type and intensity represent a declared operating
@@ -1355,6 +1368,27 @@ controlled repeats, unvalidated paraphrases/fault exposure, retrospective
 self-confidence, single-LLM severity judgments, unclustered dependence, and
 unpinned experiment code demonstrate a diagnostic profile only—not cross-domain
 ordering, prospective prediction, deployment risk, or certification [AR].
+
+Agentic Confidence Calibration offers candidate post-hoc predictors for the middle
+link: regularized logistic models over completed token-confidence summaries report
+favorable cross-validated calibration/discrimination on eight benchmark samples.
+Seven samples are mostly QA/reasoning; exact task/configuration and label lineage is
+incomplete; nominal features include duplicates and format/budget proxies; tuning is
+not clearly nested; dependence is unclustered; transfer is strongly asymmetric; and
+code, trajectories, labels, splits, and calibrator artifacts are unreleased [ACC].
+Its evidence supports candidate configured-trial prediction—not repeated reliability,
+online warning, causal failure localization, workload reduction, professional
+validity, safety, production fitness, readiness, or universal transfer.
+
+Production self-report sits further upstream. MAP's accepted instrument and selected
+cases describe bounded workflows, human verification, sensitive/proprietary context,
+delayed labels, heterogeneous baselines, and mixed evaluator stacks. But its 20
+production/final-pilot cases and main 86-response production/pilot survey frame are
+network-recruited and outcome-conditioned; optional-question denominators range from
+22 to 69, respondent/system/organization duplication is unknown, stages are pooled,
+and no configuration, trace, artifact, reliability, or outcome is audited [MAP]. Use
+this evidence to motivate portfolio conditions and tests, never to define a rubric by
+prevalence or infer that a reported practice causes successful deployment.
 
 Amazon's production architecture usefully connects offline/online traces,
 component and end-to-end evaluators, dashboards, alerts, human audits, and
@@ -1893,6 +1927,7 @@ and validity records are the implementation homes; no new schema follows.
 | Metric specification and monitoring record | turn trial observations into a reproducible population estimand and governed trigger | eligible population/unit, versions, missingness, clustering/dependence, aggregation/uncertainty, slices, baseline/window, threshold/loss, alert/audit/remediation/rollback |
 | Review-selection episode | preserve how a large trial/trajectory population became a bounded review sample and what later use it can support | population snapshot and clusters; detector/version; probability, overlap, missingness, evidence view; rater/adjudication lineage; sentinel versus enriched role; time/cost; licensed/prohibited claims; intervention/outcome links |
 | Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system, task/form population, environment/time, retry policy, intervention preservation and exposure evidence, matched clustered repeats, decision-time evidence view, consequence/loss model |
+| Derived trial-confidence observation | preserve a prediction without overwriting the trial result, repeat profile, diagnosis, or decision | configured trial and target predicate; label authority; prefix/post-hoc time and available channels; extractor/calibrator/provider/tokenizer/logprob versions; missingness; calibration/transport population; uncertainty; prohibited uses |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
 | Benchmark change log | distinguish instrument drift from agent evolution | old/new component hashes, rationale, affected claims, bridge panel, compatibility/calibration decision, rollback |
@@ -1925,6 +1960,8 @@ fidelity separately from score calibration [EB, AP].
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
 | Procedural-memory transfer (AFTER) | typed source-context, equivalent-form, changed-context, and cross-model transfer edges with paired outcomes and harm gates | shared authoring/verifier lineage, feedback leakage, complete-case selection, diversity/volume confounding, missing configured-system identity, and macro gains hiding negative transfer | full immutable v1 paper plus pinned post-v1 release audit; 129 released test packages are inspectable, but the 382-task instrument, evolution machinery, traces, configurations, evolved procedures, and result rows are unavailable [AFTER] |
 | Production agent evaluation (Anthropic, Amazon) | task/trial/grader/trace separation, task-health lifecycle, metric/monitoring contract, and operational failure taxonomy | engineering guidance may not establish construct validity; named metrics omit populations/estimands; synthetic and online samples drift | full official Anthropic and Amazon articles and concept reviews; experience/prescription evidence, not controlled effectiveness studies [AN, AM] |
+| Practitioner production-practice evidence (MAP) | reporting-unit/selection/denominator provenance and practice→realization→outcome bridge | selected self-report prevalence mistaken for representative practice, audited realization, causal efficacy, reliability, or successful deployment | full accepted immutable v4 paper/instrument plus v3 headline comparison; 20 confidential selected cases and 86 production/pilot main-frame records, no released row data or system/outcome audit [MAP] |
+| Trajectory confidence prediction (Agentic Confidence Calibration) | typed derived probability for one configured success predicate, followed by transport and decision-policy validation | post-outcome prediction mistaken for early warning, repeat reliability, causal diagnosis, decision utility, or provider-invariant confidence | full immutable v1 paper/source review; reported eight-sample cross-validation and transfer tables, but no released code, trajectories, labels, splits, configurations, or calibrator [ACC] |
 | Expert-authored criterion evaluation (ResearchRubrics) | reviewed criterion inventory, criterion-level judge observation, rubric transformation lineage | task-design authority mistaken for domain authority; bundled/dependent or hidden criteria; artifact-only source checks; uncalibrated additive score | full immutable v1 paper plus inspected post-paper official code/dataset releases; authoring and agreement evidence, not professional-readiness validation [RR] |
 | Dynamic professional grading (JADE) | separate fixed and response-triggered criterion populations, trigger lineage, typed evidence/dependency graph, and plural score families | answer-conditioned obligations, variable denominators, duplicate/shared-cue checks, live-web authority error, fail-open verification, and uncalibrated fusion | full immutable v1 paper plus inspected close post-v1 release; bounded evaluator-architecture and deterministic fallback evidence, not expert-equivalent, cross-domain, or readiness validation [JADE] |
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
@@ -2115,6 +2152,13 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     stakeholder consequence separate; calibrate tolerances to decision loss,
     preserve alternatives and abstention, and cluster by shared source event or task
     lineage before any operational, safety, capability, or readiness promotion.
+48. **Practice prevalence and confidence do not decide outcomes:** selected reports
+    may motivate portfolio hypotheses and a trajectory score may predict one frozen
+    label, but preserve actual configured realization, matched repeats, causal
+    diagnosis, prediction time/coverage, transport, threshold/loss policy, human
+    burden, and realized stakeholder loss as separate evidence. Neither common
+    practice nor low calibration error silently licenses efficacy, acceptance,
+    safety, professional validity, production fitness, or readiness.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -2158,6 +2202,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Real-session demand provenance vs source-to-task fidelity | EnterpriseClawBench provides real episode origin, but public traces show omitted repair, hindsight-derived answers, and rubric duplication while the proprietary pool blocks independent sampling and equivalence audit [ECB]. | Blind source users/independent experts to projected outputs; disposition each delta and omitted turn; compare faithful, demand-inspired, and synthetic licenses; sample rejected episodes; test preserved decisions, alternate paths, and acceptance judgments. |
 | Living difficulty tier vs stable comparison | ALE's tiers are partly outcome-informed and later release memberships/counts differ while labels persist; most reported cells are single runs [ALE]. | Freeze membership/admission outcomes and exposure state; repeat systems across old/new memberships plus an anchor bridge; estimate task/workflow uncertainty and report role-transition effects separately from ability change. |
 | Mean accuracy vs operational reliability | The reviewed reliability profile separates repeatability, perturbation response, confidence, and safety, but five non-independent repeats, unvalidated semantic preservation/exposure, wrapper-side recovery, retrospective confidence, and generic LLM severity prevent deployment interpretation [AR]. | On cross-domain forms, predeclare matched baseline/intervention repeats and operational profiles; independently validate variant preservation, cluster by task/form, retain invalid/provider failures, distinguish wrapper/agent recovery, elicit signals at routing/escalation/acceptance times, and calibrate consequence/loss with domain experts. |
+| Calibrated trial prediction vs useful selective review | Agentic Confidence Calibration reports favorable post-hoc ECE/Brier/AUROC for completed trajectories, but task/configuration clustering, label authority, transport, logprob equivalence, prefix timing, severe-defect control, review capacity, and realized loss are unvalidated [ACC]. | After diverse pilots supply valid repeated attempts, freeze extractor/calibrator and compare review-all, review-none, simple observable, semantic/state, and confidence-ranked policies under equal capacity; retain a probability sentinel, disjoint calibration/test families, severe-defect overrides, unavailable-logprob insufficiency, clustered uncertainty, workload, accepted failures, missed severe defects, and realized loss. |
+| Reported production practice vs effective operating policy | MAP transparently reports selected practitioner conditions, but outcome-conditioned recruitment, optional-question attrition, unknown respondent/organization dependence, pooled pilot/production stages, and no system/outcome audit make prevalence and causal success claims invalid [MAP]. | Use practice reports only to sample candidate portfolio conditions; then verify realization from immutable configurations/traces and compare matched permission, human-gate, evaluator, and workflow policies with repeated artifact/state outcomes, reviewer burden, delayed labels, and stakeholder loss. |
 | Artifact correctness vs handoff usability | The design report argues that persistent products support work claims through receiving workflows, but its three purposive cases contain no recipient-use trial, independent mapping reliability, or downstream validation [DR]. | Across unlike domains, give independent recipients only the produced product; test source, boundary, and destination checks separately and record clarification, repair, rejection, time, error propagation, and legitimate alternate formats before licensing downstream-use claims. |
 | Adaptive diagnostic coverage vs comparable measurement | JADE separates stable skills from response-specific claim checks, but generated criterion counts, dependencies, shared model cues, mutable verification, and a fail-open release path leave common denominators and fusion unvalidated [JADE]. | On matched counterfactual artifacts from two unlike work shapes, mutate one claim/citation/dependency; blind experts to scores when judging criterion legitimacy and verdicts; measure extraction/edge agreement and item/graph/rank stability; report fixed and contingent families separately. |
 
@@ -2295,6 +2341,12 @@ them:
     transition, a declared alternative, and invalid initialization. This validates
     local fixture/scorer behavior only; real-task execution, alternate-path review,
     expert adjudication, and adversarial grader calibration remain required [IS].
+21. **Pending evidence-gated selective-review validation —
+    `validate-trajectory-confidence-selective-review`:** do not build a confidence-
+    specific schema or run on one-shot/synthetic-only cells. Wait for diverse pilots
+    with valid repeated attempts, then exercise the frozen policy comparison in §8.
+    Existing trace, reliability, metric, task-health, review-selection, and validity
+    records are the implementation homes [ACC].
 
 ## Provenance keys
 
@@ -2602,6 +2654,19 @@ them:
   tail estimates, cross-domain reliability ordering, prospective predictability,
   calibrated consequence loss, deployment readiness, or certification; the
   inspected implementation commit is not paper-time identity.
+- **[ACC]**
+  `papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md`;
+  reviewed immutable v1 PDF/text/source hashes and provenance are recorded there.
+  No code, trajectories, labels, splits, exact configured-system manifest, or
+  calibrator artifact was released; reported post-hoc prediction does not establish
+  repeats, causal diagnosis, decision utility, professional validity, safety,
+  production fitness, readiness, or universal transfer.
+- **[MAP]**
+  `papers/agent-benchmarks/2026-07-14-measuring-agents-production-practitioner-evidence.md`;
+  reviewed accepted immutable v4 PDF/text, preserved v3 comparison, and provenance
+  are recorded there. The released instrument and aggregate denominators support
+  selected practice descriptions, not unique-unit prevalence, audited realization,
+  practice efficacy, reliability, professional validity, safety, or readiness.
 - **[AA]**
   `papers/agent-benchmarks/2026-07-11-aarri-research-judgment-lifecycle.md`;
   reviewed immutable v1 PDF/text and acquisition-time official release archive

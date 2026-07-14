@@ -516,6 +516,8 @@ specific schema or pilot follows.
 | [Anthropic agent evaluation lifecycle](concepts/anthropic-agent-evaluation-lifecycle.md) | A | Provides a production vocabulary of tasks, trials, graders, transcripts, and multi-grader evaluation patterns |
 | [AgentRewardBench](../papers/agent-benchmarks/2026-07-10-agentrewardbench-judge-reliability.md) | B | Exposes judge reliability, evidence-view, trajectory, annotation, and observer-access issues |
 | [Signals trajectory triage](../papers/agent-benchmarks/2026-07-14-signals-trajectory-triage-sampling-validity.md) | B | Separates probability-sentinel monitoring from enriched case discovery and makes the trajectory-population → inclusion policy → review → adjudication → intervention boundary explicit; its unreleased pool and selection ledger support queue-yield evidence, not prevalence or production utility |
+| [Measuring Agents in Production](../papers/agent-benchmarks/2026-07-14-measuring-agents-production-practitioner-evidence.md) | B | Supplies a transparent practitioner instrument and selected reports of bounded workflows, human gates, sensitive context, delayed outcomes, and mixed evaluators; outcome-conditioned recruitment, optional-question denominators, unknown respondent/organization dependence, and no system audit make this portfolio evidence, not representative prevalence or practice efficacy |
+| [Agentic Confidence Calibration](../papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md) | B | Separates predicted success for one configured trajectory from repeated reliability and causal diagnosis; its unreleased labels/configurations, post-outcome features, clustering omissions, asymmetric transfer, and logprob dependence block decision-utility or universal-calibration claims |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
 | [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
@@ -578,6 +580,26 @@ effects. Existing trace, grader, task-health, metric-monitoring, configured-syst
 and validity records suffice; no trajectory-only subsystem follows. No prevalence,
 comparative-system, causal, professional-validity, capability, safety, production-
 fitness, or readiness claim is licensed.
+
+Production-practice reports and trajectory confidence occupy different rungs of
+one **practice-to-decision chain**: `selected report and denominator → observed
+configured realization → repeated outcome distribution → trial-specific prediction
+at a declared evidence time → supported causal diagnosis (separate) → frozen
+threshold/action under capacity and loss → review/escalation burden → realized
+stakeholder loss`. MAP observes selected self-reports and parts of the human-review
+context, not realized configurations or outcomes. Agentic Confidence Calibration
+reports post-hoc prediction of one binary label from completed token-confidence
+traces, not repeats, causes, or action utility. Neither rung inherits the next.
+Preserve reporting unit, stage/version, optional-question denominator, missingness,
+and respondent/organization clustering for practice evidence; preserve task/system/
+provider/time clusters, label authority, prediction time, feature and logprob
+semantics, missingness, transport population, and frozen action policy for confidence
+evidence. Use the existing trace, review-selection, reliability, metric, task-health,
+and validity machinery; do not turn common reported practice into a rubric or a
+calibrated probability into correctness, safety, readiness, or root cause. See the
+full [MAP](../papers/agent-benchmarks/2026-07-14-measuring-agents-production-practitioner-evidence.md)
+and [confidence](../papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md)
+reviews for source-specific limits.
 
 Adversarial grader revision needs three independently versioned populations:
 counterexamples used to search and patch, legitimate alternatives used to constrain
