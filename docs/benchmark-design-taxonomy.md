@@ -776,6 +776,78 @@ chain or vocabulary as validated [DR]. Existing artifact/state, participation,
 validity, task-health, metric, and provenance records are the implementation
 homes; do not create a parallel schema.
 
+### 2.6b Successor resumability is a frozen-state, recipient-relative experiment
+
+A handoff record is not intrinsically resumable. Resumability is a relation among
+one authoritative work state, a visible handoff view, a receiving configured
+system, its allowed evidence, a declared continuation operation, and an endpoint.
+Compare views only from the same byte-pinned checkpoint and preserve the chain:
+
+```text
+source work unit + predecessor configuration/trajectory
+  → interruption rule + frozen workspace/environment hash
+    → handoff view + author/generator/transformation lineage
+      → successor configuration + evidence entitlements
+        → verification and continuation actions
+          → terminal artifact/state + preservation consequences
+            → takeover effort + total lifecycle cost → bounded claim
+```
+
+Keep five outcomes non-substitutable: **state fidelity** (truth, authority,
+valid time, uncertainty, contradictions, failed paths, and workspace state),
+**recipient sufficiency** (support for the declared next operation and legitimate
+alternatives without blind trust), **endpoint quality** (completion,
+preservation, regression repair, or another predeclared terminal state),
+**outcome-aware continuation effort** (verification, inspection, editing, calls,
+tokens, wall time, and censoring under a frozen stopping rule), and **total
+lifecycle cost** (handoff generation/transformation, storage/retrieval,
+verification, retries, and human review as well as successor effort). A raw trace
+may be faithful but costly to use; a short note may help one next action while
+being false or inadequate for rollback, audit, delayed resumption, or another
+recipient. Neither endpoint success nor low successor cost repairs an invalid
+handoff [HD, ACON].
+
+Factor view interventions where the claim requires it: state only, raw trace,
+deterministic predecessor-observable metadata, free summary, structured content,
+and independently authored content. Bind producer and recipient contracts,
+accepted alternate futures, preservation predicates, and note-generation cost.
+Plant omissions, stale validation, false success/state labels, contradictory next
+steps, and benign alternative paths; then score transport/parse, semantic and
+authority validity, receiver acceptance, next-operation consequence, and artifact
+preservation separately [ACOOP, D52, HU]. **Evaluator-derived continuation state
+is private analysis evidence, not a successor-visible field.** Any label computed
+from hidden tests, private references, or evaluator-only state is oracle assistance
+unless the same decisive evidence is legitimately available to every compared
+view.
+
+Efficiency estimands must not rename all reduced interaction “rediscovery.” Runs
+can stop because they solve, preserve, fail early, or hit a cap. Report time or
+events to a defined endpoint with explicit censoring; matched effort within shared
+terminal-outcome strata where useful; repeated inspection/validation/edit counts;
+invalid and provider failures; and full lifecycle cost. Cluster and resample at
+the source work unit or higher lineage level so several checkpoints from one
+trajectory are not independent tasks. The displayed point estimate and interval
+must target the same statistic; ratios of marginal medians and distributions of
+matched relative reductions are different estimands [HD].
+
+Handoff Debt supplies configured agent-to-agent coding evidence that context-
+bearing views can reduce takeover-side events and prompt tokens under its tested
+runtime, with smaller and recipient-dependent endpoint effects. Its 181
+checkpoints are nested in 75 issues, its effort depends on outcome/stopping, note
+generation is excluded, a continuation-state field may leak official status, and
+no task IDs, checkpoints, payloads, run records, or analysis release could be
+verified [HD]. AgentCo-op establishes that typed transport is not receiver-use
+validity; DELEGATE-52 keeps requested change and preservation orthogonal;
+Workspace-Bench separates availability, access, and causal use; and ACON shows
+that task-sufficient compression need not be state-faithful [ACOOP, D52, WB,
+ACON]. The internal two-shape handoff conformance records add isolated producer,
+consumer, semantic-adjudication, and content-dependence evidence only [HU]. None
+of these sources establishes human handoff validity, professional collaboration,
+cross-domain causal generalization, general capability, production fitness,
+safety, or readiness. Existing handoff, workspace, transition, compression,
+configured-system, trace, metric, task-health, and validity records are the
+implementation homes; no coding-specific or resumability schema follows.
+
 The current LH audit makes the boundary concrete: one convenience task, one
 source/builder lineage cluster, no alternate assembly, no precision target, and
 no cross-domain sample can support suite sufficiency even when its constituent
@@ -1644,6 +1716,7 @@ fidelity separately from score calibration [EB, AP].
 | Broad expert executable portfolio (Agents' Last Exam) | expert→engineer→grader authority handoff, clean-start/verifier falsification, occupational denominators, and role-versioned living suites | nonempty cells mistaken for representativeness; deterministic proxy mistaken for professional closure; single runs; outcome-selected tiers; occupational/economic overclaim | full immutable v1 plus pinned post-paper release and three task traces; private pool, exact paper-time tree/results, licensed VM execution, expert reliability, and grader calibration unavailable [ALE] |
 | Conditional agent reliability profiling | response matrix over matched repeats, preserved perturbations, decision-time confidence, and typed consequences | repeatability mistaken for capability; authored variants/exposure treated as deployment robustness; wrapper recovery credited to agent; post-hoc confidence and generic severity promoted to readiness | full immutable v3 paper and protocol-level review; two benchmark families, five incompletely controlled repeats, unvalidated interventions/severity, and no paper-pinned experiment code [AR] |
 | Work-activity and handoff-centered reporting | many-to-many activity map, tested-setting claim subtraction, persistent product bound to recipient/next operation, strongest and excluded claims | preliminary labels mistaken for representative coverage; visual realism or product polish mistaken for responsibility, downstream usability, or deployment evidence | full immutable v1 paper; LLM-mediated O*NET/ESCO descriptive taxonomy and three purposive report demonstrations, with no reliability, stability, reconstruction, recipient-use, or framework-effect validation [DR] |
+| Frozen-state successor resumability (Handoff Debt) | matched checkpoint/view intervention; separate fidelity, recipient sufficiency, endpoint, outcome-aware continuation effort, and lifecycle cost | evaluator-derived state leakage; nested checkpoints treated as tasks; outcome-dependent stopping called rediscovery; authoring cost omitted; one coding runtime promoted to human/professional validity | full immutable v1 paper/source and aggregate-table audit, but no verifiable empirical release, task IDs, checkpoints, payloads, run records, or analysis [HD] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -2305,3 +2378,31 @@ them:
 - **[CF]** `pilots/closed-loop-feedback-audit/README.md`, `report.json`, and
   `adaptive-report.json`; 24 feedback-arm cells and six adaptive red-team cases
   are deterministic builder-authored synthetic replay evidence only.
+- **[HD]**
+  `papers/agent-benchmarks/2026-07-14-handoff-debt-successor-resumability.md`;
+  reviewed immutable v1 PDF/text and complete arXiv source paths/hashes are
+  recorded there. No author-owned empirical release was verifiable; reported
+  evidence is bounded to configured agent-to-agent takeover on public coding
+  tasks and does not establish human/professional handoff validity, total-cost
+  savings, causal generalization, capability, production fitness, or readiness.
+- **[ACOOP]**
+  `papers/agent-benchmarks/2026-07-11-agentcoop-typed-handoffs-localized-repair.md`;
+  reviewed immutable v1 PDF/text and pinned close post-v1 release paths/hashes are
+  recorded there. The release supports transport/type and runtime inspection,
+  not semantic interoperability, receiver-use validity, causal repair, or
+  professional readiness.
+- **[D52]**
+  `papers/agent-benchmarks/2026-07-11-delegate52-delegated-artifact-integrity.md`;
+  reviewed immutable v1 PDF/text plus pinned code and public dataset paths/hashes
+  are recorded there. Cycle consistency supplies bounded preservation evidence,
+  not requested-delta success, professional consequence, or readiness.
+- **[ACON]**
+  `papers/agent-benchmarks/2026-07-13-acon-context-compression-validity.md`;
+  reviewed immutable v3 PDF/text and pinned official release paths/hashes are
+  recorded there. Configured reward/token trade-offs do not establish faithful
+  state preservation, total-system improvement, general transfer, or readiness.
+- **[HU]** `pilots/handoff-usability-conformance/README.md` and retained producer,
+  downstream-consumer, adjudication, and counterfactual records; internal
+  configured and builder-authored evidence only, with no human usability, expert
+  validity, professional capability, generalization, productivity, impact, or
+  readiness claim.

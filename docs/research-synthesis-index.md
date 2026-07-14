@@ -169,6 +169,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
 | [Design Report for Knowledge-Work Benchmarks](../papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | A | Adds a work-activity → tested-setting → persistent-product → licensed-claim reporting chain and makes omitted responsibilities and downstream handoffs explicit; its preliminary 18-label inventory is a revisable vocabulary, not validated coverage |
+| [Handoff Debt](../papers/agent-benchmarks/2026-07-14-handoff-debt-successor-resumability.md) | A | Makes successor resumability a matched frozen-state/view experiment and separates endpoint quality from takeover effort, while exposing recipient dependence, outcome-aware cost, checkpoint clustering, continuation-label leakage, and lifecycle-cost limits |
 | [Professional benchmark evolution matrix](concepts/professional-benchmark-evolution-matrix.md) | A | Compares AA-Briefcase/Lite, GDPval, Workspace-Bench, MBABench, LH-Bench, Workflow-GYM, SaaS-Bench, and Agents' Last Exam as repairs to different links in one evidence chain; distinguishes implemented machinery from demonstrated validity |
 | [Web/tool/computer benchmark evolution](concepts/web-tool-computer-benchmark-evolution.md) | B | Compares GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp; shows that interactive realism migrates the oracle into authored state, simulators, lifecycle hooks, and selected predicates |
 
@@ -261,6 +262,41 @@ sources, and unavailable corpus/audit/result records prevent independent replay.
 Existing consent, artifact-view, trace, workspace-state, task-health, metric, and
 validity records implement this ladder; no personal-computing scope commitment or
 personalization, professional-capability, privacy-safety, or readiness claim follows.
+
+Interrupted work adds a **frozen-state successor-resumability chain**:
+`source work unit/predecessor trajectory → interruption rule and workspace hash →
+visible handoff view and generation lineage → recipient configuration/evidence →
+verification and continuation → endpoint/preservation consequence → outcome-aware
+takeover effort → total lifecycle cost`. State fidelity, recipient sufficiency,
+endpoint quality, continuation effort, and lifecycle cost are separate outcomes.
+Freeze identical state across views; prohibit successor-visible labels derived from
+hidden tests or evaluator-only state; test omissions, stale/false claims,
+alternative futures, and preservation; and cluster inference at the source work
+unit rather than treating several checkpoints from one trajectory as independent.
+Point estimates and intervals must target the same estimand, and lower events or
+tokens cannot all be named rediscovery when stopping and solved/failure mixtures
+change.
+
+[Handoff Debt](../papers/agent-benchmarks/2026-07-14-handoff-debt-successor-resumability.md)
+provides bounded configured-system evidence that context-bearing views can reduce
+takeover-side interaction on agent-to-agent coding resumptions, with smaller,
+recipient-dependent endpoint effects. It does not release task IDs, checkpoints,
+payloads, runs, or analysis; excludes note-generation cost; nests 181 handoffs in
+75 issues; and leaves a possible official-state-label leak unresolved. Read it
+with [AgentCo-op](../papers/agent-benchmarks/2026-07-11-agentcoop-typed-handoffs-localized-repair.md)
+(typed transport is not semantic or receiver-use validity),
+[DELEGATE-52](../papers/agent-benchmarks/2026-07-11-delegate52-delegated-artifact-integrity.md)
+(requested delta and preservation are orthogonal),
+[Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md)
+(availability, access, and causal use differ), and
+[ACON](../papers/agent-benchmarks/2026-07-13-acon-context-compression-validity.md)
+(task-sufficient compression is not state-faithful). Existing handoff-usability,
+workspace, transition, compression, trace, metric, task-health, and validity
+machinery already hosts the requirements. The internal two-shape handoff producer,
+consumer, adjudication, and counterfactual records establish only configured
+synthetic content-dependence and scorer behavior—not human usability, professional
+collaboration, cross-domain causal generalization, capability, safety, production
+fitness, or readiness. No coding-specific or resumability subsystem follows.
 
 External exams and certifications add an **instrument-transport chain**:
 `source purpose/population → licensed forms → selection/transformation → configured
