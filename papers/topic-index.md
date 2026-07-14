@@ -125,6 +125,7 @@ and elicitation machinery rather than a domain-specific schema.
 | Review | Primary question | Secondary tags |
 |---|---|---|
 | [Agent Reliability Profile](agent-benchmarks/2026-07-11-agent-reliability-profile.md) | How should repeated success, failure severity, recovery, and operational reliability be profiled? | reliability, repetition, operations |
+| [Agentic Confidence Calibration](agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md) | When does trajectory-derived confidence predict one configured trial's success, and what additional transport, decision-loss, and workload evidence is required before using it for review, escalation, or acceptance? | confidence calibration, selective prediction, decision validity, logprobs |
 | [STRACE](agent-benchmarks/2026-07-09-strace.md) | How can long-horizon failures be localized to supported upstream causes? | causal diagnosis, traces, repair |
 | [Harness-Bench](agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | How should launcher, tool, permission, sandbox, and environment differences be isolated? | harness, reproducibility, system identity |
 | [Anchor](agent-benchmarks/2026-07-10-anchor-artifact-drift-generation.md) | How can generated tasks keep instructions, environment, witness, and checker projections aligned? | task generation, conformance, drift |
