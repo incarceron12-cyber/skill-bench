@@ -160,6 +160,7 @@ adaptive package rather than unaided capability or a universal learning law.
 | Review | Primary question | Secondary tags |
 |---|---|---|
 | [ClawSafety](agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md) | How should prompt-injection placement, exposure, adoption, attempted action, realized harm, severity, recovery, and benign utility differ? | prompt injection, tool safety, utility |
+| [SafePro](agent-benchmarks/2026-07-14-safepro-professional-action-safety-validity.md) | When does a harmful professional-style instruction plus transcript judge support only configured criterion agreement rather than action safety or realized consequence? | professional safety, observer validity, artifacts, refusal utility |
 | [Search-Time Contamination](agent-benchmarks/2026-07-10-search-time-contamination.md) | How should source exposure and benchmark contamination be audited without overclaiming causal score inflation? | leakage, live search, role transition |
 | [LiveBench](agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | What does rolling recent-source evaluation repair, and when do renewal or grader changes break longitudinal comparability? | contamination, deterministic grading, lifecycle |
 
