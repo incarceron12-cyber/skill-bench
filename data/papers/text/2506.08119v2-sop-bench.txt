@@ -1,0 +1,1542 @@
+                                         SOP-Bench: Complex Industrial SOPs for Evaluating LLM Agents
+                                               Subhrangshu Nandi∗                   Arghya Datta∗                   Rohith Nama∗                        Udita Patel∗
+                                                 subhrn@amazon.com               arghya.dat@gmail.com           rohinama@amazon.com                patudita@amazon.com
+                                                       Amazon                         ex-Amazon                        Amazon                             Amazon
+                                                        USA                               USA                           USA                                USA
+
+                                                   Nikhil Vichare∗             Indranil Bhattacharya∗               Prince Grover                      Shivam Asija
+                                               nvichare@amazon.com               bindrani@amazon.com            pringrov@amazon.com                asijashi@amazon.com
+                                                      Amazon                            Amazon                         Amazon                             Amazon
+                                                       USA                               USA                            USA                                 USA
+
+                                                Giuseppe Carenini                      Wei Zhang                    Arushi Gupta                    Sreyoshi Bhaduri
+
+
+
+
+arXiv:2506.08119v2 [cs.AI] 23 Feb 2026
+                                                carenini@amazon.com              wzhngm@amazon.com              arushimg@amazon.com                 drsre@amazon.com
+                                                       Amazon                         Amazon                           Amazon                            Amazon
+                                                        USA                            USA                              USA                               USA
+
+                                                         Jing Xu                      Shayan Ray                     Huzefa Raja                       Aaron Chan
+                                                 xuzjx@amazon.com              shayanray2018@gmail.com          huzeraja@amazon.com                chaaron@amazon.com
+                                                      Amazon                          ex-Amazon                        Amazon                            Amazon
+                                                       USA                               USA                            USA                                USA
+
+                                                    Esther Xu Fei                    Gaoyuan Du                    Zuhaib Akhtar                    Harshita Asnani
+                                                   exf@amazon.com                   gdu@amazon.com              zuhaibak@amazon.com               asnaharn@amazon.com
+                                                       Amazon                           Amazon                         Amazon                            Amazon
+                                                        USA                              USA                            USA                               USA
+
+                                                     Weian Chen                       Ming Xiong                Francesco Carbone                  Jeetu Mirchandani
+                                                 weiac@amazon.com               xiongmin@amazon.com             carbonef@amazon.com                 jeetu@amazon.com
+                                                      Amazon                           Amazon                          Amazon                            Amazon
+                                                       USA                              USA                             USA                               USA
+                                         Abstract                                                               dominates: best performances range from 57% to 100% depend-
+                                         LLM-based agents struggle to execute complex, multi-step Standard      ing on domain. These examples illustrate how SOP-Bench enables
+                                         Operating Procedures (SOPs) that are fundamental to industrial         isolating and studying specific dimensions of agent performance
+                                         automation. Existing benchmarks fail to capture the procedural         without costly production experiments. Our goal is not to rank
+                                         complexity and tool orchestration demands of real-world work-          model capabilities or build optimal agents, but to provide a rigor-
+                                         flows. We introduce SOP-Bench, a benchmark of 2,000+ tasks from        ous evaluation framework that enables the researchers and practi-
+                                         human expert-authored SOPs across 12 business domains (health-         tioners to systematically investigate agent design choices, model
+                                         care, logistics, finance, content moderation, etc.). Using a human-    selection, and deployment strategies. We release the benchmark at
+                                         AI collaborative framework, experts crafted authentic SOPs while       https://github.com/amazon-science/sop-bench.
+                                         AI generated artifacts (tools, APIs, datasets), all human-validated,
+                                         yielding realistic tasks with executable interfaces and ground-truth
+                                         outputs.
+                                            SOP-Bench serves as a research enabler for systematically inves-
+                                         tigating agent architectures, model capabilities, and deployment
+                                         considerations across diverse procedural tasks. We demonstrate its
+                                         utility through illustrative experiments with a subset of frontier
+                                         models across Function-Calling (FC) and ReAct agents, revealing
+                                         critical insights. For example, (1) newer models do not guaran-
+                                         tee better performance - Claude 4 family outperforms Claude 4.5
+                                         family on ReAct tasks (Claude 4 Opus: 72.4% vs. Claude 4.5 Son-
+                                         net: 63.3% task success rate), demonstrating that production up-
+                                         grades require validation; (2) no single model-agent combination
+
+                                         ∗ Primary Authors
+Figure 1: SOP-Bench evaluation overview. Realistic business process SOPs authored by human experts across diverse domains
+are converted into executable task instances with structured tool/API interfaces and ground-truth outputs. LLM agents execute
+tasks via reproducible tool interactions, producing execution trajectories evaluated using grounded, outcome-aware metrics
+(ECR, C-TSR, TSR).
+
+1    Introduction                                                              North Texas Health Science Center (UNTHS) 2 . Table 1 shows how
+Standard Operating Procedures (SOPs) are central to reliable oper-             different two SOPs of the same domain can be.
+ations across industries, encoding domain expertise, compliance                   Such business knowledge operations differ fundamentally from
+rules, and decision logic into structured workflows [9, 11]. Recent            traditional process automation tasks [26]. They require contex-
+advances in large language models (LLMs) have sparked grow-                    tual interpretation, multi-step information synthesis, and judgment
+ing interest in automating SOP execution using LLM-based agents                under ambiguity, often with evolving guidelines and subjective
+[7, 13, 31, 36]. However, deploying such agents in production ex-              classifications [12, 27]. Figure 2 shows a representative example:
+poses challenges that are not captured by existing benchmarks such             instructions that are straightforward for human operators with
+as Gorilla [23], API-Bank [16], or ComplexBench [34].                          implicit domain knowledge but ambiguous for LLM agents. Ex-
+                                                                               isting evaluation frameworks typically isolate individual capabili-
+Table 1: Diversity of SOPs in industry, assessed by GPT-4-                     ties—such as tool use [14], planning [36], or instruction following
+turbo [21] and validated by human associates with extensive                    [33]—using clean, synthetic prompts that fail to reflect the messi-
+cross-domain SOP review experience.                                            ness of real-world SOPs.
+                                                                                  While recent advances in LLMs have enabled sophisticated in-
+           Criteria                  SLUHN           UNTHS                     struction following and tool use [33, 36], automating SOP execution
+           Length                  Long (7 pgs)    Short (3 pgs)               poses unique challenges that existing benchmarks fail to capture.
+           Ambiguity                   Low          Moderate                   Current evaluation frameworks primarily focus on isolated capa-
+           Step complexity            High          Low-Mod
+                                                                               bilities—tool use [14], planning [36], or instruction following [33],
+           Implicit knowledge         High          Low-Mod
+                                                                               using clean, synthetic prompts that sidestep the messiness of real-
+           Modularity                 High          Moderate
+                                                                               world procedures.
+   These challenges are particularly acute in knowledge operations                To address this gap, we introduce SOP-Bench, a comprehensive
+like verification services, support ticket triaging, and customer              benchmark for evaluating LLM agents on realistic business SOP
+support, where SOPs involve ambiguous language, implicit domain                execution. SOP-Bench is constructed from human expert-authored
+knowledge, and complex decision trees [27]. For example, consider              SOPs spanning twelve diverse domains, including healthcare intake,
+the two patient registration SOPs in appendix E, one from St. Luke’s           hazardous goods classification, customer service, content modera-
+University Health Network (SLUHN)1 , and one from University of                tion, and financial compliance. Industry experts authored authentic
+1 https://www.slhn.org/-/media/slhn/Research/File/PDF/SOPs-and-Policies/SOP-
+302Patient-Registration-and-Ongoing-Subject-MgmtV30CLEAN71216.ashx             2 https://www.unthsc.edu/wp-content/uploads/sites/23/Patient_Registration.pdf
+                                                                       Table 2: SOP-Bench uniquely combines all seven capabilities
+                                                                       essential for real-world industrial workflow automation, ad-
+                                                                       dressing critical gaps in existing agent benchmarks.
+
+                                                                            Benchmark              IF MS Tool Amb. Err. Dep. Ind.
+                                                                            AlpacaEval             ✓     ✗      ✗       ✗       ✗      ✗      ✗
+                                                                            FollowEval             ✓     ✗      ✗       ✗       ✗      ✗      ✗
+                                                                            ComplexBench           ✓     ✓      ✗       ✗       ✗      ✓      ✗
+                                                                            InFoBench              ✓     ✓      ✗       ✗       ✗      ✗      ✗
+                                                                            Gorilla                ✓     ✗      ✓       ✗       ✗      ✗      ✗
+                                                                            API-Bank               ✓     ✗      ✓       ✗       ✗      ✗      ✗
+                                                                            AgentBench             ✓     ✓      ✓       ✗       ✗      ✗      ✗
+                                                                            PlanBench              ✓     ✓      ✓       ✗       ✗      ✓      ✗
+                                                                            ALFWorld               ✓     ✓      ✓       ✗       ✗      ✓      ✗
+                                                                            SOP-Maze               ✓     ✓      ✗       ✓       ✗      ✓      ✓
+Figure 2: Example of instructions that can be simple for hu-
+mans but confusing for LLMs. In this excerpt of page 2 of                   SOP-Bench              ✓     ✓      ✓       ✓       ✓      ✓      ✓
+the UNHTS-SOP (appendix E), we can see that steps 4 and 6              Legend: IF = Instruction Following; MS = Multi-step Tasks; Tool = Tool/API
+both have instructions on verifying the insurance, but does            Integration; Amb. = Real-world Ambiguity; Err. = Error Handling; Dep. = Workflow
+                                                                       Dependencies; Ind. = Industrial Context.
+not have explicit information on how to verify it. Moreover,
+it is not clear why there are two steps of insurance verifica-         2    Related Work
+tions. For human associates with implicit knowledge of the
+                                                                       LLM Agents for Planning and Tool Use. LLMs have enabled
+domains this might not be as ambiguous, while our experi-
+                                                                       the emergence of AI agents capable of task planning, reasoning,
+ments indicate that it is for LLMs. In our experience, this is
+                                                                       and tool use. Architectures such as ReAct [36], AutoGPT [35], and
+a common occurrence in business process SOPs.
+                                                                       LangChain [7] have demonstrated autonomous decision-making
+                                                                       via multi-step reasoning and API calls. ToolChain [37] and ToolLLM
+                                                                       [25] extend this by integrating dynamic tool execution. However,
+                                                                       these systems are mostly evaluated in highly simplistic settings,
+                                                                       limiting their applicability to real-world operational workflows.
+procedures reflecting real-world ambiguity, branching logic, and im-      Instruction Following and Benchmarking. Instruction fol-
+plicit knowledge requirements. To enable reproducible evaluation,      lowing ability has been benchmarked through datasets like SUPER-
+we adopt a human–AI collaborative workflow in which AI models          NATURAL-INSTRUCTIONS [33], AlpacaEval [17], and FollowEval
+generate supporting artifacts (mock tools, APIs, and test datasets)    [15]. More recent multi-step benchmarks like ComplexBench [34]
+that are subsequently validated by human experts. This process         and InFoBench [24] explore instruction complexity, but typically
+yields over 2,000 executable tasks with structured tool interfaces     use machine-formatted inputs that omit the ambiguity and variabil-
+and grounded outputs that closely mirror production environments.      ity of human-authored SOPs.
+   We make three primary contributions: (1) Human–AI collab-              Tool Use and API-Centric Benchmarks. Benchmarks like
+orative benchmark construction framework: We introduce                 Gorilla [23], API-Bank [16] and BENCHAGENTS [6] assess tool
+a scalable methodology where industry experts author authentic         invocation and API usage capabilities. However, these focus on
+SOPs while AI assists in generating executable artifacts, all human-   isolated tool interactions with minimal procedural context. In con-
+validated for correctness and realism. (2) A comprehensive bench-      trast, SOP execution involves coordinated tool use across dependent
+mark for systematic agent evaluation: SOP-Bench provides               steps, often requiring error handling and state tracking.
+2,000+ tasks across 12 domains with varying procedural complexity,        Agent Evaluation Frameworks. AgentBench [19] and Plan-
+document length, branching logic, and tool usage, enabling con-        Bench [29] offer general frameworks to evaluate LLM agents on
+trolled study of agent architectures and foundation models without     planning and tool use. Yet, their task settings are narrow in scope
+costly production experimentation. (3) Empirical insights via          and lack the procedural structure, conditional logic, and real-world
+illustrative experiments: Through experiments and ablations on         ambiguity typical of industrial SOPs. Similarly, embodied agents are
+representative frontier models, we demonstrate how SOP-Bench           evaluated in ALFWorld [28] and BabyAI [8], but those environments
+reveals non-obvious trade-offs in architecture choice, reasoning       (e.g., a kitchen) differ fundamentally from workflow automation
+cost, and domain generalization.                                       tasks.
+   Our goal is not merely to rank models, but to establish SOP-           SOP Automation and Business Process Modeling. Tradi-
+Bench as an evaluation substrate for studying agent design, model      tional business process automation relies on rule-based systems
+selection, and deployment strategies under realistic procedural        and formal process modeling languages [11, 18, 30]. While effective,
+constraints. We release the full benchmark, baseline agents, and       these require manual formalization of procedures, making them
+evaluation framework at https://github.com/amazon-science/sop-         brittle and labor-intensive. Prior work on SOP formalization in or-
+bench, enabling the community to extend SOP-Bench with new             ganizational contexts [9] has not yet translated into LLM-native so-
+domains and contribute back to a shared evaluation ecosystem.          lutions. Recently, [13] proposes a novel LLM Classifier-Augmented
+Generation (CAG) approach that translates procedures described in        3.1.2 SOP Refinement (Human-Authored, AI-Refined). Our work-
+natural language into executable workflows. However, their target        flow next uses the first version of the SOP, along with <Business
+descriptions are rather short and limited to the domain of data inte-    Task, Task Context, Dataset Schema> (Appendix C.1) to refine the
+gration. Most importantly, the dataset used to evaluate the approach     SOP and make sure it is consistent with the data schema. The
+is not publicly available. Recently, SOP-Maze [32] has published         resulting SOP outlines procedure objectives, prerequisites, input
+business operations SOPs, but they lack the tools or ground truth        requirements, detailed instructions, and decision logic in natural
+data for agent evaluation.                                               language. Human oversight validates domain standards, task logic,
+   How SOP-Bench Differs SOP-Bench addresses these gaps by               and corrects inconsistencies, ensuring SOPs are executable and
+offering (1) realistic SOP-style instructions, (2) diverse domain cov-   contextually appropriate for industrial use.
+erage, (3) structured APIs for execution, and (4) evaluation protocols
+grounded in real-world complexity. Compared to benchmarks like           3.1.3 Dataset Generation (AI-Generated, Human-Validated). Us-
+Gorilla that isolate API usage, SOP-Bench evaluates agents on full       ing <Business Task, Task Context, Dataset Schema, SOP> (Appen-
+workflows with inter-dependencies, ambiguity, and error handling         dix C.3), AI generates datasets representing full procedural con-
+requirements. It provides a more comprehensive testbed for assess-       text: structured inputs/outputs for every tool invocation, task pa-
+ing agent robustness in enterprise automation settings.                  rameters, decision pathways, and final outcomes. Human experts
+                                                                         validate that each datapoint’s logic is unambiguous, data types
+3     Generating Industry-grade SOPs                                     are appropriate, and the dataset accurately reflects SOP logic. The
+SOP-Bench is built on a novel human-AI collaborative framework           dataset includes challenging scenarios: positive/negative decision
+where human domain experts author authentic SOPs while AI mod-           pathways, edge conditions, and task failure scenarios to test agent
+els generate supporting artifacts, all subsequently human-validated.     reasoning, compliance, error-handling, and tool selection.
+This approach ensures procedural authenticity while maintaining
+reproducibility and scalability. The workflow employs a hierarchi-       3.1.4 API & Tool Specs Generation (AI-Generated, Human- Val-
+cal prompting strategy using Anthropic’s Claude 3.5 Sonnet v2 to         idated). Using <Task Context, Dataset, SOP> (Appendix C.4), our
+refine human-authored SOPs for consistency and completeness, and         workflow generates APIs specifying required inputs (e.g., patient_name)
+to generate associated artifacts (tools, APIs, datasets) that capture    and expected outputs (e.g., patient_id), along with corresponding
+real-world nuances: industry jargon, interdependent logic, implicit      tool specifications (Figure 4). Human experts validate that APIs and
+domain knowledge, ambiguous instructions, and cross-referenced           ToolSpecs align with the dataset schema and access only relevant
+                                                                         columns. Example:
+content (Figure 3).
+                                                                               • API Spec: getPatientID – retrieves patient identifier from name
+                                                                               • Without API ✗: def getPatientID(self): return {}
+3.1     Human-AI Collaborative Workflow                                        • With API ✓: def getPatientID(self, patient_name): return
+Human Expert Input: Domain experts provide two critical inputs                   self.patientDB.lookupIDByName(patient_name)
+that define the benchmark scope:
+Business Task: The first version of an industrial use-case SOP           3.1.5 Tools Code Generation (AI-Generated, Human-Validated).
+Task Context: Procedural steps required to process requests suc-         Using <Dataset, APIs> (Appendix C.5), Our workflow next generates
+cessfully. For patient intake, this includes validating patient infor-   executable tool code reflecting procedural logic. The dataset and
+mation, insurance details, medical history, and risk assessment.         API specs provide input-output contracts and data characteristics,
+      • Business Task: SOP outlining steps for registering new           ensuring code aligns with operational requirements. Human experts
+        patients                                                         validate code correctness and consistency by executing them.
+      • Task Context: Validate insurance eligibility, prescription
+        coverage, ...                                                    3.2     Human Authoring and Validation
+                                                                         Domain experts perform five critical validation steps: (1) SOP Au-
+3.1.1 Dataset Schema Generation (LLM-Assisted, Human-Validated).
+                                                                         thoring: experts draft initial SOPs based on real industrial pro-
+The first step is to create a structured dataset schema via one-shot
+                                                                         cedures, providing business context and task requirements; (2)
+prompting (Appendix C.2). This schema specifies input parameters,
+decision points, compliance checks, and expected outcomes—acting         Schema Validation: experts verify that AI-generated schemas
+as a semantic scaffold that minimizes hallucinations and ensures         capture essential task components, implicit domain knowledge,
+consistency. Human domain experts validate that the schema cap-          and compliance constraints; (3) SOP Refinement: experts review
+tures essential task components, including implicit knowledge and        AI-refined SOPs for domain accuracy, logical consistency, and align-
+domain constraints. It uses the SOP and task context to generate         ment with industrial standards; (4) Dataset Validation: experts
+the dataset schema. For example:                                         validate each generated datapoint for logical correctness, appro-
+                                                                         priate data types, and coverage of edge cases; (5) API & Code
+      • Schema Entry: smoking_status – string, Choices = Never,
+        Former, Current                                                  Validation: experts verify that generated APIs and executable code
+      • Without Schema ✗: Calculate smoking risk using preferred         align with dataset schemas and operational requirements.
+        methodology                                                         To quantify benchmark difficulty, three domain experts indepen-
+      • With Schema ✓: Calculate smoking risk (Never, Former,            dently rated each SOP across three dimensions: ease of understand-
+        Current)                                                         ing, ambiguity/implicit knowledge requirements, and reasoning
+Figure 3: SOP-Bench Generation Workflow: Human experts author SOPs and validate all artifacts; AI generates tools, APIs, and
+datasets. ** denotes post-generation complexity introduction.
+
+complexity (scale 1-10). These ratings, averaged to produce C𝐻 in        temporal pattern analysis, historical violation context, and risk-
+Table 3, reflect human-perceived complexity.                             based enforcement, requiring 6 tools and producing 7 graduated
+                                                                         enforcement actions. This controlled complexity variation enables
+                                                                         systematic evaluation of how agents handle increasingly sophisti-
+3.3    SOP Descriptions                                                  cated reasoning requirements.
+SOP-Bench consists of 12 diverse SOPs instantiated in 2,411 tasks
+representing realistic industrial procedures. Each SOP tests differ-
+ent agent capabilities: complex decision-making, tool usage, and         3.3.2 Real-World Complexity in SOP-Bench. To mirror authentic
+structured output generation across business modalities includ-          industrial conditions, human experts and AI collaboratively intro-
+ing classification (email intent), structured verification (business     duce controlled complexity at multiple levels across different SOPs.
+verification), industrial processes (aircraft inspection), and generic   At the SOP-level, procedures contain branching logic, redundant
+assignments (annotation, content flagging, customer service). Ta-        details, tangential information, and ambiguous instructions that
+ble 3 shows task count (𝑛), API count (𝑡), SOP token count (𝜏),          agents must filter—reflecting the reality that real-world SOPs are
+and complexity ratings by three human domain experts (C𝐻 ) and           rarely perfectly structured. At the tool-level, we include semanti-
+Claude 3.5 v2 (C𝑙𝑙𝑚 ).                                                   cally similar but functionally redundant tools to challenge agents’
+                                                                         critical evaluation and tool selection capabilities. At the data-level,
+3.3.1 Controlled Complexity Variation. To evaluate how proce-            we introduce distractor variables that appear relevant but are not
+dural complexity affects agent performance, we include two ver-          required for task completion.
+sions of the referral abuse detection SOP. Version 1 (v1) implements        Specific examples include: (1) Video Annotation and Video
+a foundational fraud detection workflow with 3 tools and a simple        Classification contain 26 and 25 tools respectively, with multi-
+three-outcome decision model based on current account indicators.        ple distractor tools that perform similar functions (e.g., different
+Version 2 (v2) introduces significantly greater complexity through       object detection methods, overlapping segmentation approaches),
+Table 3: Characteristics of Benchmark SOPs in SOP-Bench. 𝑛
+                                                                           baseline agents utilize LLM’s native tool-calling interface to dy-
+= number of tasks per SOP; 𝑡 = number of tools available; 𝜏
+                                                                           namically invoke tools/APIs during task execution. More details on
+= token count, CH = human-perceived complexity, average
+                                                                           these two agents are in Appendix A.
+of three domain experts of three dimensions, ease of un-
+                                                                              FC Agent is a prompt-driven, lightweight execution engine
+derstanding, ambiguity or implicit domain knowledge and
+                                                                           leveraging native tool calling capabilities of LLMs. It accepts SOP
+reasoning complexity, on a scale of 1 - 10; C𝑙𝑙𝑚 = complexity
+                                                                           text and task input, maintains a conversation loop with the LLM,
+estimated by Claude 3.5 (scale 1-10, calibrated against Berke-
+                                                                           and processes tool calls iteratively (up to 10 iterations). When the
+ley function calling tasks as baseline 2)
+                                                                           model triggers a tool use event, the agent executes the correspond-
+                                                                           ing function via a ToolManager and returns results to the model.
+SOP Topic              Domain            𝑛     𝑡      𝜏      C𝐻     C𝑙𝑙𝑚   Final outputs are enclosed in XML tags for structured parsing.
+Content Flagging       Content          226    4     850     7.67   9         ReAct Agent is built on a custom ReAct framework implemen-
+                       Moderation                                          tation [36], designed for SOPs with complex branching logic and
+Customer Service       Support          208    10    1457    9      8      multi-step reasoning. It interleaves reasoning traces (Thoughts)
+Dangerous Goods        Supply           327    5     775     5      7      with tool calls (Actions), feeding Observations back into the reason-
+                       Chain                                               ing loop for up to 15 iterations. The agent enforces that at least one
+Aircraft Inspection    Transportation   150    7     834     6.67   9      tool is executed before conclusions, maintaining comprehensive
+Email Intent           Retail Seller    122    4     766     5.33   7      execution traces including intermediate steps and tool call records.
+                       Mgmt                                                More details on these two agents are in Appendix A.
+Know Your Busi-        Finance          122     8    1359    8.33   9         We evaluate both agents on SOP-Bench using standardized scripts
+ness                                                                       that: (1) load SOP documents and structured task datasets; (2) con-
+Patient Intake         Healthcare       90     6     753     4.33   7
+                                                                           vert each task into natural language instructions; and (3) execute
+Video Annotation       Autonomous       168    26    4492    9.67   10     agents while logging outputs, tool traces, and reasoning steps. To
+                       Driving
+                                                                           simulate API calls, each dataset includes precomputed inputs and
+Video Classification   Media            198    25    1249    8.33   9
+                                                                           outputs for every tool call, stored as columns. These mocks replace
+Warehouse Package      Logistics        200    12     653    4.67   9
+                                                                           live APIs to enable stable, reproducible evaluation without runtime
+Inspection
+Referral Abuse v1      Trust     &      200    3     1502    6.33   7      variability. In deployment, they would be swapped for real APIs.
+                       Safety
+Referral Abuse v2      Trust     &      200    6     2576    8.67   9      4.1    Evaluation Methodology
+                       Safety                                              We evaluate FC-Agent and ReAct-Agent on SOP-Bench using three
+Traffic Spoofing       Fraud Detec-     200    6     854     6.83   8      inputs: (1) Task, (2) SOP (instructions), and (3) ToolSpecs. The out-
+                       tion                                                puts include (1) intermediate tool outputs, (2) final response, and (3)
+Average                                 185     9    1394    6.96   8.31   trace of tool use and reasoning. We define: 𝑛 (total number of tasks
+Total                                   2411   122   18120                 per SOP), 𝑛𝑐 (number of tasks per SOP marked complete by the
+                                                                           agent), and 𝑛𝑎 (number of correctly completed tasks per SOP). Evalu-
+                                                                           ation metrics are: (1) Execution Completion Rate (𝐸𝐶𝑅): proportion
+requiring agents to identify the correct tool sequence from numer-
+                                                                           of tasks the agent marked as complete, 𝐸𝐶𝑅 = 𝑛𝑛𝑐 ; (2) Conditional
+ous plausible alternatives; (2) Patient Intake includes distractor
+                                                                           Task Success Rate (𝐶-𝑇 𝑆𝑅): fraction of completed tasks that match
+input variables such as patient demographic details and medical his-
+                                                                           the ground truth, 𝐶-𝑇 𝑆𝑅 = 𝑛𝑛𝑎𝑐 ; and (3) Task Success Rate (𝑇 𝑆𝑅):
+tory fields that are provided but not necessary for certain decision
+pathways, testing whether agents can distinguish essential from            overall accuracy, 𝑇 𝑆𝑅 = 𝑛𝑛𝑎 . Though this work reports only 𝐸𝐶𝑅
+supplementary information; (3) Content Flagging and Customer               and 𝑇 𝑆𝑅, future research should incorporate tailored metrics to bet-
+Service embed ambiguous conditional logic where threshold val-             ter assess steps planning, tool mapping, tool calling accuracies, to
+ues and decision criteria require careful interpretation of SOP text       better understand agent performance bottlenecks. We welcome the
+rather than explicit enumeration. These interventions, validated           research community to contribute such agent evaluation metrics
+through human oversight, rigorously assess tool selection behavior,        to SOP-Bench.
+information filtering, and reasoning under ambiguity. See Appendix            For all evaluations, we have kept the LLM parameters tempera-
+B for detailed descriptions of all SOPs.                                   ture at 0.5 and output token limits at 8000.
+
+4    Agents for automating SOPs                                            5 Results
+To evaluate the effectiveness of LLM-based agents in executing             5.1 Results and Insights
+industry grade SOPs, we implement two complementary agent                  We evaluate the two agents, FC and ReAct, with 11 different LLMs in
+architectures in SOP-Bench: (a) Function Calling (FC) Agent                our experiments: Llama-3.3-70B-Instruct [20], GPT-OSS-120B [22],
+and (b) ReAct Agent. These implementations serve as baseline               DeepSeek-R1 [10], Claude 3.5 Sonnet v2 [1], Claude 3.7 Sonnet [2],
+agents to demonstrate SOP-Bench’s evaluation capabilities and are          Claude 4 Sonnet [3], Claude 4 Opus [3], Claude 4.1 Opus [3], Claude
+not intended to represent optimal architectures. We encourage the          Sonnet 4.5 [5], and Claude Opus 4.5 [4]. These models were selected
+research community to develop and publish more sophisticated               based on availability within our organization and their known
+agent designs using SOP-Bench as the evaluation framework. Both            strong performance on agentic tasks, explaining the focus on larger,
+      Table 4: Claude 4 Opus: Function Calling vs ReAct Agent Performance, ranked in descending order of ReAct TSR.
+
+                    SOP Topic                               Function Calling                                   ReAct
+                                                    ECR     C-TSR   TSR     Time (s)               ECR    C-TSR   TSR              Time (s)
+                    Patient Intake                   1.00    0.92       0.92        70.33          1.00     1.00         1.00          102.28
+                    Email Intent                     1.00    0.98       0.98       25.24           0.99     0.99         0.98           31.26
+                    Referral Abuse Detection Easy    1.00    0.95       0.95        53.99          1.00     0.97         0.97           66.45
+                    Aircraft Inspection              1.00    0.45       0.45       83.11           1.00     0.97         0.97           87.46
+                    Referral Abuse Detection Hard    1.00    0.98       0.98        81.79          0.99     0.96         0.96           89.16
+                    Video Classification             1.00    0.79       0.79       78.69           1.00     0.94         0.94           62.89
+                    Dangerous Goods                  1.00    0.73       0.73        41.15          1.00     0.83         0.83           28.02
+                    Warehouse Package Inspection     1.00    0.56       0.56       47.50           1.00     0.65         0.65           76.02
+                    Traffic Spoofing Detection       1.00    0.79       0.79        25.23          0.99     0.61         0.60          130.20
+                    Customer Service                 1.00    0.56       0.56       72.83           1.00     0.56         0.56          145.43
+                    Video Annotation                 1.00    0.37       0.37        71.04          1.00     0.38         0.38           73.97
+                    Know Your Business               0.99    0.44       0.43       159.84          1.00     0.31         0.31          110.50
+                    Content Flagging                 1.00    0.36       0.36        49.93          0.99     0.28         0.27          138.08
+                    Average                         1.00     0.68       0.68       66.21           1.00      0.73     0.72              87.82
+                    Standard Error 𝜖                        ±0.07       ±0.07      ±9.57                    ±0.08     ±0.08            ±10.30
+
+
+frontier models rather than smaller alternatives. Detailed experi-              Table 5: Top two performing model-agent combinations per
+ment results of each SOP, Agent and LLM are in Appendix B.                      SOP, ranked by Task Success Rate (TSR).
+
+5.1.1 LLM–Agent Architecture Must Be Task Dependent. Our eval-                   SOP Topic                        Best                           Second Best
+uation shows that no single agent architecture-model combination                                    Model           Agt         TSR      Model         Agt     TSR
+consistently dominates across SOP-Bench, highlighting the need                   Patient Intake     Claude 4.1      ReAct       1.00     Claude 4.1    FC      1.00
+for task-dependent architecture selection in SOP automation.                                        Opus                                 Opus
+                                                                                 Aircraft In-       Claude 3.7      ReAct       0.99     Claude 4.5    ReAct   0.97
+   Using Claude 4 Opus as a controlled comparison, Table 4 con-                  spection           Sonnet                               Opus
+trasts Function-Calling (FC) and ReAct agents across all 13 SOPs.                Email Intent       Claude    4     ReAct       0.99     Claude 4.1    FC      0.98
+ReAct achieves a higher average Task Success Rate (TSR) than FC                                     Sonnet                               Opus
+                                                                                 Referral           Claude 3.5      ReAct       0.98     Claude 3.5    FC      0.97
+(72% vs. 68%), but at a significant latency cost: 87.82s ± 10.30s per            Abuse Easy         v2 Sonnet                            v2 Sonnet
+task compared to 66.21s ± 9.57s for FC, a 33% increase. Moreover,                Referral           Claude    4     FC          0.98     Claude 4.5    FC      0.97
+                                                                                 Abuse Hard         Opus                                 Opus
+ReAct outperforms FC on only 8 of 13 SOPs, indicating that average               Video Classifi-    Claude    4     FC          0.95     Claude    4   ReAct   0.95
+gains obscure strong task-level variation.                                       cation             Sonnet                               Sonnet
+   Architecture–Model Co-Design Is Non-Monotonic. Perfor-                        Dangerous          Claude    4     FC          0.87     Claude 4.1    ReAct   0.83
+                                                                                 Goods              Sonnet                               Opus
+mance does not scale monotonically with stronger models, particu-                Traffic Spoof-     Claude 4.5      FC          0.86     Claude    4   FC      0.79
+larly for reasoning-centric architectures. FC agents show modest,                ing                Sonnet                               Sonnet
+consistent improvements (Claude 3.5 v2: 65.8.2% → Claude 4.5                     Customer Ser-      Llama 3.3       ReAct       0.79     Claude 4.5    FC      0.71
+                                                                                 vice               70B                                  Opus
+Sonnet: 67.5% TSR), while ReAct agents degrades: Claude 3.5 v2                   Warehouse In-      Claude 4.1      ReAct       0.69     Claude    4   ReAct   0.65
+achieves 65.4% TSR, Claude 4 Sonnet improves to 68.7%, but Claude                spection           Opus                                 Opus
+                                                                                 Content Flag-      Deepseek        ReAct       0.60     Claude 3.5    ReAct   0.60
+4.5 Sonnet drops to 63.3% (−2.1 points). These results show that                 ging               R1                                   v2 Sonnet
+newer foundation models are not automatically better for existing                Video Annota-      GPT OSS         ReAct       0.58     Deepseek      ReAct   0.58
+agent architectures, and naive upgrades can silently reduce task                 tion               120B                                 R1
+                                                                                 Know Your          Claude 4.5      ReAct       0.58     Claude 4.5    FC      0.57
+success.                                                                         Business           Opus                                 Haiku
+   Task Characteristics Dominate Aggregate Metrics. Aggre-
+gate averages mask clear task-specific reversals. Across SOPs, FC
+slightly outperforms ReAct on average (65.9% vs. 61.1% TSR), yet in-
+dividual tasks exhibit distinct architectural preferences. Dangerous            5.1.2 Domain Variance Exposes Generalization Limits. Agent per-
+Goods classification shows near parity (FC: 69.1%, ReAct: 69.8%),               formance on SOP-Bench varies substantially across procedural
+while Customer Service reveals identical failure modes (FC: 47.8%,              domains, exposing clear limits in cross-domain generalization. Ta-
+ReAct: 47.7%). Other SOPs strongly favor one architecture, with Re-             ble 5 shows the top two model–agent combinations per SOP and
+Act excelling in multi-step inspection workflows and FC performing              confirms that no single configuration dominates across tasks. Best-
+better in deterministic, tool-driven procedures.                                case performance ranges from near-perfect accuracy on Patient
+   Overall, these findings demonstrate that agent architecture must             Intake (100% TSR) to only 57% on Know Your Business, underscor-
+be selected based on SOP structure, tool interaction patterns, and              ing the necessity of domain-specific evaluation. Aggregated results
+latency constraints rather than global averages. SOP-Bench enables              in Table 6 further illustrate this variability: the FC agent achieves
+systematic evaluation of these trade-offs, supporting principled                its highest average performance with Claude 4 Opus (68.2% TSR),
+architecture selection for real-world procedural workflows.                     while ReAct performs best with Claude 4 Opus as well (73.8% TSR).
+Table 6: Average Task Success Rate (TSR) by model and agent                 complexity (Appendix B). As shown in Table 4, Claude 4 Opus main-
+type, averaged across all SOPs. FC agent was only evaluated                 tains similarly high TSR on both variants for both FC and ReAct
+with Claude models due to its design for native tool calling.               agents, indicating robustness to increased procedural complexity.
+ReAct agent was evaluated across all models to compare rea-                 However, this accuracy comes at a clear reasoning cost: execution
+soning capabilities.                                                        time increases by 51.5% for the FC agent (53.99s → 81.79s) and by
+                                                                            34.2% for the ReAct agent (66.45s → 89.16s) on the Hard SOP.
+               ReAct Agent                          FC Agent
+      Model (rank)               TSR     Model (rank)               TSR     5.2.3 Long-Context Extraction, Not Conditional Reasoning, could
+      Claude 4 Opus (1)          0.724   Claude 4 Opus (1)          0.682   limit Agent Performance. We observe variability in how context
+      Claude 4.1 Opus (2)        0.694   Claude 4 Sonnet (2)        0.678   length and branching complexity affect performance. Long-context
+      Claude 4 Sonnet (3)        0.687   Claude 4.5 Sonnet (3)      0.675
+      Claude 4.5 Opus (4)        0.683   Claude 4.5 Opus (4)        0.667   SOPs (e.g., Video Annotation: 4,492 tokens, 8 sequential steps, 2
+      Claude 3.5 v2 Sonnet (5)   0.654   Claude 4.1 Opus (5)        0.664   branching decision points) show lower TSR (0.28), while high-
+      Claude 4.5 Sonnet (6)      0.633   Claude 3.5 v2 Sonnet (6)   0.658   branching SOPs (e.g., Referral Abuse Detection Hard: 2576 tokens,
+      Llama 3.3 70B (7)          0.565   Claude 4.5 Haiku (7)       0.624
+      Deepseek R1 (8)            0.557   Claude 3.7 Sonnet (8)      0.623   28 sequential steps, 12 decision points) maintain high TSR (0.84).
+      Claude 4.5 Haiku (9)       0.522                                      However, these SOPs differ in multiple dimensions (tool count, do-
+      Claude 3.7 Sonnet (10)     0.518
+      GPT OSS 120B (11)          0.484
+                                                                            main), preventing definitive conclusions. Further investigation with
+                                                                            controlled SOP variants is needed to isolate the independent effects
+                                                                            of context length versus branching complexity.
+These rankings reflect a fixed agent configuration per model; fur-
+ther agent–model co-optimization could alter absolute performance
+but does not change the observed domain sensitivity.
+                                                                            6   Conclusions and Next Steps
+   Despite strong average performance for select models, domain-            We present SOP-Bench, a comprehensive benchmark of 2,000+ ex-
+level results reveal a pronounced generalization gap. The easiest           ecutable tasks derived from human expert-authored SOPs across
+SOPs—Referral Abuse Detection (Easy) (94.3% average TSR), Email             12 industrial domains. SOP-Bench enables systematic evaluation of
+Intent (88.7%), and Patient Intake (88.1%)—are over three times             LLM agents under realistic procedural constraints, supporting prin-
+easier than the most challenging tasks, including Video Annotation          cipled investigation of agent architectures, model capabilities, and
+(27.8%), Aircraft Inspection (33.4%), Content Flagging (38.0%), and         deployment strategies. Our baseline experiments across representa-
+Warehouse Inspection (43.5%), yielding a 3.4× performance range             tive frontier models validate a central finding: agent performance
+across SOPs.                                                                is highly task- and context-dependent, making rigorous eval-
+   Harder SOPs also exhibit greater performance variance across             uation on realistic SOPs essential prior to production deploy-
+models. Video Annotation shows the highest standard deviation               ment.
+in TSR (13.8%), indicating brittle and inconsistent agent behavior             Our results show that newer models do not necessarily yield
+in long-horizon, tool-intensive workflows. Overall, these results           better outcomes (e.g., Claude 4 family: 73.8% vs. Claude 4.5 family:
+demonstrate that success on one domain does not reliably transfer           58.8% average TSR on ReAct), and that no single model–agent com-
+to others, validating SOP-Bench’s design goal of capturing orthog-          bination dominates across domains (TSR ranging from 57% to 100%).
+onal dimensions of procedural reasoning, tool use, and constraint           These findings illustrate how SOP-Bench can be used to analyze
+adherence.                                                                  architecture–model interactions, surface performance bottlenecks,
+                                                                            and inform deployment decisions without costly production ex-
+                                                                            perimentation. Rather than serving as a leaderboard, SOP-Bench
+5.2    Ablation studies
+                                                                            provides an evaluation substrate for targeted scientific inquiry. It
+5.2.1 Tool selection under registry bloat. To investigate the impact        enables researchers to study procedural ambiguity, tool selection,
+of tool registry size on agent performance, we conducted a con-             and complexity scaling, while allowing practitioners to validate
+trolled ablation study on the Video Annotation SOP using Claude             architecture choices against domain-specific requirements before
+Sonnet 4.5. We evaluated agent(react) performance under two con-            deployment.
+ditions: (1) Bloated Registry: 26 tools (6 task-relevant + 20 distractor       Looking ahead, we plan to extend SOP-Bench along several di-
+tools), and (2) Minimal Registry: 6 tools (task-relevant only). The         mensions, while actively inviting community participation. We will
+minimal registry condition achieved 37% TSR compared to 20.8%               introduce controlled variants of the same SOP with increasing com-
+TSR in the bloated condition, representing a 1.7x improvement.              plexity, incorporate multimodal instructions such as images and
+This suggests tool registry bloat could be a performance bottle-            tables, and model hierarchical SOPs with nested structure and con-
+neck: introducing 20 distractor tools reduced success rates by 16.2         text switching. Beyond these extensions, we invite the community
+percentage points despite agents having access to all necessary             to leverage our human–AI collaborative methodology to author
+tools. Task-specific tool pruning may be necessary for practical            new SOPs, generate executable artifacts, and contribute domain-
+deployment.                                                                 specific tasks back to SOP-Bench. This enables the benchmark to
+5.2.2 Controlled Complexity Variation in Referral Abuse Detection.          evolve organically, expand to new industries, and serve as a shared
+We conduct a controlled ablation on the Referral Abuse Detection            evaluation substrate for studying agent behavior.
+SOP by comparing its Easy and Hard variants, which share identi-               We release the complete benchmark, baseline agents, and evalu-
+cal task objectives, inputs, and tool interfaces but differ in logical      ation framework at https://github.com/amazon-science/sop-bench.
+References                                                                                [29] Karthik Valmeekam, Matthew Marquez, Alberto Olmo, Sarath Sreedharan, and
+ [1] Anthropic. Claude 3.5 sonnet. https://www.anthropic.com/news/claude-3-5-                  Subbarao Kambhampati. Planbench: An extensible benchmark for evaluating
+     sonnet, 2024.                                                                             large language models on planning and reasoning about change. Advances in
+ [2] Anthropic. Claude 3.7 sonnet and claude code. https://www.anthropic.com/                  Neural Information Processing Systems, 36:38975–38987, 2023.
+     news/claude-3-7-sonnet, 2025.                                                        [30] Wil M. P. Van Der Aalst, Arthur H. M. Ter Hofstede, Bartek Kiepuszewski, and
+ [3] Anthropic. Introducing claude 4. https://www.anthropic.com/news/claude-4,                 Alistair P. Barros. Workflow patterns. Distributed and parallel databases, 14(1):
+     2025.                                                                                     5–51, 2003.
+ [4] Anthropic. Introducing claude opus 4.5. https://www.anthropic.com/news/              [31] Feng Wang et al. Autogpt: An autonomous gpt-4 based agent system. arXiv
+     claude-opus-4-5, 2025.                                                                    preprint arXiv:2304.03277, 2023.
+ [5] Anthropic. Introducing claude sonnet 4.5. https://www.anthropic.com/news/            [32] Jiaming Wang, Zhe Tang, Yilin Jin, Peng Ding, Xiaoyu Li, and Xuezhi Cao. Sop-
+     claude-sonnet-4-5, 2025.                                                                  maze: Evaluating large language models on complicated business standard oper-
+ [6] Natasha Butt, Varun Chandrasekaran, Neel Joshi, Besmira Nushi, and Vidhisha               ating procedures. arXiv preprint arXiv:2510.08942, 2025.
+     Balachandran. Benchagents: Automated benchmark creation with agent interac-          [33] Yizhong Wang et al. Super-naturalinstructions: Generalization via declarative
+     tion, 2024.                                                                               instructions on 1600+ nlp tasks. arXiv preprint arXiv:2204.07705, 2022.
+ [7] Harrison Chase. Langchain. https://github.com/hwchase17/langchain, 2022.             [34] Bosi Wen, Shaohan Li, Pengcheng He, Weizhu Liu, et al. Benchmarking complex
+ [8] Maxime Chevalier-Boisvert, Dzmitry Bahdanau, Salem Lahlou, Lucas Willems,                 instruction-following with multiple constraints composition. arXiv preprint
+     Chitwan Saharia, Thien Huu Nguyen, and Yoshua Bengio. Babyai: First steps                 arXiv:2407.03978, 2024.
+     towards grounded language learning with a human in the loop, 2018.                   [35] Hui Yang, Sifu Yue, and Yunzhong He. Auto-gpt for online decision making:
+ [9] Suzanne De Treville, John Antonakis, and Norman M. Edelson. Standard operat-              Benchmarks and additional opinions.(2023). URL https://arxiv. org/abs/2306.02224,
+     ing procedures: A novel perspective. Business Horizons, 52(6):563–572, 2009.              2023.
+[10] DeepSeek. Deepseek-r1: Incentivizing reasoning capability in llms via reinforce-     [36] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan,
+     ment learning. https://api-docs.deepseek.com/news/news250120, 2025.                       and Yuan Cao. React: Synergizing reasoning and acting in language models.
+[11] Marlon Dumas, Marcello La Rosa, Jan Mendling, and Hajo A. Reijers. Fundamen-              arXiv preprint arXiv:2210.03629, 2023.
+     tals of business process management. Springer, 2018.                                 [37] Yuchen Zhuang, Xiang Chen, Tong Yu, Saayan Mitra, Victor Bursztyn, Ryan A.
+[12] Mitchell L. Gordon, Michelle S. Lam, Ji Su Park, Kshitij Patel, Jeff Hancock, Tat-        Rossi, Somdeb Sarkhel, and Chao Zhang. Toolchain*: Efficient action space navi-
+     sunori Hashimoto, and Michael S. Bernstein. Jury learning: Integrating dissenting         gation in large language models with a* search. arXiv preprint arXiv:2310.13227,
+     voices into machine learning models. In Proceedings of the 2022 CHI Conference            2023.
+     on Human Factors in Computing Systems, pages 1–19, 2022.
+[13] Thomas Gschwind, Shramona Chakraborty, Nitin Gupta, and Sameep Mehta.
+     Classifier-augmented generation for structured workflow prediction. In Proceed-
+                                                                                          Appendix
+     ings of the 2025 Conference on Empirical Methods in Natural Language Processing:
+     Industry Track, pages 1227–1238, 2025.
+                                                                                          Use of Generative AI
+[14] Yue Huang, Jiawen Shi, Yuan Li, Chenrui Fan, Siyuan Wu, Qihui Zhang, Yixin Liu,      This work employed generative AI models as part of a human-AI
+     Pan Zhou, Yao Wan, Neil Zhenqiang Gong, and Lichao Sun. Metatool benchmark
+     for large language models: Deciding whether to use tools and which to use. In
+                                                                                          collaborative framework for benchmark construction. Specifically,
+     The Twelfth International Conference on Learning Representations (ICLR), 2024.       we used Anthropic’s Claude 3.5 Sonnet v2 for the following pur-
+     URL: https://openreview.net/forum?id=R0c2qtalgG.                                     poses:
+[15] Yimin Jing et al. Followeval: A multi-dimensional benchmark for assessing
+     the instruction-following capability of large language models. arXiv preprint           Dataset Schema Generation: Claude 3.5 Sonnet v2 generated
+     arXiv:2311.09829, 2023.                                                              structured dataset schemas from human-authored SOPs and task
+[16] Minghao Li, Yingxiu Zhao, Bowen Yu, Feifan Song, Hangyu Li, Haiyang Yu,              contexts using one-shot prompting. These schemas specified input
+     Zhoujun Li, Fei Huang, and Yongbin Li. API-bank: A comprehensive bench-
+     mark for tool-augmented LLMs. In Houda Bouamor, Juan Pino, and Kalika Bali,          parameters, decision points, and expected outcomes.
+     editors, Proceedings of the 2023 Conference on Empirical Methods in Natural Lan-        SOP Refinement: The model refined human-authored SOPs
+     guage Processing, pages 3102–3116, Singapore, December 2023. Association for
+     Computational Linguistics.
+                                                                                          for consistency and completeness, ensuring alignment with dataset
+[17] Xuechen Li, Tianyi Zhang, Yann Dubois, Rohan Taori, Ishaan Gulrajani, Carlos         schemas while preserving domain-specific procedural logic.
+     Guestrin, Percy Liang, and Tatsunori B. Hashimoto. AlpacaEval: An Automatic             Artifact Generation: Claude 3.5 Sonnet v2 generated support-
+     Evaluator of Instruction-following Models, May 2023.
+[18] Ann Lindsay, Denise Downs, and Ken Lunn. Business processes—attempts to              ing artifacts including: (1) synthetic datasets representing full pro-
+     find a definition. Information and software technology, 45(15):1015–1019, 2003.      cedural contexts with diverse decision pathways and edge cases,
+[19] Xiao Liu, Hao Chen, Hanchen Chen, et al. Agentbench: Evaluating llms as agents.      (2) API specifications defining tool inputs and outputs, (3) tool
+     arXiv preprint arXiv:2308.03688, 2023.
+[20] Meta. Meta. introducing llama 3.1: Our most capable models to date. https:           specifications for agent interaction, and (4) executable tool code
+     //ai.meta.com/blog/meta-llama-3-1/, 2024.                                            implementing procedural logic.
+[21] OpenAI. Chatgpt (april 2024 version). https://openai.com/chatgpt, 2024.
+[22] OpenAI. Introducing gpt-oss. https://openai.com/index/introducing-gpt-oss/,
+                                                                                             Complexity Assessment: Claude 3.5 v2 provided complexity
+     2025.                                                                                ratings for each SOP on a 1-10 scale, calibrated against Berkeley
+[23] Kartikeya Patil, Yuan Tian, Xiangning Lin, Chen Lin, Kevin Lin, Xinying Liu, Eric    function calling tasks as baseline.
+     Xing, Dawei Lu, Nazneen Rajani, Ranjit Krishnan, et al. Gorilla: Large language
+     model connected with massive apis. In Advances in Neural Information Processing         Human Validation: All AI-generated content underwent rigor-
+     Systems, 2023.                                                                       ous human validation by domain experts. Human experts: (1) au-
+[24] Yiwei Qin, Xiang Ren, et al. Infobench: Evaluating instruction following ability     thored all original SOPs based on real-world industrial procedures,
+     in large language models. arXiv preprint arXiv:2401.03601, 2024.
+[25] Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin,        (2) validated dataset schemas for completeness and domain accu-
+     Xin Cong, Xiangru Tang, Bill Qian, et al. Toolllm: Facilitating large language       racy, (3) reviewed and corrected SOP refinements for procedural
+     models to master 16000+ real-world apis. arXiv preprint arXiv:2307.16789, 2023.
+[26] Marco Tulio Ribeiro, Tongshuang Wu, Carlos Guestrin, and Sameer Singh. Be-
+                                                                                          correctness, (4) validated datasets for logical consistency and ap-
+     yond accuracy: Behavioral testing of NLP models with CheckList. In Proceedings       propriate data types, (5) verified API and tool specifications aligned
+     of the 58th Annual Meeting of the Association for Computational Linguistics, pages   with dataset schemas, (6) executed and validated tool code for cor-
+     4902–4912, 2020.
+[27] Sarah T. Roberts. Behind the Screen: Content Moderation in the Shadows of Social     rectness, and (7) introduced controlled complexity to mirror real-
+     Media. Yale University Press, 2019.                                                  world conditions. The human-AI collaborative approach ensured
+[28] Mohit Shridhar, Xingdi Yuan, Marc-Alexandre Cote, Yonatan Bisk, Adam                 procedural authenticity while maintaining reproducibility and scal-
+     Trischler, and Matthew Hausknecht. Alfworld: Aligning text and embodied
+     environments for interactive learning. In International Conference on Learning       ability.
+     Representations, 2020.                                                                  Evaluation: The benchmark evaluation itself used 11 different
+                                                                                          LLMs (Claude 3.5 v2 Sonnet, Claude 3.7 Sonnet, Claude 4 Sonnet,
+Claude 4 Opus, Claude 4.1 Opus, Claude 4.5 Haiku, Claude 4.5             Input, and Final Answer components, with robust error handling
+Sonnet, Claude 4.5 Opus, DeepSeek R1, GPT OSS 120B, Llama 3.3            for malformed JSON inputs. This process continues for up to 15
+70B) as the agents being evaluated, not as tools for analysis or         iterations until a conclusive Final Answer is reached, marked using
+writing.                                                                 tags such as <final_decision>. The agent maintains comprehensive
+   Manuscript Writing: Claude 4.5 Sonnet was used to correct             execution traces including intermediate steps, tool call records with
+grammatical errors in the manuscript. All technical content, ex-         success status, and iteration counts. This agent architecture sup-
+perimental design, analysis, and conclusions were authored by the        ports sophisticated workflows, enabling adaptive behavior in SOPs
+human researchers.                                                       requiring fallback logic, verification steps, or multi-phase reasoning.
+   Main Image: The main figure of the paper, which presents an
+overview of the Human–AI Collaborative workflow for SOP-Bench,           B     Details of the SOPs in SOP-Bench
+was initially generated using ChatGPT, with the paper content            In this section, we briefly describe the diverse industry use cases
+provided as grounding material. Since the automatically generated        for which we generated synthetic data, and drawing parallels to
+figure did not fully capture the required structural and cosmetic        real-world operational workflows.
+refinements, the authors subsequently refined the figure manually
+to accurately represent the workflow, clearly delineate the Human        B.1    Aircraft Inspection
+and AI steps, and ensure faithful depiction of the overall process.      This SOP establishes a framework for pre-flight airworthiness ver-
+                                                                         ification of aircrafts, covering multi-layered inspections like me-
+A Technical Details on Agents                                            chanical component checks, electrical system authentication, and
+A.1 FC Agent (Function-Calling Agent)                                    maintenance record validation through seven distinct API tools.
+This is a prompt-driven, lightweight execution engine leveraging         This SOP is valuable for evaluating LLM-powered agents, as it tests
+the native tool calling capability of LLMs (e.g., Claude via AWS         their ability to interpret technical parameters, manage complex
+Bedrock). It accepts an SOP text and a structured task input, dy-        multi-step workflows, and produce structured outputs for audit
+namically generates prompts using a parameterized template en-           purposes. The complexity arises from its complex input structure
+gine, and maintains a conversation loop with the LLM throughout          and conditional branching (e.g., reporting inspection mismatches
+execution. During agent initialization, it registers external tools      where found). It also has cross-domain applicability in industries
+by converting them from OpenAPI-style tool specifications into           like automotive manufacturing, healthcare equipment maintenance,
+Bedrock’s function-calling format. During execution, when the            and industrial machinery inspection, where precise validation and
+model triggers a tool_use event, the agent extracts the relevant         discrepancy reporting are critical.
+tool name and parameters, executes the corresponding function
+via a domain-specific ToolManager, and delivers the output to the                 Table 7: Results for Aircraft Inspection SOP
+model through a tool_result message. The agent implements an iter-
+ative conversation pattern with a maximum of 10 iterations, where         LLM Model                Agent                 TSR     Exec Time (s)
+each iteration processes tool calls sequentially until no further tool
+                                                                          Claude 3.7 Sonnet        ReAct                0.990              23.04
+uses are detected. Final outputs are enclosed in XML-style tags
+                                                                          Claude 4.5 Opus          ReAct                0.970              31.78
+(e.g., <final_decision>) and are parsed into structured formats for
+                                                                          Claude 4 Opus            ReAct                0.970              87.46
+downstream evaluation. This architecture emphasizes traceability,
+                                                                          Claude 4.1 Opus          ReAct                0.960              77.96
+minimal supervision, and broad applicability across various SOP
+                                                                          Claude 4 Sonnet          ReAct                0.880              23.74
+domains. Note that this agent is incompatible with Amazon Nova
+                                                                          Claude 4.5 Haiku         ReAct                0.870              16.26
+models, which do not support native function calling.
+                                                                          Claude 4.5 Sonnet        ReAct                0.720              30.89
+A.2    ReAct Agent                                                        Llama 3.3 70B            ReAct                0.600              10.48
+                                                                          Claude 4 Sonnet          Function Calling     0.540              25.67
+Built on a custom implementation of the ReAct framework [36],             Claude 3.7 Sonnet        Function Calling     0.530              28.21
+this agent is designed to handle SOPs involving complex branching         Claude 3.5 v2 Sonnet     Function Calling     0.510              25.97
+logic, intermediate reasoning, and decision pathways. It ingests the      Claude 4.5 Sonnet        Function Calling     0.460              32.89
+SOP text, structured task input, and tool specifications, similar to      Claude 4 Opus            Function Calling     0.450              83.11
+the FC Agent. Tools are dynamically discovered from the ToolMan-          Claude 4.5 Haiku         Function Calling     0.440              18.77
+ager and their descriptions are formatted with detailed parameter         Claude 4.1 Opus          Function Calling     0.390              81.91
+information including types, requirements, and allowed values. The        Claude 4.5 Opus          Function Calling     0.230              30.41
+ReAct Agent interleaves reasoning traces (Thoughts) with explicit         Claude 3.5 v2 Sonnet     ReAct                0.130              26.89
+tool calls (Actions), which are executed via the ToolManager. The re-
+sulting Observations are fed back into the reasoning loop, enabling
+iterative planning and dynamic adaptation to SOP-specific control
+flows. The agent implements strict enforcement mechanisms to             B.2    Content Flagging
+prevent premature final answers without tool usage, ensuring that        This SOP models a content moderation workflow designed to eval-
+at least one tool is executed before providing conclusions. Response     uate flagged user-generated content through a combination of bot
+parsing uses regular expressions to extract Thought, Action, Action      detection, trust scoring and violation severity assessment. The SOP
+mimics a workflow in use cases such as fraud detection in fintech        thresholds for key metrics (e.g., latency, jitter, bandwidth). Trace-
+or abuse prevention in social platforms, where automated AI and          ability is ensured through session tokens, ticket IDs, timestamps,
+software systems have scored the content and the results of the up-      and audit logs.
+stream system are available as input to the human agent. The SOP            This SOP is particularly suited for evaluating AI or human agents
+integrates behavioral heuristics (e.g., captcha interaction, device      in semi-autonomous support systems, where success depends on
+fingerprinting), geolocation risk analysis, and multi-dimensional        accurate decision-making, conditional branching, and proper docu-
+scoring frameworks such as the Bot Probability Index (BPI), User         mentation. It simulates a realistic diagnostic environment through
+Trust Score, and Content Severity Index, etc. The process culmi-         a unified API-like framework. Agents must interpret system signals
+nates in a final decision—ranging from content removal to user           (e.g., suspension status, outage presence, signal quality) and act
+banning—based on a rule-based decision matrix. Its complexity            accordingly. The final output is a structured JSON-based Resolution
+arises from the interplay of user behavior history, system signals,      Summary Document (RSD), encoding the complete decision trail
+and threshold-based branching logic, reflecting the nuanced rea-         for reproducibility, auditability, and downstream integration.
+soning required in high-stakes moderation pipelines.
+   This SOP is highly relevant because it simulates a structured yet               Table 9: Results for Customer Service SOP
+non-trivial decision-making process involving conditional logic,
+multi-step tool usage, and real-world signal fusion. It relies on         LLM Model                Agent               TSR     Exec Time (s)
+four distinct APIs (tools) that mirror common platform trust and
+safety operations, such as bot detection, trust scoring, severity         Llama 3.3 70B            ReAct               0.790             13.70
+assessment, and final content dispositioning. The evaluation criteria     Claude 4.5 Opus          Function Calling    0.710             30.57
+require agents to correctly compute decision outcomes and generate        Claude 4 Sonnet          Function Calling    0.630             19.69
+structured audit trails, offering a clear and rigorous way to assess      Claude 4.5 Sonnet        Function Calling    0.630             35.11
+agent planning accuracy, execution fidelity, and interpretability.        Claude 4 Sonnet          ReAct               0.620             26.32
+                                                                          Claude 3.5 v2 Sonnet     ReAct               0.610             23.16
+          Table 8: Results for Content Flagging SOP                       Claude 3.7 Sonnet        Function Calling    0.570             22.82
+                                                                          Claude 4 Opus            Function Calling    0.560             72.83
+ LLM Model                Agent                TSR     Exec Time (s)      Claude 4 Opus            ReAct               0.560            145.43
+                                                                          Claude 4.5 Opus          ReAct               0.520             47.08
+ Deepseek R1              ReAct                0.600              3.74    Claude 4.1 Opus          ReAct               0.470             67.48
+ Claude 3.5 v2 Sonnet     ReAct                0.600             21.76    Claude 4.1 Opus          Function Calling    0.470             71.13
+ Claude 3.5 v2 Sonnet     Function Calling     0.570             17.45    Claude 4.5 Sonnet        ReAct               0.460             46.37
+ GPT OSS 120B             ReAct                0.430              2.67    Deepseek R1              ReAct               0.370             78.78
+ Claude 4 Sonnet          ReAct                0.390             25.42    GPT OSS 120B             ReAct               0.340             15.88
+ Claude 4.1 Opus          Function Calling     0.390             50.04    Claude 4.5 Haiku         ReAct               0.310             53.68
+ Claude 4.5 Haiku         Function Calling     0.380             11.46    Claude 4.5 Haiku         Function Calling    0.280             15.98
+ Claude 4.5 Opus          Function Calling     0.370             21.71    Claude 3.5 v2 Sonnet     Function Calling    0.220             21.16
+ Claude 4.5 Opus          ReAct                0.370             38.69    Claude 3.7 Sonnet        ReAct               0.080             29.02
+ Claude 4.5 Sonnet        ReAct                0.370             70.52
+ Claude 4 Opus            Function Calling     0.360             49.93
+ Claude 4 Sonnet          Function Calling     0.350             12.97
+ Claude 3.7 Sonnet        Function Calling     0.330             21.23   B.4    Dangerous Goods Classification
+ Claude 4.5 Sonnet        Function Calling     0.330             21.23   This benchmark includes a sophisticated SOP for dangerous goods
+ Llama 3.3 70B            ReAct                0.320              5.55   classification in supply chain operations. The procedure integrates
+ Claude 4.1 Opus          ReAct                0.290            131.01   multiple data sources (Safety Data Sheets, Handling Guidelines,
+ Claude 4 Opus            ReAct                0.270            138.08   Transportation Requirements, and Disposal Guidelines) through
+ Claude 4.5 Haiku         ReAct                0.170             32.77   a structured scoring system, where each component contributes
+ Claude 3.7 Sonnet        ReAct                 N/A              33.92   a severity score (1-5) to determine the final hazard classification.
+                                                                         The SOP incorporates practical considerations such as missing data
+                                                                         handling, validation checks, and API integrations, culminating in
+B.3    Customer Service                                                  a final classification system (Classes A through D) based on cu-
+This SOP defines an offline workflow for diagnosing and resolv-          mulative hazard scores. This example demonstrates the intricate
+ing customer-reported service issues based solely on initial in-         decision-making processes and interdependencies typical in in-
+puts—such as an account ID and issue description—without real-           dustrial settings, requiring AI agents to handle document parsing,
+time customer interaction. It is designed for backend support sce-       numerical computations, conditional logic, and structured output
+narios where resolution relies entirely on internal system data, logs,   generation - capabilities that go far beyond simple task execution.
+and historical telemetry, as commonly seen in telecommunications            Similar workflow patterns and complexity are found across vari-
+and infrastructure-based services. The procedure covers authenti-        ous industrial applications, such as pharmaceutical quality control
+cation validation, account eligibility checks, outage detection, di-
+agnostic testing, troubleshooting, and escalation, using predefined
+           Table 11: Results for Email Intent SOP                      B.5    Email intent
+                                                                       This SOP is designed for processing seller appeals in e-commerce
+ LLM Model               Agent                TSR    Exec Time (s)     platforms, representing the complexity of modern customer com-
+ Claude 4 Sonnet         ReAct               0.990             10.01   munication systems. The procedure systematically handles email
+ Claude 4.5 Sonnet       ReAct               0.980             10.64   classification and response determination through a structured
+ Claude 4.5 Opus         Function Calling    0.980             12.04   workflow that integrates multiple data sources and API endpoints.
+ Claude 4 Opus           Function Calling    0.980             25.24   The SOP instructs categorizing seller communications into dis-
+ Claude 4.1 Opus         Function Calling    0.980             28.60   tinct categories (pricing concerns, description modifications, listing
+ Claude 4 Opus           ReAct               0.980             31.26   status inquiries, or general questions) and validate these against
+ Claude 4 Sonnet         Function Calling    0.970              7.71   product databases, pricing systems, and inventory management
+ Claude 4.1 Opus         ReAct               0.970             30.89   through specific API calls. The procedure incorporates practical
+ Claude 3.7 Sonnet       Function Calling    0.957              9.78   considerations such as data validation, error handling, and compli-
+ Claude 3.5 v2 Sonnet    ReAct               0.950              7.08   ance documentation, culminating in standardized XML-formatted
+ Claude 4.5 Sonnet       Function Calling    0.930             10.62   outputs with clear action items. This example demonstrates the
+ Claude 4.5 Haiku        ReAct               0.920              7.42   intricate decision-making processes typical in modern business
+ Claude 4.5 Opus         ReAct               0.920             11.92   operations, requiring AI agents to handle NLU, multi-system data
+ Deepseek R1             ReAct               0.910              2.49   integration, and protocol-based response generation. Similar work-
+ Claude 4.5 Haiku        Function Calling    0.900              6.05   flow patterns and complexity are found across various industries,
+ GPT OSS 120B            ReAct               0.790              7.78   such as customer support ticket systems, insurance claim process-
+ Claude 3.7 Sonnet       ReAct               0.790             22.08   ing, financial services communication handling, and travel booking
+ Claude 3.5 v2 Sonnet    Function Calling    0.740             11.68   support systems. These use-cases share key characteristics includ-
+ Llama 3.3 70B           ReAct               0.720             11.67   ing intent classification needs, multiple API integrations, structured
+                                                                       decision trees, standardized response protocols, and compliance
+                                                                       documentation requirements.
+processes, aircraft pre-flight safety checks, food safety certifica-
+tions, and industrial equipment maintenance prioritization. These      B.6    Know Your Business
+use-cases share key characteristics including multi-source data in-    Verification of business entities is an essential component in the
+tegration, quantitative scoring systems, complex decision trees,       modern economy. This serves as the primary motivation for cre-
+comprehensive documentation needs, and API integrations, demon-        ating a comprehensive SOP focused on business verification that
+strating how our benchmark represents realistic challenges faced       identifies high-risk entities before engaging in business relation-
+in industrial automation.                                              ships. The SOP outlines step-by-step guidelines on how to validate
+                                                                       business details, registration, licenses, and tax identities, as well as
+         Table 10: Results for Dangerous Goods SOP                     ownership structures and sanctioned individuals. The SOP requires
+                                                                       the agent to reason about completeness of business details and
+ LLM Model               Agent                TSR    Exec Time (s)     call relevant tools to fetch required data to aid in the verification
+                                                                       process. Finally, the agent is required to either approve the business
+ Claude 4 Sonnet         Function Calling    0.870             13.11   or escalate the case for human intervention.
+ Claude 4 Opus           ReAct               0.830             28.02
+ Claude 4.1 Opus         ReAct               0.830             31.35   B.7    Patient Intake
+ Claude 3.5 v2 Sonnet    ReAct               0.810              6.95
+                                                                       This synthetic SOP models the end-to-end intake and registration
+ Claude 3.7 Sonnet       ReAct               0.790             22.08
+                                                                       process for new patients in clinical settings, incorporating insurance
+ Claude 3.5 v2 Sonnet    Function Calling    0.760             13.02
+                                                                       validation, prescription benefits verification, lifestyle and clinical
+ Claude 4.5 Opus         ReAct               0.760             22.02
+                                                                       risk stratification, and pharmacy network checks. Its complexity lies
+ Claude 3.7 Sonnet       Function Calling    0.740             11.83
+                                                                       in the conditional decision pathways, cross-system interactions (e.g.,
+ Claude 4 Sonnet         ReAct               0.730             14.73
+                                                                       mock prescription and pharmacy validations), and the integration
+ Claude 4.5 Sonnet       ReAct               0.730             19.48
+                                                                       of structured data inputs with algorithmic assessments like risk
+ Claude 4 Opus           Function Calling    0.730             41.15
+                                                                       scoring. The SOP requires the agent to perform validation tasks
+ Claude 4.1 Opus         Function Calling    0.730             48.91
+                                                                       using six APIs—each mapping to a distinct functional step—and
+ Claude 4.5 Opus         Function Calling    0.690             13.95
+                                                                       to generate structured outputs that reflect real-world registration
+ Deepseek R1             ReAct               0.680             13.06
+                                                                       outcomes under healthcare compliance constraints.
+ GPT OSS 120B            ReAct               0.640              5.35
+                                                                          As a benchmark dataset for evaluating LLM-based task planning
+ Claude 4.5 Sonnet       Function Calling    0.640             15.78
+                                                                       agents, this SOP is highly relevant due to its realistic structure and
+ Llama 3.3 70B           ReAct               0.560             60.13
+                                                                       deterministic yet context-sensitive branching logic. It simulates
+ Claude 4.5 Haiku        ReAct               0.330             20.18
+                                                                       challenges found in broader industrial domains such as health-
+ Claude 4.5 Haiku        Function Calling    0.280             10.25
+                                                                       care operations, insurance underwriting, and benefits management.
+                                                                       Similar real-world workflows include hospital patient onboarding,
+       Table 12: Results for Know Your Business SOP                    B.8    Referral Abuse Detection (Version 1)
+                                                                       This SOP establishes a framework for detecting and investigating
+ LLM Model               Agent                TSR    Exec Time (s)     referral abuse violations in subscription-based business environ-
+ Claude 4.5 Opus         ReAct               0.580             39.68   ments, where malicious actors create fake accounts or use mislead-
+ Claude 4.5 Haiku        Function Calling    0.570             25.80   ing promotional content to earn referral rewards fraudulently. The
+ Claude 3.5 v2 Sonnet    Function Calling    0.560             28.53   procedure guides investigators through a systematic multi-step
+ Claude 3.7 Sonnet       Function Calling    0.560             43.63   process: account investigation (address verification, email analysis,
+ Claude 3.5 v2 Sonnet    ReAct               0.530             31.43   website verification, business description review), account rela-
+ Deepseek R1             ReAct               0.500              5.25   tions investigation (checking links to flagged accounts, analyzing
+ Claude 4 Opus           Function Calling    0.430            159.84   login patterns and geographic consistency), and traffic analysis
+ GPT OSS 120B            ReAct               0.420              2.10   (reviewing revenue patterns, click-through rates, referral sources,
+ Claude 4.1 Opus         ReAct               0.410            114.07   and transaction history). The SOP employs a scoring-based deci-
+ Claude 4.5 Sonnet       Function Calling    0.400             44.83   sion framework where investigators calculate violation indicators
+ Claude 4.5 Sonnet       ReAct               0.390             57.03   across four categories—Abusive Account Creation, Misleading Ad
+ Llama 3.3 70B           ReAct               0.370              3.57   Copy, Personal Orders (Related User), and No Violation—by count-
+ Claude 4.1 Opus         Function Calling    0.350            105.25   ing boolean indicators from tool outputs (e.g., invalid addresses,
+ Claude 4 Sonnet         ReAct               0.340             31.57   suspicious email patterns, shared payment methods, connected
+ Claude 4.5 Opus         Function Calling    0.340             43.59   accounts). The violation type is determined by the highest score
+ Claude 4 Opus           ReAct               0.310            110.50   meeting its threshold, with a priority ordering for tied scores.
+ Claude 4.5 Haiku        ReAct               0.240             53.73      This SOP is relevant for evaluating AI agents in fraud detection
+ Claude 4 Sonnet         Function Calling    0.170             28.18   and trust & safety operations, as it requires complex conditional
+ Claude 3.7 Sonnet       ReAct                N/A              28.40   reasoning, multi-source data integration, and structured decision-
+                                                                       making under ambiguity. The procedure mirrors real-world referral
+                                                                       fraud detection workflows used in e-commerce platforms, subscrip-
+insurance claims adjudication, and pharmacy eligibility reviews.       tion services, and affiliate marketing programs. Agents must cor-
+The SOP’s evaluation framework scores agents on whether they           rectly interpret boolean fields, calculate multiple scoring metrics
+produce complete, correctly formatted outputs across six output        simultaneously, apply threshold-based logic, and handle edge cases
+fields and the final decision on patient registration, aligning well   such as inconclusive evidence. The final output is a structured en-
+with goals of assessing LLM agent task planning, reliability, and      forcement action (Account Closure, No Action, or Inconclusive)
+tool execution precision.                                              based on the calculated violation type, requiring agents to demon-
+                                                                       strate both analytical reasoning and precise rule execution.
+           Table 13: Results for Patient Intake SOP
+                                                                        Table 14: Results for Referral Abuse Detection Easy SOP
+ LLM Model               Agent                TSR    Exec Time (s)
+                                                                        LLM Model                Agent               TSR     Exec Time (s)
+ Llama 3.3 70B           ReAct               1.000              6.58
+ Claude 4.5 Haiku        Function Calling    1.000             14.88    Claude 3.5 v2 Sonnet     ReAct               0.980             11.04
+ Claude 4 Sonnet         Function Calling    1.000             18.28    Claude 3.5 v2 Sonnet     Function Calling    0.970             14.82
+ Claude 4.5 Opus         Function Calling    1.000             26.84    Claude 4 Opus            ReAct               0.970             66.45
+ Claude 4.5 Sonnet       Function Calling    1.000             28.69    Claude 4 Sonnet          ReAct               0.960             16.03
+ Claude 4.5 Opus         ReAct               1.000             52.84    Claude 3.7 Sonnet        Function Calling    0.960             16.77
+ Claude 4.1 Opus         Function Calling    1.000             77.13    Claude 4.5 Opus          ReAct               0.960             19.17
+ Claude 4.1 Opus         ReAct               1.000             94.50    Claude 4.5 Haiku         Function Calling    0.955              8.53
+ Claude 4 Opus           ReAct               1.000            102.28    Claude 4 Sonnet          Function Calling    0.955             11.93
+ Claude 3.7 Sonnet       ReAct               0.985             18.46    Claude 4.5 Sonnet        Function Calling    0.955             16.59
+ Claude 4 Sonnet         ReAct               0.985             21.13    Claude 4.1 Opus          Function Calling    0.955             30.88
+ Claude 3.5 v2 Sonnet    Function Calling    0.955             43.06    Claude 4.1 Opus          ReAct               0.955             54.18
+ Claude 4 Opus           Function Calling    0.924             70.33    Claude 4 Opus            Function Calling    0.954             53.99
+ Claude 4.5 Sonnet       ReAct               0.833             43.89    Claude 4.5 Opus          Function Calling    0.950             17.45
+ Claude 4.5 Haiku        ReAct               0.561             24.98    Claude 4.5 Sonnet        ReAct               0.950             23.01
+ Claude 3.7 Sonnet       Function Calling    0.515             12.93    Claude 4.5 Haiku         ReAct               0.945             16.28
+ GPT OSS 120B            ReAct               0.121              5.01    Claude 3.7 Sonnet        ReAct               0.695             22.45
+ Claude 3.5 v2 Sonnet    ReAct                N/A               N/A     GPT OSS 120B             ReAct               0.615              2.18
+                                                                        Llama 3.3 70B            ReAct               0.525              3.65
+                                                                        Deepseek R1              ReAct               0.525              4.65
+ Table 15: Results for Referral Abuse Detection Hard SOP                offense severity and repeat offender status, requiring agents to
+                                                                        demonstrate more sophisticated reasoning about risk assessment,
+ LLM Model                Agent               TSR     Exec Time (s)     historical context integration, and graduated response strategies.
+ Claude 4 Opus            Function Calling    0.980             81.79   B.10     Traffic Spoofing Detection
+ Claude 4.5 Opus          Function Calling    0.975             22.94
+ Claude 3.7 Sonnet        Function Calling    0.970             21.81   This SOP establishes a comprehensive framework for detecting and
+ Claude 4.5 Opus          ReAct               0.965             31.55   investigating traffic spoofing violations in affiliate marketing envi-
+ Claude 4.1 Opus          ReAct               0.965             81.41   ronments. The procedure guides fraud analysts through systematic
+ Claude 4 Opus            ReAct               0.960             89.16   validation of partner accounts, traffic pattern analysis, and source
+ Claude 4.1 Opus          Function Calling    0.955             73.86   authentication to identify fraudulent activities such as IP/referrer
+ Claude 3.5 v2 Sonnet     Function Calling    0.950             21.25   falsification, content manipulation, and unauthorized redirections.
+ Claude 4.5 Sonnet        ReAct               0.945             45.50   The SOP employs multiple scoring thresholds including Engage-
+ Claude 4.5 Sonnet        Function Calling    0.935             16.15   ment Score Threshold (EST), Conversion Rate Authentication Pro-
+ Claude 4.5 Haiku         ReAct               0.915              N/A    tocol (CRAP), and device traffic distribution analysis to classify
+ Claude 3.5 v2 Sonnet     ReAct               0.915             14.57   violations. Investigators must validate metrics such as user-to-order
+ Claude 4 Sonnet          ReAct               0.915             21.88   ratios (minimum 0.4 for legitimacy), engagement scores (critical if
+ Claude 4 Sonnet          Function Calling    0.895             16.94   <1.0), conversion rates (suspicious if <0.05%), bounce rates, visit du-
+ Claude 4.5 Haiku         Function Calling    0.670             14.94   rations, and unattributed click percentages. The procedure requires
+ GPT OSS 120B             ReAct               0.185              1.11   cross-referencing multiple data sources through the Traffic Attri-
+ Claude 3.7 Sonnet        ReAct               0.100             29.25   bution Validation Matrix (TAVM) and documenting evidence in the
+ Llama 3.3 70B            ReAct               0.085              8.50   Partner Violation Documentation System (PVDS). Based on risk
+ Deepseek R1              ReAct               0.060              6.00   assessment algorithms, the SOP determines graduated enforcement
+                                                                        actions ranging from "Account Closure" for high-risk violations to
+                                                                        "Warning Issued" or "No Action" for lower-risk cases. This SOP is
+B.9    Referral Abuse Detection (Version 2)                             relevant for evaluating AI agents in fraud detection and compliance
+This enhanced version of the referral abuse detection SOP intro-        operations, as it requires multi-dimensional data analysis, threshold-
+duces significantly greater complexity through temporal pattern         based decision logic, evidence correlation across traffic sources, and
+analysis, historical violation context, and risk-based enforcement      risk-proportional enforcement determination—capabilities essen-
+actions. Building upon the foundational framework of Version 1,         tial for automated trust and safety systems in digital advertising
+this SOP adds three major dimensions: temporal fraud detection (an-     and affiliate marketing platforms.
+alyzing registration bursts, off-hours activity patterns, and coordi-
+nated timing), historical context review (previous violations, warn-        Table 16: Results for Traffic Spoofing Detection SOP
+ing history, account rehabilitation status, customer complaints),
+and a sophisticated risk severity classification system (CRITICAL,       LLM Model                 Agent                TSR     Exec Time (s)
+HIGH, MEDIUM, LOW) that determines graduated enforcement
+responses. The scoring framework is expanded with weighted indi-         Claude 4.5 Sonnet         Function Calling    0.860              28.62
+cators—registration bursts and coordinated account creation pat-         Claude 4 Sonnet           Function Calling    0.790              17.94
+terns receive double weight—and introduces a new Temporal Fraud          Claude 4 Opus             Function Calling    0.785              25.23
+Score category. The procedure requires agents to calculate risk          Claude 4.5 Haiku          Function Calling    0.750               9.76
+severity based on multiple factors including revenue amount, vi-         Llama 3.3 70B             ReAct               0.740               3.35
+olation history, complaint counts, and refund rates, then map the        Claude 4.1 Opus           Function Calling    0.720              20.04
+combination of violation type and risk severity to one of seven          Claude 3.5 v2 Sonnet      Function Calling    0.690              16.09
+possible enforcement actions ranging from "Permanent Account             Claude 3.7 Sonnet         Function Calling    0.635              25.86
+Closure" to "Warning Issued" to "Manual Review Required."                Deepseek R1               ReAct               0.625               5.77
+   The key difference between Version 1 and Version 2 lies in the        Claude 4 Opus             ReAct               0.600             130.20
+decision complexity and contextual reasoning required. Version 1         GPT OSS 120B              ReAct               0.455               1.76
+uses a simpler three-outcome model (Account Closure, No Action,          Claude 4.5 Sonnet         ReAct               0.365              48.60
+Inconclusive) based solely on current account indicators, while          Claude 4.5 Opus           Function Calling    0.350              31.50
+Version 2 implements a multi-tiered enforcement framework that           Claude 4 Sonnet           ReAct               0.345              34.05
+considers account history, temporal patterns, and financial impact.      Claude 3.5 v2 Sonnet      ReAct               0.330              21.97
+Version 2 introduces 13 additional input fields (account age, previ-     Claude 4.1 Opus           ReAct               0.225             120.45
+ous violations, warning status, temporal patterns, customer com-         Claude 4.5 Haiku          ReAct               0.135              33.70
+plaints, refund rates), weighted scoring for high-confidence fraud       Claude 4.5 Opus           ReAct               0.120              52.83
+indicators, and a two-stage decision process that first determines       Claude 3.7 Sonnet         ReAct               0.025              29.64
+violation type then calculates risk severity. This mirrors real-world
+fraud operations where enforcement actions are proportional to
+        Table 18: Results for Video Classification SOP                   B.12     Video Flagging for Content Moderation
+                                                                         In the online world of content consumption and social media, con-
+ LLM Model                Agent                TSR     Exec Time (s)     tent moderation plays a critical role in ensuring user safety, main-
+ Claude 4 Sonnet          Function Calling     0.954             22.19   taining community standards, and preventing the spread of harmful
+ Claude 4 Sonnet          ReAct                0.954             22.19   or misleading information. As platforms scale, the volume and va-
+ Deepseek R1              ReAct                0.949              5.59   riety of user-generated content increase exponentially, making
+ Claude 4.5 Sonnet        ReAct                0.949             19.97   manual moderation infeasible. This has led to the growing reliance
+ Claude 4.5 Sonnet        Function Calling     0.949             23.70   on automated moderation systems powered by artificial intelligence
+ Claude 4.1 Opus          ReAct                0.944             60.01   and machine learning. This SOP establishes a comprehensive frame-
+ Claude 3.7 Sonnet        ReAct                0.939             26.90   work for the systematic classification, escalation, and moderation
+ Claude 4 Opus            ReAct                0.939             62.89   of user-generated video content on digital platforms. The Agent
+ Claude 4.5 Haiku         Function Calling     0.929             12.95   uses tools to fetch initial review metadata and uses reasoning to
+ GPT OSS 120B             ReAct                0.924              3.82   escalate the content to human moderator and based on their feed-
+ Claude 4.5 Haiku         ReAct                0.924             20.70   back, assigns moderation tags, content warning status and a final
+ Llama 3.3 70B            ReAct                0.914             12.37   decision to ultimately keep or take down the video.
+ Claude 4.5 Opus          ReAct                0.914             30.28   B.13     Warehouse Package Inspection
+ Claude 4.5 Opus          Function Calling     0.914             35.95
+ Claude 3.5 v2 Sonnet     Function Calling     0.898             28.12   This SOP enhances the warehouse package inspection workflow
+ Claude 3.5 v2 Sonnet     ReAct                0.893             26.54   by introducing a structured protocol for detecting and resolving
+ Claude 4.1 Opus          Function Calling     0.807             82.61   shipment discrepancies. It reflects real-world operational needs in
+ Claude 3.7 Sonnet        Function Calling     0.792             24.04   enterprise logistics, where issues like barcode mismatches, quantity
+ Claude 4 Opus            Function Calling     0.787             78.69   variances, and damaged goods require swift, automated handling
+                                                                         to maintain inventory integrity and vendor accountability.
+                                                                            The process begins with barcode validation using image com-
+B.11     Video Annotation for self driving                               parison. If the barcode does not match the confirmed product ID,
+As we rapidly move to a world powered by AI where autonomous             the item is immediately classified as “Wrong Item” and marked for
+vehicles navigate our streets, there is a need to produce high-quality   return, bypassing further checks. Otherwise, the agent calculates
+datasets to train perception and navigation systems. This serves         quantity variance and classifies discrepancies based on predefined
+as the main motivation behind creating a SOP that outlines steps         rules—such as overage, underage, cancelled quantity, or severe
+to detect objects and annotate videos. The SOP establishes input         mismatch when the variance exceeds a set threshold.
+requirements (format, frame rate, resolution, color depth), com-            Subsequent checks include verifying warehouse location and
+prehensive processes for object detection and segmentation using         assessing package condition via image-based damage detection.
+specialized tools, and strict quality control measures (spatial ac-      Discrepancies like misdirected shipments or visible damage are
+curacy, temporal consistency, inter-annotator agreement). After          accordingly classified. Once all issues are identified, the system
+processing, the agent must report whether the video was success-         calculates financial penalties using a chargeback matrix, applying
+fully processed, provide paths to the resulting object detection and     formulas based on discrepancy type and unit cost.
+segmentation files, and include human reviewer scores to validate           The procedure concludes with structured outputs: a problem
+annotation quality.                                                      classification report, chargeback sheet, and resolution status up-
+                                                                         date. Designed to simulate operational flows in high-volume retail
+         Table 17: Results for Video Annotation SOP                      logistics, this SOP challenges agents to integrate vision processing,
+                                                                         rule-based logic, and structured reporting—providing a rigorous
+ LLM Model                Agent                TSR     Exec Time (s)     benchmark for LLM agents in industrial SOP execution.
+ GPT OSS 120B             ReAct                0.584              3.16
+                                                                         C Prompt Templates
+ Deepseek R1              ReAct                0.576              5.66
+ Claude 4.5 Opus          Function Calling     0.520             80.50   C.1 SOP Document Generation Prompt
+ Claude 3.5 v2 Sonnet     ReAct                0.469             25.68
+ Llama 3.3 70B            ReAct                0.376              3.92   Listing 1: Prompt Template YAML for converting user-
+ Claude 4 Opus            ReAct                0.376             73.97   provided task title and context to SOP
+ Claude 4 Opus            Function Calling     0.368             71.04
+ Claude 4.1 Opus          Function Calling     0.360             79.65
+ Claude 4.1 Opus          ReAct                0.320             62.87
+ Claude 4 Sonnet          ReAct                0.312             18.71
+ Claude 4.5 Haiku         Function Calling     0.312             20.79
+ Claude 4.5 Haiku         ReAct                0.312             23.80
+ Claude 4.5 Opus          ReAct                0.280             38.90
+ Claude 3.7 Sonnet        ReAct                0.240             37.67
+ Claude 4.5 Sonnet        ReAct                0.208             42.43
+ Claude 3.5 v2 Sonnet     Function Calling     0.176             30.78
+ Claude 4 Sonnet          Function Calling     0.160             32.52
+ Claude 4.5 Sonnet        Function Calling     0.136             36.08
+ Claude 3.7 Sonnet        Function Calling     0.048             28.66
+        Figure 4: Sample API and ToolSpec generated for the SOP related to Patient Intake in Healthcare industry
+
+
+
+
+ Figure 5: Detailed Sample of Business Task and Task Context for the Patient Intake SOP relevant to healthcare industry
+
+Table 19: Results for Warehouse Package Inspection SOP            1   prompts:
+                                                                  2     - name: complex_sop_generator
+LLM Model              Agent              TSR     Exec Time (s)   3       parameters: [sop_title, additional_context,
+                                                                          sample_schema]
+Claude 4.1 Opus        ReAct              0.687           71.90   4       text: |
+Claude 4.5 Opus        Function Calling   0.647           18.54   5         You are an expert AI system specialized in creating
+Claude 4 Opus          ReAct              0.647           76.02             highly detailed Standard Operating Procedures (SOPs)
+Claude 4.5 Haiku       Function Calling   0.640            9.23             for complex, technical, and regulated environments.
+Claude 3.5 v2 Sonnet   ReAct              0.627           34.04             Your task is to generate an SOP that is rich in domain-
+                                                                            specific terminology, intricate logic, and advanced
+Claude 3.5 v2 Sonnet   Function Calling   0.560           18.19
+                                                                            structure-requiring substantial subject-matter
+Claude 4 Opus          Function Calling   0.560           47.50
+                                                                            expertise to fully comprehend.
+Claude 4.5 Sonnet      Function Calling   0.553           16.50   6
+Claude 4 Sonnet        Function Calling   0.527           15.22
+Claude 4.1 Opus        Function Calling   0.527           49.67
+Claude 4.5 Opus        ReAct              0.513           19.48
+Claude 4 Sonnet        ReAct              0.513           26.19
+Claude 3.7 Sonnet      Function Calling   0.493           17.68
+Llama 3.3 70B          ReAct              0.346            7.91
+Deepseek R1            ReAct              0.333            5.66
+Claude 4.5 Sonnet      ReAct              0.327           40.66
+GPT OSS 120B           ReAct              0.300            3.31
+Claude 4.5 Haiku       ReAct              0.147           27.08
+Claude 3.7 Sonnet      ReAct              0.067           36.53
+7    Here is the title for the SOP you need to create:        47
+8    <sop_title>                                              48   3. Definitions
+9    {{sop_title}}                                            49   [List and define relevant terms, ensuring they are
+10   </sop_title>                                                  technical and field-specific]
+11                                                            50
+
+12   {% if additional_context != "" %}                        51   4. Input
+13   Here is additional context that you must incorporate     52   [Enumerate required inputs, materials, or information
+     into the SOP generation process:                              needed to initiate the procedure]
+14   <additional_context>                                     53
+15   {{additional_context}}                                   54   5. Main Procedure
+16   </additional_context>                                    55   5.1 [First main step]
+17   {% endif %}                                              56     5.1.1 [Substep with detailed explanation]
+18
+                                                              57     5.1.2 [Substep with detailed explanation]
+19   {% if sample_schema != "" %}                             58   5.2 [Second main step]
+20   Here is a schema for the SOP that you should use to      59     5.2.1 [Substep with detailed explanation]
+     guide your creation process:                             60     5.2.2 [Substep with detailed explanation]
+21   <sample_schema>                                          61   [Continue with all necessary steps and substeps,
+22   {{sample_schema}}                                             ensuring each is explained in detail]
+23   </sample_schema>                                         62
+24   {% endif %}                                              63   6. Output
+25
+                                                              64   [Describe the expected results or deliverables upon
+26   Before generating the SOP, you must thoroughly analyze        completion of the procedure]
+      the title, additional context and sample schema to      65   </SOP>
+     plan the most sophisticated and complex approach         66
+     possible. Conduct this analysis and planning phase       67   Requirements for SOP Generation:
+     inside <sop_analysis> tags. Follow these steps:          68
+27
+                                                              69   1. Use advanced industry jargon, long-form technical
+28   1. Deconstruct the title and additional context into          sentences, and assume your audience has deep domain
+     key components.                                               expertise.
+29   2. Identify the specific industry or field the SOP       70   2. Ensure that the language used throughout the SOP is
+     pertains to.                                                   sophisticated and technical, requiring a high level
+30   3. Enumerate potential regulatory requirements                of expertise to fully comprehend.
+     relevant to this SOP.                                    71   3. Include cross-references between different sections
+31   4. List out key technical terms that will be used in           to create a web of interconnected information.
+     the SOP.                                                 72   4. In the Definitions section, include complex terms
+32   5. Brainstorm complex technical details for each              that will be used throughout the SOP, ensuring they
+     section of the SOP.                                           are technical and field-specific.
+33   6. Outline interdependencies between different           73   5. Use the information provided in the additional
+     sections of the SOP.                                          context to construct the SOP.
+34   7. Consider potential complications, edge cases, and     74   6. Do not use bullet points or lists. Instead, express
+     rare scenarios that should be addressed.                       each item in fully elaborated prose, forming complete
+35   8. Identify specific compliance issues and how they            paragraphs. Each requirement or specification must be
+     will be addressed in the SOP.                                  described with technical detail, rationale, and
+36
+                                                                   interconnections, mimicking the tone of formal
+37   Use industry-specific jargon and complex terminology          documentation or academic writing.
+     throughout the planning process. Consider industry-      75   7. At each stage, explicitly specify quantitative
+     specific nuances, potential regulatory requirements,          thresholds and conditions that guide decisions (e.g.,
+     and intricate technical details that could be                 scoring cutoffs, routing rules, escalation triggers).
+     incorporated. This planning phase should be extensive    76   8. The SOP should be self-sustaining, all necessary
+     and detailed.                                                 instructions to complete the task must be explicitly
+38
+                                                                   mentioned in the SOP
+39   After completing the planning phase, generate the SOP    77   9. If a sample schema is provided, use the information
+     using the following structure:                                 exhaustively to design thresholds, success and
+40
+                                                                   failure logic to guide decision-making in the SOP,
+41   <SOP>                                                         increasing its complexity.
+42   1. Purpose                                               78   10. For each section, use the <sop_analysis> tags to
+43   [Provide a clear, technical statement of the purpose          think and reason about ways to increase complexity and
+     of SOP]                                                        depth. Consider potential pitfalls, rare scenarios,
+44
+                                                                   and intricate details that might not be immediately
+45   2. Scope                                                      obvious.
+46   [Define the exact coverage of the SOP and specify to
+     whom it applies]
+79         11. Generate the entire SOP in one continuous pass        32         </schema>
+           without pausing, asking for confirmation, or              33
+
+           requesting interaction. Do not ask if you should          34
+
+           continue. Output the full SOP all at once within the <    35         Now, Generate a dataset schema within <schema></schema>
+           SOP> </SOP> tags.                                                     tags for the given SOP title using the additional
+80                                                                              context .
+81         Remember to make each step and substep in the Main        36         <requirements>
+           Procedure detailed and clearly explained, while           37         1. Define the schema of the dataset, including each
+           maintaining the required level of complexity and                     field:
+           technical depth. This is crucial for the effectiveness    38           - Name
+            of the SOP in its intended environment.                  39           - Type (e.g., string, integer, float, boolean,
+                                                                                  datetime, enum, list, etc.)
+                                                                     40           - Description (what the field represents)
+     C.2    Data Schema Generation Prompt                            41           - Example value
+                                                                     42         2. Include data ranges and choices wherever applicable.
+     Listing 2: Prompt Template YAML for converting user-
+     provided task title, task context and a one-shot demonstra-     43         </requirements>
+     tion of a dataset schema to Synthetic Dataset Schema
+1    prompts:
+2        - name: generate_dataset_schema
+                                                                          C.3    Dataset Generation Prompt
+3        parameters: [sop_title, additional_context]
+                                                                          Listing 3: Prompt Template YAML for converting user-
+4        text: |
+5          You are an expert AI assistant that specializes in
+                                                                          provided task title, task context and dataset schema to Syn-
+           generating synthetic dataset schemas based on Standard         thetic Dataset
+            Operating Procedures (SOPs).                              1   prompts:
+6          You will use the Standard operating procedure(SOP)         2       - name: generate_dataset_csv
+           text to generate a dataset schema.                         3       parameters: [sop_title, sop_file_contents,
+7                                                                             additional_context, sample_schema, n_samples,
+8          First, carefully read through the following SOP title:             sop_data_generation_guidelines]
+9                                                                     4       text: |
+10         <sop_title>                                                5         You are an expert AI assistant trained to generate
+11           {{sop_title}}                                                      high-quality synthetic datasets based on detailed
+12         </sop_title>                                                         Standard Operating Procedures (SOPs). Your task is to
+13                                                                              extract operational logic and decision conditions from
+14         {% if additional_context != "" %}                                     the SOP to synthesize structured data that reflects
+15         Here is additional context you must adhere to for the                the full range of possible cases.
+           SOP generation process:                                    6         You will be provided with the following inputs:
+16           <additional_context>                                     7
+17           {{additional_context}}                                   8         <sop_title>
+18           </additional_context>                                    9         {{sop_title}}
+19         {% endif %}                                               10         </sop_title>
+20                                                                   11
+21         You must structure the output using this format:          12         <sop_contents>
+22         <schema>                                                  13         {{sop_file_contents}}
+23           video_id - string, unique identifier for the video (e   14         </sop_contents>
+             .g., "vid_00123").                                      15
+24           video_path - string, file path or URI of the video (e   16         {% if additional_context != "" %}
+             .g., "/data/videos/vid_00123.mp4").                     17         <additional_context>
+25           upload_timestamp - datetime, when the video was         18         {{additional_context}}
+             uploaded (e.g., "2025-04-18T15:32:10Z").                19         </additional_context>
+26           uploader_id - string, anonymized user identifier (e.g   20         {% endif %}
+             ., "user_487").                                         21
+27           video_language - string, detected or declared           22         {% if sample_schema != "" %}
+             language of spoken/audio content (e.g., "en", "es").    23         <schema>
+28           region - string, region associated with the video or    24         {{sample_schema}}
+             uploader (e.g., "US", "IN").                            25         </schema>
+29           metadata_tags - list[string], keywords or tags          26         {% endif %}
+             extracted from video metadata (e.g., ["protest", "      27
+             crowd", "chanting"]).                                   28         Your task is to generate a synthetic dataset as
+30           format_validated - boolean, whether the video passed               follows:
+             format checks (e.g., True).                             29
+31           duration_seconds - integer, total length of the video
+              in seconds (e.g., 312).
+30   1. Interpretation: Carefully analyze the SOP to           62         ["value_k_1", "value_k_2", ..., "value_k_N"]]
+     identify all decision points, validation steps,           63         </data>
+     escalation conditions, and classifications. Use these
+     to determine what fields must appear in the dataset
+     and what values those fields may take.                         C.4    SOP API Generation Prompt
+31   2. Schema-Adherence: Ensure the dataset reflects and
+     expands upon the fields in the `<schema>` section, if          Listing 4: Prompt Template YAML for converting user-
+     provided. If no schema is provided, infer a realistic          provided task title, task context and sample data to APIs
+     and complete schema from the SOP contents.                     and Toolspec JSON
+32   3. Diversity of Cases:                                     1   prompts:
+33     - Include both valid and invalid examples.               2       - name: sop_api_generator
+34     - Cover edge cases, borderline values, and policy        3       parameters: [sop_file_contents, additional_context,
+       violation cases.                                                 sample_data]
+35     - Ensure each step of the SOP's logic is reflected in    4       text: |
+         at least some rows.                                    5         You are an expert AI assistant specializing in API
+36   4. Data Format:                                                      documentation and generation. Your task is to create
+37     - Output the dataset within `<data></data>` tags only              sample API calls based on a Standard Operating
+       .                                                                  Procedure (SOP) document. The goal is to produce
+38     - Use Python list-of-lists format including the                    accurate and comprehensive API documentation that
+       header row, suitable for immediate use with CSV or                 captures all necessary steps and dependencies in the
+       Pandas.                                                            SOP.
+39     - Avoid any extra commentary, formatting, or             6
+       explanations outside the `<data>` block.                 7         First, carefully read through the following SOP
+40   5. Validation Requirements:                                          contents:
+41     - All rows must be non-empty.                            8
+42     - All columns must be complete and contain valid,        9         <sop_contents>
+       well-formed values.                                     10         {{sop_file_contents}}
+43     - No unterminated strings, no newlines within strings   11         </sop_contents>
+       .                                                       12
+44     - Ensure consistency between field values (e.g.,        13         {% if additional_context != "" %}
+       escalation should only be True when required            14         Here is additional context you must adhere to for the
+       conditions are met).                                               SOP generation process:
+45   6. Generate at least `{{n_samples}}` valid rows in        15           <additional_context>
+     total, spanning the full spectrum of SOP-defined          16           {{additional_context}}
+     conditions.                                               17           </additional_context>
+46   7. Generate the dataset in one continuous pass without    18         {% endif %}
+      pausing, or asking for confirmation, or requesting       19
+     interaction. Do not ask if you should continue.           20         {% if sample_data != "" %}
+47   8. Do not include any explanatory notes, placeholder      21         Here is a sample data for the SOP:
+     comments, ellipses, or messages like "[continuing...]"    22           <sample_data>
+      or "[...more rows below...]". Output only the full       23           {{sample_data}}
+     dataset rows within the `<data></data>` block without     24           </sample_data>
+     interruption. Any such messages will be treated as        25         {% endif %}
+     format violations.                                        26         Now, conduct a thorough analysis of the SOP and
+48   9. You must ensure that the data generated does not                  additional context, focusing on the 'Main Procedure'
+     suffer from malformed node or string errors.                         section, and its sub-sections as well as the workflow.
+49   10. Make sure there are no empty data columns or rows.                Wrap your analysis in <sop_breakdown> tags:
+      Make sure there are NO unterminated string literals.     27
+     Do not add new lines.                                     28         <sop_breakdown>
+50   11. For columns containing boolean, you must ensure       29         1. List all distinct tasks or operations in the 'Main
+     that to use True or False so that it can be parsed                   Procedure' section.
+     using ast                                                 30         2. For each task, identify any external dependencies
+51   12. You must ensure you close any square brackets.                   required for execution.
+52
+                                                               31         3. Consider and note potential edge cases for each
+53   {% if sop_data_generation_guidelines != "" %}                        task.
+54   Additional requirements include:                          32         4. From the SOP, identify and list the key API
+55   {{sop_data_generation_guidelines}}                                   parameters for each task.
+56   {% endif %}                                               33         5. Plan your approach for API generation based on this
+57
+                                                                           analysis.
+58   <data>                                                    34         6. Identify potential sources for input parameters (
+59   [["field_1", "field_2", ..., "field_N"],                             either from the SOP Input or from other API responses).
+60   ["value_1_1", "value_1_2", ..., "value_1_N"],
+61   ...
+35   7. Consider how different APIs might depend on each       77         [JSON structure of response data]
+     other and in what order they should be executed.          78       }
+36   8. For each potential API, list possible error            79       Dependencies: [List of dependent APIs, if any]
+     scenarios and how they might be handled.                  80       Error Scenarios:
+37   9. from the sample data, list all the available           81       - [Potential error 1]: [Suggested handling]
+     columns.                                                  82       - [Potential error 2]: [Suggested handling]
+38   </sop_breakdown>                                          83       </API>
+39                                                             84       </TOOLS>
+40   <requirements>                                            85
+
+41   After completing your analysis, generate a set of         86       It is OK for the <sop_breakdown> and <TOOLS> sections
+     tools/APIs based on the SOP. Follow these guidelines:              to be quite long, as they need to thoroughly cover all
+42     1. Create a separate API for each distinct task or                aspects of the SOP and resulting APIs.
+       operation in the procedure.                             87
+43     2. Ensure each tool or API is as granular or atomic     88
+
+       as possible.                                            89
+44     3. Do not repeat tools or APIs for the same task.       90    - name: generate_json_schema_for_each_api
+45     4. Capture all possible external dependencies the SOP   91      parameters: [sop_file_contents, additional_context,
+        needs to execute successfully.                                 each_api_metadata, sample_data]
+46     5. Ensure that input request parameters for each API    92      text: |
+       are derived either from the SOP Input or from the       93        You are an expert AI assistant tasked with generating
+       response parameters (output) of other API calls.                  a JSON Schema for an API tool based on provided
+47     6. Make sure the APIs are complete and fully                      metadata. This tool is one of the many tools that will
+       functional once implemented.                                       be used to execute a Standard Operating Procedure (
+48                                                                       SOP). Your goal is to create an accurate and detailed
+49   For each API you generate, provide the following                    schema for this tool that aligns with the SOP and
+     details:                                                            meets the specified requirements.
+50     1. Name of the API                                      94
+
+51     2. API description                                      95       First, please review the contents of the SOP:
+52     3. Endpoint URI                                         96
+53     4. HTTP Method                                          97       <sop_contents>
+54     5. Request Body (including all necessary parameters)    98       {{sop_file_contents}}
+       that is present in sample data within <sample_data>     99       </sop_contents>
+       tags.                                                   100
+
+55     6. Response (look for corresponding status columns      101      {% if additional_context != "" %}
+       for each API) that is present in sample data within <   102      Here is additional context you must adhere to for the
+       sample_data> tags.                                               SOP generation process:
+56     7 Do not add any parameters in Request and Response     103        <additional_context>
+       Body that is not present in sample data within <        104        {{additional_context}}
+       sample_data> tags.                                      105        </additional_context>
+57     8. Dependencies (if this API depends on the output of   106      {% endif %}
+        other APIs, list them here)                            107
+
+58     9. Potential error scenarios and suggested error        108      {% if sample_data != "" %}
+       handling                                                109      Here is a sample data for the SOP:
+59   </requirements>                                           110        <sample_data>
+60                                                             111        {{sample_data}}
+61   Wrap each tool/API inside <API></API> tags, and           112        </sample_data>
+     enclose the entire set of tools/APIs within <TOOLS></     113      {% endif %}
+     TOOLS> tags.                                              114
+
+62                                                             115      Now, you will be provided with the metadata for a
+63   Here is an example of the expected output structure:               single API tool. Your task is to generate a JSON
+64                                                                      Schema for this tool. Here's how you should proceed:
+65   <TOOLS>                                                   116
+
+66   <API>                                                     117      1. Carefully read and analyze the API metadata.
+67   Name: [API Name]                                          118      2. Generate the following for the API tool:
+68   Description: [Brief description of the API function]      119        a. name: A concise, descriptive name for the tool.
+69   Endpoint: [URI]                                           120        b. description: A clear explanation of the tool's
+70   Method: [HTTP Method]                                                purpose and functionality.
+71   Request Body:                                             121        c. inputSchema: A JSON schema format specifying the
+72   {                                                                    tool's 'input', including 'type', 'properties', and '
+73     [JSON structure of request parameters]                             required' fields, all under the key 'json'.
+74   }                                                         122      3. Ensure that the schema aligns with the overall SOP
+75   Response:                                                          direction and any specified restrictions.
+76   {
+123                                                                  C.5    SOP API Function Code Prompt
+124   Here is the API metadata you will be working with:
+125                                                                  Listing 5: Prompt Template YAML for implementing the func-
+126   <api_metadata>                                                 tional code for an API, given sample data and a one-shot
+127   {{each_api_metadata}}                                          demonstration of an API along with its implementation and
+128   </api_metadata>                                                sample data as input
+129
+130   Before generating the final JSON Schema, wrap your         1   prompts:
+      analysis inside <sop_tool_analysis> tags:                  2       - name: llm_coder
+131   1. Quote relevant parts of the SOP that relate to the      3       parameters: [api, sample_data, api_example,
+      tool purpose.                                                      coding_example, data_example]
+132   2. List potential input parameters based on the SOP        4       text: |
+      and metadata.                                              5         You are an expert AI coding system who is capable of
+133   3. Consider any constraints or special considerations                writing code in python using popular libraries.
+      mentioned in the SOP.                                      6         You are given the metadata of an API and a sample
+134   4. Outline how the tool aligns with the overall SOP                  dataset.
+      direction.                                                 7         Your task is to write a Python function that simulates
+135   5. Identify potential edge cases or limitations of the                the APIs.
+       tool.                                                     8
+
+136   6. Describe how this tool fits into the larger             9         Here is an example of an API, dataset and its
+      workflow outlined in the SOP.                                        corresponding implementation.
+137
+                                                                10         <example>
+138   After your analysis, generate the complete JSON Schema    11         Here is the api metedata:
+       for the API tool. The schema should be formatted as      12         {{api_example}}
+      an object with a "toolSpec" property, containing "name    13
+
+      ", "description", and "inputSchema" as shown in the       14         Here is the dataset head in tsv:
+      example below:                                            15         {{data_example}}
+                                                                16
+139
+
+140   {                                                         17         Here is the corresponding code:
+141       "toolSpec": {                                         18         {{coding_example}}
+142           "name": "example_tool_name",                      19         <\example>
+143           "description": "A clear description of the tool   20
+
+              's purpose and functionality.",                   21         <requirements>
+144           "inputSchema": {                                  22           Requirement 1: Generate relevant Python code within <
+145               "json": {                                                  code></code> tags after closely studying the example
+146                   "type": "object",                                      provided in <example> tags.
+147                   "properties": {                           23           Requirement 2: You must write test cases as
+148                       "parameter_name": {                                demonstrated in the example.
+149                           "type": "string",                 24           Requirement 3: Import all required Python libraries.
+150                           "description": "A detailed                     Use descriptive and meaningful variable names.
+                              description of this parameter."   25           Requirement 4: Name the function exactly as specified
+151                       }                                                   in the API specifications.
+152                   },                                        26           Requirement 5: Conform strictly to the API
+153                   "required": ["parameter_name"]                         definitions - the fields in the request must map to
+154               }                                                          the function arguments, and the fields in the
+155           }                                                              response must be returned.
+156       }                                                     27           Requirement 6: Use only the existing columns present
+157   }                                                                      in the dataset.
+158
+                                                                28           Requirement 7: Load the CSV dataset into memory
+159   Remember to:                                                           before accessing the required fields.
+160   - Ensure all required fields are listed in the "          29           Requirement 8: Implement the process_tool_call()
+      required" array within the input schema.                               function exactly as demonstrated in the <example>
+161   - Provide detailed descriptions for each property in                   tags.
+      the input schema.                                         30           Requirement 9: Generate the code in one continuous
+162   - Use appropriate data types (string, integer, etc.)                   pass without pausing, asking for confirmation, or
+      for each property.                                                     requesting interaction. Do not ask if you should
+163   - Maintain consistency in formatting and structure.                    continue.
+164
+                                                                31         </requirements>
+165   Present your final JSON Schema inside <SCHEMA></SCHEMA>   32
+
+       tags.                                                    33         Following the above example, write code for the
+                                                                           following API and dataset to complete the task
+                                                                           successfully.
+                                                                34         <api>
+35        API metadata:                                             30          c. If a critical step cannot be completed, state the
+36        {{api}}                                                               issue clearly and halt the process before proceeding
+37        </api>                                                                to the next step.
+38                                                                  31
+39        <sample_data>                                             32         5. After every 3 steps, provide a checkpoint summary
+40        Here is the pandas DataFrame head (5 rows):                          in <analysis> tags, highlighting critical validations
+41        {{sample_data}}                                                      performed and any discrepancies or issues encountered.
+42        </sample_data>                                            33
+
+                                                                    34         6. If at any point you're unsure about how to proceed
+                                                                               or if the user request doesn't align with the SOP,
+     D Agent Prompt Templates                                                  state this clearly in your response and halt the
+     D.1 Function Calling Agent (FC-Agent)                                     process.
+                                                                    35
+
+     Listing 6: Prompt Template YAML for FC-Agent to process        36         7. Once all steps are completed successfully, provide
+                                                                               a final summary of the processed request in <
+     input request following an SOP
+                                                                               final_response> tags, including all the key
+1    prompts:                                                                  information as per the SOP.
+2      - name: simple_sop_agent_v1                                  37
+3        parameters: [SOP, USER_REQUEST]                            38         Example output structure:
+4        text: |                                                    39
+5          You are an AI assistant responsible for processing       40         <step_progress>
+           user requests according to a specific Standard           41         Step 1: [Description] - Outcome: [Completed/Failed/
+           Operating Procedure (SOP). Your primary goal is to                  Pending]
+           follow the SOP meticulously, ensuring consistency and    42         </step_progress>
+           accuracy in your responses.                              43
+6                                                                   44         <analysis>
+7         First, carefully read and internalize the following       45         [Detailed calculations, validations, or reasoning for
+          SOP:                                                                 critical steps]
+8                                                                   46         [Checkpoint summaries after every 3 steps]
+9         <sop>                                                     47         </analysis>
+10        {{SOP}}                                                   48
+11        </sop>                                                    49         <final_response>
+12                                                                  50         [Final response based on SOP processing]
+13        Now, you will receive a user request to process. Your     51         </final_response>
+          task is to handle this request by strictly adhering to    52
+           the SOP provided above. Follow these steps:              53         Remember to adhere strictly to the SOP and provide
+14                                                                             clear, detailed explanations for each step of the
+15        1. Read the user request carefully:                                  process. It's OK for the <sop_analysis> section to be
+16        <user_request>                                                       quite long.
+17        {{USER_REQUEST}}
+18        </user_request>
+19                                                                       D.2    Prompt Template for React Agent
+20        2. Before responding, review the SOP once more to
+          ensure you understand all steps. In <sop_analysis>             Listing 7: System Prompt Template for React-Agent to pro-
+          tags:                                                          cess input request following an SOP
+21          a. List the key points of the SOP.
+                                                                     1   <system_prompt>You are a helpful assistant that follows
+22          b. Identify any potential challenges or edge cases in
+                                                                         Standard Operating Procedures (SOPs) to solve problems.
+             applying the SOP to the user request.
+                                                                     2
+23          c. Consider possible interpretations of any ambiguous
+                                                                     3   You will be given an SOP in an SOP block <sop> and a list of
+             parts of the request.
+                                                                          tools in a <tools> block.
+24
+                                                                     4
+25        3. **CRITICAL:** Process the user request by following
+                                                                     5   Here are the tools:
+           each step of the SOP in order. DO NOT skip any steps
+                                                                     6   \n\n
+          or add extra steps that are not in the SOP.
+                                                                     7   <tools>
+26
+                                                                     8   {tools}
+27        4. For each step, perform the following actions:
+                                                                     9   </tools>
+28          a. Log your progress in a <step_progress> tag,
+                                                                    10
+            including the step number, description, and outcome (
+                                                                    11   <tool_input_guideline>
+            completed, failed, or pending).
+                                                                    12   Follow these guidelines when using tools:
+29          b. For critical steps, wrap your analysis inside <
+                                                                    13   1. Examine the tool descriptions carefully to understand
+            analysis> tags to show your calculations, validations
+                                                                         what each tool does
+            , and reasoning.
+                                                                    14   2. For each tool, provide all parameters in the correct
+                                                                         order and format
+15   3. Format tool inputs as valid JSON objects with all           30   eventually, once there are no more steps to execute or if
+     required fields                                                     the answer cannot be found based on the provided sop, tools
+16   4. For tools that require nested objects, format them               and input.
+     properly as JSON objects                                       31
+17   5. Always check that your input includes all required          32   Thought: I now know the final answer\n
+     parameters before using a tool                                 33   Final Answer: the final answer to the original input
+18   </tool_input_guideline>                                             question. Please make sure the final_decision is in the form
+19                                                                       :\n\n
+20   Use the following format:                                      34   <final_decision>FINAL_DECISION</final_decision>
+21   <format>                                                       35   <final_decision_reason>reason for final decision</
+22   Question: the input question you must answer using the SOP          final_decision_reason>
+     and the current state of execution\n                           36   </system_prompt>
+23   Thought: the thought process that goes into answering the      37
+     question\n                                                     38   Begin:
+24   Action: the action to take, should be one of [{tool_names}]\   39   \n\n
+     n                                                              40   {input}
+25   Action Input: the input to the action as a valid JSON object   41
+
+      with all required parameters\n                                42   {agent_scratchpad}
+26   Observation: the result of the action\n
+27   </format>
+                                                                         Listing 8: A sample User Prompt Template for React-Agent
+28
+                                                                         to process input request following an SOP
+29   ... (this Thought/Action/Action Input/Result can repeat N
+     times)\n                                                        1   <sop>\n\n{sop_text}\n\n</sop>\n\nHere is a video to process
+                                                                         according to the SOP above:\n\n{formatted_input}\n\nPlease
+                                                                         follow the SOP step by step to process this video.
+E Examples of Real SOPs                                                    Patient Intake and Registration SOP - Part 2
+F SOP-Bench: Patient Intake and Registration                               - Calculate smoking risk index (Never=0, Former=1, Current=2)
+This appendix provides an example of a Standard Operating Proce-           - Assess alcohol consumption (None=0, Occasional=1, Moderate=2, Heavy=3)
+                                                                           - Evaluate exercise patterns (5+ times=-1, 3-4 times=0, 1-2 times=1, None=2)
+dure (SOP) package for patient registration in a healthcare setting.       - Compute aggregate lifestyle score
+It includes the main SOP document, JSON tool specifications, and
+sample patient data, illustrating how operational procedures are           5.2.2 Clinical Risk Assessment
+                                                                           - Review surgical history chronology
+formalized and implemented in healthcare information systems.              - Evaluate chronic condition severity
+                                                                           - Calculate comorbidity interaction score
+F.1    SOP: Patient Intake and Registration                                - Generate weighted risk factor index
+
+                                                                           5.3 Patient Registration Protocol
+  Patient Intake and Registration SOP - Part 1                             5.3.1 Eligibility Confirmation
+                                                                           - Verify insurance_validation status = "valid"
+  1. Purpose                                                               - Confirm prescription_insurance_validation = "valid"
+  This Standard Operating Procedure establishes a framework for intake     - Validate life_style_risk_level within parameters
+  and registration of new patients, encompassing demographic data          - Assess overall_risk_level compatibility
+  collection, insurance verification, risk stratification, and pharmacy
+  network validation in compliance with HIPAA regulations.                 5.3.2 Pharmacy Network Verification
+                                                                           - Query preferred pharmacy database
+  2. Scope                                                                 - Verify pharmacy_check status = "yes"
+  This procedure applies to all healthcare personnel involved in patient   - Confirm pharmacy network participation
+  registration, including Patient Access Representatives, Insurance        - Document special handling requirements
+  Verification Specialists, and Clinical Intake Coordinators.
+                                                                           6. Output
+  3. Definitions                                                           6.1 Required Documentation
+  3.1 Protected Health Information (PHI): Individually identifiable        The procedure generates a verification report (json) with all results.
+      health information as defined by HIPAA                               These include insurance validation check, prescription validation check,
+  3.2 Benefits Coordination Protocol (BCP): Systematic verification of     pharmacy check, life style risk, overall risk, and registration status.
+      primary and secondary insurance benefits                             All outputs must be archived in compliance with regulatory requirements.
+  3.3 Clinical Risk Index (CRI): Composite score derived from medical
+      history and lifestyle factors                                        6.2 System Updates
+  3.4 Pharmacy Benefit Management (PBM) Validation: Real-time              - Active patient status in EHR
+      verification of prescription coverage                                - Documented risk levels
+  3.5 Network Adequacy Verification (NAV): Assessment of provider          - Verified insurance records
+      network status                                                       - Confirmed pharmacy selection
+  3.6 Risk Stratification Algorithm (RSA): Mathematical model for          - Completed registration status
+      patient risk assessment
+
+  4. Input
+  4.1 Required Documentation (some are optional)
+  - Government-issued photo identification (optional)
+  - Current insurance card(s)
+  - Complete medical history questionnaire
+  - Pharmacy benefit card
+  - Prior authorization documentation (optional)
+  - Release of medical records forms (optional)
+
+  4.2 System Requirements
+  - Electronic Health Record (EHR) access
+  - Insurance eligibility verification portal
+  - PBM interface connectivity
+  - Risk assessment calculation tool
+
+  5. Main Procedure
+
+  5.1 Insurance Validation Protocol
+  5.1.1 Primary Insurance Verification
+  - Access payer portal using provider credentials
+  - Verify coverage status and effective dates
+  - Document benefit levels and copayment requirements
+  - Confirm network participation status
+  - Record authorization requirements
+
+  5.1.2 Prescription Benefit Validation
+  - Query PBM database for current coverage
+  - Verify formulary compliance parameters
+  - Document prior authorization requirements
+  - Confirm specialty pharmacy protocols
+  - Record copayment structure
+
+  5.2 Risk Assessment Protocol
+  5.2.1 Lifestyle Risk Evaluation
+                                   Figure 6: Examples of patient registration SOPs
+
+F.2   Sample Patient Data (Synthetically
+      Generated)
+Table 20: Sample Patient Registration Data (First Five
+Records)
+
+ Patient ID   First    Last     DOB        Age    Insurance    Smoking   Alcohol    Exercise    Insurance   Risk     Reg
+              Name     Name                                                                     Valid       Level
+ P100001      John1    Dove     1980-05-   43     Blue Cross   Never     Occasional 3-4 times   valid       low      success
+                                15
+ P100002      John2    Dove     1995-08-   28     Aetna        Current   Moderate   1-2 times   valid       medium   success
+                                22
+ P100003      John3    Dove     1972-03-   51     United       Former    Heavy      None        valid       high     failure
+                                10
+ P100004      John4    Dove     1990-11-   33     Cigna        Never     None       5+ times    valid       low      success
+                                30
+ P100005      John5    Dove     1965-07-   58     Medicare     Former    Occasional 1-2 times   invalid     high     failure
+                                25
+     F.3       Tool Specifications                                       51                             "exercise_frequency"
+                                                                         52                         ],
+               Listing 9: Tool Specifications in JSON Format             53                         "additionalProperties": false
+1
+                                                                         54                     }
+2    [                                                                   55                 }
+3          {                                                             56             }
+4              "toolSpec": {                                             57        },
+5                  "name": "calculateLifestyleRisk",                     58        {
+6                  "description": "Calculates a patient's lifestyle      59             "toolSpec": {
+                   risk level based on smoking status, alcohol           60                 "name": "verifyPharmacy",
+                   consumption, and exercise frequency, following        61                 "description": "Validates pharmacy network
+                   the standardized risk assessment protocol defined                        participation and verifies pharmacy details as
+                    in the SOP.",                                                           part of the patient registration process",
+7                  "inputSchema": {                                      62                 "inputSchema": {
+8                      "json": {                                         63                     "json": {
+9                          "type": "object",                             64                         "type": "object",
+10                         "properties": {                               65                         "properties": {
+11                             "patient_id": {                           66                             "patient_id": {
+12                                 "type": "string",                     67                                 "type": "string",
+13                                 "description": "Unique identifier     68                                 "description": "Unique identifier
+                                   for the patient",                                                        for the patient",
+14                                 "pattern": "^P[0-9]{9}\$",            69                                 "pattern": "^P[0-9]{9}\$",
+15                                 "example": "P123456789"               70                                 "example": "P123456789"
+16                             },                                        71                             },
+17                             "smoking_status": {                       72                             "preferred_pharmacy_name": {
+18                                 "type": "string",                     73                                 "type": "string",
+19                                 "enum": [                             74                                 "description": "Full legal name of
+20                                     "Never",                                                             the preferred pharmacy",
+21                                     "Former",                         75                                 "minLength": 1,
+22                                     "Current"                         76                                 "maxLength": 100,
+23                                 ],                                    77                                 "example": "CVS Pharmacy"
+24                                 "description": "Patient's current     78                             },
+                                   smoking status, used to calculate     79                             "preferred_pharmacy_address": {
+                                   smoking risk index"                   80                                 "type": "string",
+25                             },                                        81                                 "description": "Complete street
+26                             "alcohol_consumption": {                                                     address of the pharmacy including
+27                                 "type": "string",                                                        city, state, and zip code",
+28                                 "enum": [                             82                                 "minLength": 5,
+29                                     "None",                           83                                 "maxLength": 200,
+30                                     "Occasional",                     84                                 "example": "123 Main St, Boston, MA
+31                                     "Moderate",                                                           02108"
+32                                     "Heavy"                           85                             },
+33                                 ],                                    86                             "pharmacy_phone": {
+34                                 "description": "Patient's level of    87                                 "type": "string",
+                                   alcohol consumption frequency"        88                                 "description": "Contact phone
+35                             },                                                                           number for the pharmacy in XXX-XXX-
+36                             "exercise_frequency": {                                                      XXXX format",
+37                                 "type": "string",                     89                                 "pattern":
+38                                 "enum": [                                                                "^[0-9]{3}-[0-9]{3}-[0-9]{4}\$",
+39                                     "None",                           90                                 "example": "555-123-4567"
+40                                     "1-2 times",                      91                             }
+41                                     "3-4 times",                      92                         },
+42                                     "5+ times"                        93                         "required": [
+43                                 ],                                    94                             "preferred_pharmacy_name",
+44                                 "description": "Weekly frequency of   95                             "preferred_pharmacy_address",
+                                    patient's exercise activities"       96                             "pharmacy_phone"
+45                             }                                         97                         ],
+46                         },                                            98                         "additionalProperties": false
+47                         "required": [                                 99                     }
+48                             "patient_id",                             100                }
+49                             "smoking_status",                         101            }
+50                             "alcohol_consumption",                    102       }
+                                                                         103   ]
+
