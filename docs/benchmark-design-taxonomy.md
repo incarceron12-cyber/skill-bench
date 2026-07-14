@@ -1337,6 +1337,60 @@ calibration and discrimination, constraint frequency, severity, reversibility,
 remediation, and decision loss. Consistently failing is repeatable but not capable;
 an equal-weight dashboard is not a validated reliability or readiness scale [AR].
 
+Repeated evaluation must begin with a named estimand rather than a universal
+repeat count. Preserve this hierarchy without allowing one rung to inherit the
+next:
+
+```text
+every intended attempt
+  → service availability → execution-valid trial → grader-valid observation
+    → per-task/form outcome distribution and severe-failure recurrence
+      → task/form/family population mean and heterogeneity
+        → paired configured-system or intervention contrast
+          → frozen threshold/action under cost and loss
+```
+
+Keep `intended`, `service_valid`, `trial_valid`, `grader_valid`, and
+`substantive_success` denominators. If an operational-use estimand counts a
+service failure as zero, predeclare that mapping and also report availability;
+if a capability-conditional estimand excludes it, preserve the excluded row and
+reason. Never let parser, judge, timeout, provider, or environment failures
+disappear from the attempt ledger. Cross repeated agent outputs with repeated
+grader observations on fixed artifacts, or retain an equivalent identifying
+design, before attributing within-form label variance to the agent [SAE].
+
+Cluster and version at least task, equivalent form, family/source lineage,
+configured system, provider/time/batch, and grader. Binary outcomes have
+probability-dependent within-form variance; unequal repeats need an estimator
+that models unequal precision rather than only pooling within-task variances.
+Report raw per-form frequencies and severe outcomes beside any variance
+component. Stress-test all-success/all-failure boundaries, easy/hard-anchor
+addition or removal, task-family stratification, grader repeats, and
+operational-versus-valid-only missingness. A scalar that changes because the
+task mixture widened while per-task behavior did not is benchmark-population-
+relative, not agent-intrinsic [SAE].
+
+The reviewed Stochastic Agent Evaluations paper correctly motivates repeated
+task-level matrices, and its released rows permit exact checks of several point
+estimates. But its implemented numerator is the variance of finite-repeat task
+means without subtracting their within-task sampling contribution. The reported
+ratio is therefore **not ICC(1,1)**, and its downward low-repeat curve is partly
+an estimator artifact. Even a correctly estimated ICC answers a population-
+conditioned variance-ratio question: deterministic failure can increase it, and
+changing models changes the induced task-probability distribution. Mean effect,
+within-form recurrence, severe-failure risk, grader stability, and decision loss
+remain different estimands [SAE].
+
+Choose repeat budgets from the decision: precision of a suite mean, uncertainty
+in one form's success frequency, recurrent-severe-failure detection, a paired
+intervention effect, rank stability, temporal/service drift, and variance-
+component precision require different allocations. Freeze minimum and maximum
+attempts, stopping statistic, precision/error or loss target, sequential error
+control where applicable, service/missing behavior, task-versus-repeat
+allocation, and held-out validation before calls. The paper's visually chosen
+`8–16` and `≥32` waypoints from selected GAIA/FRAMES matrices do not transfer to
+other task populations, configured systems, graders, or decisions [SAE].
+
 Keep three commonly collapsed reliability objects distinct: **empirical repeat
 reliability** over matched attempts, **predicted success for one trial** from an
 evidence view available at a declared decision time, and **supported causal
@@ -1926,7 +1980,7 @@ and validity records are the implementation homes; no new schema follows.
 | Execution validity record | establish whether a trial had the declared boundary and opportunity | tool-scoped canary probes, adapter/launcher/environment hashes, fixture identity, service health, mandatory evidence, invalid/unscorable reason |
 | Metric specification and monitoring record | turn trial observations into a reproducible population estimand and governed trigger | eligible population/unit, versions, missingness, clustering/dependence, aggregation/uncertainty, slices, baseline/window, threshold/loss, alert/audit/remediation/rollback |
 | Review-selection episode | preserve how a large trial/trajectory population became a bounded review sample and what later use it can support | population snapshot and clusters; detector/version; probability, overlap, missingness, evidence view; rater/adjudication lineage; sentinel versus enriched role; time/cost; licensed/prohibited claims; intervention/outcome links |
-| Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system, task/form population, environment/time, retry policy, intervention preservation and exposure evidence, matched clustered repeats, decision-time evidence view, consequence/loss model |
+| Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system; task/form/family population; environment/provider/time/batch; intended/service-valid/trial-valid/grader-valid/substantive denominators; grader-crossed and matched clustered repeats; retry/missing policy; binary/unequal-repeat estimator and anchor sensitivity; frozen decision-keyed repeat/stopping rule; intervention preservation/exposure evidence; decision-time view; consequence/loss model |
 | Derived trial-confidence observation | preserve a prediction without overwriting the trial result, repeat profile, diagnosis, or decision | configured trial and target predicate; label authority; prefix/post-hoc time and available channels; extractor/calibrator/provider/tokenizer/logprob versions; missingness; calibration/transport population; uncertainty; prohibited uses |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
@@ -1987,6 +2041,7 @@ fidelity separately from score calibration [EB, AP].
 | Industrial expertise codification | representation semantics, authorship-separation matrix, component ablations, and four-level transfer claim ceiling | selected co-designed rule-conformance effect laundered into tacit transfer, non-expert learning, expert equivalence, or cross-domain generalization | full immutable v1 paper; five selected artifacts from one organization/workflow, no released system/data/ratings, component ablation, repeated generation, or rater reliability [IC] |
 | Broad expert executable portfolio (Agents' Last Exam) | expert→engineer→grader authority handoff, clean-start/verifier falsification, occupational denominators, and role-versioned living suites | nonempty cells mistaken for representativeness; deterministic proxy mistaken for professional closure; single runs; outcome-selected tiers; occupational/economic overclaim | full immutable v1 plus pinned post-paper release and three task traces; private pool, exact paper-time tree/results, licensed VM execution, expert reliability, and grader calibration unavailable [ALE] |
 | Conditional agent reliability profiling | response matrix over matched repeats, preserved perturbations, decision-time confidence, and typed consequences | repeatability mistaken for capability; authored variants/exposure treated as deployment robustness; wrapper recovery credited to agent; post-hoc confidence and generic severity promoted to readiness | full immutable v3 paper and protocol-level review; two benchmark families, five incompletely controlled repeats, unvalidated interventions/severity, and no paper-pinned experiment code [AR] |
+| Repeated stochastic evaluation (Stochastic Agent Evaluations) | intended-attempt ledger, plural validity denominators, task/form outcome frequencies, grader-crossed repeats, population-relative variance components, and decision-keyed repeat budgets | variance of noisy task means mislabeled ICC(1,1); invalids silently omitted; binary/unequal-repeat assumptions ignored; anchor composition and task mixture mistaken for an agent trait; visual convergence promoted to universal budgets | full immutable v1 PDF/text/source plus pinned ten-day-post-v1 official release and exact released-matrix recomputations; supports estimator and missingness audit, not transferable `8–16`/`≥32` budgets, professional validity, production reliability, safety, fitness, or readiness [SAE] |
 | Work-activity and handoff-centered reporting | many-to-many activity map, tested-setting claim subtraction, persistent product bound to recipient/next operation, strongest and excluded claims | preliminary labels mistaken for representative coverage; visual realism or product polish mistaken for responsibility, downstream usability, or deployment evidence | full immutable v1 paper; LLM-mediated O*NET/ESCO descriptive taxonomy and three purposive report demonstrations, with no reliability, stability, reconstruction, recipient-use, or framework-effect validation [DR] |
 | Frozen-state successor resumability (Handoff Debt) | matched checkpoint/view intervention; separate fidelity, recipient sufficiency, endpoint, outcome-aware continuation effort, and lifecycle cost | evaluator-derived state leakage; nested checkpoints treated as tasks; outcome-dependent stopping called rediscovery; authoring cost omitted; one coding runtime promoted to human/professional validity | full immutable v1 paper/source and aggregate-table audit, but no verifiable empirical release, task IDs, checkpoints, payloads, run records, or analysis [HD] |
 | High-consequence analytical tool pipelines (DORA) | source/label truth, one executable analytical witness, typed endpoint, recipient/action, and observed or simulated consequence kept distinct | real historical sources and deterministic replay mistaken for task authority, calibrated tolerances, alternative-complete planning, safe operational action, or beneficial outcome | full immutable v1 PDF/text/source review; missing Appendices C–H and no verifiable task/tool/trajectory/result release block empirical replay and operational-validity claims [DORA] |
@@ -2159,6 +2214,13 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     burden, and realized stakeholder loss as separate evidence. Neither common
     practice nor low calibration error silently licenses efficacy, acceptance,
     safety, professional validity, production fitness, or readiness.
+49. **Repetition does not define one reliability estimand:** preserve every
+    intended attempt and separate service, execution, grader, substantive,
+    recurrence, heterogeneity, paired-effect, and decision populations; identify
+    agent versus observer variation, model binary/unequal repeats, and test anchor
+    and missingness sensitivity. An estimator name or visually stable curve cannot
+    turn benchmark-population-relative evidence into an agent trait or a universal
+    repeat budget.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -2202,6 +2264,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Real-session demand provenance vs source-to-task fidelity | EnterpriseClawBench provides real episode origin, but public traces show omitted repair, hindsight-derived answers, and rubric duplication while the proprietary pool blocks independent sampling and equivalence audit [ECB]. | Blind source users/independent experts to projected outputs; disposition each delta and omitted turn; compare faithful, demand-inspired, and synthetic licenses; sample rejected episodes; test preserved decisions, alternate paths, and acceptance judgments. |
 | Living difficulty tier vs stable comparison | ALE's tiers are partly outcome-informed and later release memberships/counts differ while labels persist; most reported cells are single runs [ALE]. | Freeze membership/admission outcomes and exposure state; repeat systems across old/new memberships plus an anchor bridge; estimate task/workflow uncertainty and report role-transition effects separately from ability change. |
 | Mean accuracy vs operational reliability | The reviewed reliability profile separates repeatability, perturbation response, confidence, and safety, but five non-independent repeats, unvalidated semantic preservation/exposure, wrapper-side recovery, retrospective confidence, and generic LLM severity prevent deployment interpretation [AR]. | On cross-domain forms, predeclare matched baseline/intervention repeats and operational profiles; independently validate variant preservation, cluster by task/form, retain invalid/provider failures, distinguish wrapper/agent recovery, elicit signals at routing/escalation/acceptance times, and calibrate consequence/loss with domain experts. |
+| More repeats vs a valid reliability decision | Stochastic Agent Evaluations retains large response matrices but labels a variance-of-task-means ratio ICC(1,1), silently omits some release errors, confounds one-shot grader variation with agent variation, and visually promotes selected-matrix waypoints to `8–16`/`≥32` budgets [SAE]. | On frozen unlike task families, retain all intended rows and plural denominators; cross fixed-output grader repeats; compare documented binary balanced/unbalanced estimators; perturb easy/hard anchors and missingness policies; freeze decision-specific precision/loss and stopping rules; validate any budget on a held-out matrix before reuse. |
 | Calibrated trial prediction vs useful selective review | Agentic Confidence Calibration reports favorable post-hoc ECE/Brier/AUROC for completed trajectories, but task/configuration clustering, label authority, transport, logprob equivalence, prefix timing, severe-defect control, review capacity, and realized loss are unvalidated [ACC]. | After diverse pilots supply valid repeated attempts, freeze extractor/calibrator and compare review-all, review-none, simple observable, semantic/state, and confidence-ranked policies under equal capacity; retain a probability sentinel, disjoint calibration/test families, severe-defect overrides, unavailable-logprob insufficiency, clustered uncertainty, workload, accepted failures, missed severe defects, and realized loss. |
 | Reported production practice vs effective operating policy | MAP transparently reports selected practitioner conditions, but outcome-conditioned recruitment, optional-question attrition, unknown respondent/organization dependence, pooled pilot/production stages, and no system/outcome audit make prevalence and causal success claims invalid [MAP]. | Use practice reports only to sample candidate portfolio conditions; then verify realization from immutable configurations/traces and compare matched permission, human-gate, evaluator, and workflow policies with repeated artifact/state outcomes, reviewer burden, delayed labels, and stakeholder loss. |
 | Artifact correctness vs handoff usability | The design report argues that persistent products support work claims through receiving workflows, but its three purposive cases contain no recipient-use trial, independent mapping reliability, or downstream validation [DR]. | Across unlike domains, give independent recipients only the produced product; test source, boundary, and destination checks separately and record clarification, repair, rejection, time, error propagation, and legitimate alternate formats before licensing downstream-use claims. |
@@ -2654,6 +2717,15 @@ them:
   tail estimates, cross-domain reliability ordering, prospective predictability,
   calibrated consequence loss, deployment readiness, or certification; the
   inspected implementation commit is not paper-time identity.
+- **[SAE]**
+  `papers/agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md`;
+  reviewed immutable v1 PDF/text/source and pinned ten-day-post-v1 official release
+  paths/hashes are recorded there. Exact release-matrix recomputations reproduce
+  published ratios and show that they are not ICC(1,1), while the published FRAMES
+  slice omits connection-error judgments contrary to the prose failure policy.
+  The evidence supports response-matrix, estimator, and missingness audit—not
+  transferable repeat budgets, agent-intrinsic reliability, professional validity,
+  production reliability, safety, fitness, or readiness.
 - **[ACC]**
   `papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md`;
   reviewed immutable v1 PDF/text/source hashes and provenance are recorded there.

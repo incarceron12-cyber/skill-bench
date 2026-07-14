@@ -532,12 +532,47 @@ specific schema or pilot follows.
 | [Many-facet human/AI rater effects](../papers/agent-benchmarks/2026-07-11-many-facet-human-ai-rater-effects.md) | B | Separates agreement, panel-relative severity, model fit, repeat stability, and decision validity; shows why a linked calibration design does not make graders interchangeable |
 | [Rubric-modification interventions](../papers/agent-benchmarks/2026-07-11-rubric-modification-human-autorater-agreement.md) | B | Makes examples, context, criterion-call topology, score transformation, and aggregation part of instrument identity; agreement gains can coexist with shared cueing or construct change |
 | [AI Agent Reliability](../papers/agent-benchmarks/2026-07-11-agent-reliability-profile.md) | B | Separates accuracy from repeatability, perturbation sensitivity, confidence quality, and violation consequences while binding each estimate to a configured operational profile |
+| [Stochastic Agent Evaluations](../papers/agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md) | B | Makes task-level repeats and released response matrices inspectable while showing that the published variance-of-task-means ratio is not ICC(1,1), omitted invalids change the estimand, and repeat budgets are decision- and population-specific |
 | [LiveBench](../papers/agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | B | Makes benchmark renewal operational through rotating recent-source forms, temporary private roles, deterministic checks, and reruns, while exposing equivalent-form, outcome-conditioned selection, exposure, and grader-drift limits |
 | [WorkBench Revisited](../papers/agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | B | Shows why repaired current measurement and longitudinal continuity need linked forms and task-level score bridges rather than one homogeneous time series |
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
 | [BrowserGym](../papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md) | B | Separates useful runner/interface interoperability from unsupported evaluator, score, reset, or construct equivalence across adapted benchmark families |
 
 **Repository consequence:** Criterion/check contracts, metric-monitoring contracts, validity arguments, response matrices, and separate ranking versus absolute-capability claims. Grader identity includes rubric/examples, evidence view, criterion execution topology, score transformation, aggregation/tie policy, and configured rater. Agreement, panel-relative severity, fit, repeated-call stability, construct preservation, decision loss, cost, and audit burden remain separate outcomes; adjusted scores never overwrite raw observations or become adjudicated truth. Reliability is a conditional profile—not a system trait—indexed by configured system, task/form population, environment, time, intervention/exposure distribution, and consequence model. Accuracy, repeatability (including consistently wrong behavior), resource variation, perturbation effects, confidence quality, violation frequency, severity, remediation, and loss remain separate. Every perturbation needs independently supported preservation and exposure claims; wrapper recovery cannot count as agent recovery; confidence is licensed only for the decision time and evidence view at which it was elicited. Plural judgments remain immutable observations; aggregation is a versioned stakeholder/error-loss policy rather than discovered ground truth. Specification error, evidence gaps, rater instability, framework-conditioned disagreement, policy selection with dissent, and unresolved value conflict require distinct dispositions. Derivation criteria must also be proof-carrying: source identity and passage, extracted claim, typed operation, dependencies, conclusion, exact observer view, and licensed claim remain distinct. Mentioning an expected value cannot inherit provenance or causal-use credit; one upstream defect and its descendants must not be counted as independent failures. The completed synthetic plural-judgment conformance slice exercises this boundary but supplies no prevalence, professional-consensus, or readiness evidence. Before the second pilot is interpreted, its adversarial audit should plant a pre-satisfied requirement, an unrelated record sharing the expected scalar, a title-only empty artifact, and one upstream defect with several descendant checks; readiness or duplicated consequences must not inflate progress.
+
+Repeated evaluation adds a **decision-keyed estimand hierarchy**, not one
+“reliability” scalar: `intended attempt ledger → service availability → execution-
+valid trial → grader-valid observation → within-form outcome and severe-failure
+recurrence → task/form/family heterogeneity → paired configured-system or
+intervention contrast → threshold, cost/loss, and operating decision`. Preserve
+the intended, service-valid, trial-valid, grader-valid, and substantively
+successful denominators separately. An unconditional operational estimand may
+predeclare service failures as zero; a conditional capability estimand may not
+silently omit them. Repeat fixed outputs through the grader, or otherwise cross
+output and observer repeats, before attributing within-form label variation to
+the agent.
+
+The full [Stochastic Agent Evaluations review](../papers/agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md)
+recomputes released matrices and shows that the paper/release uses variance of
+finite-repeat task means divided by that variance plus pooled within-task
+variance. Because it does not remove the within-task sampling contribution from
+the numerator, this is **not ICC(1,1)**; its low-repeat “convergence” partly
+reflects the estimator itself. Even a correctly specified ICC is conditional on
+the benchmark task mixture and induced binary success probabilities—not an
+agent-intrinsic consistency trait. Cluster and retain task, form, family,
+configured-system, provider/time/batch, and grader identities; test unequal-
+repeat and binary-model assumptions, all-success/failure boundaries, easy/hard-
+anchor composition, and operational-versus-valid-only missingness policies.
+The reported `8–16` and `≥32` counts are descriptive waypoints for selected
+GAIA/FRAMES matrices and do not transfer. Freeze repeat budgets against the
+actual decision—mean precision, per-form recurrence, severe-failure detection,
+paired effect, rank stability, temporal drift, or variance-component precision—
+with minimum/maximum attempts, stopping statistic, error/loss target, missing-
+event behavior, and held-out validation. Existing response-matrix, reliability,
+task-health, metric, configured-system, grader, and validity records suffice; no
+new schema or QA/retrieval scope commitment follows, and repeated internal
+synthetic trials alone license no professional-validity, production-reliability,
+safety, fitness, or readiness claim.
 
 AsymmetryZero adds a specific **jury-substitution ladder**: raw evidence view →
 individual observation → criterion decision → task decision/rank → downstream
