@@ -1,0 +1,928 @@
+                                         AsymmetryZero: A Framework for Operationalizing Human Expert
+                                                         Preferences as Semantic Evals
+
+                                               Tadhg Looram              Lucas Nuzzi              Kyle Waters          Steven Dillmann
+                                                    PortexAI                PortexAI                 PortexAI          Stanford University
+                                              tadhg@portexai.com      lucas@portexai.com         kyle@portexai.com   stevendi@stanford.edu
+
+
+
+
+arXiv:2605.04083v1 [cs.LG] 15 Apr 2026
+                                                                                       March 2026
+
+
+
+
+                                                                                        Abstract
+
+                                            Much of the focus in RL today is on evaluation design: building meaningful evals that serve
+                                            simultaneously as benchmarks and as well-defined reward signals for post-training. Yet, many
+                                            real-world tasks are governed by subjective, procedural, and domain-specific requirements that
+                                            are difficult to encode as exact-match targets or open-ended preference judgments frequently used
+                                            in RL pipelines today. In this work, we present AsymmetryZero, a framework for operationalizing
+                                            human expert preferences as semantic evals. AsymmetryZero represents each task as a stable
+                                            evaluation contract that makes grading criteria explicit: what is being graded, how each criterion
+                                            is judged, and how criterion-level decisions are aggregated into a task outcome. The same contract
+                                            can be executed using Inspect for model-only evaluations, as well as the Harbor Framework for
+                                            agentic evaluations, enabling comparable scores and shared audit artifacts across both settings.
+                                            We argue that the central challenge in post-training today is the faithful encoding of expert
+                                            requirements into the evaluation itself. To that end, we present a study using Harbor that holds
+                                            task contracts fixed and compares a five-model frontier jury against a five-model compact jury
+                                            across four frontier-class solvers (Claude Opus 4.6, GPT-5.4, Grok-4.20, Gemini-3.1-Pro). We find
+                                            that criterion-level frontier-vs-compact agreement ranges from 75.9% to 89.6% (strict common-
+                                            subset agreement: 77.8% to 92.1%), while compact juries exhibit substantially higher internal
+                                            dissent (3–2 split rate 28.7%–32.4%) than frontier juries (6.1%–11.5%). Verifier traces further show
+                                            that compact juries reduce per-criterion judging cost to roughly 4.2%–5.6% of frontier and latency
+                                            to roughly 21.7%–27.1%, even as aggregated task-level outcomes often remain comparatively
+                                            stable.
+
+                                                                                             1
+1 Introduction                                           Q3. What judge capacity is enough to run se-
+                                                             mantic evals economically in practice?
+Evaluating modern AI systems is increasingly a
+specification problem rather than a pure bench-
+mark problem. Many real tasks admit multiple             2 Related Work and Motivation
+valid outputs, require constraints that are hard
+to express as a single reference answer, or in-          As AI systems move from short-form genera-
+volve agents whose success depends on interme-           tion toward open-ended assistance and multi-
+diate decisions as much as on the final response.        turn agents, evaluation becomes less about lex-
+Exact-match checks remain useful when correct-           ical overlap and more about whether an out-
+ness is deterministic, but they break when the           put actually satisfies a task. Classical reference-
+target is semantic, multi-factor, or open-ended.         based metrics such as exact match, BLEU, and
+Open-ended LLM judging scales further, yet it            ROUGE work best when a task has a narrow
+often leaves the actual grading policy implicit          target and correctness is largely deterministic or
+inside a prompt.                                         lexical (Papineni et al., 2002; Lin, 2004). They
+                                                         become less reliable when there are many accept-
+Our claim is simple: organizations need sta-             able answers, when constraints and style matter,
+ble evaluation contracts. A task should state            or when the object of interest is a plan, expla-
+what matters, how that will be checked, what             nation, or long-horizon agent trajectory. This
+counts as passing, and which parts of the evalu-         limitation pushed the field toward LLM-based
+ation are deterministic versus semantic. Asym-           evaluation: instead of comparing surface over-
+metryZero operationalizes this idea by packaging         lap, a strong model is asked to judge whether
+prompts, grader type, references, rubrics, crite-        a candidate output satisfies the task and to ex-
+rion weights, and pass thresholds into a shared          press that judgment as a score, ranking, or pref-
+task format that can evaluate both model-only            erence (Zheng et al., 2023; Liu et al., 2023; Kocmi
+and agentic outputs.                                     and Federmann, 2023).
+This paper addresses a narrower systems ques-            What followed amounts to a new class of evalua-
+tion than the broader LLM-as-a-judge litera-             tion systems. Once an LLM becomes the grader,
+ture: how should an organization turn expert             evaluation quality depends on more than the
+grading knowledge into a stable, scalable eval-          task set: it depends on the judgment interface,
+uation contract for model and agent outputs?             the prompt or rubric, the presence or absence
+We answer this with AsymmetryZero, a rubric-             of references, the aggregation rule, and the cali-
+based evaluation framework built around expert-          bration strategy. Recent surveys explicitly frame
+authored criteria, jury-based semantic grading,          LLM-as-a-judge along these dimensions and em-
+and auditable criterion-level traces. Empiri-            phasize that reported performance is inseparable
+cally, we study both the value of explicit rubric-       from the protocol used to elicit judgments (Gu
+based grading and the practical trade-off be-            et al., 2024). This systems view motivates our
+tween frontier-model juries and smaller judge            framing of evaluation as a contract-design prob-
+models under real evaluation workloads.                  lem rather than merely a model-scoring problem.
+This paper is organized around three questions:
+                                                         2.1   From reference-based metrics to
+Q1. Why do we need explicit semantic contracts                 evaluation systems
+    rather than answer-key or open-ended judg-
+    ing?                                       Early deployments of LLM judges often used
+                                               open-ended prompts. They asked a frontier
+Q2. How does AsymmetryZero represent and
+                                               model to rate a response, choose a winner be-
+    execute those contracts for models and
+                                               tween two candidates, or produce a holistic score
+    agents?
+
+                                                     2
+Figure 1: A shallow ontology of LLM-as-a-Judge: judgment interface (rating vs. ranking), evalua-
+tion contract (free-form vs. rubric-based), judge architecture (single vs. ensemble), and robustness
+strategies (bias auditing, protocol design).
+
+
+with minimal task-specific scaffolding. This ap-          2.2   Judging protocols, explicit con-
+proach was operationalized at scale in MT-Bench                 tracts, and agent evaluation
+and Chatbot Arena, where strong models pro-
+duced preference rankings for open-ended di-              A central lesson from this literature is that open-
+alogue and question answering (Zheng et al.,              ended judging is often too underspecified for re-
+2023). G-Eval showed that reference-free judg-            liable deployment. Pairwise ranking and free-
+ing with explicit reasoning can improve correla-          form scoring can work surprisingly well in aggre-
+tion with human ratings in summarization and              gate, but they ask the judge to infer the grading
+dialogue (Liu et al., 2023), while GEMBA re-              policy from an underspecified prompt. Rubric-
+ported strong alignment with professional MQM             style prompting and structured forms instead tell
+judgments in machine translation (Kocmi and               the evaluator exactly what to check and how to
+Federmann, 2023). Across these settings, the              express the result, reducing variance and mak-
+practical appeal was obvious: one powerful judge          ing the evaluation easier to parse and audit (Liu
+could evaluate unconstrained outputs at a scale           et al., 2023; Hashemi et al., 2024). Rather than
+where human annotation would be too slow or               hoping a judge infers what matters, the evalua-
+expensive.                                                tion contract should state the dimensions of suc-
+                                                          cess directly.
+At the same time, the literature quickly showed
+that judge quality is highly sensitive to how judg-       This shift becomes even more important in agen-
+ment is elicited. The field therefore moved from          tic settings. When the object being graded
+simply using LLM judges to designing proto-               is a long-horizon workflow rather than a one-
+cols around them: pairwise versus scalar judg-            shot answer, evaluators need to reason over
+ment, single-answer versus comparative grad-              partial completion, tool use, artifact quality,
+ing, reference-free versus reference-aware scor-          and task-specific constraints. Recent work such
+ing, and increasingly, rubric-based or form-based         as APEX-Agents makes this explicit by pair-
+prompting. This shift has made explicit that              ing long-horizon professional tasks with expert-
+evaluation success is a function of the clarity and       authored atomic rubrics and a designated grad-
+quality of the underlying specification the grader        ing target, reinforcing the idea that agent eval-
+is asked to execute.                                      uation requires structured criteria rather than
+                                                          vague overall impressions (Vidgen et al., 2026).
+                                                          In practice, this means that reliable evaluation
+
+                                                      3
+often needs to mix deterministic checks with se- have emerged to counter such failures. One is
+mantic ones, and to express both within a stable to move from judges to juries, aggregating deci-
+task schema.                                       sions across diverse model families so that id-
+                                                   iosyncratic failures are less likely to dominate
+2.3 Failure modes, juries, and evalua- the final score (Verga et al., 2024). Another
+       tor cost                                    is adaptivity via instance-conditioned judge se-
+                                                   lection or weighting, where more judge capacity
+While the use of LLM judges in evaluation can is spent on subtle or high-variance decisions (Li
+be useful, many systematic failure modes have et al., 2025). A third is to train dedicated evalu-
+been observed in the literature. Reported is- ator models such as PandaLM, JudgeLM, Auto-
+sues include position bias, verbosity bias, self- J, and Prometheus, which trade some general-
+preference, and broader inconsistencies in eval- ity for lower cost, greater reproducibility, or bet-
+uator behavior (Zheng et al., 2023; Panickssery ter operational stability (Wang et al., 2024; Zhu
+et al., 2024; Shi et al., 2025; Ye et al., 2025). et al., 2025; Li et al., 2024; Kim et al., 2024).
+Other work documents family bias, stylistic or In parallel, hybrid evaluation pipelines increas-
+authority effects, low-perplexity preference, and ingly combine lexical overlap, embedding-based
+broader “cognitive” biases that can systemati- similarity, deterministic constraints, and LLM-
+cally skew outcomes away from true task suc- derived assessments rather than relying on a sin-
+cess (Stureborg et al., 2024; Koo et al., 2024; gle signal (Sarwar et al., 2024; Fu et al., 2024;
+Chen et al., 2024; Spiliopoulou et al., 2025). In Yuan et al., 2021; Zhong et al., 2022).
+practice, these failure modes can can cause an
+                                                   Across these threads, the consistent lesson is that
+evaluation pipeline to reward length, tone, or fa-
+                                                   judge reliability is conditional. Strong evaluator
+miliarity in place of correctness when evaluation
+                                                   models can correlate well with humans in aggre-
+is underspecified, or when single LLMs are used.
+                                                   gate, but their performance depends on the pro-
+                                                   tocol, the task, and the difficulty regime. This
+                                                   matters especially for evaluations of real-world
+                                                   tasks, where operators need a score that is sta-
+                                                   ble across runs, inspectable after failures, ver-
+                                                   sionable as the task distribution changes, and
+                                                   economical enough to run repeatedly. That mo-
+                                                   tivates AsymmetryZero’s central design choice
+                                                   of treating expert-authored rubrics as first-class
+                                                   evaluation artifacts, represent deterministic and
+                                                   semantic grading inside one task schema, and
+                                                   treat judge selection as an operational trade-off
+                                                   among fidelity, cost, and latency.
+
+
+                                                      3 AsymmetryZero Framework
+
+                                                      3.1   Evaluation contracts
+
+                                                  AsymmetryZero represents each task as a
+                                                  portable evaluation contract shared across the
+Figure 2: Measuring failure modes: hybrid model and agent harnesses. A task bundle sepa-
+metrics and systematic biases.                    rates execution inputs such as the task prompt,
+                                                  optional reference files, and environment meta-
+In response, several evaluation design strategies
+
+
+                                                  4
+data from grading inputs such as the criterion            ble for teams building their own semantic evalu-
+list and task-level pass threshold. The contract          ation workflows.
+is criterion-centric rather than task-centric: each
+criterion declares its own weight, prompt, and            3.2   Criterion-level grading and aggre-
+grader type, which allows deterministic and se-                 gation
+mantic checks to coexist inside the same task
+while preserving a single task-level decision rule.
+                                                Each criterion is graded independently. If cri-
+                                                terion i uses ExactMatch, the grader extracts
+                                                the terminal answer from the submission, nor-
+Table 1: Core fields in an AsymmetryZero eval-
+                                                malizes it, and compares it against the crite-
+uation contract.
+                                                rion’s configured reference text. If criterion i
+                                                uses llm-judge, each judge receives the task, the
+ Field                Role
+                                                candidate submission, and a criterion-specific in-
+ task prompt          Task presented to the     struction, and returns a binary grade together
+                      model or agent.           with optional rationale for auditing. For jury-
+ reference file       Optional image or docu-   graded criteria, let Ji be the judge panel used
+                      ment supplied alongside   for criterion i and let vij ∈ {0, 1} denote judge
+                      the task.                 j’s vote. The jury consensus is
+ criterion.           Per-criterion     grading
+ grader type          mode, ExactMatch or                                             
+                      llm-judge.                                       X         |J  |
+                                                                                    i 
+ criterion.           Criterion-specific lookup               v̂i = 1     vij >         ,
+                                                                                  2
+ semanticPrompt       value or judging instruc-                       j∈Ji
+
+                      tion.
+ criterion.weight Criterion weight on the       so ties fail and only strict majorities pass. For
+                      task’s 0–100 scoring      exact-match criteria, v̂i represents the determin-
+                      scale.                    istic comparison result. In both cases, criterion
+ passThreshold        Minimum score required    decisions are aggregated in the same way, which
+                      for a task to pass.       allows deterministic and jury-based criteria to
+ metadata             Optional provenance and   be mixed within the same task. If criterion i has
+                      execution configuration.  weight w , the task score is
+                                                                   i
+
+
+This representation makes the contract portable                                  n
+                                                                                 X
+across execution systems. A standard model run                              S=         wi v̂i ,
+in Inspect AI (UK AI Security Institute, 2024)                                   i=1
+
+and an agent run in Harbor (Harbor Framework
+Team, 2026) consume the same prompt, refer-               and the task passes when S ≥ τ , where τ is the
+ences, criteria, and threshold; only the execu-           task’s passThreshold.
+tion harness changes. During bundle prepara-
+tion, criterion weights are normalized onto a 0–          This criterion-level decomposition produces
+100 scale, so task scores remain comparable even          denser signals than a single holistic verdict. In-
+when tasks vary in rubric size.                           stead of only storing pass/fail at the task level,
+                                                          the framework records which criteria passed,
+A reference implementation of AsymmetryZero               which failed, how much weight each criterion
+is open source under the MIT License and                  contributed, and where individual judges dis-
+available at https://github.com/portex-ai/                agreed. That trace is useful both for benchmark-
+asymmetry_zero. We intend this release to make            ing, post-training, and downstream analysis of
+the framework auditable, reusable, and extensi-           failure modes.
+
+                                                      5
+3.3   Inspect and Harbor execution
+      harnesses
+
+In order to evaluate model performance, Asym-
+metryZero evaluations are executed through the
+Inspect harness. The Inspect dataset loader
+maps each task record into a multimodal sample
+consisting of the user prompt plus an optional
+image or document reference. Candidate gener-
+ation is then run inside Inspect, and the scorer
+applies the AsymmetryZero contract to the fi-
+nal model answer, including per-criterion grad-
+ing, weight aggregation, and task-level pass/fail.
+Agent evaluations are executed through the Har-
+bor harness. A bundle-to-Harbor adapter mate-
+rializes each task as a Harbor directory contain-
+ing task instructions, reference files, execution
+configuration, and a verifier package that reads
+the same criteria and threshold used by Inspect.
+Harbor then runs a custom adapted Terminus-
+2 agent with multimodal inputs. In this setup,
+the first user turn can attach reference images di-
+rectly to the model call and inline text references
+into the prompt context, so the agent receives the
+same supporting material that is available in the
+task bundle. After execution, the Harbor veri-
+fier grades the final submission under the same
+criterion schema as the standard model harness.
+The framework therefore separates workload ex-
+ecution from evaluation semantics. Inspect is the
+regular harness for model-only runs, Harbor is
+the execution harness for agent runs, and the
+AsymmetryZero contract provides the common
+grading policy that makes the resulting scores
+comparable, Figure 3.
+                                                          Figure 3: Architecture flow for AsymmetryZero.
+                                                          The same evaluation contract is applied to both
+                                                          model-only (Inspect) and agentic (Harbor) ex-
+                                                          ecutions, yielding comparable scores plus au-
+                                                          ditable grading artifacts.
+
+                                                          3.4   Outputs, auditing, and operator
+                                                                workflow
+
+                                                          Each evaluation run produces both a task-level
+                                                          verdict and a criterion-level trace. Using In-
+
+
+                                                      6
+spect, the per-task score, threshold, and crite-           4.2   Study design
+rion results are recorded in a standard way as
+metadata. Harbor emits the same grading in-                Our explicit hypothesis is capacity substitution:
+formation through its verifier outputs and ad-             whether a compact jury can produce outcomes
+ditionally materializes task-level, criterion-level,       sufficiently comparable to a frontier jury to
+and judge-level artifacts for replay and analysis.         support lower-cost operation without materially
+For deterministic criteria, the trace records the          changing evaluation conclusions using Asymme-
+extracted answer and exact-match outcome; for              tryZero. To answer this, we ran our evaluation
+jury-graded criteria, it records per-judge votes,          suite under a fixed evaluation contract and com-
+majority decisions, awarded weights, and op-               pared two five-model juries on the same sub-
+tional rationales.                                         missions. Accordingly, we treat criterion-level
+                                                           agreement and within-pool disagreement as pri-
+By design, AsymmetryZero separates execution               mary signals, with task-level raw-score stabil-
+from grading policy, thereby making it easier              ity (level and spread) as a secondary opera-
+to operationalize evaluations of both foundation           tional check. We used four frontier-class solver
+models, as well as complex agentic workflows.              backbones under the same adapted terminus2
+Inspect and Harbor run different kinds of work-            agent (terminus2-multimodal, max 10 turns):
+loads, while the shared contract determines what           claude-opus-4.6, gpt-5.4, grok-4.20-beta,
+the run means. Given our focus on agentic evals,           and gemini-3.1-pro-preview.
+the empirical study below executes candidates
+only through Harbor, but uses the same crite-
+rion traces and aggregation semantics described
+here.
+
+
+4 Judge          Capacity           Empirical Table 2: Harbor accounting for the four-solver
+                                                           portex-composit study (combined across runs).
+  Study
+                                                            Metric             Count   Description
+4.1   PORTEX-COMPOSITE                      batch
+                                                            Task count          75     Unique task id set
+      and criterion mix
+                                                                                       evaluated in Harbor.
+                                                            Attempts            300    75 × 4 solver–task
+This empirical section reports a the results of                                        pairs (one attempt
+running a proprietary frontier benchmark called                                        per task per model;
+PORTEX-COMPOSITE, built with Harbor, and                                               retries excluded).
+graded using four frontier-class solvers (Opus-             Success             245    Successful runs:
+4.6, Gemini-3.1-Pro, GPT-5.4, Grok-4.20), all                                          submission present,
+under a shared terminus2 agent, verifier, and                                          non-empty results,
+judge configuration . As summarized in Table 2,                                        no top-level verifier
+                                                                                       error
+each run attempted 75 frontier tasks, with 46–
+                                                            ExactMatch crit     54     Unique criterion
+71 tasks producing usable graded outputs de-
+                                                                                       graded as
+pending on solver-side completion. The number                                          ExactMatch.
+of llm-judge criterion instances per run ranged             LLM-judge crit      132    Unique criterion
+from 87 to 125. We therefore report per-run n                                          graded as llm-judge
+for all jury-capacity comparisons and add strict            Overlapping task    32     task id present in
+intersection results where appropriate.                                                all four runs
+                                                            Overlapping         63     llm-judge criteria
+                                                            LLM-judge crit             present and
+                                                                                       comparable in all
+                                                                                       four runs.
+
+
+                                                       7
+4.3    Judge conditions                                      the five judges); and (iii) task-level raw-
+                                                             score stability (Pearson correlation, means,
+The experiment compares two jury conditions on               spread, and per-task deltas) after computing
+the same graded criterion instances:                         jury-contributed points under each pool while
+                                                             leaving ExactMatch awards at their official val-
+Condition 1: A frontier-model jury panel com-                ues. We consider the compact jury set to be
+             posed of large, Open Weights,                   considered operationally comparable only if they
+             State-of-the-Art models;                        remain close to frontier juries on criterion deci-
+                                                             sions and do not induce materially higher inter-
+Condition 2: A compact-model jury panel                      nal dissent.
+             composed of smaller, Open
+             Weights.
+                                                             4.5   Results
+All task prompts, references, criteria, candidate            At a high level, these results show that com-
+outputs, and aggregation rules are held constant             pact juries are not substitutes for frontier
+across conditions. Only the judge pool changes               juries, even though they often produce the same
+under two pools of models; Frontier, representing            final task outcome. Compact and frontier juries
+a pool of SOTA open weight models, and Com-                  diverge non-trivially on individual llm-judge
+pact, representing a pool of small open weight               criteria, and compact juries exhibit substantially
+models. For each llm-judge criterion and each                more internal disagreement. That being said,
+pool, we form a pass/fail decision by strict ma-             most of those differences wash out at the aggre-
+jority over that pool’s five judges (ties fail); votes       gated task level. Under our Q3 framing, this
+from judges that failed to return a usable verdict           means compact juries may be operationally us-
+would be dropped, though none occurred in these              able for lower-cost outcome monitoring, but they
+experiments.                                                 are not yet decision-equivalent to frontier juries
+                                                             for criterion-auditable evaluation.
+Table 3: Judge pools (OpenRouter endpoints).
+                                                             Criterion-level comparability.
+ Judge pool       Models
+                                                             Our key finding is that compact and frontier
+ Frontier (5)     deepseek-v3.2                              judges exhibit substantial, but far from perfect,
+                  glm-5                                      agreement at the criterion level. Across the
+                  gpt-oss-120b                               four solver runs, the majority agreement rate
+                  llama-3.3-70b-instruct
+                                                             averaged 83.7%, with per-run values spanning
+                  kimi-k2.5
+                                                             75.9%–89.6% (Table 4). A run here corre-
+ Compact (5)      gemma-3-4b-it
+                                                             sponds to one model–agent-harness configura-
+                  llama-3.1-8b-instruct
+                                                             tion evaluated over all tasks. Restricting to the
+                  olmo-3-7b-instruct
+                                                             strict common subset of criterion keys present
+                  qwen3-8b
+                                                             in all four runs (n = 63) yields a similar result:
+                  ministral-8b-2512
+                                                             mean agreement of 85.7%, with a per-run range
+                                                             of 77.8%–92.1%. In practical terms, substitut-
+4.4    Metrics                                               ing compact judges for frontier judges changes a
+                                                             non-trivial share of semantic criterion decisions.
+On the llm-judge subset we report: (i)
+criterion-level    divergence (equivalently, Within-jury disagreement.
+majority-decision agreement between frontier
+and compact); (ii) within-pool disagreement Our second main finding is that compact juries
+(unanimous vs. one dissenter vs. 3–2 split among are far less internally stable than frontier juries
+
+                                                         8
+on identical criterion instances, and that this is
+                                                in a smaller set of tasks: across runs, the mean
+not isolated to any one solver family (Tables 4 absolute gap averages 7.4 points (range 3.7–
+and 5). Across the four solver runs, 3–2 splits 14.0), the standard deviation of task-level gaps
+were uncommon for frontier panels, averaging    spans roughly 11–27 points, and in the most dis-
+8.9% of criterion decisions, but much more fre- persed run (Gemini) individual tasks differ by
+quent for compact panels, averaging 30.7%; the  up to 100 points. Table 5 gives the per-solver
+per-run ranges were 6.1%–11.5% and 28.7%–       breakdown. There, Bench. F/CPdenotes the
+32.4%, respectively. The same gap holds for     normalized benchmark aggregate i Si /(100n),
+one-dissenter (4:1) votes: 17.8% on average     computed separately from frontier and com-
+for frontier juries versus 32.4% for compact    pact score reconstructions over the same set of
+juries, with corresponding ranges of 11.2%–     graded tasks. Benchmark-level aggregation re-
+32.2% and 24.5%–37.9%. While the abso-          duces most differences further, although not uni-
+lute levels differ across solvers, the qualitative
+                                                formly: frontier exceeds compact by roughly
+result is unchanged in every run: compact ju-   2.7–12.3 percentage points for Opus and Gem-
+ries show substantially weaker internal consen- ini, whereas GPT-5.4 and Grok place compact
+sus. Put simply, compact juries do not just dis-only about 0.4 points higher. This is encour-
+agree more with frontier juries; they also disagree
+                                                aging for compact-majority voting: end out-
+more with themselves.                           comes are often close to those produced by fron-
+                                                tier judges. Still, the substantial internal dis-
+Table 4: Cross-run summary of criterion-level agreement within compact panels suggests that
+agreement and within-jury disagreement across this apparent stability may be brittle, and could
+four solver runs. Entries are mean percentages, change under modest shifts in panel composition
+with run-wise ranges in parentheses.            or other judging settings.
+
+Metric                            Value                    Table 5:      Per-solver criterion agreement,
+Majority agreement on crite- 84% (76–90)                   within-jury disagreement, normalized bench-
+rion decisions                                             mark scores, and pass rate.
+Majority agreement on com- 86% (78–92)                                      Graded Criterion     4:1 diss.     3:2 split      Bench.    Pass
+                                                           Solver            tasks  agree         (F/C)         (F/C)        F/C (%)    rate
+mon subset (n = 63)                                        Opus-4.6           63     82.4%     15.7% / 24.5% 10.8% / 32.4%   34.1 / 31.4 22.2%
+One-dissenter rate (4:1)     F: 18% (11–32)                Gemini-3.1-Pro     46     75.9%     32.2% / 37.9% 11.5% / 32.2%   49.6 / 37.3 32.6%
+                                                           GPT-5.4            71     89.6%     11.2% / 36.8% 7.2% / 29.6%    14.7 / 15.0 8.5%
+                             C: 32% (25–38)                Grok-4.20          65     87.0%     12.2% / 30.4% 6.1% / 28.7%    12.8 / 13.2 6.2%
+
+Split rate (3:2)             F: 9% (6–12)
+                             C: 31% (29–32)
+                                                           Judge economics.
+
+Task-level outcomes are smaller.                           Table 6 summarizes judge-side economics at the
+                                                           llm-judge criterion level. Each criterion in-
+Despite these criterion-level differences, their im-       stance is evaluated by two five-judge pools (fron-
+pact on task-level raw scores is limited. On               tier and compact), and the reported cost, la-
+graded tasks (solver-dependent n, Table 5), fron-          tency, and token counts are pooled totals across
+tier and compact recomputed task-score vectors             the five calls in each jury rather than per-judge
+have a mean Pearson correlation of r = 0.88,               averages. The economics of compact juries are
+with per-run values ranging from 0.81 to 0.93.             exceptionally favorable: across solver runs, com-
+In every run, the median frontier–compact raw-             pact juries reduce cost by about 97% per cri-
+score difference is 0, and 70%–87% of graded               terion relative to frontier juries under the same
+tasks exhibit no score change between pools.               contract, while also reducing wall time by about
+In other words, most tasks receive the same score          82%, output tokens by about 75%, and total
+even when some underlying criterion votes dif-             tokens by about 61%. These gains are sta-
+fer. The remaining differences are concentrated            ble across all four solver backbones. The cur-
+
+                                                       9
+rent obstacle is therefore not cost or speed, but     higher 3:2 split rates (about 24.5% → 36.6%).
+criterion-level alignment: compact juries are still   These summaries motivate the narrower mod-
+not decision-equivalent to frontier juries. If that   eling question below: whether response length
+alignment gap can be narrowed, the tradeoff           is associated with disagreement severity, and in
+would likely be highly worthwhile for many prac-      particular whether that association is stronger
+tical evaluation settings.                            for compact juries than for frontier juries.
+
+Table 6: Judge-side economics per llm-judge           Response length and disagreement sever-
+criterion, averaged across four solver runs. Fron-    ity (ordinal mixed model).
+tier and compact columns report pooled totals
+                                                      We model within-pool disagreement as an or-
+over the five judge calls in each jury; reductions
+                                                      dered outcome at the criterion-instance × jury-
+are relative to frontier, with run-wise min–max
+                                                      pool level. For each criterion instance i and
+in parentheses.
+                                                      pool p ∈ {frontier, compact}, define disagree-
+Metric           Frontier Compact Reduction           ment severity
+Cost (USD)       0.064     0.0019    97% (96–97)                         Dip ∈ {0, 1, 2},
+Latency(ms)      496       88        82% (80–84)
+Output tokens    23.0k     5.8k      75% (71–78)      where 0 = unanimous (5:0), 1 = one dissenter
+Total tokens     28.4k     11.2k     61% (55–63)      (4:1), and 2 = high split (3:2). The main predic-
+                                                      tor is standardized log response length,
+Why do compact juries disagree more?
+                                                                                                 
+                                                          Li = zscore log(1 + submission charsi ) ,
+We conducted two secondary analyses to bet-           computed on the analysis sample and shared
+ter understand the compact pool’s higher dis-         across pools for the same instance. Let Cp = 1
+agreement rate: a statistical analysis of response    for compact and 0 for frontier. We specify a
+length and a qualitative review of split ratio-       cumulative-link (proportional odds) model
+nales.
+                                                         Pr(Dip ≤ k) = logit−1 (τk − ηip ) ,   k ∈ {0, 1},
+Response length and disagreement: de- with linear predictor
+scriptive pattern.
+                                                   ηip = α + β1 Li + β2 Cp + β3 (Li × Cp ) + γrun(i) + ui ,
+Before fitting any model, the descriptive pat- where γ
+                                                            run(i) are solver-run fixed effects and
+tern suggests that longer responses are some- u ∼ N (0, σ 2 ) is a random intercept for cri-
+                                                     i
+what more disagreement-prone. In the filtered terion instance. A positive β indicates that
+                                                                                      3
+429-instance analysis sample, average submis- disagreement severity increases with response
+sion length increases with disagreement sever- length more strongly for compact juries than for
+ity when frontier and compact rows are pooled: frontier juries.
+unanimous pool-rows average about 1461 char-
+acters, one-dissenter rows about 1790, and 3:2 Before fitting, we restrict to comparable full-
+split rows about 2305. The same directional panel rows: both pools must produce a non-
+pattern appears within both jury pools. Com- tie decision, neither pool may have a reduced
+paring the shorter half of responses (≤ 1143 panel or judge failure, the task must have no
+chars) to the longer half (> 1143 chars), frontier flagged error, and the solver submission must be
+juries show higher mean disagreement severity present with extracted text. In the current Q3
+(about 0.25 → 0.43) and a modest increase in dataset, all 429 available criterion instances sat-
+3:2 splits (about 6.5% → 10.8%). Compact ju- isfy those criteria, yielding 858 long-format rows
+ries show the same direction, with higher mean (429 instances × two pools) across four solver
+disagreement severity (about 0.79 → 1.08) and runs. We estimate the model in PyMC 5 with
+
+                                                    10
+an ordered-logistic likelihood and report poste- Table 7: Ordinal mixed model: posterior me-
+rior medians and 95% highest-density intervals dians and 95% HDIs for odds ratios (cumula-
+(HDIs) for odds ratios exp(β).                      tive logit). Length is log(1+chars) z-scored on
+                                                    the 858 analysis rows after the explicit full-panel
+Table 7 summarizes the main effects. The clear- comparable-row filter; compact indicator = 1
+est result is a large pool effect: compact ju- for the compact pool. Run fixed effects omit-
+ries remain much more disagreement-prone than ted from the table.
+frontier juries after adjusting for response length Term                        OR (median) HDI low HDI high
+and solver run (exp(β2 ) ≈ 7.56, 95% HDI 5.29– Length (Li , z-score)                 1.10       0.83     1.47
+10.93). By contrast, the overall length effect Compact (Cp )                         7.56       5.29     10.93
+                                                     Length × compact (Li Cp )       1.11       0.81     1.51
+is modest and uncertain (exp(β1 ) ≈ 1.10, HDI
+0.83–1.47), and the interaction of primary inter- Table 8: Predicted probabilities of each disagree-
+est is likewise uncertain (exp(β3 ) ≈ 1.11, HDI ment level at the 25th and 75th percentiles of
+0.81–1.51). Thus, although the descriptive sum- pooled submission length (590 and 2215 charac-
+maries suggest that longer responses are some- ters), averaged equally over the four solver-run
+what harder to judge consistently, the model fixed-effect profiles. Rows sum to one within
+does not provide clear evidence that compact ju- each pool × length slice.
+ries are more sensitive to response length than Pool           Length                   Pr(D=0) Pr(D=1) Pr(D=2)
+frontier juries.                                     Frontier  25th pct. (590 chars)      0.74    0.18    0.08
+                                                           Frontier   75th pct. (2215 chars)   0.73   0.19   0.09
+Table 8 shows predicted category probabilities             Compact    25th pct. (590 chars)    0.39   0.31   0.30
+                                                           Compact    75th pct. (2215 chars)   0.35   0.31   0.34
+at the pooled 25th and 75th percentiles of sub-
+mission length (590 and 2215 characters), av-
+eraged equally across the four solver-run fixed-        Qualitative review of judge rationales.
+effect profiles. These probabilities reinforce the
+same point. Compact pools are much more split-          Our qualitative review suggests that compact ju-
+prone than frontier pools at both short and long        ries are not failing for fundamentally different
+lengths, but the shift from shorter to longer re-       reasons than frontier juries. Both pools exhibit
+sponses is modest for both pools. In other words,       the same broad classes of interpretive tension:
+the dominant pattern is a level difference be-          checklist literalism versus mathematical equiva-
+tween pools, not a strong difference in the length      lence, varying sensitivity to technical depth, and
+slope. Robustness checks, including leave-one-          rubric–solution mismatches when a correct an-
+run-out refits and a binary high-split model, sup-      swer follows an unexpected route. The differ-
+port the same qualitative conclusion.                   ence is not the type of failure, but its consis-
+                                                        tency. Compact judges apply these standards
+                                                        less uniformly, which plausibly contributes to
+                                                        their higher split rate. We therefore interpret
+                                                        compact juries as higher-variance panels op-
+                                                        erating on the same contract, rather than
+                                                        panels with a distinct taxonomy of errors.
+
+
+Observable example (prompt 4; GPT-5.4 Harbor trace portex prompt 4 wnJuJjx)
+
+The following three blocks reproduce verbatim text from the verifier bundle portex detail.json:
+the task prompt shown to the agent, one representative llm-judge semantic criterion (criterion id
+62300210-0a01-5639-8d68-f4ca6897b774), and the graded submission under audit.
+
+Task prompt.
+
+
+                                                      11
+Let G be a Lie algebra and V a vector space (viewed as a G-module). We aim to compute the third
+    cohomology group H^3(G, V).
+Our present goal is to understand what H^3(G, V) looks like and how it can be evaluated or
+    interpreted. By definition, using the Chevalley-Eilenberg complex (C^*(G, V), d), we have the
+    cochain complex
+\\cdots \\xrightarrow{d^{-1}} C^0(G, V) \\xrightarrow{d^0} C^1(G, V) \\xrightarrow{d^1} C^2(G, V)
+    \\xrightarrow{d^2} C^3(G, V) \\xrightarrow{d^3} C^4(G, V) \\xrightarrow{} \\cdots
+where, for each n, the coboundary map d^n : C^n(G, V) -> C^{n+1}(G, V) is defined as follows:
+Given c in C^n(G, V), then d^n c in C^{n+1}(G, V) is given by
+d^n c(x_1, ..., x_{n+1}) = \\sum_{1 <= i < j <= n+1} (-1)^{i+j} c\\left( [x_i, x_j], x_1, ..., \\
+    hat{x}_i, ..., \\hat{x}_j, ..., x_{n+1} \\right) - \\sum_{i=1}^{n+1} (-1)^i x_i \\cdot c(x_1,
+    ..., \\hat{x}_i, ..., x_{n+1})
+for all x_1, ..., x_{n+1} in G. Here x_i \\cdot c(x_1, ..., \\hat{x}_i, ..., x_{n+1}) denotes the
+    action of x_i in G on the value c(x_1, ..., \\hat{x}_i, ..., x_{n+1}) in V according to the G-
+    module structure of V.
+By definition, the third cohomology group is
+H^3(G, V) = Z^3(G, V) / B^3(G, V) = \\ker(d^3 : C^3(G, V) -> C^4(G, V)) / \\im(d^2 : C^2(G, V) -> C
+    ^3(G, V)).
+Since neither \\ker(d^3 : C^3(G, V) -> C^4(G, V)) nor \\im(d^2 : C^2(G, V) -> C^3(G, V)) is known
+    explicitly, we cannot compute H^3(G, V) directly in the same elementary way.
+Therefore, the task is to explicitly (with mathematical details) evaluate H^3(G, V).
+
+
+Semantic criterion (llm-judge).
+The submission argues that Y is a 3-cocycle by showing dy = 0, or equivalently that i(dy)=0
+    followed by injectivity of i.
+
+
+Submission (shortened)
+The submission was rejected because it only restates the general definition of third cohomology and the
+     cocycle condition, rather than proving that a specific cochain is a 3-cocycle.
+"To evaluate the third Lie algebra cohomology group \(H^3(G,V)\), one must work inside the Chevalley-
+     Eilenberg complex
+\[
+C^n(G,V)=\operatorname{Hom}(\Lambda^n G,V),
+\]
+with differential \(d^n:C^n\to C^{n+1}\). In complete generality, and without specifying the Lie algebra \(G
+     \) and the \(G\)-module \(V\), one cannot reduce \(H^3(G,V)\) to a single numerical answer. What one can
+      do explicitly is describe exactly what the objects \(Z^3(G,V)\) and \(B^3(G,V)\) are, hence what the
+     quotient means.
+A 3-cochain is an alternating trilinear map
+\[
+\omega:G\times G\times G\to V.
+\]
+It is a 3-cocycle if \(d^3\omega=0\)...
+\[
+H^3(G,V)=\frac{\{\omega\in \operatorname{Hom}(\Lambda^3G,V):d^3\omega=0\}}{\{d^2\varphi:\varphi\in \
+     operatorname{Hom}(\Lambda^2G,V)\}}.
+\]
+
+[...]
+
+So the mathematically correct explicit evaluation is not a numerical computation in general, but the
+     identification
+\[
+H^3(G,V)=Z^3(G,V)/B^3(G,V)
+\]
+with
+\[
+Z^3(G,V)=\{\omega\in \operatorname{Hom}(\Lambda^3G,V):d^3\omega=0\},
+\qquad
+B^3(G,V)=\{d^2\varphi:\varphi\in \operatorname{Hom}(\Lambda^2G,V)\},
+
+
+                                                     12
+\]
+using the explicit formulas above. Any further evaluation requires concrete knowledge of the Lie bracket on
+     \(G\) and the action of \(G\) on \(V\)."
+
+
+
+Jury votes on this instance.                           those disagreements wash out after aggregation
+                                                       to the task score. This attenuation likely arises
+On this trace, all five frontier judges vote fail,     from cancellation in weighted sums and from the
+converging on a literal reading: for example,          presence of more deterministic criteria. Even so,
+GLM-5 notes that the write-up “uses the sym-           the repeated elevation in compact-panel dissent
+bol ω for 3-cochains, not γ” and never supplies        shows that compact pools remain noisier on a
+the named injectivity argument. The compact            per-criterion basis, which limits their suitability
+panel reaches the same majority outcome                for criterion-auditable evaluation even when final
+(fail) but only after a 3–2 split: Gemma-4B            task outcomes often look similar.
+and Olmo-7B award credit, with Gemma-4B ar-
+guing that the displayed expansion “is exactly         The ordinal mixed model (Tables 7–8) aligns
+what defines a 3-cocycle” even without repro-          with earlier findings that compact pools face
+ducing the rubric’s γ/i phrasing, while Qwen-8B        higher split risk, but it does not provide clear
+and two other compact models restate checklist         evidence that longer responses increase disagree-
+defects parallel to the frontier panel. This is a      ment more for compact than for frontier/SOTA
+concrete case where the dissident compact votes        juries; the formal interaction remains imprecise
+are not inventing a new failure mode; they dis-        and sensitive to which solver run is held out.
+count the same notation-vs.-substance tension—         We have not isolated other divergence axes (e.g.,
+but the panel applies that standard less uni-          proximity to threshold, rubric family, or Inspect
+formly than frontier jurors do.                        vs. Harbor candidates). Until those slices are
+                                                       broadened, it is prudent to treat frontier pools
+                                                       as the default for high-stakes decisions and com-
+5 Discussion                                           pact pools as a candidate for high-throughput it-
+                                                       eration, with escalation paths when traces show
+Practical implications.                                repeated dissent.
+
+The practical conclusion is mixed. On the one          Disagreement traces from AsymmetryZero are
+hand, compact juries preserve most final task          also a natural training signal for post-training
+outcomes and produce raw-score distributions           smaller evaluator models (frontier jury as
+that are very similar in spread to those of frontier   teacher, compact model as student) and for
+juries. On the other hand, they diverge too of-        adaptive judge policies (escalate when panels
+ten on individual criterion decisions, and they do     split). We see that as complementary to this
+so with substantially more internal dissent. For       paper’s contract-first framing, not a substitute
+applications where the primary goal is low-cost        for it; concrete research directions appear in the
+monitoring of coarse task outcomes, that may be        Conclusion (Future work).
+acceptable. For settings where criterion-level au-
+ditability matters, however, these results do not
+support treating compact juries as interchange-
+                                                       6 Limitations
+able with frontier juries.
+                                                  Several limitations bound the interpretation of
+Our results reveal a consistent split be- these results.
+tween criterion-level and task-level comparabil-
+                                                  First, our study evaluates comparability between
+ity. Across all four solver families, compact and
+                                                  frontier and compact juries, not absolute judge
+frontier juries disagree on a meaningful minority
+                                                  correctness. Agreement with a frontier jury
+of individual llm-judge decisions, but many of
+
+
+                                                     13
+should therefore be interpreted as a practical ref-   More broadly, the observed compact-versus-
+erence point rather than semantic ground truth.       frontier tradeoff may depend on the task distri-
+We did not collect human annotations on a dis-        bution, rubric style, and candidate population
+agreement subset, nor did we establish a gold-        under study.
+standard label set for criterion outcomes. As
+a result, we cannot answer questions such as          Fifth, completion counts differ across solver runs,
+how well either jury pool aligns with expert          so per-run n varies across Tables 4, 6, and 5.
+graders, whether compact juries differ systemati-     In addition, per-jury cost and latency estimates
+cally from frontier juries relative to human judg-    (Table 6) are based on OpenRouter response
+ment, or which pool is more correct when the two      metadata and measured HTTP wall time. These
+disagree. Prior literature suggests that jury-style   are appropriate operational proxies, but they
+and llm-judge evaluation can approach human           should be interpreted as provider-reported and
+agreement, but confirming that in our own set-        transport-level telemetry rather than as an ex-
+ting would have enabled richer post hoc analysis.     ternal billing audit.
+
+Second, the candidate-generation side of the          Finally, rubric quality remains a foundational
+study is narrow. We evaluate one Harbor agent         limitation. The AsymmetryZero framework can
+setting, using our Terminus 2 adapted harness,        only be as reliable as the contracts it executes.
+and did not test other harnesses or orchestration     If a task prompt is underspecified, if criteria are
+policies. We also did not run a corresponding         redundant, or if the rubric does not match what
+compact-vs.-frontier comparison on direct LLM         the prompt actually asks for, then the result-
+outputs without an agent harness. The present         ing evaluation can still be systematically wrong.
+results therefore isolate one practically impor-      Strong grader infrastructure therefore does not
+tant deployment configuration, but they should        remove the need for strong task and rubric de-
+not be read as a general statement about all          sign.
+agent frameworks or all response-generation set-
+tings.                                                7 Conclusion
+Third, our solver configuration imposed a maxi-
+mum of 10 turns. We chose that cap as a reason-       This Harbor study evaluates the capacity ques-
+able budget for the benchmark tasks, which are        tion under a fixed evaluation contract across four
+primarily frontier-knowledge STEM tasks rather        frontier-class solvers. The main empirical result
+than long-horizon operational or coding tasks. In     is that compact juries are promising but not yet
+practice, however, this setting produced a non-       interchangeable with frontier juries: they often
+trivial number of empty or missing responses,         preserve task-level outcomes, but they diverge
+which in turn reduced the analyzable sample for       too often on individual llm-judge criteria and
+jury comparisons. A rerun with a higher turn          exhibit substantially weaker internal consensus.
+cap, or with no hard cap, would help determine        At the same time, their large and consistent sav-
+how much of the observed missingness reflects         ings in cost and latency make them attractive for
+the solver configuration rather than intrinsic task   lower-cost evaluation workflows. Taken together,
+difficulty.                                           these findings support the broader view of Asym-
+                                                      metryZero as an operator-oriented framework for
+Fourth, the analysis is benchmark- and platform-      semantic evaluation: a system in which the con-
+specific. The tasks are predominantly STEM-           tract defines what is being measured, while the
+oriented and reflect the kinds of evaluations cur-    choice of judge determines the tradeoff between
+rently contributed on our platform. These find-       reliability and efficiency.
+ings may therefore not transfer directly to other
+domains, such as enterprise workflows, oper- AsymmetryZero is best understood as an eval-
+ational agents or software engineering agents. uation contract for models and agents. Ex-
+
+
+                                                  14
+perts specify what matters, the framework makesand dissent profiles, the natural next research
+those requirements explicit, and a jury turns  step is alignment of compact evaluators to
+                                               frontier jury behavior. A concrete direction is
+them into auditable criterion-level signals when
+deterministic grading is not enough. The pa-   on-policy distillation for evaluator post-training:
+                                               generate agent trajectories on-policy, label crite-
+per’s central claim is that evaluation reliability
+                                               rion outcomes with a frontier jury teacher, and
+depends as much on the contract as on the judge.
+                                               train compact jury models (or compact aggrega-
+                                               tion policies) to reproduce frontier decisions and
+8 Future Work                                  calibration under the same contract. We treat
+                                               that as future work and plan to report it sepa-
+Because compact juries here do not yet match rately in a dedicated follow-up paper or technical
+frontier behavior on criterion-level agreement blog post.
+
+
+
+
+                                                 15
+References
+Guiming Hardy Chen, Shunian Chen, Ziche Liu, Feng Jiang, and Benyou Wang. Humans or
+ LLMs as the judge? a study on judgement bias. In Proceedings of the 2024 Conference on
+ Empirical Methods in Natural Language Processing, pages 8301–8327, Miami, Florida, USA,
+ 2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.emnlp-main.474. URL
+ https://aclanthology.org/2024.emnlp-main.474/. arXiv:2402.10669.
+
+Jinlan Fu, See-Kiong Ng, Zhengbao Jiang, and Pengfei Liu. GPTScore: Evaluate as you de-
+  sire. In Proceedings of the 2024 Conference of the North American Chapter of the Associa-
+  tion for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers),
+  pages 6556–6576, Mexico City, Mexico, 2024. Association for Computational Linguistics. doi:
+  10.18653/v1/2024.naacl-long.365. URL https://aclanthology.org/2024.naacl-long.365/.
+  arXiv:2302.04166.
+
+Jiawei Gu, Xuhui Jiang, Zhichao Shi, Hexiang Tan, Xuehao Zhai, Chengjin Xu, Wei Li, Yinghan
+  Shen, Shengjie Ma, Honghao Liu, Saizhuo Wang, Kun Zhang, Yuanzhuo Wang, Wen Gao, Lionel
+  Ni, and Jian Guo. A survey on LLM-as-a-judge. arXiv preprint, 2024. URL https://arxiv.
+  org/abs/2411.15594. arXiv:2411.15594.
+
+Harbor Framework Team. Harbor: A framework for evaluating and optimizing agents and models in
+ container environments, January 2026. URL https://github.com/harbor-framework/harbor.
+ Software repository.
+
+Helia Hashemi, Jason Eisner, Corby Rosset, Benjamin Van Durme, and Chris Kedzie. LLM-rubric:
+  A multidimensional, calibrated approach to automated evaluation of natural language texts.
+  In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics
+  (Volume 1: Long Papers), pages 13806–13834, Bangkok, Thailand, 2024. Association for Com-
+  putational Linguistics. doi: 10.18653/v1/2024.acl-long.745. URL https://aclanthology.org/
+  2024.acl-long.745/.
+
+Seungone Kim, Jamin Shin, Yejin Cho, Joel Jang, Shayne Longpre, Hwaran Lee, Sangdoo Yun,
+  Seongjin Shin, Sungdong Kim, James Thorne, and Minjoon Seo. Prometheus: Inducing fine-
+  grained evaluation capability in language models. In International Conference on Learning Rep-
+  resentations, 2024. URL https://openreview.net/forum?id=8euJaTveKw. ICLR 2024 poster;
+  arXiv:2310.08491.
+
+Tom Kocmi and Christian Federmann. Large language models are state-of-the-art evaluators of
+  translation quality. In Proceedings of the 24th Annual Conference of the European Association for
+  Machine Translation, pages 193–203, Tampere, Finland, 2023. European Association for Machine
+  Translation. URL https://aclanthology.org/2023.eamt-1.19/. arXiv:2302.14520.
+
+Ryan Koo, Minhwa Lee, Vipul Raheja, Jong Inn Park, Zae Myung Kim, and Dongyeop Kang.
+  Benchmarking cognitive biases in large language models as evaluators. In Findings of the
+  Association for Computational Linguistics: ACL 2024, pages 517–545, Bangkok, Thailand,
+  2024. Association for Computational Linguistics. doi: 10.18653/v1/2024.findings-acl.29. URL
+  https://aclanthology.org/2024.findings-acl.29/. arXiv:2309.17012.
+
+Junlong Li, Shichao Sun, Weizhe Yuan, Run-Ze Fan, Hai Zhao, and Pengfei Liu. Generative judge
+  for evaluating alignment. In International Conference on Learning Representations, 2024. URL
+  https://openreview.net/forum?id=gtkFw6sZGS. ICLR 2024 poster; arXiv:2310.05470.
+
+                                                16
+Xiaochuan Li, Ke Wang, Girija Manash Gouda, Shubham Choudhary, Yaqun Wang, Linwei Hu, Joel
+  Vaughan, and Freddy Lecue. Who judges the judge? LLM jury-on-demand: Building trustworthy
+  LLM evaluation systems. arXiv preprint, 2025. URL https://arxiv.org/abs/2512.01786.
+  arXiv:2512.01786; submitted to ICLR 2026 (OpenReview).
+
+Chin-Yew Lin. ROUGE: A package for automatic evaluation of summaries. In Text Summarization
+ Branches Out, pages 74–81, Barcelona, Spain, 2004. Association for Computational Linguistics.
+ URL https://aclanthology.org/W04-1013/.
+
+Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang, Ruochen Xu, and Chenguang Zhu. G-eval:
+  NLG evaluation using GPT-4 with better human alignment. In Proceedings of the 2023 Con-
+  ference on Empirical Methods in Natural Language Processing, pages 2511–2522, Singapore,
+  2023. Association for Computational Linguistics. doi: 10.18653/v1/2023.emnlp-main.153. URL
+  https://aclanthology.org/2023.emnlp-main.153/. arXiv:2303.16634.
+
+Arjun Panickssery, Samuel R. Bowman, and Shi Feng. LLM evaluators recognize and favor their
+  own generations. In Advances in Neural Information Processing Systems, 2024. URL https:
+  //openreview.net/forum?id=4NJBV6Wp0h. NeurIPS 2024 oral; arXiv:2404.13076.
+
+Kishore Papineni, Salim Roukos, Todd Ward, and Wei-Jing Zhu. BLEU: a method for auto-
+  matic evaluation of machine translation. In Proceedings of the 40th Annual Meeting of the
+  Association for Computational Linguistics, pages 311–318, Philadelphia, Pennsylvania, USA,
+  2002. Association for Computational Linguistics. doi: 10.3115/1073083.1073135. URL https:
+  //aclanthology.org/P02-1040/.
+
+Raheem Sarwar, Bilal Ahmad, Pin Shen Teh, Suppawong Tuarob, Tipajin Thaipisutikul, Farooq
+  Zaman, Naif R. Aljohani, Jia Zhu, Saeed-Ul Hassan, Raheel Nawaz, Ali R. Ansari, and Muham-
+  mad A. B. Fayyaz. Hybrideval: An improved novel hybrid metric for evaluation of text summa-
+  rization. Journal of Informatics and Web Engineering, 3(3):233–255, 2024. doi: 10.33093/jiwe.
+  2024.3.3.15. URL https://journals.mmupress.com/index.php/jiwe/article/view/1178.
+
+Lin Shi, Chiyu Ma, Wenhua Liang, Xingjian Diao, Weicheng Ma, and Soroush Vosoughi. Judg-
+  ing the judges: A systematic study of position bias in LLM-as-a-judge. In Proceedings of the
+  14th International Joint Conference on Natural Language Processing and the 4th Conference
+  of the Asia-Pacific Chapter of the Association for Computational Linguistics, pages 292–314,
+  Mumbai, India, 2025. The Asian Federation of Natural Language Processing and The Associa-
+  tion for Computational Linguistics. URL https://aclanthology.org/2025.ijcnlp-long.18/.
+  arXiv:2406.07791.
+
+Evangelia Spiliopoulou, Riccardo Fogliato, Hanna Burnsky, Tamer Soliman, Jie Ma, Graham Hor-
+  wood, and Miguel Ballesteros. Play favorites: A statistical method to measure self-bias in LLM-
+  as-a-judge. arXiv preprint, 2025. URL https://arxiv.org/abs/2508.06709. arXiv:2508.06709.
+
+Rickard Stureborg, Dimitris Alikaniotis, and Yoshi Suhara. Large language models are inconsis-
+  tent and biased evaluators. arXiv preprint, 2024. URL https://arxiv.org/abs/2405.01724.
+  arXiv:2405.01724.
+
+UK AI Security Institute. Inspect AI: Framework for Large Language Model Evaluations, 2024.
+ URL https://github.com/UKGovernmentBEIS/inspect_ai. Software repository.
+
+
+
+
+                                               17
+Pat Verga, Sebastian Hofstatter, Sophia Althammer, Yixuan Su, Aleksandra Piktus, Arkady
+  Arkhangorodsky, Minjie Xu, Naomi White, and Patrick Lewis. Replacing judges with juries:
+  Evaluating LLM generations with a panel of diverse models. arXiv preprint, 2024. URL
+  https://arxiv.org/abs/2404.18796. arXiv:2404.18796.
+
+Bertie Vidgen, Austin Mann, Abby Fennelly, John Wright Stanly, Lucas Rothman, Marco Burstein,
+  Julien Benchek, David Ostrofsky, Anirudh Ravichandran, Debnil Sur, Neel Venugopal, Alan-
+  nah Hsia, Isaac Robinson, Calix Huang, Olivia Varones, Daniyal Khan, Michael Haines, Austin
+  Bridges, Jesse Boyle, Koby Twist, Zach Richards, Chirag Mahapatra, Brendan Foody, and Os-
+  vald Nitski. APEX-Agents. arXiv preprint, 2026. URL https://arxiv.org/abs/2601.14242.
+  arXiv:2601.14242.
+
+Yidong Wang, Zhuohao Yu, Wenjin Yao, Zhengran Zeng, Linyi Yang, Cunxiang Wang, Hao Chen,
+  Chaoya Jiang, Rui Xie, Jindong Wang, Xing Xie, Wei Ye, Shikun Zhang, and Yue Zhang. Pan-
+  daLM: An automatic evaluation benchmark for LLM instruction tuning optimization. In Interna-
+  tional Conference on Learning Representations, 2024. URL https://openreview.net/forum?
+  id=5Nn2BLV7SB. ICLR 2024 poster; arXiv:2306.05087.
+
+Jiayi Ye, Yanbo Wang, Yue Huang, Dongping Chen, Qihui Zhang, Nuno Moniz, Tian Gao, Werner
+  Geyer, Chao Huang, Pin-Yu Chen, Nitesh V Chawla, and Xiangliang Zhang. Justice or prej-
+  udice? quantifying biases in LLM-as-a-judge. In International Conference on Learning Repre-
+  sentations, 2025. URL https://openreview.net/forum?id=3GTtZFiajM. ICLR 2025 Poster;
+  arXiv:2410.02736.
+
+Weizhe Yuan, Graham Neubig, and Pengfei Liu. BARTScore: Evaluating generated text as
+ text generation. In Advances in Neural Information Processing Systems, 2021. URL https:
+ //openreview.net/forum?id=5Ya8PbvpZ9. arXiv:2106.11520.
+
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang,
+  Zi Lin, Zhuohan Li, Dacheng Li, Eric P. Xing, Hao Zhang, Joseph E. Gonzalez, and Ion
+  Stoica. Judging LLM-as-a-judge with MT-bench and chatbot arena. In NeurIPS 2023
+  Datasets and Benchmarks Track, 2023. URL https://openreview.net/forum?id=uccHPGDlao.
+  arXiv:2306.05685.
+
+Ming Zhong, Yang Liu, Da Yin, Yuning Mao, Yizhu Jiao, Pengfei Liu, Chenguang Zhu, Heng Ji, and
+ Jiawei Han. Towards a unified multi-dimensional evaluator for text generation. In Proceedings
+ of the 2022 Conference on Empirical Methods in Natural Language Processing, pages 2023–
+ 2038, Abu Dhabi, United Arab Emirates, 2022. Association for Computational Linguistics. doi:
+ 10.18653/v1/2022.emnlp-main.131. URL https://aclanthology.org/2022.emnlp-main.131/.
+ arXiv:2210.07197.
+
+Lianghui Zhu, Xinggang Wang, and Xinlong Wang. JudgeLM: Fine-tuned large language models
+  are scalable judges. In International Conference on Learning Representations, 2025. URL https:
+  //openreview.net/forum?id=xsELpEPn4A. ICLR 2025 Spotlight.
+
+
+
+
+                                              18
+
