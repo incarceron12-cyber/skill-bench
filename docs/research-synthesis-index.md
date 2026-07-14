@@ -811,8 +811,22 @@ appropriate executable follow-up, not a DevOps- or memory-specific schema.
 | [Self-evolving agents survey](../papers/agent-benchmarks/2026-07-10-self-evolving-agents-survey.md) | C | Supplies a broad evolution taxonomy and highlights task-order, retention, cost, safety, and feedback confounds |
 | [ClawArena](../papers/agent-benchmarks/2026-07-10-clawarena-evolving-information.md) | B | Provides persistent evidence and workspace updates while motivating typed corrections, retractions, supersession, and changed/unchanged checks |
 | [LongMemEval-V2](../papers/agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md) | B | Separates trajectory-history storage from bounded evidence delivery and shows representation/reader effects; does not measure held-out action transfer or harmful stale guidance |
+| [EvoMemBench](../papers/agent-benchmarks/2026-07-15-evomembench-memory-scope-content-validity.md) | B | Adds an in-/cross-episode × knowledge/execution organizing grid and broad adapter substrate while showing that scope/content labels do not identify one construct when task lineage, current-context necessity, write correctness, retrieval, endpoint, grader, missingness, and compute change together |
 
 **Repository consequence:** Projection manifests, candidate-lesson lifecycle, longitudinal stream/evolution contracts, immutable hashes, validation gates, and rollback. Experience-derived knowledge needs two linked, non-substitutable estimands: evidence-grounded retrospective retrieval and intervention benefit on held-out action. Failed attempts, realized procedures, inferred causes, environment/version scope, stale claims, safe alternatives, and harmful transfer must remain typed rather than flattened into notes.
+
+EvoMemBench adds a necessary **memory-scope identification rule**: attach
+`in-episode`, `cross-episode`, `knowledge`, and `execution` to a frozen
+information-flow contract, not to a dataset name. Preserve current-context
+sufficiency, reset/persistence, event authority, pre-grading write payload and
+correctness status, retrieval query/budget, presented evidence, adoption,
+action/answer consequence, observer view, invalid/missing rows, and full compute
+as separate links. Cross reset and payload treatments on the same task family
+where feasible; otherwise cell differences remain configured-suite interactions.
+The audited evidence supports breadth and context-budget effects, not a common
+self-evolving-memory score, cross-episode necessity, portable transfer,
+professional capability, or readiness. The existing experience-memory-transfer
+pilot and longitudinal/configured-system contracts already host the repair.
 
 The internal experience-memory replay now makes that separation executable for one deterministic synthetic fixture: evidence-only memory answers retrospective QA correctly while producing harmful stale transfer, whereas provenance-gated promotion passes both QA and the planted held-out safety check ([replay](../pilots/experience-memory-transfer/replay-report.json)). This validates fixture and validator behavior, not the planted causal story, a general promotion policy, agent-memory improvement, professional competence, or deployment safety. Real validation requires unseen task families, repeated stochastic consumers, source-clustered uncertainty, rollback probes, and expert-grounded action consequences.
 
