@@ -51,6 +51,7 @@ Most relevant sources:
 | [SimInstruct](../papers/agent-benchmarks/2026-07-11-siminstruct-simulated-novice-elicitation.md) | B | Treats simulated interlocutor behavior as an elicitation treatment; motivates productive-friction probes, phase labels, correction lineage, and separate participation-versus-utility outcomes |
 | [EnterpriseClawBench](../papers/agent-benchmarks/2026-07-11-enterpriseclawbench-session-derived-validity.md) | A | Separates observed workplace demand from the rewritten counterfactual task; requires projection deltas, hindsight controls, equivalence review, and a claim licensed to the evidence actually preserved |
 | [AlphaEval](../papers/agent-benchmarks/2026-07-11-alphaeval-production-grounded-validity.md) | A | Separates current company-demand provenance from requirement projection, grader validity, configured-package comparison, occupational inference, and economic value |
+| [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Releases 400 detailed bilingual research tasks and 6,758 criteria while showing why human task cost, rubric score, thresholded acceptance, workflow savings, and realized economic value must remain separate records |
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Types codified knowledge by execution semantics and bounds a co-designed package effect away from tacit transfer, expert equivalence, and cross-domain generalization |
 | [JobBench](../papers/agent-benchmarks/2026-07-12-jobbench-delegation-desire-validity.md) | A | Makes worker-reported delegation preference a typed portfolio-selection signal while separating it from package fidelity, present consent, workflow uptake, and worker outcomes |
 | [Benchmark-to-risk expert elicitation](../papers/agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | A | Makes the score-to-consequence warrant observable as structured disagreement and separates capability interpretation, scenario use, workflow effect, outcome composition, and decision loss |
@@ -159,6 +160,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | Source | Tier | Main contribution to skill-bench |
 |---|---:|---|
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Demonstrates large-scale expert-authored multimodal occupational task acquisition while exposing sampling, weighting, witness, and inference limitations |
+| [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
@@ -171,7 +173,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
 | [Design Report for Knowledge-Work Benchmarks](../papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | A | Adds a work-activity → tested-setting → persistent-product → licensed-claim reporting chain and makes omitted responsibilities and downstream handoffs explicit; its preliminary 18-label inventory is a revisable vocabulary, not validated coverage |
 | [Handoff Debt](../papers/agent-benchmarks/2026-07-14-handoff-debt-successor-resumability.md) | A | Makes successor resumability a matched frozen-state/view experiment and separates endpoint quality from takeover effort, while exposing recipient dependence, outcome-aware cost, checkpoint clustering, continuation-label leakage, and lifecycle-cost limits |
-| [Professional benchmark evolution matrix](concepts/professional-benchmark-evolution-matrix.md) | A | Compares AA-Briefcase/Lite, GDPval, Workspace-Bench, MBABench, LH-Bench, Workflow-GYM, SaaS-Bench, and Agents' Last Exam as repairs to different links in one evidence chain; distinguishes implemented machinery from demonstrated validity |
+| [Professional benchmark evolution matrix](concepts/professional-benchmark-evolution-matrix.md) | A | Compares AA-Briefcase/Lite, GDPval, $OneMillion-Bench, Workspace-Bench, MBABench, LH-Bench, Workflow-GYM, SaaS-Bench, and Agents' Last Exam as repairs to different links in one evidence chain; distinguishes implemented machinery from demonstrated validity |
 | [Web/tool/computer benchmark evolution](concepts/web-tool-computer-benchmark-evolution.md) | B | Compares GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp; shows that interactive realism migrates the oracle into authored state, simulators, lifecycle hooks, and selected predicates |
 
 **Repository consequence:** The charter remains cross-domain; pilots must state their general hypothesis, suite assembly needs explicit coverage evidence, and results must bound their inference population. A nonempty occupation/subdomain/activity cell is coverage, not representativeness or readiness. Map each task many-to-many to target, required, incidental, and explicitly omitted work activities, retaining the source frame and reviewer disposition rather than freezing one occupational vocabulary. Expert submission, engineer implementation, grader construction, and post-transformation expert disposition require separate authority records.
@@ -190,7 +192,7 @@ The comparative evolution view adds a second boundary: a newer benchmark is
 not automatically a validated successor because it adds more files, longer
 trajectories, native state, or deterministic checks. A claimed repair needs a
 direct falsification test at the repaired link. Current evidence supports broad
-task acquisition (GDPval/ALE), source/check traceability (AA-Briefcase-Lite),
+task acquisition (GDPval/ALE), detailed localized text criteria ($OneMillion-Bench), source/check traceability (AA-Briefcase-Lite),
 workspace and state substrates (Workspace-Bench/SaaS-Bench), native artifact
 inspection (MBABench), and observable expert procedures (LH-Bench) more strongly
 than it supports occupational representativeness, longitudinal project work,
@@ -202,6 +204,16 @@ environment do not establish professional-work validity. The completed WorkArena
 audit supports enterprise-UI and selected native-state operation claims,
 not representative knowledge work; WorkArena++ closes the composition-method gap but
 not occupational validity.
+
+$OneMillion-Bench adds a sharp **cost-to-value boundary**:
+`versioned human task effort/cost → configured-system output distribution →
+independent professional acceptance/correction → realized workflow use and
+resource change → stakeholder benefit/loss`. Its current release supports the
+first two links only. A 0.70 model-judge score and the sum of nominal senior-wage
+costs attached to passing items do not establish saved cost, output, revenue,
+profit, productivity, or value. Preserve task cost, score, acceptance probability,
+review/correction cost, use, and consequence as separate observations; no scalar
+score-to-dollar transform is admissible without downstream evidence.
 
 Executable composition is therefore a construction mechanism, not a construct
 argument. A composite task needs a typed obligation DAG with prerequisites,
