@@ -1,0 +1,1364 @@
+                                              MapSatisfyBench: Benchmarking Satisfaction-Aware Map Agents through
+                                                          Behavior-Grounded Implicit Decision Factors
+                                                                       Lubin Bai2† , Mengyu Cao1† , Sixue Wang1 , Zhongwei Wan1 ,
+                                                                          Yue Pan1 , Jiale Hou1 , Xiang Li1* , Xiuyuan Zhang2*
+                                                                                          1
+                                                                                         AMAP, Alibaba Group, Beijing, China
+                                                                 2
+                                                                     College of Urban and Environmental Sciences, Peking University, Beijing, China
+                                                                                    † Equal contribution. * Corresponding authors.
+
+                                                                       Abstract                               Church and Smyth 2009). Users often issue short and in-
+
+
+
+
+arXiv:2606.17453v2 [cs.AI] 17 Jun 2026
+                                                                                                              complete queries, while still expecting the agent to under-
+                                           Large language model agents are increasingly integrated into
+                                           map services. Since map services are embedded in everyday-
+                                                                                                              stand their needs even when those needs are not explicitly
+                                           life scenarios rather than professional task settings, users of-   stated. This challenge is further amplified by the open-ended
+                                           ten express their needs informally, resulting in underspeci-       nature of many map-service tasks. Unlike fact-seeking ques-
+                                           fied queries with many unspoken needs, namely, implicit de-        tions that usually have a unique correct answer, many daily
+                                           cision factors that are critical for user satisfaction. Although   map queries are inherently multi-solution, i.e., their surface
+                                           clarification is an effective way to mitigate this issue, it in-   text defines a space of possible answers rather than a sin-
+                                           creases user burden in daily interaction, and a capable agent      gle ground-truth response (Vansteenwegen, Souffriau, and
+                                           should first proactively recover such factors from available       Van Oudheusden 2011; Purves et al. 2018; Delling et al.
+                                           information sources. However, evaluating this ability is chal-     2017). Consequently, the key mission for a smart map agent
+                                           lenging. The first challenge is to determine which implicit        is not merely to produce a feasible response, but to select,
+                                           decision factors are suitable for evaluation. A factor is evalu-
+                                           able only if it affects user acceptance and can be recovered
+                                                                                                              among multiple feasible responses, the one most likely to
+                                           from information available to the agent before it responds.        satisfy the user.
+                                           Second, user satisfaction cannot be reliably represented by           Such satisfaction is closely tied to implicit decision fac-
+                                           a single reference answer, requiring a benchmark that con-         tors that are not expressed in the query but are critical to
+                                           verts satisfaction-relevant factors into objective and quan-       whether the resulting decision is acceptable to the user (Pu,
+                                           tifiable evaluation targets. To address these challenges, we       Chen, and Hu 2012; Adomavicius and Tuzhilin 2005). For
+                                           propose a restore-identify-filter framework that reconstructs      example, when a user asks ”How can I get there?” after
+                                           complete user needs from behavior-chain evidence, identi-
+                                                                                                              searching for a hospital near a railway station, both driving
+                                           fies implicit decision factors, and retains only those sup-
+                                           ported by pre-query evidence. Building on this methodology,        and public transit may be semantically valid responses; how-
+                                           we construct MapSatisfyBench from large-scale, real-world          ever, if the user has just arrived by train and has no car avail-
+                                           anonymized user data and annotate ground truth from five           able, a transit-oriented route is more likely to be acceptable.
+                                           dimensions and enables full-chain evaluation of satisfaction-      Although an agent could resolve such uncertainty by asking
+                                           aware map agents. Experiments show that current agents gen-        the user for clarification, repeatedly doing so will increase
+                                           erally perform well on explicit task completion, but remain        interaction burden and reduce usability (Zou et al. 2023;
+                                           limited in satisfying implicit decision factors and proactively    Zamani et al. 2020). In many cases, the missing factors can
+                                           acquiring the evidence needed for satisfaction-aware deci-         be recovered from available information source, like user
+                                           sions. These findings establish MapSatisfyBench as a bench-        profiles and interaction history (Church and Smyth 2009;
+                                           mark for shifting map-agent evaluation from task completion
+                                                                                                              Villegas et al. 2018). A capable map agent should there-
+                                           toward satisfaction-aware spatial decision making.
+                                                                                                              fore proactively exploit these information sources and re-
+                                                                                                              serve clarification questions for cases that cannot be reliably
+                                                                1 Introduction                                resolved otherwise (Maes 1994; Horvitz 1999). This moti-
+                                         Large language model (LLM) agents are increasingly de-               vates the study to design a benchmark for assessing whether
+                                         ployed as map-service assistants that translate natural lan-         map agents can identify information gaps, proactively ac-
+                                         guage requests into executable actions, such as location             quire relevant evidence from available sources, and incorpo-
+                                         search, route navigation, and trip planning (Xie et al.              rate the recovered implicit decision factors into satisfaction-
+                                         2024; AMAP AI Agent Team et al. 2025). By integrating                aware responses.
+                                         natural language interaction, contextual signals, and tool-             Recent benchmarks have substantially advanced the eval-
+                                         based execution, these agents provide more convenient and            uation of LLM-based map agents from multiple perspec-
+                                         flexible support for everyday spatial decisions. However,            tives, including planning, tool use, and information synthe-
+                                         since map services are embedded in everyday-life scenar-             sis (Xie et al. 2024; Chaudhuri et al. 2025; Cheng et al.
+                                         ios rather than professional task settings, real-world user          2025; Song et al. 2026; He et al. 2025a; LBS-IntentBench
+                                         queries are rarely fully specified (Kamvar and Baluja 2006;          Contributors 2026). These efforts provide important signals
+Figure 1: Motivation of MapSatisfyBench. Map-service queries often define multiple feasible responses, and satisfaction de-
+pends on whether the agent recovers behavior-supported implicit decision factors.
+
+
+for improving map agents, but they do not directly measure        annotations and evaluation metrics, so that the benchmark
+whether an agent can make decisions that are likely to sat-       can comprehensively and accurately assess whether an agent
+isfy the user under underspecified map-service interactions.      produces responses that are likely to satisfy the user.
+Building such a benchmark is meaningful but challenging               To address these challenges, we propose a restore-
+in two respects. First, implicit decision factors are complex.    identify-filter framework based on behavior-chain evidence
+They are the key conditions that narrow the feasible solution     and construct MapSatisfyBench. Behavior-chain evidence
+space and make one response more acceptable than other            connects the pre-query information, the spatio-temporal en-
+semantically valid alternatives, yet they are very complex.       vironment, and the user’s subsequent actions, providing an
+On the one hand, not every factor revealed by user behav-         objective basis for reconstructing what the user was trying
+ior is suitable for evaluation, because some of them are not      to accomplish. Based on this evidence, the restoration step
+recoverable and evaluable. And a benchmark should retain          recovers the complete need behind the interaction; the iden-
+only those factors that an agent could reasonably recover         tification step compares this reconstructed need with the sur-
+from information available before it responds (like histori-      face query to expose unspoken decision factors; and the fil-
+cal behavior and spatio-temporal environment). On the other       tering step retains only the factors supported by pre-response
+hand, These factors also have different characteristics. For      evidence and therefore evaluable for an agent. The retained
+example, some are hard constraints whose violation has a          factors are further annotated with their constraint type and
+stronger negative impact on response acceptability, whereas       evidence-supported weight, allowing MapSatisfyBench to
+others are soft preferences that only modestly shift the rel-     quantify not only whether an agent satisfies the explicit
+ative acceptability of feasible options. Second, ground truth     task, but also whether it satisfies the implicit factors that
+construction is non-trivial because satisfaction cannot be re-    affect accepted-response probability. On this basis, Map-
+duced to a single reference answer or a direct satisfied/un-      SatisfyBench provides a behavior-grounded benchmark for
+satisfied label. A satisfaction-oriented benchmark should in-     satisfaction-aware decision making in map services. Unlike
+stead convert the factors that affect acceptance into quantifi-   task-completion-oriented benchmarks that primarily assess
+able evaluation references, including whether each implicit       whether an agent can plan, retrieve, or execute a valid map-
+factor is satisfied and how strongly it should influence the      service task, MapSatisfyBench evaluates whether an agent
+final score. This requires the joint design of ground-truth       can align open-ended map-service decisions with behavior-
+supported factors that determine whether a user is likely to      Satisfaction-aware Agent Benchmarks. User satisfac-
+accept the response.                                              tion has been studied from early dialogue-system evalua-
+   MapSatisfyBench aims to promote the evaluation of map          tion to recent user-centric agent benchmarks. The classical
+agents from ”whether the task is finished” to ”whether the        PARADISE framework (Walker et al. 1997) relates satis-
+decision satisfies the user.” In our evaluation of 12 LLM-        faction to task success and interaction cost, and later task-
+based agents, current systems generally achieve high scores       oriented dialogue work, including USS (Sun et al. 2021),
+on explicit intent completion and factual faithfulness, yet       SG-USM (Feng et al. 2023), SPUR (Lin et al. 2024), and
+show clear weaknesses in implicit-need satisfaction and tool      CAUSE (Abolghasemi et al. 2024), further models sat-
+selection. These results indicate that map agents can often       isfaction from dialogue trajectories, task-attribute fulfill-
+understand the stated request, but still struggle to identify     ment, interpretable rubrics, or counterfactual dissatisfac-
+the behavior-supported decision factors that make a response      tion cases. In general LLM evaluation, satisfaction is of-
+feel acceptable and useful to the user. Our contributions         ten approximated through human preference or LLM-as-
+are threefold. First, we propose a methodology for convert-       judge protocols, as in InstructGPT (Ouyang et al. 2022),
+ing subjective satisfaction into behavior-supported implicit      WebGPT (Nakano et al. 2021), MT-Bench and Chatbot
+decision factors, enabling objective evaluation without di-       Arena (Zheng et al. 2023), AlpacaFarm (Dubois et al.
+rect satisfaction labels. Second, we construct MapSatisfy-        2023), Arena-Hard (Li et al. 2024), and the user-reported-
+Bench, a satisfaction-aware benchmark covering diverse re-        scenario benchmark URS (Wang et al. 2024). More recent
+alistic map-service scenarios, together with a full-chain eval-   work moves toward interaction and personalization: User-
+uation protocol that jointly assesses explicit task completion,   Bench (Qian et al. 2025) evaluates preference discovery un-
+implicit-need satisfaction, tool selection, and so on. Third,     der underspecified goals, AURA (Kim et al. 2025) analyzes
+our experiments reveal a persistent gap between surface task      user satisfaction across interactive planning stages, Col-
+completion and satisfaction-aware decision making, offering       labLLM (Wu et al. 2025) optimizes multi-turn collaboration
+practical diagnostic insights for developing map agents that      toward long-term user benefit, and personalization bench-
+can better support real user decisions.                           marks such as PersonalLLM (Zollo et al. 2025), PrefE-
+                                                                  val (Zhao et al. 2025a), and PersonaLens (Zhao et al. 2025b)
+                                                                  evaluate adaptation to individual preferences or user pro-
+                    2 Related Work                                files. These studies show a clear shift from exact-match cor-
+Agent Benchmarks for Map Services. The increasing                 rectness to user-centered evaluation, but most treat satisfac-
+deployment of LLM agents in map services has motivated            tion as a response-level preference, predicted label, or gen-
+a growing body of benchmarks for evaluating agent ca-             eral interaction score. MapSatisfyBench instead operational-
+pabilities under geographic constraints and real-world ser-       izes satisfaction in map-service decisions through behavior-
+vice requirements. Early efforts use travel planning as a         chain evidence: it reconstructs recoverable implicit decision
+structured proxy for spatial decision making. TravelPlan-         factors, distinguishes hard constraints from soft preferences,
+ner (Xie et al. 2024) introduced a first realistic sandboxes      and evaluates whether a tool-grounded spatial response in-
+for evaluating multi-constraint itinerary generation with ex-     creases accepted-response probability.
+ternal tools and travel records, while subsequent bench-
+marks such as TripCraft (Chaudhuri et al. 2025), Trav-                                    3 Method
+elBench (Cheng et al. 2025), and VitaBench (He et al.             3.1 Benchmark construction
+2025b) extend evaluation toward more realistic service-
+oriented settings like unsolvable requests and cross-scenario     Construction Principle This section introduces the core
+life-service tasks. Collectively, these benchmarks mark a         logic of benchmark construction, which serves as the foun-
+shift from static itinerary generation to interactive, tool-      dation for sample collection and ground truth construction.
+grounded service completion. More recent works eval-              For each user instance, we formalize the interaction as:
+uate agents in direct map-service scenarios. Mobility-                               x = (q, g, h− , r, h+ ),
+Bench (Song et al. 2026) evaluates route-planning agents
+on anonymized Amap queries through a deterministic API-           where q is the root query, g denotes the spatio-temporal en-
+replay sandbox, whereas LocalSearchBench (He et al.               vironment, h− = (c, p) denotes the pre-query information
+2025a) targets local-service search over large-scale mer-         available before the agent response, including interaction
+chant databases and real user requests requiring multi-hop        context c and historical profile p, r is the agent response,
+reasoning. LBS-IntentBench (LBS-IntentBench Contribu-             and h+ denotes post-query user behavior after the agent re-
+tors 2026) moves map agent evaluation beyond explicit in-         sponds. At inference time, the agent gets the query q, pro-
+struction execution by focusing on implicit intent inference,     duces a response r that narrows the feasible solution space
+which is partially aligned with our motivation. However, it       by satisfying implicit needs inferred from the visible infor-
+primarily evaluates intent recovery. In contrast, MapSatis-       mation g and h− , and ensures the post-query behavior h+ is
+fyBench focuses on whether agents can make satisfactory           not exposed to the agent.
+and executable decisions when ambiguity remains, by recon-           MapSatisfyBench is constructed based on the principle
+structing behavior-supported implicit decision factors from       of linking implicit needs with user satisfaction. We aim to
+user behavior chains and evaluating satisfaction-aware re-        identify all recoverable implicit constraints or preferences
+sponses.                                                          that may affect the user’s final decision. These recovered
+Figure 2: Overview of MapSatisfyBench. Benchmark construction follows the restore-identify-filter principle, the deterministic
+replay sandbox simulates tool-grounded interaction, and the evaluation metrics cover diverse aspects.
+
+
+needs must then be converted into structured ground truth         that can assess whether an agent’s response satisfies both
+and metrics for quantitative evaluation. To this end, we de-      explicit task requirements and the implicit factors that affect
+sign a behavior-chain-based benchmark construction strat-         user satisfaction. More details are provided in the Appendix
+egy with three steps: restore, identify, and filter.              A.1.
+   The restoration step aims to recover the complete need
+                                                                  Sample Collection. We collect benchmark instances by
+behind a query. Specifically, we combine pre-query informa-
+                                                                  applying the restore-identify-filter principle to large-scale
+tion h− , the spatio-temporal environment g, and post-query
+                                                                  anonymized map-service logs. Given a candidate instance
+behavior h+ to recover the user’s behavior chain. Here, h−
+                                                                  x = (q, g, h− , r, h+ ), we first restore the behavior chain
+is used to capture the contextual and historical signals avail-
+                                                                  around the root query and check whether the pre-query
+able before the agent responds, g is used to anchor the re-
+                                                                  context, spatio-temporal environment, and post-query be-
+quest in the concrete time and location, and h+ is used to
+                                                                  havior together are sufficient enough to indicate a coher-
+reveal the user’s subsequent behavioral anchor and how the
+                                                                  ent map-service task. We then identify whether the surface
+interaction actually unfolded. Together, these signals allow
+                                                                  query omits decision factors that would narrow the feasi-
+us to reconstruct the complete need behind the current in-
+                                                                  ble solution space, which yields a candidate implicit-need
+teraction. The identification step aims to expose the gap be-
+                                                                  set Z(x). Finally, we filter this set by retaining only fac-
+tween what the user explicitly states and what a satisfac-
+                                                                  tors that are supported by information available before the
+tory response must satisfy. we compare the surface query
+                                                                  agent responds, i.e., evidence in g and h− . A candidate is
+q with the reconstructed complete need to identify implicit
+                                                                  selected only when it satisfies the explicit task constraints,
+needs that are not explicitly stated but can narrow the fea-
+                                                                  has a valid behavioral anchor in h+ , and contains at least
+sible solution space, such as transport feasibility, tempo-
+                                                                  one retained implicit factor. This procedure keeps the bench-
+ral constraints, or preference conditions. Not all identified
+                                                                  mark grounded in naturally occurring user demands while
+needs are suitable for evaluation, because some cannot be
+                                                                  ensuring that each instance contains implicit needs that are
+inferred from information visible to the agent. Therefore, in
+                                                                  recoverable, evaluable, and relevant to user acceptance. The
+the filtering step, we keep only the implicit needs whose ev-
+                                                                  resulting sample collection covers diverse map-service sce-
+idence can be found in g and h− , which are the informa-
+                                                                  narios and provides variation in implicit-need source, recov-
+tion sources available at decision time, and filter out factors
+                                                                  ery difficulty, and constraint type, supporting both realistic
+that cannot be supported before the agent responds. The re-
+                                                                  coverage and discriminative evaluation of map agents.
+tained needs form an evaluable set of implicit decision fac-
+tors, each of which is further labeled as a hard constraint or    Ground Truth Annotation Ground truth Annotation
+a soft preference. Through this process, MapSatisfyBench          aims to convert the factors that affect user satisfaction into
+turns behavior-chain evidence into structured ground truth        quantifiable evaluation references. For each selected in-
+stance, MapSatisfyBench does not define a single gold an-            In addition to explicit and implicit decision factors, each
+swer. Instead, it builds a structured decision reference          instance includes three execution-oriented annotations. The
+                                                                  clarification policy C(x) specifies whether the agent should
+       G(x) = (E(x), Zeval (x), C(x), T (x), F (x)) ,             ask for additional information and the expected number of
+where E(x) denotes explicit decision factors, Zeval (x) de-       useful clarification turns, especially when an implicit fac-
+notes evaluable implicit decision factors, C(x) is the clari-     tor is important but weakly supported. The tool-use trajec-
+fication policy, T (x) is the expected tool-use trajectory, and   tory T (x) specifies the expected tools and parameter con-
+F (x) specifies factual response requirements. Separating ex-     straints needed to complete the task, such as route plan-
+plicit factors from implicit ones is necessary because a re-      ning, POI retrieval, or service recommendation. The fac-
+sponse may satisfy the literal request while still being un-      tual response requirements F (x) define tool-grounded fac-
+likely to be accepted by the user. Explicit factors are ex-       tual constraints for the final answer, including consistency
+tracted from the surface query to define the basic validity       with returned POI names, distances, and other map-service
+boundary of the task and provide the reference for evaluat-       facts, and prohibit unsupported fabrication when a required
+ing whether the agent understands the stated request. On the      fact is not returned by the tools. Together, these annota-
+other hand, implicit factors are obtained from the restore-       tions turn behavior-chain evidence into a structured ground
+identify-filter procedure. They capture unspoken decision         truth that supports evaluation of stated-task understanding,
+factors that are not stated in q, but are supported by pre-       satisfaction-relevant implicit factor satisfaction, clarification
+response evidence and may change the probability that the         efficiency, tool-use correctness, and factual reliability.
+user accepts the response. Thus, explicit factors define what        To ensure the reliability of these annotations, we apply
+any feasible answer must satisfy, whereas implicit factors        a staged quality-control process. Candidate ground truth is
+define what a satisfaction-aware answer should additionally       first generated from the restored behavior chain and then
+consider.                                                         checked by independent LLM judges, where agreement
+   For each retained implicit factor zi ∈ Zeval (x), we further   across judges is used as a consistency signal. Cases with in-
+trace its evidence back to the information available at deci-     sufficient agreement or ambiguous evidence are further re-
+sion time, including the pre-query information h− and the         viewed by human experts. Only annotations that pass these
+spatio-temporal environment g. Based on this evidence, we         consistency and expert validation checks are retained in the
+annotate the ground truth with a scoring rubric, constraint       benchmark.
+type, and evidence-supported weight. Each implicit factor
+can be annotated as:
+                                                                  3.2 Deterministic Replay Sandbox.
+                                                                  MapSatisfyBench evaluates agents in a deterministic replay
+                      zi = (ρi , τi , si ),                       sandbox. For each benchmark instance, the sandbox instanti-
+                                                                  ates two interactive roles: a simulated user agent and a busi-
+where ρi is the rubric instruction for evaluating whether the     ness agent under evaluation. The business agent receives the
+response satisfies the factor, τi ∈ {hard, soft} indicates        root query q together with the information available at deci-
+the constraint type, i.e., whether the factor is a necessary      sion time, and must decide whether to answer directly, ask
+constraint or a graded preference, and si is its evidence-        clarification questions, or call tools. The user agent is driven
+supported weight.                                                 by the given complete need. When the business agent asks
+   Hard constraints are factors whose violation has a rel-        for missing information, the user agent automatically pro-
+atively strong negative effect on response executability or       vides responses that are consistent with the user’s complete
+acceptability, such as an unavailable transport mode or           need. This design allows the evaluation to cover both single-
+unresolved destination ambiguity. Soft preferences have a         turn and multi-turn map-service interactions, and makes it
+weaker, incremental effect on satisfaction and should there-      possible to test whether an agent can progressively recover
+fore be weighted rather than treated as binary failures.          implicit needs instead of relying only on the initial query.
+Evidence-supported weight is a factor-level weight that re-          The business agent is executed with a sandboxed tool
+flects the expected influence of zi on the accepted-response      environment based on a LangGraph implementation of the
+probability, and it is computed from both historical prefer-      ReAct pattern. The tool list contains 22 map-service tools
+ence strength and current-session support:                        covering business-relevant operations such as POI retrieval,
+          wi = userpref(zi ) · CurrentNeed(zi ).                  route planning, and service recommendation. To ensure that
+                                                                  different models are evaluated under the same external en-
+Here, userpref(zi ) summarizes the support from long-term         vironment, all tool responses are served by deterministic
+and recent user profile, while CurrentNeed(zi ) measures          mocks rather than live online services. The mock layer uses
+whether this factor is active in the current interaction, con-    a hybrid retrieval strategy: parameters with simple and ex-
+sidering relevance, continuity, directionality, and possible      plicit semantics, such as poi name, are resolved by exact
+conflicts in the session. This design allows the benchmark        matching, while open-text parameters such as search queries
+to distinguish stable personal tendencies from temporary sit-     are resolved by embedding-based retrieval over a fixed mock
+uational needs, and to assign higher weights to factors that      corpus. Given the same benchmark instance, tool inventory,
+are jointly supported by historical behavior and the current      and mock database, the sandbox returns the same tool re-
+behavior chain. More details are provided in the Appendix         sults across runs. This makes the interaction trajectory repro-
+A.2.                                                              ducible and enables fair comparison of different models. Ex-
+periments about the reliability of sand box are in Appendix         Accepted-response Probability (AR). AR is the main ag-
+B.2 and B.3.                                                        gregate metric. It operationalizes satisfaction as the proba-
+                                                                    bility that the response would be accepted, rather than as a
+3.3 Evaluation Metrics                                              subjective satisfaction label. Since a response is expected to
+MapSatisfyBench evaluates a model along the full decision           satisfy both the explicit and the implicit factors that affect
+pipeline rather than only the final text response. The metrics      acceptance, we define
+are designed to answer four questions: whether the agent                           AR(x) = ECR(x) · IISR(x).
+understands the stated task, whether it uses the right map-
+service tools, whether the returned facts are grounded in tool      This formulation makes the dependency explicit: if
+outputs, and, most importantly, whether the final decision          ECR(x) = 0, the response fails the stated task and
+satisfies the implicit factors that affect the user’s probability   AR(x) = 0. If there are no implicit factors, IISR(x) = 1
+of accepting the response. All metrics are computed at the          and AR(x) = ECR(x). AR is therefore the metric most di-
+instance level and then averaged over the evaluation set.           rectly aligned with the goal of MapSatisfyBench, i.e., evalu-
+   Let D denote the set of evaluated instances and M (x)            ating whether the agent’s decision is likely to be accepted by
+denote a per-instance metric, and the reported score is             the user under the reconstructed behavior-chain evidence.
+                             1 X                                    Tool Selection Accuracy (TS). TS evaluates whether the
+                     M=               M (x)
+                            |D|                                     agent selects the tool set required by the annotated tool-use
+                                x∈D
+                                                                    trajectory T (x). Let Tgold (x) be the set of required tools and
+We leverage LLM-as-a-judge protocol to assess response              Tpred (x) be the set of tools selected by the agent. A pre-
+quality under a unified rubric. There are seven metrics that        dicted tool is counted as valid only when the tool exists and
+jointly evaluate the full-chain performance of a given agent.       its required parameters satisfy the annotated parameter rules.
+                                                                    We compute tool selection by a set-overlap score:
+Explicit-decision-factor Completion Rate (ECR). ECR
+measures whether the agent satisfies the explicit decision                                   |Tgold (x) ∩ Tpred (x)|
+factors E(x) extracted from the surface query. For each ex-                       TS(x) =                            .
+                                                                                             |Tgold (x) ∪ Tpred (x)|
+plicit factor ej ∈ E(x), the evaluator assigns a binary com-
+pletion label aj ∈ {0, 1}. The instance-level score is              This formulation penalizes both missing necessary tools and
+                                                                    invoking redundant tools, which is important in map-agent
+                               1        X
+                                                                    settings where incorrect or unnecessary tool calls can lead to
+               ECR(x) =                          aj .
+                             |E(x)|                                 wrong results or higher interaction cost.
+                                      ej ∈E(x)
+
+This metric captures basic task validity that the final re-         Information Faithfulness Score (IFS). IFS measures
+sponse should satisfy the user’s stated requirements.               whether factual claims in the final response are supported
+                                                                    by tool outputs. Let F (x) be the set of factual requirements
+Implicit-decision-factor Satisfaction Rate (IISR). IISR             in the ground truth, and let bl ∈ {0, 1} indicate whether
+is the central metric for satisfaction-aware evaluation. It         the factual claim or rubric item fl is fully supported by the
+measures whether the agent satisfies the implicit decision          corresponding tool returns. Unsupported, fabricated, or tool-
+factors Zeval (x) identified during ground truth construc-          contradicted facts receive 0. The score is
+tion. For each implicit factor zi , the ground truth provides                                      1     X
+an evidence-supported weight wi and a constraint type τi .                          IFS(x) =                    bl .
+The evaluator assigns a satisfaction score ci according to                                     |F (x)|
+                                                                                                        fl ∈F (x)
+the factor type. Hard factors use binary labels ci ∈ {0, 1},
+where ci = 0 means that the response violates this nec-             In practice, this metric checks claims such as POI names and
+essary implicit constraint. Soft factors use a graded rubric        route details against the deterministic sandbox outputs.
+ci ∈ {1.0, 0.75, 0.5, 0.25, 0}, reflecting different degrees of
+                                                                    Interaction Efficiency (Eff). Eff measures the turn-level
+preference satisfaction. The instance-level IISR is computed
+                                                                    efficiency of an agent. Let Sactual (x) denote the number
+as the weighted average of all implicit-factor satisfaction
+                                                                    of business-agent turns used by the evaluated agent in the
+scores:                     P                                       deterministic replay, and let Sref (x) denote the difficulty-
+                               z ∈Z     (x) wi ci
+               IISR(x) = Pi eval                  .                 calibrated reference turn budget, which specifies the ex-
+                                zi ∈Zeval (x) wi                    pected interaction length under a reasonable balance be-
+Thus, hard and soft factors differ in how their factor-             tween clarification and user burden. We define
+level satisfaction score is assigned, but both are aggregated                                          1
+through the same weighted-sum formulation. This design                           Eff(x) =                            .
+                                                                                            1 + Sactual (x)/Sref (x)
+reflects the fact that violating an important hard constraint
+strongly reduces the accepted-response probability through          This formulation normalizes interaction efficiency into
+a zero contribution for that factor, while the final instance       (0, 1]. Eff(x) = 0.5 indicates the human-expert median turn
+score still accounts for other implicit factors that may have       count; fewer turns increase the score, while more turns de-
+been satisfied.                                                     crease it.
+Satisfaction Efficiency Score (SES). SES is a compos-
+ite metric that evaluates whether an agent can make a sat-
+isfactory decision efficiently. While AR measures whether
+the final response is likely to be accepted by the user, Eff
+measures the turn cost required to reach that response. We
+therefore define
+                 SES(x) = AR(x) · Eff(x).
+SES rewards agents that are both effective and smart, a
+response receives a high score only when it has a high
+accepted-response probability and is produced with efficient
+interaction. The multiplicative form ensures that poor task
+satisfaction cannot be compensated for by short interaction,
+and inefficient interaction further reduces the value of an
+otherwise acceptable response.
+                                                                          Figure 3: Domain coverage statistics.
+                    4 Experiments
+4.1 Evaluated Models
+We evaluate LLM-based agents that completed the full Map-      4.3 Benchmark Statistics
+SatisfyBench replay and scoring pipeline. The model set
+                                                               MapSatisfyBench contains 500 behavior-grounded map-
+is selected to cover both frontier models and open-weight
+                                                               service instances. In constructing the benchmark, we ex-
+model families, as well as different provider ecosystems
+                                                               plicitly consider coverage across domains, temporal con-
+and capacity levels. This includes the GPT family, rep-
+                                                               texts, spatial settings, and the source of implicit factor. As
+resented by GPT-4.1 (OpenAI 2025) and GPT-5.3 (Ope-
+                                                               shown in Fig. 3, the benchmark mainly covers six major
+nAI 2026); the Claude family, represented by Claude Opus
+                                                               map-service domains. It is worth noting that one instance
+4.6 (Anthropic 2026a) and Claude Sonnet 4.6 (Anthropic
+                                                               may involve several map-service domains at the same time.
+2026b); the Gemini family, represented by Gemini 3.1
+                                                               Search and navigation are the most frequent domains, cov-
+Pro Preview (Google 2026a) and Gemini 3.1 Flash Pre-
+                                                               ering 388 and 363 instances respectively, followed by the
+view (Google 2026b); the DeepSeek family, represented
+                                                               other four domains with smaller but still substantial cover-
+by DeepSeek-V3.2 (DeepSeek 2025) and DeepSeek-V4-
+                                                               age. This distribution shows that MapSatisfyBench provides
+Pro (DeepSeek-AI 2026); and the Qwen family, including
+                                                               broad domain coverage while remaining centered on core
+Qwen3-30B (Qwen 2025b), Qwen3-235B (Qwen 2025a),
+                                                               map-service decision scenarios. Beyond domain coverage,
+and the hosted Qwen3.6-Plus (Alibaba Cloud 2026a). The
+                                                               the benchmark spans cities from first-tier to fourth-tier and
+frontier models provide references for strong general-
+                                                               below, and includes both local and non-local cases. Tempo-
+purpose agent performance, while the DeepSeek and Qwen
+                                                               rally, it covers weekdays, weekends, holidays, and multiple
+models allow us to compare against openly licensed model
+                                                               time periods throughout the day. More detailed statistics are
+families and smaller-capacity variants.
+                                                               provided in the Appendix B.1.
+4.2 Experiment Details
+We use GPT-5.3 (OpenAI 2026) as the user sim-
+                                                               4.4 Main Results
+ulator, the judge model, and the LLM-based tool-               Overall Performance. Results in Table 1 show a clear gap
+response simulator, with temperature set to 1.0. All eval-     between explicit task completion and satisfaction-aware de-
+uated models are also run with temperature 1.0. For            cision making. Most frontier models achieve strong ECR
+the Gemini-3.1-series models (Google 2026b), we set            scores, indicating that they can usually satisfy the explicit
+max output tokens=65535, which is a required pa-               factors stated in the user query. In the non-thinking set-
+rameter and matches the maximum output-token limit sup-        ting, GPT-5.3 obtains the highest ECR score of 0.9272,
+ported by the platform. For sandboxed tool responses,          followed by Claude-4.6-opus at 0.9148 and Deepseek-v4-
+we implement a three-stage simulation mechanism: exact         pro at 0.9088. Most other frontier models remain close to
+matching, vector matching, and LLM-based simulation. The       or above 0.85 ECR, while the performance of light-weight
+vector matching stage uses Text-embedding-v2 (Alibaba          model Qwen variants are substantially lower, with Qwen3-
+Cloud 2026b), a 1536-dimensional embedding model. The          30b at 0.6083 and Qwen3-8b at 0.6997. This pattern sug-
+LLM simulation stage serves as the final fallback: when nei-   gests that explicit map-service task understanding is rela-
+ther exact matching nor vector matching retrieves a valid      tively tractable for strong general-purpose LLMs, but still
+record from the sandbox, the system uses the LLM to gen-       sensitive to model capacity. The satisfaction-oriented met-
+erate a simulated tool response. For each model, we run the    rics reveal a more difficult problem. In the non-thinking set-
+simulation once and evaluate the resulting trajectory three    ting, the best IISR score is 0.7170 from Claude-4.6-opus,
+times. The final result is obtained by majority voting over    followed by 0.7017 from Deepseek-v4-pro; all other non-
+the three evaluation runs. We also provide the details about   thinking models score below 0.70. AR follows a similar
+prompts and samples in Appendix C.                             trend, with Claude-4.6-opus and Deepseek-v4-pro reaching
+                               Table 1: The evaluation results of 12 models with thinking mode off.
+
+                      Model                       ECR       TS       IFS     IISR      Eff       AR       SES
+                      Claude-4.6-opus            0.9148    0.4942   0.9077   0.7170   0.4100   0.6749    0.2744
+                      Claude-4.6-sonnet          0.8983    0.4909   0.9193   0.6725   0.4435   0.6169    0.2709
+                      Deepseek-v3.2              0.9019    0.4379   0.8825   0.6610   0.4232   0.6120    0.2503
+                      Deepseek-v4-pro            0.9088    0.4382   0.8933   0.7017   0.4149   0.6606    0.2698
+                      Gemini-3.1-flash-preview   0.8573    0.4206   0.9448   0.5834   0.4347   0.5231    0.2203
+                      Gemini-3.1-pro-preview     0.8297    0.4090   0.9645   0.5383   0.4638   0.4846    0.2120
+                      GPT-4.1                    0.8997    0.4696   0.9215   0.6104   0.4251   0.5683    0.2266
+                      GPT-5.3                    0.9272    0.4438   0.8962   0.6736   0.4444   0.6363    0.2755
+                      Qwen3.6-plus               0.8959    0.4493   0.8985   0.6585   0.4476   0.6082    0.2646
+                      Qwen3-235b                 0.8835    0.4236   0.8377   0.6237   0.4649   0.5769    0.2626
+                      Qwen3-30b                  0.6083    0.2859   0.9214   0.3635   0.4170   0.2821    0.1132
+                      Qwen3-8b                   0.6997    0.3349   0.9183   0.3716   0.4630   0.3093    0.1330
+
+                              Table 2: Evaluation results of three models with thinking mode enabled.
+
+                     Model                         ECR       TS       IFS     IISR      Eff      AR       SES
+                     Deepseek-v4-pro-th           0.9219   0.4611   0.9069   0.7320   0.4172    0.6963   0.2858
+                     Gemini-3.1-pro-preview-th    0.9175   0.4560   0.9581   0.6469   0.4595    0.6084   0.2724
+                     Qwen3.6-plus-th              0.9068   0.4536   0.9084   0.6783   0.4505    0.6278   0.2754
+
+
+                                                                      satisfaction-aware spatial decision making.
+
+                                                                      The ability to proactively acquire available evidence.
+                                                                      The consistently low TS scores suggest that tool selection
+                                                                      remains a central bottleneck. In all the settings, TS ranges
+                                                                      from 0.2859 to 0.4942, and even the best model on this met-
+                                                                      ric, Claude-4.6-opus, remains below 0.50. This matters be-
+                                                                      cause many implicit decision factors cannot be recovered
+                                                                      from the surface query alone, and they require the agent
+                                                                      to actively acquire contextual or profile-related evidence be-
+                                                                      fore deciding which feasible response is most likely to sat-
+                                                                      isfy the user. However, as shown in Fig. 4, our tool-call in-
+                                                                      spection reveals that all models invoke the profile-related
+                                                                      tool at a relatively low rate. Compared with task-specific
+                                                                      tools that are directly associated with explicit requests, the
+                                                                      profile tool has a more abstract triggering condition is that
+                                                                      the agent must first realize that the current query are insuffi-
+                                                                      cient for producing a satisfying response, and then actively
+                Figure 4: Tool call frequency                         decide to acquire additional user-specific evidence. The re-
+                                                                      sults indicate that current LLMs are not yet proficient at this
+                                                                      form of proactive information acquisition. In addition, the
+0.6749 and 0.6606, respectively. SES is even more restric-            Eff scores of all agents are below 0.5, indicating that they
+tive because it jointly reflects satisfactory decision quality        require more clarification turns than the expected interaction
+and efficiency, with the best non-thinking score reaching             budget. Collectively, these observations suggest that when
+only 0.2755 from GPT-5.3. These results indicate that cur-            faced with an underspecified query, they are less likely re-
+rent LLMs often complete the surface task but still fail to           trieve available evidence through the appropriate tools and
+satisfy implicit decision factors that affect whether the user        instead tend to ask the user for additional information. Such
+would accept the response. As for IFS, most models pro-               excessive questioning increases user effort and may reduce
+duce final responses whose factual claims are well supported          patience and retention in real-world map-service scenarios.
+by tool outputs; however, this does not necessarily translate         We believe a more capable agent should first exploit infor-
+into a high probability of satisfying the implicit factors. For       mation that is already available through context, profiles,
+example, Gemini-3.1-pro-preview achieves the highest non-             and external tools, and reserve clarification questions for
+thinking IFS score of 0.9645, but its IISR, AR, and SES are           cases that cannot be reliably resolved otherwise. This would
+only 0.5383, 0.4846, and 0.2120. This shows that factually            reduce unnecessary human effort while preserving decision
+grounded tool responses are necessary but not sufficient for          quality. These findings suggest that future map agents should
+                                Figure 5: Average IISR, AR, and SES by map-service domain.
+
+
+improve their ability to plan information acquisition, decid-   tion query and ride-hailing service are more difficult, and the
+ing when to proactively retrieve user-specific evidence and     former has the lowest average IISR, while the later obtains
+when to ask the user for clarification. More experiments        the lowest SES. This suggests that satisfaction-aware deci-
+about the model ability on implicit factor reasoning are pro-   sion making is not uniformly difficult across map-service
+vided in Appendix B.4.                                          domains, and domains that require timely state interpreta-
+                                                                tion or tightly constrained service execution remain espe-
+Effect of Thinking Mode. Thinking mode consistently
+                                                                cially challenging.
+improves satisfaction-aware performance for the three
+paired models, although the magnitude varies. The largest       Performance by source of implicit decision factors. We
+gain appears in Gemini-3.1-pro-preview, with SES increas-       also group instances by the source of implicit decision
+ing from 0.2120 to 0.2724. These results suggest that the       factors. Following the source definition in Appendix B.1,
+stronger reasoning ability can help models recover some         context-dependent factors are derived from the interaction
+missing decision factors, especially when the non-thinking      context c, preference-dependent factors are derived from
+baseline is weak. finally, even in thinking mode, IISR re-      the user profile p, and spatio-temporal factors are derived
+mains clearly lower than ECR for all paired models, indi-       from the environment g. As shown in Fig. 5(b), context-
+cating that longer reasoning alone does not fully solve the     dependent and preference-dependent factors have similar
+problem of satisfaction-aware decision making.                  average performance, and spatio-temporal factors are con-
+                                                                sistently lower. These results indicate that current LLMs
+4.5 Grouped Performance Analysis                                struggle more when the missing decision factors should be
+Performance by map-service domain. We further ana-              recovered from the concrete environmental state rather than
+lyze model performance by averaging all evaluated model         from interaction context or user-profile evidence.
+settings within each domain group and retaining the three
+satisfaction-oriented metrics: IISR, AR, and SES. As shown
+in Fig. 5(a), Itinerary planning achieves the highest aver-
+                                                                                      5 Conclusion
+age performance, with IISR, AR, and SES reaching 0.65,          We presented MapSatisfyBench, a benchmark for evaluating
+0.60, and 0.29, respectively. By contrast, real-time informa-   satisfaction-aware decision making in map-service agents.
+Unlike benchmarks that primarily measure whether an agent         Chaudhuri, S.; Purkar, P.; Raghav, R.; Mallick, S.; Gupta,
+can infer a stated intent, complete a route-planning task, or     M.; Jana, A.; and Ghosh, S. 2025. TripCraft: A Bench-
+produce a factually grounded answer, MapSatisfyBench fo-          mark for Spatio-Temporally Fine Grained Travel Planning.
+cuses on whether the agent can generate a response that is        arXiv:2502.20508.
+likely to be accepted by the user among multiple feasible         Cheng, X.; Hu, Y.; Zhang, X.; Xu, L.; Tan, L.; Pan, Z.; Li,
+solutions. To achieve this, we use behavior-chain evidence        X.; and Liu, Y. 2025. Beyond Itinerary Planning: A Real-
+to reconstruct recoverable implicit decision factors, distin-     World Benchmark for Multi-Turn and Tool-Using Travel
+guish hard constraints from soft preferences, and convert         Tasks. arXiv:2512.22673.
+them into structured ground truth and evaluation metrics.
+This design allows user satisfaction to be operationalized        Church, K.; and Smyth, B. 2009. Understanding the intent
+without directly labeling subjective satisfaction.                behind mobile information needs. In Proceedings of the 14th
+   Our experiments show that current LLM-based map                international conference on Intelligent user interfaces, 247–
+agents generally perform well on explicit task completion         256.
+and factual faithfulness, but remain limited in satisfying im-    DeepSeek. 2025. DeepSeek-V3.2 Release. https://api-docs.
+plicit decision factors that affect accepted-response proba-      deepseek.com/news/news251201. Accessed 2026-06-07.
+bility. The results also indicate that thinking mode can im-      DeepSeek-AI. 2026. DeepSeek-V4-Pro Model Card. https:
+prove performance for some models, but it does not fully          //huggingface.co/deepseek-ai/DeepSeek-V4-Pro. Accessed
+address the gap. A key remaining challenge is evidence ac-        2026-06-07.
+quisition: agents must know when to retrieve user-history or
+                                                                  Delling, D.; Goldberg, A. V.; Pajor, T.; and Werneck, R. F.
+profile signals, rather than relying only on the surface query
+                                                                  2017. Customizable Route Planning in Road Networks.
+and general world knowledge. These findings suggest that
+                                                                  Transportation Science, 51(2): 566–591.
+future map agents should be evaluated and improved not
+only as tool-using planners, but also as satisfaction-aware       Dubois, Y.; Li, C. X.; Taori, R.; Zhang, T.; Gulrajani, I.; Ba,
+decision makers that can align open-ended spatial responses       J.; Guestrin, C.; Liang, P.; and Hashimoto, T. B. 2023. Al-
+with behavior-supported user needs.                               pacaFarm: A Simulation Framework for Methods that Learn
+                                                                  from Human Feedback. In Advances in Neural Information
+                                                                  Processing Systems, volume 36.
+                        References
+                                                                  Feng, Y.; Jiao, Y.; Prasad, A.; Aletras, N.; Yilmaz, E.; and
+Abolghasemi, A.; Ren, Z.; Askari, A.; Aliannejadi, M.;            Kazai, G. 2023. Schema-Guided User Satisfaction Model-
+de Rijke, M.; and Verberne, S. 2024. CAUSE: Counter-              ing for Task-Oriented Dialogues. In Proceedings of the 61st
+factual Assessment of User Satisfaction Estimation in Task-       Annual Meeting of the Association for Computational Lin-
+Oriented Dialogue Systems. In Findings of the Association         guistics (Volume 1: Long Papers), 2079–2091. Association
+for Computational Linguistics: ACL 2024, 14623–14635.             for Computational Linguistics.
+Association for Computational Linguistics.
+                                                                  Google. 2026a. Gemini 3.1 Pro: Announcing Our Latest
+Adomavicius, G.; and Tuzhilin, A. 2005. Toward the Next           Gemini AI Model. https://blog.google/innovation-and-ai/
+Generation of Recommender Systems: A Survey of the                models-and-research/gemini-models/gemini-3-1-pro/. Ac-
+State-of-the-Art and Possible Extensions. IEEE Transac-           cessed 2026-06-07.
+tions on Knowledge and Data Engineering, 17(6): 734–749.
+                                                                  Google. 2026b. Gemini API Model Documentation. https://
+Alibaba Cloud. 2026a. Alibaba Cloud Model Studio: Text            ai.google.dev/gemini-api/docs/models. Accessed 2026-06-
+Generation Models. https://www.alibabacloud.com/help/en/          07.
+model-studio/text-generation-model/. Accessed 2026-06-
+07.                                                               He, H.; Yue, C.; Dong, C.; Tian, M.; Chen, H.; Liu, Z.; Chai,
+                                                                  J.; Wang, X.; Zhang, Y.; Liao, Q.; Yin, G.; Lin, W.; Wan,
+Alibaba Cloud. 2026b. Alibaba Cloud OSS Vectors Embed             C.; Sun, H.; and Su, T. 2025a. LocalSearchBench: Bench-
+CLI. https://www.alibabacloud.com/help/en/oss/user-guide/         marking Agentic Search in Real-World Local Life Services.
+oss-vectors-embed-cli. Accessed 2026-06-07.                       Accepted to KDD 2026, arXiv:2512.07436.
+AMAP AI Agent Team; Hu, Y.; Zhang, X.; Ouyang, S.; Yi,            He, W.; Sun, Y.; Hao, H.; Hao, X.; Xia, Z.; Gu, Q.; Han, C.;
+H.; Xu, L.; Lang, Q.; Tan, L.; Cheng, X.; Ye, T.; Li, Z.; Chen,   Zhao, D.; Su, H.; Zhang, K.; Gao, M.; Su, X.; Cai, X.; Cai,
+G.; Yang, W.; Pan, Z.; Xiong, S.; Yang, S.; Huang, J.; Zhang,     X.; Yang, Y.; and Zhao, Y. 2025b. VitaBench: Benchmark-
+Y.; Wang, J.; Liu, Y.; Huang, Y.; Wang, N.; Lin, T.; Li, X.;      ing LLM Agents with Versatile Interactive Tasks in Real-
+and Guo, N. 2025. AMAP Agentic Planning Technical Re-             World Applications. arXiv:2509.26490.
+port. arXiv:2512.24957.
+                                                                  Horvitz, E. 1999. Principles of Mixed-Initiative User Inter-
+Anthropic. 2026a. Introducing Claude Opus 4.6. https:             faces. In Proceedings of the SIGCHI Conference on Human
+//www.anthropic.com/news/claude-opus-4-6.   Accessed              Factors in Computing Systems, 159–166.
+2026-06-07.                                                       Kamvar, M.; and Baluja, S. 2006. A Large Scale Study of
+Anthropic. 2026b. Introducing Claude Sonnet 4.6. https:           Wireless Search Behavior: Google Mobile Search. In Pro-
+//www.anthropic.com/news/claude-sonnet-4-6. Accessed              ceedings of the SIGCHI Conference on Human Factors in
+2026-06-07.                                                       Computing Systems, 701–709.
+Kim, T.; Singh, J.; Mehri, S.; Acikgoz, E. C.; Mukherjee, S.;     Qwen. 2025a. Qwen3-235B-A22B Model Card. https:
+Bozdag, N. B.; Shashidhar, S.; Tur, G.; and Hakkani-Tür, D.      //huggingface.co/Qwen/Qwen3-235B-A22B.              Accessed
+2025. AURA: A Diagnostic Framework for Tracking User              2026-06-07.
+Satisfaction of Interactive Planning Agents. NeurIPS 2025         Qwen. 2025b. Qwen3-30B-A3B Model Card. https://
+Workshop MTI-LLM.                                                 huggingface.co/Qwen/Qwen3-30B-A3B. Accessed 2026-
+LBS-IntentBench Contributors. 2026. LBS-IntentBench:              06-07.
+A Real-World Benchmark for Implicit Intent Inference              Song, Z.; Zhang, J.; Qin, C.; Wang, C.; Chen, C.; Xu, L.;
+and Spatio-Temporal Reasoning. https://github.com/lbs-            Liu, K.; Chu, X.; and Zhu, H. 2026. MobilityBench: A
+researcher/LBS-IntentBench. GitHub repository; accessed           Benchmark for Evaluating Route-Planning Agents in Real-
+2026-06-03.                                                       World Mobility Scenarios. arXiv:2602.22638.
+Li, T.; Chiang, W.-L.; Frick, E.; Dunlap, L.; Wu, T.; Zhu, B.;    Sun, W.; Zhang, S.; Balog, K.; Ren, Z.; Ren, P.; Chen, Z.;
+Gonzalez, J. E.; and Stoica, I. 2024. From Crowdsourced           and de Rijke, M. 2021. Simulating User Satisfaction for the
+Data to High-Quality Benchmarks: Arena-Hard and Bench-            Evaluation of Task-Oriented Dialogue Systems. In Proceed-
+Builder Pipeline. arXiv:2406.11939.                               ings of the 44th International ACM SIGIR Conference on
+Lin, Y.-C.; Neville, J.; Stokes, J.; Yang, L.; Safavi, T.; Wan,   Research and Development in Information Retrieval.
+M.; Counts, S.; Suri, S.; Andersen, R.; Xu, X.; Gupta, D.;        Vansteenwegen, P.; Souffriau, W.; and Van Oudheusden, D.
+Jauhar, S. K.; Song, X.; Buscher, G.; Tiwary, S.; Hecht, B.;      2011. The Orienteering Problem: A Survey. European Jour-
+and Teevan, J. 2024. Interpretable User Satisfaction Es-          nal of Operational Research, 209(1): 1–10.
+timation for Conversational Systems with Large Language           Villegas, N. M.; Sánchez, C.; Dı́az-Cely, J.; and Tamura, G.
+Models. In Proceedings of the 62nd Annual Meeting of the          2018. Characterizing Context-Aware Recommender Sys-
+Association for Computational Linguistics (Volume 1: Long         tems: A Systematic Literature Review. Knowledge-Based
+Papers), 11100–11115. Association for Computational Lin-          Systems, 140: 173–200.
+guistics.
+                                                                  Walker, M. A.; Litman, D. J.; Kamm, C. A.; and Abella, A.
+Maes, P. 1994. Agents that Reduce Work and Information            1997. PARADISE: A Framework for Evaluating Spoken Di-
+Overload. Communications of the ACM, 37(7): 30–40.                alogue Agents. In Proceedings of the 35th Annual Meeting
+Nakano, R.; Hilton, J.; Balaji, S.; Wu, J.; Ouyang, L.;           of the Association for Computational Linguistics.
+Kim, C.; Hesse, C.; Jain, S.; Kosaraju, V.; Saunders, W.;         Wang, J.; Mo, F.; Ma, W.; Sun, P.; Zhang, M.; and Nie,
+Jiang, X.; Cobbe, K.; Eloundou, T.; Krueger, G.; Button, K.;      J.-Y. 2024. A User-Centric Multi-Intent Benchmark for
+Knight, M.; Chess, B.; and Schulman, J. 2021. WebGPT:             Evaluating Large Language Models. In Proceedings of the
+Browser-Assisted Question-Answering with Human Feed-              2024 Conference on Empirical Methods in Natural Lan-
+back. arXiv:2112.09332.                                           guage Processing, 3588–3612. Association for Computa-
+OpenAI. 2025. GPT-4.1 Model. https://platform.openai.             tional Linguistics.
+com/docs/models/gpt-4.1. Accessed 2026-06-07.                     Wu, S.; Galley, M.; Peng, B.; Cheng, H.; Li, G.; Dou, Y.; Cai,
+                                                                  W.; Zou, J.; Leskovec, J.; and Gao, J. 2025. CollabLLM:
+OpenAI. 2026. GPT-5.3 Instant: Smoother, More Useful
+                                                                  From Passive Responders to Active Collaborators. In Pro-
+Everyday Conversations. https://openai.com/index/gpt-5-3-
+                                                                  ceedings of the 42nd International Conference on Machine
+instant/. Accessed 2026-06-07.
+                                                                  Learning, volume 267 of Proceedings of Machine Learning
+Ouyang, L.; Wu, J.; Jiang, X.; Almeida, D.; Wainwright,           Research, 67260–67283. PMLR.
+C.; Mishkin, P.; Zhang, C.; Agarwal, S.; Slama, K.; Ray,          Xie, J.; Zhang, K.; Chen, J.; Zhu, T.; Lou, R.; Tian, Y.;
+A.; Schulman, J.; Hilton, J.; Kelton, F.; Miller, L.; Simens,     Xiao, Y.; and Su, Y. 2024. TravelPlanner: A Benchmark
+M.; Askell, A.; Welinder, P.; Christiano, P. F.; Leike, J.; and   for Real-World Planning with Language Agents. In Pro-
+Lowe, R. 2022. Training Language Models to Follow In-             ceedings of the 41st International Conference on Machine
+structions with Human Feedback. In Advances in Neural             Learning, volume 235 of Proceedings of Machine Learning
+Information Processing Systems, volume 35.                        Research, 54590–54613. PMLR.
+Pu, P.; Chen, L.; and Hu, R. 2012. Evaluating Recommender         Zamani, H.; Mitra, B.; Chen, E.; Lueck, G.; Diaz, F.; Ben-
+Systems from the User’s Perspective: Survey of the State of       nett, P.; Craswell, N.; and Dumais, S. 2020. Analyzing
+the Art. User Modeling and User-Adapted Interaction, 22:          and Learning from User Interactions for Search Clarifica-
+317–355.                                                          tion. In Proceedings of the 43rd International ACM SIGIR
+Purves, R. S.; Clough, P.; Jones, C. B.; Hall, M. H.; and Mur-    Conference on Research and Development in Information
+dock, V. 2018. Geographic Information Retrieval: Progress         Retrieval, 1181–1190.
+and Challenges in Spatial Search of Text. Foundations and         Zhao, S.; Hong, M.; Liu, Y.; Hazarika, D.; and Lin,
+Trends in Information Retrieval, 12(2–3): 164–318.                K. 2025a.       Do LLMs Recognize Your Preferences?
+Qian, C.; Liu, Z.; Prabhakar, A.; Liu, Z.; Zhang, J.; Chen,       Evaluating Personalized Preference Following in LLMs.
+H.; Ji, H.; Yao, W.; Heinecke, S.; Savarese, S.; Xiong, C.;       arXiv:2502.09597.
+and Wang, H. 2025. UserBench: An Interactive Gym Envi-            Zhao, Z.; Vania, C.; Kayal, D.; Khan, N.; Cohen, S. B.; and
+ronment for User-Centric Agents. arXiv:2507.22034.                Yilmaz, E. 2025b. PersonaLens: A Benchmark for Person-
+alization Evaluation in Conversational AI Assistants. Find-         straints, and factors that may affect satisfaction. Human an-
+ings of the Association for Computational Linguistics: ACL          notators then review the query, context, pre-query behavior,
+2025.                                                               and post-query behavior chain in full. They use the three
+Zheng, L.; Chiang, W.-L.; Sheng, Y.; Zhuang, S.; Wu, Z.;            candidate annotations as references, and follow a unified an-
+Zhuang, Y.; Lin, Z.; Li, Z.; Li, D.; Xing, E. P.; Zhang, H.;        notation process to select, correct, merge, or reject candi-
+Gonzalez, J. E.; and Stoica, I. 2023. Judging LLM-as-a-             date elements. The result of this step is an expert-annotated
+Judge with MT-Bench and Chatbot Arena. In Advances in               ground truth rather than an automatically generated one. To
+Neural Information Processing Systems, volume 36.                   reduce individual subjective bias, the annotation results are
+Zollo, T. P.; Siah, A. W. T.; Ye, N.; Li, A.; and Namkoong,         further checked through human cross validation. Finally, in-
+H. 2025. PersonalLLM: Tailoring LLMs to Individual Pref-            dependent reviewers conduct a consistency check over the
+erences. In International Conference on Learning Represen-          complete ground truth, ensuring that explicit factors, im-
+tations.                                                            plicit factors, tool and parameter requirements, and factual
+                                                                    constraints remain consistent in their semantic scope and ev-
+Zou, J.; Sun, A.; Long, C.; Aliannejadi, M.; and Kanoulas,          idence boundary.
+E. 2023. Asking Clarifying Questions: To Benefit or to Dis-
+turb Users in Web Search? Information Processing & Man-             A.2 The computation of evidence-supported weight
+agement, 60(2): 103176.
+                                                                    For each retained implicit decision factor zi ∈ Zeval (x),
+                                                                    MapSatisfyBench assigns an evidence-supported weight wi .
+                  Appendix                                          The weight is designed to measure how strongly the avail-
+        A Benchmark Construction Details                            able pre-query and spatio-temporal evidence suggests that zi
+                                                                    should affect the accepted-response probability. It is there-
+A.1. Ground Truth Annotation Details                                fore used as the weight of factor-level satisfaction score ci
+This section summarizes the ground-truth annotation de-             used by IISR, i.e., wi determines the relative importance of
+tails used in MapSatisfyBench, including the behavior-chain         a factor, while ci measures whether the agent’s response sat-
+restoration strategy and the ground-truth annotation work-          isfies that factor.
+flow. The goal is to identifying which implicit decision fac-          The weight combines two complementary sources of
+tors are evaluable, and selecting those that are both relevant      behavior-chain evidence:
+to user acceptance and recoverable from available pre-query
+information sources.                                                          wi = userpref(zi ) · CurrentNeed(zi ).
+Behavior-chain restoration. Behavior-chain restoration                 Here, userpref(zi ) summarizes stable or recent user-
+places the current query inside the complete behavior chain         specific support for the factor, while CurrentNeed(zi ) mea-
+rather than interpreting it in isolation. During restoration, we    sures whether the factor is active in the current interac-
+jointly reconstruct the pre-query behavior, the current ex-         tion. If only user-profile or historical evidence is available,
+pression, the post-query behavior, and the final task state,        CurrentNeed(zi ) is set to a neutral value of 1.0. If only
+while simultaneously judging which behaviors belong to the          current-interaction evidence is available, userpref(zi ) is set
+current task and which behaviors are irrelevant jumps or            to 1.0. If both are available, the two components are mul-
+erroneous continuations. Based on this continuity analysis,         tiplied. This multiplicative form increases the weight when
+we extract the incremental information and implicit decision        a factor is supported by both stable user behavior and the
+points that can be used for annotation. This process does not       current session, while allowing either source to provide suf-
+use post-query outcomes to rewrite the query retroactively.         ficient evidence on its own.
+Instead, it integrates the user’s current location, current time,      The user-specific component is computed as
+preceding task cues, and subsequent operation trajectory to
+recover the user’s complete need as it unfolds in a real task                       userpref(zi ) = Si · Ri · Mi ,
+process. We further filter the continuation relations within
+                                                                       where Si denotes preference strength, Ri denotes re-
+the behavior chain, allowing only behaviors that are contin-
+                                                                    cency, and Mi denotes temporal momentum. When behav-
+uous with the current task to participate in final target se-
+                                                                    ioral records are available, preference strength is estimated
+lection, slot completion, and preference analysis. GPT-5.3
+                                                                    within the same latent decision dimension:
+is used to conduct an initial screening over large-scale real-
+world anonymized user data, after which expert verification                                            ni
+is performed to ensure sample reliability.                                                    Si =        ,
+                                                                                                       Ni
+Ground-truth annotation. All ground-truth annotations                  where ni is the number of historical behaviors support-
+in MapSatisfyBench are finalized through expert review. To          ing zi , and Ni is the total number of behaviors observed
+improve annotation efficiency, we combine LLM-assisted              in the same decision dimension. Profile evidence includes
+candidate generation with expert annotation rather than re-         both preference information and basic user attributes. When
+lying on raw LLM outputs as final labels. First, three dif-         a corresponding preference ratio is available, we directly use
+ferent LLMs are used to generate three versions of ground-          it as the profile strength Si . If only basic profile informa-
+truth candidates. These candidates are intended to cover dif-       tion is available, Si is set to 1.0 for strong relevance and 0.3
+ferent model interpretations of user behavior, implicit con-        for weak relevance. Recency adjusts the strength according
+ Table A1: Rules for assigning the momentum coefficient.
+
+        Preference trend          Condition          Mi
+        Clear decay             ∆i ≤ −0.3            0.8
+        Mild decay           −0.3 < ∆i ≤ −0.1        0.9
+        Stable               −0.1 < ∆i < 0.1         1.0
+        Mild increase         0.1 ≤ ∆i < 0.3         1.1
+        Clear increase           ∆i ≥ 0.3            1.2
+
+
+to whether the evidence reflects a routine habit or a recent
+situational pattern: routine habits receive Ri = 0.8, while
+non-routine or recent evidence receives Ri = 1.0. Momen-
+tum further captures whether the factor is becoming more or                       Figure B1: City-tier Distribution
+less salient over time. For behavior-only evidence, we com-
+pare the number of supporting observations in the recent and
+earlier windows:
+                    
+                    
+                     1.2, nrecent
+                              i       > nearly
+                                           i     ,
+                             recent       early
+                      1.0, ni         = ni        > 0,
+                    
+             Mi =                   recent       early
+                    
+                     0.8,  0  <  n i       <  n i     ,
+                    
+                      0.6, otherwise.
+                    
+
+   When both long-term profile evidence and recent behav-
+ior are available, recent behavior is used to estimate the cur-
+rent strength, while the profile provides the long-term base-
+line. We define the change rate as
+                                                                                Figure B2: Time-of-day Distribution
+                           Sishort − Silong
+                   ∆i =                        .
+                           max(Silong , 0.1)
+                                                                                               P
+   The momentum coefficient is then assigned by the rule                                           z ∈Zeval (x) wi ci
+shown in Table A1. The current-need component is esti-                            IISR(x) = Pi                          .
+                                                                                                    zi ∈Zeval (x) wi
+mated only from information available before the agent re-
+sponds, including the pre-query interaction history h− and             This formulation makes the contribution of each implicit
+the spatio-temporal environment g. Post-query behavior is           decision factor proportional to the strength of its behavior-
+used for restoring and validating the behavior chain, but not       chain support. As a result, factors backed by both historical
+for assigning CurrentNeed(zi ). A piece of current-session          user evidence and current-session evidence have greater in-
+evidence is considered valid only if it belongs to the same         fluence on the implicit satisfaction score, while factors with
+decision dimension as zi , remains applicable under the cur-        weak, outdated, or conflicting support contribute less.
+rent task state, and can still explain the present decision.
+Evidence that becomes invalid due to task switching, object                         B. Other Experiments
+switching, distance-scale changes, or travel-state changes is       B.1 Benchmark statistics details
+excluded. Conversely, transferable constraints such as acces-
+                                                                    Spatio-temporal coverage. Fig B1 and B2 further illus-
+sibility, opening status, route feasibility, parking feasibility,
+                                                                    trate the spatial and temporal coverage of MapSatisfyBench.
+and along-the-way requirements may remain valid across
+                                                                    For spatial coverage, instances span cities from first-tier to
+different target objects when they still affect the current de-
+                                                                    fourth-tier and below. This shows that the benchmark is not
+cision.
+                                                                    limited to large metropolitan areas, but covers map-service
+   For valid current-session evidence, CurrentNeed(zi ) is
+                                                                    scenarios across cities of different development levels. For
+assigned according to relevance, continuity, and conflict, as
+                                                                    temporal coverage, instances are distributed across all pe-
+shown in Table A2. When no current-session evidence is ap-
+                                                                    riods of the day, from early morning to night, with higher
+plicable to a factor whose support comes from profile or his-
+                                                                    concentrations in night and afternoon periods. Such cover-
+torical behavior, the current-need component remains neu-
+                                                                    age allows the benchmark to capture diverse real-world map-
+tral, i.e., CurrentNeed(zi ) = 1.0. Thus, the current-session
+                                                                    service needs under different spatio-temporal contexts.
+component down-weights a factor only when the available
+pre-response evidence suggests weak applicability, invalid-         Sources of implicit factors. We further summarize the
+ity, or conflict in the present interaction.                        sources from which implicit decision factors are recover-
+   Finally, wi is used as the normalized factor weight in           able. Following the notation in the method section, context-
+IISR:                                                               dependent factors are derived from the interaction context
+                                              Table A2: CurrentNeed(zi ) assignment rule.
+
+  Current-session support         Criterion                                                                            CurrentNeed(zi )
+  Very high                       Direct evidence is strongly relevant and strongly continuous with the current de-                 1.2
+                                  cision.
+  High                            Clear supporting evidence exists, and relevance and continuity are at least moder-                1.0
+                                  ate.
+  Medium                          Evidence provides only weak-to-moderate support, or only one of relevance and                     0.8
+                                  continuity is strong.
+  Low                             Evidence is invalid, weakly related, no longer continuous with the current deci-                  0.5
+                                  sion, or contradicted by stronger evidence.
+
+
+Table B1: The statistics of the sources of implicit decision
+factors
+                                                                                                          N
+                                                                                                      1 X
+                                                                                           MAE =            |ri − r̂i |.
+    Source category                                   Count                                           N i=1
+    Context-dependent factors from interaction con-     305
+    text c                                                                 Table B2 summarizes the comparison results. The results
+    Preference-dependent factors from user profile      417             show that the LLM judge is highly consistent with human
+    p
+    Spatio-temporal factors from environment g          279
+                                                                        reference scores for explicit factor completion. For IISR, the
+                                                                        agreement is lower because these metrics require judging
+                                                                        satisfaction-relevant implicit factors, but its within-tolerance
+                                                                        accuracies remain close to 0.90 and MAE value remain
+c, such as unresolved dialogue state or previously estab-               small. These results indicate that the LLM-as-a-judge setting
+lished task constraints. Preference-dependent factors are de-           provides sufficiently reliable metric estimates for the sand-
+rived from the user profile p, including long-term or recent            box evaluation.
+behavioral evidence that changes which feasible solution is
+more likely to be accepted. Spatio-temporal factors are de-
+rived from the spatio-temporal environment g, where the                 B.3 Stability of the Sandbox Caching Module
+current location, time, surrounding objects, route state, or lo-
+cal availability conditions determine which decision factors            We further examine whether the sandbox caching module
+matter. The source statistics show in Table B1. Because a               changes the evaluation outcome. We sample 100 benchmark
+single instance may involve multiple sources, these counts              instances and evaluate two model settings under two con-
+are multi-label source hits rather than mutually exclusive              ditions: an online setting that obtains tool responses from
+sample partitions. We can see that the counts decrease in               the live tool interface, and an offline setting that replays
+the following order: context-dependent factors, preference-             cached or simulated tool responses through the sandbox. Ta-
+dependent factors, and spatio-temporal factors.                         ble B3 reports the single-model mean results over the 100
+                                                                        sampled cases. We focus on the five base metrics that are
+B.2 LLM-as-a-Judge Reliability                                          computed directly from the evaluation outputs, and omit AR
+                                                                        and SES because they are multiplicative composite metrics
+We validate the reliability of the LLM-as-a-judge compo-                whose values may amplify small differences in their con-
+nent through a human-versus-model agreement study. The                  stituent metrics.
+validation set contains 68 cases, each consisting of the                   The online and offline results are broadly consistent
+ground truth and the corresponding simulated model tra-                 across the main evaluation dimensions. In particular, ECR
+jectory. For each metric, human annotators provide the ex-              and IISR remain close within each paired model setting,
+pected metric score, which is treated as the reference score.           suggesting that the cached sandbox preserves the relative
+The LLM judge is then evaluated by comparing its met-                   evaluation signal of the live-tool setting. The offline setting
+ric output against this reference under different prompt ver-           is slightly higher on several task-level metrics, especially
+sions. We use two tolerance-based agreement measures and                TS. This is expected because cached or simulated tool re-
+one error measure. Given a reference score ri and a judge-              sponses are usually more complete and well-formed than
+produced score r̂i for case i, the within-tolerance accuracy            real business-interface responses, which may occasionally
+under tolerance ϵ is defined as                                         return empty, incomplete, or otherwise noisy outputs. There-
+                            N
+                                                                        fore, the small offline advantage should be interpreted as
+                        1 X                                             a normal consequence of using an idealized deterministic
+              Acc±ϵ =         I (|ri − r̂i | ≤ ϵ) ,
+                        N i=1                                           replay environment, rather than as evidence of evaluation
+                                                                        instability. Overall, the comparison supports the use of the
+   where N = 68. We report ϵ = 0.05 and ϵ = 0.02. We                    offline sandbox caching module for reproducible and fair
+also report mean absolute error:                                        model evaluation.
+                    Table B2: Human-versus-LLM judge agreement in same-dimension prompt comparison.
+
+                                                 Metric Acc±0.05 Acc±0.02         MAE
+                                                 ECR         0.9841    0.9841     0.0053
+                                                 IISR        0.9062    0.8906     0.0130
+
+  Table B3: Online/offline comparison for evaluating the stability of the sandbox caching module on 100 sampled instances.
+
+                                 Model setting      Mode       ECR      TS       IFS       IISR    Eff
+                                 GPT-5.3-chat      offline    0.9350   0.4391   0.8742   0.6208   0.4465
+                                 GPT-5.3-chat      online     0.9218   0.4281   0.8500   0.6381   0.4374
+                                 Qwen3.6-plus-th   offline    0.9538   0.4930   0.8900   0.7185   0.4346
+                                 Qwen3.6-plus-th   online     0.9445   0.4632   0.9177   0.7084   0.4413
+
+
+B.4 Reasoning over Provided User Profile Evidence                        ## 1. Core Task
+                                                                         You are playing the role of a real user and
+The main experiments show that current agents have lim-
+                                                                             having a conversation with a spatial-
+ited ability to proactively call profile-related tools and ac-               decision intelligent assistant (Agent).
+quire historical-behavior evidence. This raises a question               The scenarios cover travel navigation, ride
+that if sufficient user-profile and historical-behavior infor-               hailing, local-life search, place
+mation is already provided to the model, can the model bet-                  finding, and trip planning.
+ter recover and satisfy the user’s implicit decision factors?
+To isolate implicit-need reasoning from evidence acquisi-                Highest-priority goals:
+tion, we conduct an additional profile-evidence setting in               1. Answer on demand. Based on ‘full_intent‘,
+which anonymized user profile summaries and aggregated                        simulate a real user who knows their
+historical behavior statistics (with all personally identifiable             complete need. Only when the Agent
+                                                                             explicitly requires a user response,
+information removed and fine-grained behavioral records re-
+                                                                             provide a minimally sufficient answer to
+placed by categorical preference indicators) are provided to                  the Agent’s question. You are not
+the model as structured context before it makes a decision.                  helping the Agent complete the task, and
+The goal is to test whether the model can use the available                   you must not proactively fill in all
+evidence to infer the implicit needs that affect user accep-                 unasked information for the Agent.
+tance.                                                                   2. Strict termination. When the termination
+   Table B4 reports the single-model mean results from this                  conditions are met and the current turn
+setting. Providing profile and historical-behavior evidence                  does not contain any new request, new
+improves implicit-factor satisfaction to some extent. Com-                   question, or new information request,
+pared with the thinking-mode results in the main experi-                     immediately output ‘[Finish Conversation
+                                                                             ]‘.
+ments, Qwen3.6-plus and Gemini-3.1-pro-preview achieve
+a relative improvement of about 2.6% and 3.7%on IISR, re-                Highest-priority override rules:
+spectively. These gains suggest that insufficient evidence ac-           1. Whether the user is allowed to output any
+quisition is indeed one reason for weak implicit-need satis-                  new task information is determined only
+faction. However, the overall IISR scores remain moderate                     by whether the Agent’s latest message
+even when the relevant profile evidence is directly provided.                explicitly requests a user response. It
+This indicates that current models still need stronger rea-                  is unrelated to whether an earlier turn
+soning ability to transform user profiles and historical be-                 asked a question, whether the user’s
+haviors into satisfaction-relevant implicit decision factors,                previous turn already answered it, or
+rather than merely having access to more background infor-                   whether the current task still fails to
+                                                                             satisfy ‘full_intent‘.
+mation.
+                                                                         2. If the Agent’s latest turn does not
+                                                                             proactively ask a question, request
+         C. Prompts and Sample Instance                                      supplementary information, or ask for
+C.1 User Agent Prompt                                                        confirmation or selection, the user must
+                                                                              not proactively output any new
+This subsection reports the system prompt used by                            information from ‘full_intent‘. This
+the simulated user agent. Runtime variables such                             holds even when the Agent’s response is
+as     {current time},       {current location},                             wrong, partial, incomplete, or deviates
+{query},       {full intent},    {persona},   and                            from ‘full_intent‘; the user still must
+conversation history are filled for each bench-                              not proactively correct, clarify,
+mark instance.                                                               restate, refine, or supplement it.
+                                                                         3. ‘full_intent‘ is the user’s complete
+           Table B4: Results when user profiles and historical behaviors are directly provided to the model.
+
+                  Model setting              ECR       TS     IFS     IISR     AR      Eff     SES
+                  Qwen3.6-plus-th           0.9196 0.4530 0.8940 0.6960 0.6498 0.4512 0.2905
+                  Gemini-3.1-pro-preview-th 0.9189 0.4458 0.9446 0.6710 0.6330 0.4514 0.2814
+
+
+   internal need and true constraints. It
+   has two functions: when the Agent                          ### A. Fidelity and information boundary
+   explicitly asks, it serves as the                          - Sole source: all your needs, preferences,
+   information source for the response; and                       and constraints can only come from ‘{
+    it helps determine whether there is no                        persona}‘ and ‘{full_intent}‘.
+   additional information to provide and                          Fabrication is strictly forbidden.
+   the conversation can end. Do not reveal                    - Unmentioned means unknown. If the Agent
+   ‘full_intent‘ merely because the Agent                         asks for information not included in the
+   has not satisfied it. ‘full_intent‘ is                          input, answer naturally with "Either is
+   what the user truly wants internally; it                        fine", "No special requirement", or "I
+    is not something that should be fully                         am not sure."
+   stated at the beginning or in any single
+    turn.                                                     ### B. First decide whether to respond
+                                                              You are not required to speak in every turn.
+## 2. Input Data                                                   Before generating an output, first
+- Current time: ‘{current_time}‘                                  inspect the latest assistant message in
+- Current location: ‘{current_location}‘                          ‘conversation_history‘.
+- Initial query: ‘{query}‘                                    The user should respond only when the latest
+- Full intent: ‘{full_intent}‘. This is the                        assistant message satisfies at least
+    core standard for deciding what to                            one of the following conditions:
+    answer when asked and whether there is                    1. It explicitly asks a question, ends with
+    no further information to provide.                            a question mark, or semantically
+- Persona: ‘{persona}‘. This field is                             requires the user to answer, such as
+    optional.                                                     expressions meaning "please", "help me",
+- Complete conversation history: ‘                                 "tell me", "which one", "how to choose
+    conversation_history‘, a list that                            ", "whether", "do you want", "do you
+    records the interaction between the                           still need", or "can you".
+    Agent (‘role=assistant‘) and you (‘role=                  2. It explicitly requests missing
+    user‘) in order. ‘maxindex‘ indicates                         information, such as destination, time,
+    the latest interaction turn.                                  budget, number of people, travel mode,
+                                                                  store, entrance, or preference.
+## 3. Role Behavior                                           3. It asks the user to choose or confirm,
+                                                                  such as choosing bus or subway, whether
+### A. Persona adaptation                                         detailed navigation is needed, or
+- If ‘{persona}‘ is provided, deeply immerse                      whether to continue.
+     yourself in the personality, emotion,                    4. It asks the user to perform an operation
+    and cognitive limitations described by                        that the user cannot complete, in which
+    the persona, and use a language style                         case the user should refuse.
+    consistent with it.
+- If ‘{persona}‘ is not provided, play a                      If the latest assistant message satisfies
+    standard rational user by default: clear                      none of the above:
+    , rational, cooperative, and human-like.                  1. The user must not proactively supplement,
+                                                                   correct, clarify, restate, or refine
+### B. No action capability                                       any information from ‘full_intent‘.
+- You cannot execute any real operation,                      2. This remains true even if the assistant’s
+    such as clicking links, searching,                             response does not fully match ‘
+    placing orders, or making payments. If                        full_intent‘.
+    the Agent asks you to perform such an                     3. Even if an earlier turn asked a question
+    operation, explicitly refuse and state                        or the user answered in the previous
+    your limitation.                                              turn, the user must not continue to add
+- Example: "I cannot click links. Please                          new task information in the current turn
+    directly give me the address and phone                         unless the latest assistant message
+    number."                                                      asks again.
+                                                              4. If the task is completed or should
+## 4. Core Principles for Response                                terminate, the user may only output a
+    Generation                                                    brief closing phrase without task
+   information and append ‘[Finish              ### D. Minimal sufficient answer
+   Conversation]‘.                              Your reply must be sufficient to advance the
+                                                     current conversation, but must not
+Special note: in the following cases, the           expand beyond what is needed.
+    user should remain silent with respect      1. Avoid repeating information already
+    to task information and should not              provided by the Agent. Only indicate
+    proactively supplement, correct, clarify        your choice, confirmation, or next-step
+    , restate, or ask follow-up questions.          need.
+    Only when a termination condition is met    2. Use natural expression rather than
+     should the user output a brief closing         explanation. Do not explain why you
+    phrase and ‘[Finish Conversation]‘: the         choose something unless required by ‘{
+    assistant only provides information; the        persona}‘.
+     assistant gives a plan but does not ask    3. "Minimal sufficient" does not mean
+     the user; the assistant makes a factual        omitting information that was asked. If
+     statement or suggestion; the assistant         the assistant explicitly asks several
+    does not request supplementary                  aspects in the current turn, cover all
+    information or a choice; an earlier turn        asked aspects without exceeding the
+     asked something but the current turn           requested scope.
+    does not; the user answered in the          4. In open-ended supplement scenarios, still
+    previous turn, but the current assistant         follow minimal sufficiency: only add
+     message only continues to state results        the most important known information
+     without requesting another response.           that advances the current task, rather
+                                                    than restating the full ‘full_intent‘.
+### C. Answer on demand
+When the assistant requires a user response:    Examples:
+1. Answer only the information directly         - Full intent: Go to Wumart supermarket. The
+    involved in the assistant’s current              user wants public transportation,
+    question.                                       preferably a low-cost route, and wants
+2. Do not proactively supplement other              route time and distance.
+    content from ‘full_intent‘ that was not     - Agent: "Do you want to take the subway or
+    asked.                                          call a car?"
+3. Do not reveal the complete intent in         - Correct user reply: "Subway."
+    advance merely to reduce turns.             - Incorrect user reply: "I want to take the
+4. If the assistant asks only one slot,             subway because it is cheaper and avoids
+    answer only that slot.                          traffic. Please plan it in detail." The
+5. If the assistant explicitly asks multiple        problem is over-provision.
+     points and ‘full_intent‘ contains
+    answers to them, answer them together       - Agent: "Do you want to take the subway or
+    without omission.                               call a car? Do you need any specific
+6. When the assistant uses an open-ended            information?"
+    question such as "Any other supplements     - Correct user reply: "I want the subway. I
+    ?" or "Any other information?", directly        need the concrete plan, including time
+     state the supplementary information            and distance."
+    that is already explicitly given in ‘       - Incorrect user reply: "Subway." The
+    full_intent‘. Do not rewrite potential          problem is that the assistant asked for
+    slots, preconditions, or decision               additional information but the user
+    dimensions as questions, rhetorical             omitted it.
+    questions, or items waiting for
+    confirmation.                               ## 5. Mandatory Convergence and Termination
+                                                    Rules
+Example:
+- Full intent: Go to Wumart supermarket. The    ### Golden rule: pending request lock
+      user wants public transportation and      As long as your reply contains any form of
+    preferably a low-cost route.                    intention for the Agent to provide new
+- Agent: The Agent provides driving, public         information or execute a new action, it
+    transit, cycling, and walking plans, and        is strictly forbidden to append ‘[Finish
+      asks which travel mode the user prefers        Conversation]‘.
+    .
+- Incorrect user reply: "I prefer bus or        Wrong examples to avoid:
+    subway because it is cheaper. Can you       - "I do not want the ordinary tourist
+    give me the most convenient subway or           entrance. I want to drive there. Please
+    bus route to the supermarket?"                  give me the corresponding exact place
+- Correct user reply: "I want a public-             and navigation route. [Finish
+    transit route."                                 Conversation]"
+                                                  This explicitly asks the Agent to provide
+    an exact place and navigation route, so      Agent: "Okay, Starbucks is 200 meters
+    the request is still pending and               ahead."
+    termination is forbidden.                    User: "Got it, thanks. [Finish
+- "I am asking where the vehicle inspection        Conversation]"
+    station ’Jiacheng Motor Vehicle            - Agent stalling or placeholder reply: if
+    Inspection’ is. Can you give me a              the Agent replies "Planning...", "Hold
+    concrete address or map point? [Finish         on", or similar placeholder text without
+    Conversation]"                                  substantive information, treat it as
+  This explicitly asks for a concrete              failure and terminate.
+    address or map point, so termination is      Example: "You only said to wait and gave
+    forbidden.                                     me nothing. Forget it. [Finish
+                                                   Conversation]"
+Append ‘[Finish Conversation]‘ at the very
+    end of the reply only when one of the      ### Termination output format
+    following conditions holds.                - The only termination marker is ‘[Finish
+                                                   Conversation]‘.
+### A. Task completion                         - It must be the final content of the reply,
+1. The Agent’s latest turn does not                 with no punctuation or explanation
+    proactively ask a question or continue         after it.
+    to request information. This usually
+    includes cases where the Agent naturally   ## 6. Output Requirements
+     closes the conversation or gives a        - Each time, output only one or a few
+    result without requesting a user               sentences as the user’s reply.
+    response.                                  - Do not output analysis, mental state, or
+   Example: the user asks to go to a               restatements of the rules.
+    supermarket, says Wumart after being       - Keep the reply focused and direct.
+    asked which supermarket, and the Agent     - Maintain reliance on the Agent’s service
+    then provides several plans without            until the task is completed or has
+    asking further. Even if the full intent        clearly failed.
+    preferred public transit, the user         - If the current turn should neither
+    should not provide unasked information;        supplement task information nor continue
+    a valid reply is "Okay, that’s it. [            the task, and a termination condition
+    Finish Conversation]".                         is met, output only a brief closing
+2. The Agent asks a question, but based on ‘       phrase and terminate.
+    full_intent‘ and ‘persona‘, the user has
+     no more useful information to provide.    ## 7. Start Execution
+    For example, if the Agent asks "Any        The following message list is the complete
+    other requirements?" and ‘full_intent‘         conversation history. The first user
+    contains no additional constraints, the        message is the initial query.
+    user may reply "No, thanks. [Finish        Based on the role definition and rules above
+    Conversation]".                                , inspect the current conversation state
+                                                   , decide whether to continue or
+### B. Boundary and deadlock                       terminate, and generate the next user
+- No action capability refusal: when the           message.
+    Agent asks the user to perform an
+    operation the user cannot do, refuse and   Please generate the user’s next reply:
+     terminate.
+  Example: "I cannot click links. Just give
+    me the result directly; if not, forget     C.2 Business Agent Prompt
+    it. [Finish Conversation]"
+- Invalid loop or explicit failure: if the     This subsection reports the prompt used by the business
+    Agent provides no new information for      agent under evaluation. The normal version is used in the
+    two consecutive turns, repeatedly asks     main sandbox, while the profile version additionally ex-
+    for already known information, or          poses user-profile and recent-behavior evidence through
+    explicitly states that it cannot           {user profile}.
+    complete the task, the user may simulate
+     a real user’s reaction and end the        Business agent simulation prompt
+    conversation.
+                                               Normal version:
+### C. Passive termination
+- Assistant silence or politeness: if the      Role:
+    Agent’s reply is only a factual            You are an intelligent map assistant. You
+    statement or greeting and contains no          are responsible for helping the user
+    guiding question, treat the conversation       with the current question and the
+     as naturally ended.                           original request. Your goal is to
+   understand the user’s complete need         1. Unless missing information affects safety
+   while disturbing the user as little as           or decision-critical executability,
+   possible, and to provide truthful,              invalid questioning is strictly
+   executable, and as complete as possible         forbidden. Automatically fill missing
+   results through necessary proactive             information from context when possible,
+   clarification and tool calls.                   such as using the user’s current
+                                                   location as the default starting point.
+Original request, which should be treated as   2. Conditions for clarification:
+     the reference throughout the whole           - Missing information would make the
+    dialogue and must not be deviated from:        result non-executable or highly likely
+{query}                                            to be wrong, for example when the user’s
+                                                    question is unclear, and it cannot be
+The tasks you can handle include but are not       resolved through context or a reasonable
+     limited to:                                    default.
+- Querying user profiles and historical           - If the user must make a choice,
+    behaviors                                      proactively ask a key question that is
+- Travel navigation                                strongly related to executability.
+- Route planning
+- Place search                                 Execution principle:
+- Nearby recommendation                        1. Important: for a single tool, the same
+- Trip planning                                    parameter set may be retried at most
+- Flight, train, hotel, and attraction-            three times. If the desired result still
+    related queries                                 cannot be obtained, seek another way to
+- Ride hailing                                      solve the problem.
+- Local-life and location-related services
+                                               Profile version:
+Background information:
+1. Context information, which should be used   Role:
+     with priority. It includes ‘adiu‘ as      You are an intelligent map assistant. You
+    the unique user ID, ‘time‘ as the              are responsible for helping the user
+    current time, ‘user_current_loc‘ as the        with the current question and the
+    user’s current longitude and latitude, ‘       original request. Your goal is to
+    user_loc_name‘ as the current location         understand the user’s complete need
+    name, ‘city‘ as the current city, and ‘        while disturbing the user as little as
+    history‘ as the user’s preceding same-         possible, and to provide truthful,
+    day behaviors:                                 executable, and as complete as possible
+{context}                                          results through necessary proactive
+                                                   clarification and tool calls.
+Available tools:
+The tools are bound at runtime. You may call   Original request, which should be treated as
+     only the tool names listed below;              the reference throughout the whole
+    otherwise the call will be rejected.           dialogue and must not be deviated from:
+{tools_brief}                                  {query}
+
+Workflow:                                      The tasks you can handle include but are not
+1. Intent decomposition. Analyze the user           limited to:
+    query, extract core elements, and          - Querying user profiles and historical
+    understand the user’s implicit intent.         behaviors
+2. Resource alignment. Check whether the       - Travel navigation
+    current context information and time       - Route planning
+    information are sufficient. If not,        - Place search
+    first use tools to fill missing            - Nearby recommendation
+    information, such as using POI search to   - Trip planning
+     identify a concrete address.              - Flight, train, hotel, and attraction-
+3. Chained tool calls. Call tools as needed        related queries
+    according to the result of the first       - Ride hailing
+    step. If the result returned by tool A     - Local-life and location-related services
+    is ambiguous, adjust the parameters of
+    tool B according to that result until a    Background information:
+    closed loop is formed.                     1. Context information, which should be used
+4. Result delivery. Convert raw tool results        with priority. It includes ‘adiu‘ as
+     into user-friendly language and remove        the unique user ID, ‘time‘ as the
+    technical redundancy.                          current time, ‘user_current_loc‘ as the
+                                                   user’s current longitude and latitude, ‘
+Interaction principles:                            user_loc_name‘ as the current location
+    name, ‘city‘ as the current city, and ‘                    decision factors, clarification policy, expected tool trajec-
+    history‘ as the user’s preceding same-                     tory, and factual response requirements.
+    day behaviors:
+{context}                                                      Task ID:
+2. User profile and recent behavior:                           d3238e6b28bf53f6e7bc30cb1536e2a8
+{user_profile}
+                                                               Meta information:
+Available tools:                                               - Difficulty: L2
+The tools are bound at runtime. You may call                   - Domain: search; navigation and mobility
+     only the tool names listed below;                         - Sub-task: constraint-based filtered search
+    otherwise the call will be rejected.                           ; single-destination route planning
+{tools_brief}                                                  - Scene tags: main interface; travel mode =
+                                                                   driving
+Workflow:                                                      - Locality: local
+1. Intent decomposition. Analyze the user                      - Source of implicit factors: preference
+    query, extract core elements, and                              source; interaction-context source
+    understand the user’s implicit intent.                     - Time slot: evening
+2. Resource alignment. Check whether the                       - Day type: weekday
+    current context information and time                       - City tier: new first-tier city
+    information are sufficient. If not,
+    first use tools to fill missing                            Root query:
+    information, such as using POI search to                   "Go to a charging station near MixC."
+     identify a concrete address.
+3. Chained tool calls. Call tools as needed                    Context:
+    according to the result of the first                       - Time: 2026-05-07 22:10:32
+    step. If the result returned by tool A                     - Current location: 121.53634, 29.90348
+    is ambiguous, adjust the parameters of                     - Current location name: Jinjiang Garden,
+    tool B according to that result until a                        Shengliyan Road, Wenjiao Subdistrict,
+    closed loop is formed.                                         Jiangbei District, Ningbo, Zhejiang
+4. Result delivery. Convert raw tool results                   - City: Ningbo, Zhejiang
+     into user-friendly language and remove                    - Recent behavior chain:
+    technical redundancy.                                        1. 2 hours and 33 minutes earlier, the
+                                                                   user drove to "White Beard HomeBar", a
+Interaction principles:                                            local destination about 11.81 km away.
+1. Unless missing information affects safety                     2. 27 minutes and 46 seconds earlier, the
+     or decision-critical executability,                           user drove to "Building 22, Sanshuiwan
+    invalid questioning is strictly                                West District", a local destination
+    forbidden. Automatically fill missing                          about 11.79 km away.
+    information from context when possible,                      3. 3 minutes and 16 seconds earlier, the
+    such as using the user’s current                               user drove to "Coulomb Auto Charging
+    location as the default starting point.                        Station (Gaoxin Plaza Fenghui Charging
+2. Conditions for clarification:                                   Station)", a local destination about
+   - Missing information would make the                            0.546 km away.
+    result non-executable or highly likely                       4. 2 minutes and 29 seconds earlier, the
+    to be wrong, for example when the user’s                       user asked: "Go to a charging station
+     question is unclear, and it cannot be                         near MixC."
+    resolved through context or a reasonable                     5. 2 minutes and 8 seconds earlier, the
+     default.                                                      user said: "These charging stations are
+   - If the user must make a choice,                               not the ones I want."
+    proactively ask a key question that is                       6. 1 minute and 42 seconds earlier, the
+    strongly related to executability.                             user clarified: "Ningbo MixC."
+                                                                 7. 1 minute and 22 seconds earlier, the
+Execution principle:                                               user said: "Charging station. There is a
+1. Important: for a single tool, the same                           parking lot and a charging station;
+    parameter set may be retried at most                           search MixC for me."
+    three times. If the desired result still                     8. 58 seconds earlier, the user asked
+     cannot be obtained, seek another way to                       again: "Go to a charging station near
+     solve the problem.                                            Ningbo MixC."
+
+                                                               Full intent:
+C.3 Sample Instance                                            The user wants to go to a charging station
+                                                                   near Ningbo MixC. The target should be a
+This subsection gives a representative translated benchmark         charging station directly associated
+instance. The example illustrates how a short map query is         with a parking lot or located inside a
+converted into explicit factors, behavior-supported implicit       parking lot. The user prefers selecting
+   and planning the destination under a           - Evidence: short-term evidence from the
+   driving mode, and TELD-branded charging         past three months shows 38 hits for TELD
+   stations should be prioritized when             -branded charging stations, the highest
+   possible.                                       option within the charging-station brand
+                                                   -selection dimension. The comparable
+User profile and behavior evidence:                total in the same dimension is 94, and
+The user is a young male who owns a car,           the second option, Sinopec-branded
+    including non-electric, plug-in hybrid,        charging stations, has 15 hits. The TELD
+    and gasoline vehicles, and the recorded         evidence includes multiple views, route
+    vehicle type is a compact SUV. Driving          plans, and driving-navigation actions.
+    is the dominant travel mode in both            The user also recently said "find a
+    local and non-local scenarios,                 charging station; if there is a TELD one
+    accounting for 85.2% of local trips and        , check that first", navigated to "TELD
+    86.4% of non-local trips. The profile          Auto Charging Station (Ningbo MixC Park
+    also records relatively high consumption       Parking Lot Charging Station)" three
+     capacity, a moderate consumption              days earlier, and said "TELD worked fine
+    tendency, and broad preferences over            before" one day and 13 hours earlier.
+    dining, leisure, travel, and family-
+    related activities. For this instance,     Clarification policy:
+    the most relevant evidence is the strong   - Maximum allowed clarification turns: 3
+     driving preference, the immediately       - Evidence: the baseline information
+    preceding driving-navigation actions,          directly expressed by the query includes
+    and the short-term behavior around              the target category, charging station,
+    charging stations.                             and the location anchor, near MixC. The
+                                                   time, current location, and city are
+Explicit decision factors:                         also known from context. However, the
+1. The destination scope is near MixC.             query alone cannot determine which MixC
+2. The target object is a charging station.        is intended, nor can it directly reveal
+3. The user needs to go to the target place.       the additional preferences in the full
+                                                   intent. Under the given full intent, the
+Implicit decision factors:                          location anchor can be resolved as
+1. The result should prioritize charging           Ningbo MixC by combining the city
+    stations located inside a parking lot or       context with the query, so it does not
+     directly associated with a parking lot.       require a separate clarification. The
+   - Source: preference source                     remaining independent decision points
+   - Constraint type: soft                         are whether the station must be directly
+   - Evidence-supported weight: 1.2                 associated with or located inside a
+   - Evidence: in the current session, the         parking lot, whether the search range
+    user rejected previous candidates by           can be relaxed if such stations are not
+    saying "These charging stations are not        available, and how result-selection
+    the ones I want" and then added "There         preferences such as driving-mode
+    is a parking lot and a charging station        planning and TELD brand priority should
+    ", which narrows the target to charging        be handled. These factors affect
+    stations associated with parking lots.         candidate filtering, ranking, and route
+                                                   planning, so the maximum allowed
+2. The result should provide the route under       clarification budget is 3.
+     a driving mode.
+   - Source: preference source                 Expected tool trajectory:
+   - Constraint type: soft                     - Expected tools:
+   - Evidence-supported weight: 0.8179           - search_poi
+   - Evidence: the profile indicates that        - search_around_poi
+    the user has a car, with driving as the      - get_navigation
+    top local travel-mode preference at          - search_user_action_summary
+    85.2% and the top non-local travel-mode
+    preference at 86.4%. The current session   - Parameter rules:
+     also contains multiple consecutive          - search_poi:
+    driving navigation behaviors, and the          - ‘query‘: use the explicitly mentioned
+    latest one is driving to a charging            target landmark or a directly
+    station.                                       corresponding single-place keyword from
+                                                   the query, such as "MixC" or "Ningbo
+3. TELD-branded charging stations may be           MixC".
+    prioritized.                                   - ‘cur_adcode‘: use the city or
+   - Source: preference source                     administrative region from context,
+   - Constraint type: soft                         preferably Ningbo or its corresponding
+   - Evidence-supported weight: 0.4851             city code/adcode.
+    - ‘city_limit‘: set to true when the       navigation or route information,
+    city is known, to improve same-city        including origin, destination, travel
+    recall precision.                          mode, distance, estimated time, cost, or
+  - search_around_poi:                          whether the route leads to the stated
+    - ‘query‘: use the place-category          charging station, the statement must be
+    keyword explicitly expressed in the        consistent with the user input, context,
+    query, focusing on charging-related POIs    actual tool returns, or relevant tool
+    .                                          results.
+    - ‘x‘: use the longitude of the target
+    landmark POI returned by the upstream
+    tool.
+    - ‘y‘: use the latitude of the target
+    landmark POI returned by the upstream
+    tool.
+    - ‘range‘: use an appropriate nearby
+    search radius to cover the area around
+    the landmark; if no exact distance is
+    specified, use the tool default, such as
+      5000 meters, or the business default.
+    - ‘sort_rule‘: choose a sorting rule
+    based on the query/context or default
+    logic, such as relevance-first or
+    distance-first.
+  - get_navigation:
+    - ‘end_lat‘: use the latitude of the
+    candidate charging-station POI returned
+    by the upstream tool.
+    - ‘end_lon‘: use the longitude of the
+    candidate charging-station POI returned
+    by the upstream tool.
+    - ‘start_lat‘: use the second component
+    of ‘context.user_current_loc‘.
+    - ‘start_lon‘: use the first component
+    of ‘context.user_current_loc‘.
+    - ‘end_name‘: use the candidate charging
+    -station POI name returned by the
+    upstream tool.
+    - ‘end_poiid‘: use the candidate
+    charging-station POI ID returned by the
+    upstream tool.
+    - ‘mode‘: use driving.
+  - search_user_action_summary:
+    - ‘uid‘: use the user identifier
+    explicitly provided in the context.
+
+Factual response requirements:
+1. If the final answer provides the name,
+    address, coordinates, administrative
+    area, or spatial relation of Ningbo MixC
+     or a candidate charging station, or
+    claims that a station is inside the MixC
+     parking lot, directly associated with a
+     parking lot, or located near MixC, the
+    statement must be consistent with the
+    user input, context, actual tool returns
+    , or relevant tool results.
+2. If the final answer provides the brand,
+    charging-service attribute, or
+    availability information of a candidate
+    charging station, including whether it
+    is a TELD-related station or whether it
+    is a valid charging-station entity, the
+    statement must be consistent with actual
+     tool returns or relevant tool results.
+3. If the final answer provides driving
+
