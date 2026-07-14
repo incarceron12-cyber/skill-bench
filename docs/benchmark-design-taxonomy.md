@@ -1463,6 +1463,62 @@ release restrict it to synthetic configured-collaboration evidence [HAS]. Existi
 configured-system, trace, metric, task-health, validity, and expert-participation
 records are the implementation homes; no parallel subsystem is implied.
 
+#### Interaction episodes require link-level evidence
+
+A channel or authored phase creates an **opportunity** to interact; it does not
+establish that interaction occurred, carried legitimate authority, changed the
+agent's plan, improved the result, or justified participant burden. Preserve one
+linked episode without collapsing its observations:
+
+```text
+authored opportunity → trigger realization → call/message
+  → participant identity, evidence view, and authority → answer
+    → agent receipt → semantic adoption or justified rejection
+      → pre/post state preservation and repair → endpoint effect
+        → participant burden → recipient uptake → downstream consequence
+```
+
+Each arrow may be `observed`, `unsupported`, `invalid`, or `not_applicable`.
+Participant availability, channel exercise, answer quality, semantic uptake,
+state repair, endpoint conformance, burden, recipient acceptance, and consequence
+remain separate metric populations. An endpoint conjunction cannot retrospectively
+prove timely clarification, correct authority routing, adoption, preservation, or
+net collaboration value. Likewise, simulator calls/tokens are system cost rather
+than estimates of human waiting, interruption, cognitive demand, correction work,
+privacy exposure, or accountability [DC, HAS].
+
+Store the trigger's clock and meaning independently. Clock types include
+`environment_action`, `model_turn`, `wall_time`, and `authored_schedule`; semantic
+triggers include inspected state, completed subtask, decision boundary, and risk
+signal. Record intended type, observed event locator, threshold, observer, timing
+error, duplicate/missed firing, and whether the trigger was causally responsive to
+agent state. A fixed early turn is a reproducible schedule, not evidence that a
+meaningful interruption, error, or repair boundary occurred [DC].
+
+Causal interaction claims require matched versions that hold task, public basis,
+environment, grader, budget, and configured agent fixed while crossing, where
+licensed: full information; missing information with no channel; the same missing
+information with a scripted answer; simulator-mediated answer; and a consented
+human answer. Add unnecessary-ask, wrong-authority, stale/contradictory-answer,
+justified-rejection, and simulator/environment-invalid neighbors. Report channel
+availability, call precision/recall and timing, semantic uptake, changed/protected
+state, endpoint effect, burden, cost, invalidity, and task/participant-clustered
+uncertainty separately. Human-versus-simulator parity requires its own evidence;
+neither a social-role label nor a natural-language message supplies it.
+
+DeskCraft makes native artifact checks and 152 authored phased packages
+inspectable, but the exact paper-time implementation is unavailable: the only
+public commit before v1 contains a license, while the audited 538-package release
+is 30 days later and has no trajectories or result corpus. Its predominantly early
+fixed triggers, task-conditioned ask tool/prompt, stochastic simulator realization,
+disjoint standard/interactive sets, endpoint-only scoring, single-run cells, and
+absent burden/recipient evidence support configured endpoint conformance under an
+authored phase protocol—not proactive clarification, causal interaction benefit,
+human collaboration, professional validity, capability, safety, production
+fitness, or readiness [DC]. Existing authority/participation, trace, artifact-state
+transition, task-health, metric, and validity records host the episode; no desktop-
+specific schema follows.
+
 ### 4.0b Feedback is a role- and channel-specific intervention
 
 Feedback can be ecologically legitimate support—a client's correction, a test
@@ -2287,6 +2343,15 @@ them:
   task participants are model simulators, the human study reviews scenario
   artifacts, the planned process-judge audit has no reported results, and no
   official benchmark/results artifact could be verified.
+- **[DC]**
+  `papers/agent-benchmarks/2026-07-14-deskcraft-interactive-workflow-validity.md`;
+  reviewed immutable v1 PDF/text/source hashes and both official-release timing
+  boundaries are recorded there. The paper-time public tree contains only a
+  license; the inspectable 538-package snapshot is 30 days post-v1 and contains no
+  trajectories, simulator judgments, outputs, or result corpus. It supports an
+  authored phased-interaction and native-endpoint package pattern, not causal
+  interaction benefit, simulator-human parity, human collaboration, professional
+  validity, capability, safety, production fitness, or readiness.
 - **[CT]** `papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md`;
   reviewed immutable v3 paper and inspected release paths/hashes are recorded
   there. The release lacked the reported task and grading artifacts.

@@ -164,6 +164,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
+| [DeskCraft](../papers/agent-benchmarks/2026-07-14-deskcraft-interactive-workflow-validity.md) | B | Adds native professional-artifact checks and phased requirement delivery while separating authored interaction opportunity, trigger realization, authority, adoption, state-preserving repair, endpoint effect, burden, recipient uptake, and consequence |
 | [WorkArena L1](../papers/agent-benchmarks/2026-07-12-workarena-l1-knowledge-work-validity.md) | B | Makes parameterized enterprise-UI setup, selected native-state predicates, and task-owned cleanup inspectable while separating atomic operation success from work sampling, collateral-state, professional-use, and readiness claims |
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
@@ -331,6 +332,30 @@ the world; model-simulated users add interaction while becoming part of the
 treatment. Every task therefore needs a projection ledger for native/simulated
 substrate, authored initial state, observer coverage, omitted consequences,
 simulator identity, reset health, and the claims that survive those choices.
+
+DeskCraft sharpens this into an **interaction-evidence ladder**: `authored
+opportunity → trigger realization → call/message → participant identity,
+evidence view, and authority → answer → agent receipt → semantic adoption or
+justified rejection → pre/post state preservation and repair → endpoint effect →
+burden → recipient uptake → consequence`. No rung inherits the next. Type trigger
+clocks as environment action, model turn, wall time, or authored schedule, apart
+from semantic triggers such as inspected state, subtask boundary, decision point,
+or risk. Before causal benefit or proactivity claims, compare matched full-
+information, missing-information/no-channel, scripted-answer, simulator, and—only
+where consented and justified—human conditions; retain simulator/environment
+invalids, task/participant dependence, and agent/simulator/human costs.
+
+The immutable v1 paper and later release support native endpoint machinery and an
+authored phase protocol, not human collaboration: the paper-time public tree has
+only a license, the inspectable 538-package snapshot is 30 days later, and no
+trajectories or result corpus are released. Predominantly early fixed triggers,
+task-conditioned ask affordances/prompts, stochastic simulator realization,
+disjoint standard/interactive task sets, endpoint-only scoring, and absent burden
+or recipient evidence block proactive-clarification, interaction-effect,
+professional-validity, capability, safety, production-fitness, and readiness
+claims. Existing participation/authority, trace, artifact-transition, task-health,
+metric, and validity machinery is the durable home; no desktop-specific schema
+follows.
 
 ## 3. Expertise transfer is an intervention that must be separated from the measuring instrument
 
