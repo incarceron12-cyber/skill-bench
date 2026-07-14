@@ -1,0 +1,648 @@
+                                          Stochasticity in Agentic Evaluations: Quantifying Inconsistency with Intraclass
+                                                                            Correlation
+
+                                                          Zairah Mustahsan, Abel Lim, Megna Anand, Saahil Jain, Bryan McCann
+                                                             zairah@you.com, abel@you.com, megna@you.com, saahil@you.com, bryan@you.com
+
+
+
+
+                                                                    Abstract                                single leaderboard number. That number, typically an accu-
+
+
+
+
+arXiv:2512.06710v1 [cs.AI] 7 Dec 2025
+                                                                                                            racy or success rate from one run, obscures the variance that
+                                          As large language models become components of larger              determines whether the result is reproducible at all Miller
+                                          agentic systems, evaluation reliability becomes critical: unre-
+                                          liable sub-agents introduce brittleness into downstream sys-
+                                                                                                            (2024) Li et al. (2025).
+                                          tem behavior. Yet current evaluation practice, reporting a sin-      Agentic evaluations should be approached as experi-
+                                          gle accuracy number from a single run, obscures the variance      ments, with outcomes analyzed for variability and repro-
+                                          underlying these results, making it impossible to distinguish     ducibility. Reported performance is often based on a single
+                                          genuine capability improvements from lucky sampling. We           trial of an inherently random process, with little visibility
+                                          propose adopting Intraclass Correlation Coefficient (ICC), a      into uncertainty. Sources of randomness include sampling
+                                          metric from measurement science, to characterize this vari-       inside the language model, the behavior of external APIs,
+                                          ance. ICC decomposes observed variance into between-query         and the design of the scoring function. Without accounting
+                                          variance (task difficulty) and within-query variance (agent       for these factors, comparisons across agents risk overstating
+                                          inconsistency), highlighting whether reported results reflect     differences and underestimating variability.
+                                          true capability or measurement noise. We evaluated on GAIA
+                                          (Levels 1–3, measuring agentic capabilities across varying
+                                                                                                               We examine the stochasticity of agentic evaluations us-
+                                          reasoning complexity) and FRAMES (measuring retrieval             ing GAIA and FRAMES as running case studies. Replicat-
+                                          and factuality across multiple documents). We found that          ing these benchmark runs across multiple trials and all three
+                                          ICC varies dramatically with task structure, with reasoning       difficulty levels shows that evaluation stability varies signif-
+                                          and retrieval tasks (FRAMES) exhibit ICC=0.4955–0.7118            icantly with task complexity and model capability, a finding
+                                          across models, and agentic tasks (GAIA) exhibiting ICC=           obscured by current single-run reporting practices. Our con-
+                                          0.304-0.774 across models. For sub-agent replacement de-          tribution is both diagnostic and prescriptive: we diagnose
+                                          cisions in agentic systems, accuracy improvements are only        why current evaluations are fragile, and we propose ICC
+                                          trustworthy if ICC also improves. We demonstrate that ICC         (intraclass correlation coefficient) as a metric practitioners
+                                          converges by n=8–16 trials for structured tasks and n ≥ 32        can use to characterize and report on evaluation stability,
+                                          for complex reasoning, enabling practitioners to set evidence-
+                                          based resampling budgets. We recommend reporting accu-
+                                                                                                            enabling more principled experimental design for agentic
+                                          racy alongside ICC and within-query variance as standard          benchmarks.
+                                          practice, and propose updated Evaluation Cards capturing
+                                          these metrics. By making evaluation stability visible, we                     Background and Motivation
+                                          aim to transform agentic benchmarking from opaque leader-         Agentic evaluations differ in structure from static NLP
+                                          board competition to trustworthy experimental science. Our
+                                                                                                            benchmarks. Whereas traditional benchmarks test a model’s
+                                          code is open-sourced at https://github.com/youdotcom-oss/
+                                          stochastic-agent-evals.                                           ability to map an input to a single output, agentic settings in-
+                                                                                                            volve multi-step decision making, tool use, and interactions
+                                                                                                            with dynamic environments. An agent may need to query an
+                                                                Introduction                                API, manipulate files, or perform calculations before arriv-
+                                        Large language models (LLMs) are no longer confined to              ing at an answer. These differences make agentic evaluations
+                                        static text prediction. Increasingly, they act as agents: using     richer, but also more sensitive to randomness.
+                                        tools, interacting with environments, and carrying out multi-          Current practice has yet to reflect this added complex-
+                                        step plans. To measure such capabilities, the field has turned      ity. Many benchmarks report results from a single run per
+                                        to agentic evaluations Yehudai et al. (2024), Zhang et al.          agent, without confidence intervals, standard errors, or repli-
+                                        (2024), and Xu et al. (2023). These benchmarks are rapidly          cation. Some studies attempt to reduce bias from agent in-
+                                        becoming reference points for progress. Yet the way they            consistency by reporting average@k values (where k=3), but
+                                        are currently used reduces complex stochastic processes to a        still do so without providing confidence intervals or statisti-
+                                                                                                            cal significance measures (Yao et al. (2024)Team (2025)).
+                                        Copyright © 2026, Association for the Advancement of Artificial     Comparisons between agents are frequently made without
+                                        Intelligence (www.aaai.org). All rights reserved.                   statistical testing, and scoring functions are not always de-
+fined in detail. As a result, observed differences may partly      limits; evaluation frameworks govern retry and timeout be-
+reflect random variation, scorer choices, or agent inconsis-       havior; scoring functions rely on heuristics such as fuzzy
+tency rather than genuine differences in capability.               matching or numeric normalization; and the choice of trial
+    Recent work has begun to address this gap. Miller (2024)       count determines whether results reflect reliable averages
+provides a statistical treatment of LLM evaluations, deriv-        or noisy draws. As frameworks such as the Model Context
+ing estimators and error formulas and recommending re-             Protocol (MCP) Anthropic (2023) become standard for tool
+sampling protocols. Platforms such as Chatbot Arena and            integration, server configuration and versioning introduce
+Arena-Lite have introduced bootstrapped 95% confidence             additional trial-level variability. Table 1 summarizes these
+intervals into leaderboards Li et al. (2025), highlighting         components and their sources of within-query variance: the
+that uncertainty can be made visible at scale. Blackwell,          trial-to-trial inconsistency that ICC directly measures. Most
+Barry, and Cohn (2024) argue for explicit uncertainty quan-        benchmarks do not quantify them explicitly. Figure 1 illus-
+tification and reproducible protocols in LLM benchmark-            trates this variance empirically: per-question accuracy esti-
+ing, while bow (2025) caution against naive reliance on the        mates with 95% confidence intervals show substantial trial-
+Central Limit Theorem in small benchmarks due to under-            to-trial inconsistency that single-run reporting obscures.
+coverage. More broadly, surveys of evaluation methodolo-
+gies for LLM-based agents emphasize the lack of standard-
+ized protocols and reproducibility practices Yehudai et al.
+(2025).
+    The intraclass correlation coefficient (ICC) (Shrout and
+Fleiss 1979; McGraw and Wong 1996) has been widely
+used in psychometrics and medical research to assess mea-
+surement reliability by decomposing variance into between-
+subject and within-subject components. Koo and Li (2016)
+provide guidelines for selecting and interpreting ICC vari-
+ants across different study designs. While ICC is standard
+practice for evaluating inter-rater reliability and test-retest
+consistency in clinical settings, it has not been systemati-
+cally applied to agentic AI evaluation, where variance arises
+from both task difficulty and agent stochasticity.
+    Beyond statistical treatments, several strands of prior
+work contextualize our analysis. Large-scale benchmarks
+such as BIG-bench Srivastava et al. (2022) and Liang et al.
+(2022) established multi-dimensional evaluation but did not
+incorporate statistical testing. MT-Bench Zheng et al. (2023)
+popularized human–LLM comparison, again without repli-
+cation. Infrastructure projects such as the lm-eval-harness
+Gao et al. (2021), OpenAI Evals Chen et al. (2023), and
+Dynabench Kiela et al. (2021) emphasize standardization
+and robustness, though they rarely quantify uncertainty. Par-
+allel work on uncertainty and calibration Kadavath et al.
+(2022), Chiang et al. (2024), and Liu, Yang et al. (2023)
+highlights confidence estimation at the token or output level
+rather than full-agent evaluation. Together, this literature un-
+derlines both the momentum and the methodological gaps
+that motivate our study.                                           Figure 1: Per-question accuracy with 95% confidence in-
+                                                                   tervals across sampled questions, 64 trials per question.
+       Stochasticity in Agentic Evaluations                        FRAMES and GAIA with GPT-4o search. Wide confidence
+Agentic evaluations are inherently stochastic processes.           intervals show trial-to-trial variance in agent behavior.
+The underlying LLM models sample from probability dis-
+tributions rather than deterministically computing outputs           We formalize evaluation as a stochastic function where
+(Brown et al. 2020; Holtzman et al. 2020; He and Lab 2025),        each trial produces a potentially different outcome:
+introducing trial-to-trial variance.. This inherent stochastic-
+ity is compounded by the evaluation framework: task speci-
+                                                                          EvalScorei (t) = f (Taski , Agent, Env, Scorer)    (1)
+fications, API configuration, retry policies, timeout behav-
+ior, and external environments all introduce trial-to-trial
+variance that ICC directly measures. Each major compo-             where i indexes questions and t ∈ {1, . . . , T } indexes
+nent contributes to within-query variance: task specifica-         independent runs, the Agent includes both the model and its
+tions may be ambiguous; agents sample stochastically or en-        toolchain, the Env encompasses all external APIs or sim-
+counter tool errors; environments introduce latency or rate        ulated world dynamics, the Scorer encodes normalization
+     Component                Role                                       Source of variance                              Quantified?
+     Task specification       Defines the goal and tool usage            Ambiguity, underspecification                   Rarely
+     Agent (LLM + plugins)    Executes decisions and sampling actions    Model decoding randomness, plugin errors        No
+     Environment              Provides external dynamics or APIs         Latency, rate limits, unstable responses        No
+     Evaluation framework     Orchestrates interaction loop              Seeds, retries, exponential backoff, timeouts   No
+     Scoring function         Determines correctness                     Fuzzy matching, normalization heuristics        Sometimes
+
+                      Table 1: Components of an agentic evaluation and their typical sources of variance.
+
+
+and comparison rules, and variation across t arises from the            Variance Decomposition and Intraclass Correlation Co-
+model’s stochastic sampling.                                            efficient (ICC) When evaluating agents across multiple
+                                                                        trials, performance varies due to two distinct sources: (1)
+                                                                        some tasks are inherently harder than others (between-task
+Recommended Statistical Protocols for Agentic                           variance), and (2) the agent behaves inconsistently on the
+Benchmarks                                                              same task across trials (within-task variance). Understand-
+Variance Estimation and Confidence Intervals Any re-                    ing this decomposition is essential for evaluation stability
+ported point estimate without a measure of variance is in-              and forms the foundation for using the intraclass correlation
+complete. Agentic evaluations are inherently stochastic, and            coefficient (ICC) as a reliability metric. For full mathemati-
+a single accuracy number obscures the underlying variabil-              cal framework see Appendix E.
+ity. To estimate the mean performance of an agent across                Intraclass Correlation Coefficient The ICC quantifies
+tasks, we conduct multiple independent runs—each with a                 the proportion of total variance attributable to differences
+different random outcome. The variance of this estimator de-            between tasks and can be understood as a function of both
+pends on both the number of tasks and the number of trials              the difficulty of the dataset (variance between tasks) and the
+per task.                                                               consistency of the agent (variance within tasks).
+         (t)
+   Let Ai ∈ {0, 1} denote correctness of output i in trial t,
+for n items and T trials. The overall accuracy estimate is:                                                  σb2
+                                                                                                 ICC =                                 (6)
+                            T n                                                                          σb2 + σw2
+                          1 XX           (t)
+                   µ̂ =                 Ai .                (2)           We employ the one-way random effects model, ICC(1,1)
+                          T n t=1 i=1
+                                                                        (Shrout and Fleiss 1979), which assumes:
+  Using the standard error of the mean,                                 1. Tasks are random effects sampled from a larger popula-
+                            r                                              tion of possible evaluation items
+                               µ̂ (1 − µ̂)
+                 SE(µ̂) =                  ,                (3)         2. Trials are random effects representing stochasticity in the
+                                   Tn                                      agent’s behavior
+  we can construct (1 − α) confidence intervals:
+                                                                        3. We report single-trial reliability: ICC(1,1) measures the
+                      µ̂ ± zα/2 SE(µ̂),                   (4)              reliability of an individual trial, with within-task variance
+                                                                           estimated by pooling variances across all tasks
+   where zα/2 is the critical value of the normal distribu-
+tion. Reporting confidence intervals enables readers to as-                 This model treats both the selection of tasks and the vari-
+sess whether observed differences between agents are likely             ability across trials as sources of random variation, making
+to be meaningful or attributable to noise. The variance of              it appropriate when evaluation tasks represent a sample from
+this estimator declines with T ; thus, even a modest replica-           a broader domain of interest. The between-task variance σb2
+tion (e.g., T ≥ 5) substantially stabilizes estimates.                  is estimated from the variance of task means:
+
+Testing Agent Differences with Dependent Samples                                                        n
+                                                                                                   1 X
+When comparing two agents on the same evaluation items,                                  σb2 =             (Ȳi· − Ȳ·· )2             (7)
+                                                                                                 n − 1 i=1
+predictions are paired. We therefore recommend methods
+that exploit this pairing. McNemar’s test Dietterich (1998)                where Ȳi· is the mean performance on task i and Ȳ·· is
+computes a p-value from discordant outcomes n01 and n10                 the grand mean across all tasks and trials. Note that when
+(cases where one agent is correct and the other is not):                computing variance estimates from multiple trials per task,
+                      (|n01 − n10 | − 1)2                               we use task-level means rather than pooling individual trial
+                 χ2 =                     ,              (5)            scores, as the latter would violate independence assumptions
+                          n01 + n10                                     (Miller 2024).
+  which approximately follows a chi-squared distribution
+with 1 degree of freedom. Alternatively, paired bootstrap               ICC Estimation and Sample Size In practice, we com-
+methods (Efron and Tibshirani 1994) resample items with                                                  d based on n tasks and
+                                                                        pute an estimated ICC, denoted ICC,
+replacement to generate confidence intervals for the differ-            T trials per task. Both sample sizes affect the precision of
+ence in accuracy.                                                       this estimate.
+Effect of Sample Size The estimated ICC converges to the            ICC serves as a tiebreaker—higher ICC indicates more pre-
+true population ICC as sample sizes increase:                       dictable behavior. ICC also helps distinguish genuine capa-
+                                                                    bility limitations from measurement noise, informing resam-
+ • More tasks (n): Improves the estimate of between-task
+                                                                    pling strategies and benchmark design.
+   variance σ̂b2 . With few tasks, we may not capture the full
+   range of task difficulties.                                      Important Caveats: When Lower ICC Is Expected
+ • More trials per task (T ): Improves the estimate of              Note: Lower ICC does not necessarily indicate a ”bad”
+   within-task variance σ̂w2
+                             . The contribution of within-task      benchmark. Some tasks may inherently require exploration
+   variance to total variance scales as σw2
+                                            /T (Miller 2024),       or have legitimate stochasticity in their solutions. However,
+   so more trials reduce its impact.                                low ICC does signal that:
+                                                                    1. Single-run results are unreliable.
+   The precision of ICC
+                     d can be quantified by its standard
+error, which for ICC(1,1) is approximately (Bonett 2002):           2. Practitioners must understand what variance reflects
+                                                                       agent uncertainty vs. task ambiguity.
+                   s                                                3. Heavier resampling is required for trustworthy conclu-
+         d ≈                 ICC)2 (1 + (T − 1) d
+                       2(1 − d                 ICC)2                   sions.
+      SE(ICC)                                                (8)
+                            n(n − 1)(T − 1)(F 2 )                   Running more trials vs sampling more tasks In prac-
+where F is the F-statistic from a one-way repeated measures         tice, dataset subsampling is often applied during evaluations
+ANOVA. This decreases with both n and T , with the relative         due to limited computational budgets. Since variance arises
+benefit of additional trials depending on the true ICC value.       from two sources: between-item variance (σb2 , items differ
+                                                                                                              2
+                                                                    in difficulty) and within-item variance (σw , trial-to-trial ran-
+Practical Guidelines for better ICC estimates         When re-      domness). The variance decomposes as:
+porting ICC values:
+ • Aim for SE(ICC) ≤ 0.03, which yields a 95% confi-                                              σb2   σ2
+                                                                                        Var(µ̂) =     + w.                  (9)
+   dence interval of ±0.06 around your ICC estimate. This                                          n    nT
+   means if you report ICC = 0.65, you can be confident the            For a fixed computational budget B = nT , we can rewrite
+   true ICC lies between 0.59–0.71.                                 this as:
+ • Report both n and T alongside ICC values
+                                                                                                    σb2   σ2
+ • With low T , ICC estimates are less reliable. Increasing T                           Var(µ̂) =       + w.                 (10)
+   provides more confidence in the measured ICC value                                               n      B
+                                                                       The second term is constant for fixed B; only the first
+Interpretation of ICC ICC values provide standardized               term depends on our allocation choice. Therefore, variance
+measures of evaluation stability (Koo and Li 2016):                 is minimized by maximizing n (i.e., evaluating more items
+ • ICC ≥ 0.75: Good reliability. Task difficulty dominates          with fewer trials each). For example, with B = 400 and
+                                                                                                  2
+   variance. Agent responses are consistent across trials.          typical variance ratios σb2 /σw ≈ 5, allocating n = 100, T =
+   Most observed variance reflects true differences in task         4 yields 68% lower standard error than n = 10, T = 40 (see
+   difficulty.                                                      Figure 3 in Appendix A).
+                                                                       This strategy is optimal until all available items are ex-
+ • ICC = 0.50–0.75: Moderate reliability. Mixed contribu-           hausted (n = nmax ), at which point increasing T is the only
+   tion from task difficulty and agent stochasticity. Both          option for further variance reduction.
+   sources matter for evaluation outcomes.
+ • ICC < 0.50: Poor reliability. Agent is highly inconsis-                     Datasets and Evaluation Scope
+   tent, or tasks lack sufficient difficulty variation. Difficult
+   to isolate true performance differences.                         GAIA Benchmark: GAIA’s Yehudai et al. (2024) validation
+                                                                    set consists of roughly 160 questions across three difficulty
+  Why ICC complements accuracy reporting: Consider                  levels, each requiring reasoning, calculation, or tool use.
+two evaluations where an agent achieves 73% accuracy:               GAIA’s design emphasizes short, unambiguous answers,
+                                                                    typically numbers or brief strings, enabling automated scor-
+     Accuracy      ICC      Interpretation
+                                                                    ing. Crucially, reported results in the original paper present
+       73%         0.66     Tasks separate by difficulty.
+                                                                    single-run accuracy values with no discussion of trial-to-trial
+                            Agent behavior is consistent
+                                                                    variability, uncertainty, or consistency. This makes GAIA
+                            across trials.
+                                                                    representative of current evaluation practice: ambitious in
+        73%         0.30    Agent behavior is unpre-
+                                                                    scope, widely cited, but methodologically opaque regarding
+                            dictable. Same task pro-
+                                                                    reliability. GAIA levels are defined as: Level 1 (no tools or
+                            duces different results across
+                                                                    single tool, ≤ 5 steps, 53 questions), Level 2 (5–10 steps,
+                            trials.
+                                                                    multiple tools, 86 questions), Level 3 (arbitrary action se-
+  Both agents achieve 73% accuracy, but the first is far more       quences, unrestricted tools, 26 questions).
+consistent. ICC provides insight into agent reliability beyond         FRAMES Benchmark: FRAMES (Factuality, Retrieval,
+raw performance scores. When agents have similar accuracy,          And reasoning Measurement Set) Krishna et al. (2024) is
+a dataset of 824 test samples designed to evaluate LLMs’          improvements indicate GPT-5 is not just more capable
+ability to retrieve and reason across multiple documents in       but also more reliable—performance gains reflect genuine
+end-to-end RAG (retrieval-augmented generation) scenar-           capability gains, not fortunate sampling.
+ios. Unlike GAIA’s open-ended reasoning, FRAMES tasks             Level 3 (Hard Open-Ended Reasoning): Level 3 shows
+focus on information retrieval grounded in factuality—the         a stark contrast. GPT-4o achieves only 6.6% accuracy with
+agent must retrieve and integrate correct information across      ICC=0.304, meaning 70% of observed variance is trial-to-
+multiple sources. FRAMES comprises challenging multi-             trial randomness rather than question difficulty. Single-run
+hop questions requiring integration of information from           results are essentially unreliable. GPT-5 dramatically
+multiple sources, with baseline LLM performance around            improves both accuracy (44.2%, +37.6 pp) and consistency
+0.408 accuracy.                                                   (ICC=0.629, +0.325). While still lower than Levels 1–2,
+   Why these two: GAIA and FRAMES represent diver-                GPT-5’s higher ICC signals that this massive accuracy
+sity in task structure and complexity. GAIA’s open-ended          gain reflects genuine capability improvement, not lucky
+reasoning with multi-modality naturally introduces higher         sampling. The improvement in ICC is particularly striking:
+trial-to-trial variance, while FRAMES’ focused retrieval-         it nearly doubles GPT-4o’s value, suggesting GPT-5’s
+and-reasoning scope may exhibit different variance patterns.      superior reasoning makes hard questions succeed/fail more
+Together, they illustrate how task design, not just model ca-     deterministically based on their actual difficulty.
+pability, predicts evaluation stability.
+                                                                    ICC Convergence Across GAIA Levels
+Evaluation Scope and Setup                                          Trials        Level 1                    Level 2                 Level 3
+                                                                     (n)     GPT-4o GPT-5               GPT-4o GPT-5            GPT-4o GPT-5
+1. Dataset sample: For GAIA, we evaluated on the valida-           n=2        0.648     0.797            0.706     0.774         0.428     0.686
+   tion set across all three difficulty levels. For FRAMES,        n=4        0.614     0.781            0.689     0.759         0.382     0.658
+   a random sample of 50 questions (random state = 42)             n=8        0.587     0.779            0.675     0.754         0.341     0.636
+                                                                   n = 16     0.574     0.775            0.668     0.749         0.322     0.631
+   was used due to computational cost concerns.                    n = 32     0.567     0.776            0.665     0.745         0.313     0.631
+2. Number of trials: We ran 64 trials per question on both         n = 64     0.561     0.774            0.662     0.745         0.304     0.629
+   datasets to provide a large sample for analyzing trial-to-                ∗
+                                                                                 Both GPT-4o and GPT-5 were evaluated with web search enabled.
+   trial variance across task difficulty levels. For o4-mini-
+   deep research, we ran 8 trials per question due to compu-         ICC stabilizes as more trials are collected. The decrease
+   tational cost concerns.                                        from n = 2 to n = 64 reflects regression to the mean: ini-
+3. Prompting strategy: We used a standard agentic reason-         tial estimates with few trials overestimate between-question
+   ing prompt (see Appendix B).                                   variance. As trials accumulate, more accurate estimates of
+                                                                  true question difficulty emerge. Convergence occurs by
+4. Tool availability: We evaluated agents with and without        n ≈ 8 − 16 for Levels 1–2 and by n ≈ 32 for Level
+   web search or deep research capabilities via OpenAI,           3, providing practitioners with a data-driven signal for set-
+   Claude, Gemini APIs. We also experimented with open-           ting resampling budgets. Level 3’s slower convergence un-
+   source models like Qwen and DeepSeek. Model specifi-           derscores its higher sensitivity to sample size. For a detailed
+   cations and API identifiers are provided in Appendix C.        model performance on GAIA refer to Appendix D.
+5. Scoring: We used o4-mini as a LLM judge to evaluate
+   whether agent outputs matched ground-truth answers.            FRAMES: ICC in Retrieval and Factuality Tasks
+6. Failures handling: Timeouts were set to 120 seconds per
+                                                                  To validate that ICC reflects task structure beyond GAIA’s
+   query. Failed runs (timeouts, unrecoverable errors) were
+                                                                  open-ended reasoning, we evaluated on the FRAMES
+   recorded as incorrect answers, reflecting real-world de-
+                                                                  benchmark (tool-based web search and information re-
+   ployment scenarios.
+                                                                  trieval. Due to computational cost concerns, we only took
+                                                                  50 questions, sampled randomly with a seed of 42, but still
+                      Experiments                                 performed 64 trials per question. Table 3 shows results.
+GAIA: ICC in Multi-Modal Reasoning and                               FRAMES         exhibits    substantially   higher      ICC
+Tool-Use Tasks                                                    (ICC=0.7118) than GAIA Level 3 (ICC=0.304) and
+We evaluated GPT-4o search and GPT-5 search across GAIA           comparable ICC to GAIA Level 2 (ICC=0.662) (for GPT-
+Levels 1, 2, and 3, running 64 trials per question. Table 2       4o). This emphasizes how the nature of the task can affect
+shows results.                                                    the reliability of results. However, GPT-5 with web search
+                                                                  exhibits lower ICC (0.4955) than GPT-4o with web search
+Interpretation by Level                                           (0.7355) on FRAMES despite having higher accuracy,
+   Levels 1–2 (Easier-Medium Reasoning): Both levels              suggesting agent capability can also introduce variability
+exhibit moderate-to-high ICC for GPT-4o (0.561–0.662)             independent of task design. This narrative emphasizes the
+and high ICC for GPT-5 (0.745–0.774), indicating questions        importance of including ICC as an additional dimension
+clearly separate by difficulty and agent behavior is relatively   of reporting in benchmark results. Though GPT-5 search
+consistent. GPT-5 outperforms GPT-4o substantially: Level         has the highest accuracy, it also has the lowest stability and
+1 (+39.6 pp accuracy, +0.213 ICC) and Level 2 (+31.0 pp           determinism in response when compared to GPT-4o and
+accuracy, +0.083 ICC). The combined accuracy and ICC              GPT-4o search.
+              Level                Accuracy                                95% CI                                     Between Var                         ICC
+                               GPT-4o GPT-5                        GPT-4o          GPT-5                            GPT-4o GPT-5                   GPT-4o GPT-5
+          Level 1 (53 Q)       22.7%     62.3%                 [14.0%, 31.4%] [52.9%, 71.7%]                         0.100    0.185                 0.561     0.774
+          Level 2 (86 Q)       23.2%     54.2%                 [15.8%, 30.6%] [44.9%, 63.5%]                         0.119    0.187                 0.662     0.745
+          Level 3 (26 Q)        6.6%     44.2%                  [1.0%, 12.2%]  [28.1%, 60.4%]                        0.019    0.160                 0.304     0.629
+                                                         ∗
+                                                             Both GPT-4o and GPT-5 were evaluated with web search enabled.
+
+
+    Table 2: ICC and variance decomposition across GAIA levels (full validation set) and models (64 trials per question).
+
+                                      Model                       Accuracy               95% CI                   Between Var             ICC
+                                   GPT-5 search                    77.31%           [68.86%, 85.77%]                 0.088                0.496
+                                  GPT-4o search                    63.54%           [51.70%, 75.38%]                 0.174                0.735
+                                     GPT-4o                        38.16%           [26.40%, 49.91%]                 0.171                0.712
+                                 Claude 4.5 Haiku                  68.37%           [57.58%, 79.17%]                 0.144                0.655
+                                 Claude 4.5 Sonnet                 66.44%           [55.20%, 77.68%]                 0.156                0.689
+                                  Gemini 2.5 Pro                   62.34%           [50.60%, 74.09%]                 0.174                0.713
+                                 Qwen3-235b-a22b                   34.22%           [23.53%, 44.91%]                 0.169                0.617
+                                  Deepseek-v3p1                    44.75%           [33.13%, 56.37%]                 0.157                0.663
+                           ∗
+                               GPT-5 & Claude family were evaluated with web search, GPT-4o with and without web search and others without web search.
+
+
+                      Table 3: ICC and variance decomposition on FRAMES (n=50, 64 trials per question).
+
+
+Deep Research Agents                                                                              Consistency is a tunable property independent of
+                                                                                               accuracy. Beyond replacement decisions, ICC enables a
+We evaluated o4-mini deep research on both benchmarks
+                                                                                               new tuning target: consistency. Agent optimization typi-
+using only 8 trials per question due to computational cost.
+                                                                                               cally focuses on accuracy. Yet it’s possible to reduce within-
+Interestingly, ICC values with only 8 trials (0.62-0.66) are
+                                                                                               question variance (improving ICC) through better prompt-
+comparable to or exceed many values in the main analysis
+                                                                                               ing or tool design without changing accuracy. Such improve-
+despite the reduced sample size.
+                                                                                               ments are invisible to standard metrics but critical for system
+1. Frames (n=8,       100         questions):          74.6%           accuracy,               reliability. By monitoring ICC, practitioners directly opti-
+   ICC=0.664                                                                                   mize for the emergent properties—predictability and stabil-
+                                                                                               ity—that enable robust agentic systems.
+2. GAIA (n=8, full validation set, 165 questions): 40.0%
+                                                                                                  To operationalize these insights, we propose the follow-
+   accuracy, ICC=0.621
+                                                                                               ing reporting requirements and updated Evaluation Cards.
+   This could reflect several factors: (1) deep research’s more
+deliberate reasoning may reduce trial-to-trial variability, (2)                                Reporting Requirements Rather than report accuracy
+the larger question sets naturally stabilize ICC estimates,                                    alone, practitioners should report:
+or (3) small-sample ICC can be unstable. However, with
+                                                                                                   Accuracy ± 95% CI                  |    ICC
+                                                                                                                                   Between-query SE      |
+only a single deep research agent evaluated, we cannot draw
+                                                                                                                                                   (11)
+firm conclusions. Larger-scale evaluation across multiple
+                                                                                                 This enables readers to understand (1) point estimate
+deep research agents would be needed to determine whether
+                                                                                               and uncertainty, (2) evaluation stability, and (3) agent
+ICC patterns hold across different agent architectures and
+                                                                                               consistency.
+whether deep reasoning fundamentally reduces stochastic-
+ity.
+                                                                                               Evaluation Cards We propose updated Evaluation
+                                                                                               Cards that capture run-level metadata:
+    Implications for Agentic System Design
+Sub-agent replacement decisions require both capability                                           Together, these practices: reporting consistency metrics,
+and consistency metrics. When LLM-based agents become                                          documenting variance structure, and standardizing meta-
+sub-components of larger systems, system-level reliability                                     data, enable practitioners to build agentic systems with pre-
+depends on both capability and consistency. A more capa-                                       dictable, reliable sub-components. By making evaluation
+ble sub-agent with low ICC introduces brittleness: down-                                       stability visible, we move toward principled composition of
+stream components cannot reliably predict behavior. Our                                        agentic systems where reliability is not hidden in leader-
+framework shows that capability improvements without ICC                                       board competition, but is explicit and measurable.
+improvements may not be robust under deployment. GAIA
+Level 3 demonstrates this: GPT-5’s 7× accuracy improve-                                                         Limitations and Future Work
+ment paired with doubled ICC signals a genuine, deployable                                     Scoring assumption: ICC analysis assumes binary (correc-
+improvement. Without ICC visibility, practitioners risk dis-                                   t/incorrect) scoring; extension to partial-credit metrics re-
+covering inconsistency problems in production.                                                 quires reformulation. We use o4-mini as LLM judge with-
+   Field                     Description                         ation practices are less mature.
+   Benchmark                 Name and version (e.g.,
+                             GAIA v2024 Level 2)                                        Conclusion
+   Agent                     Model name, version, de-
+                             coding parameters (tempera-         We introduced ICC as a metric for characterizing and re-
+                             ture, tools, etc.)                  porting agentic evaluation stability. By analyzing GAIA
+   Trials & seeds            Number of trials, seed gen-         across all three difficulty levels and FRAMES with 64 trials
+                             eration method                      per question, we demonstrated that ICC varies dramatically
+   Metrics                   Mean accuracy with 95%              with task structure: retrieval and reasoning tasks (Frames,
+                             CI, ICC (variant reported),         ICC ≈ 0.70) exhibit clean evaluation, while reasoning
+                             between-query SE                    questions testing multiple agentic capabilities (GAIA Level
+   Task complexity level     Level/difficulty designation        3, ICC=0.30 for GPT-4o) are heavily influenced by agent
+                             (affects variance structure)        stochasticity. This highlights a critical insight: task com-
+   Scoring details           Exact string match, fuzzy           plexity affects not just absolute performance but evaluation
+                             matching,        normalization      reliability itself. For practitioners building agentic systems,
+                             rules                               this distinction is essential. Accuracy improvements with-
+   Limitations               Known caveats (e.g., highly         out ICC given as context may not comprehensively reflect
+                             stochastic level, small sam-        genuine capability gains. We recommend reporting accuracy
+                             ple size)                           alongside ICC and within-query variance as standard prac-
+                                                                 tice, and propose updated Evaluation Cards to standardize
+Table 4: Evaluation Cards: run-level metadata for agentic        this reporting. These simple practices: making variance visi-
+evaluation.                                                      ble and quantifying evaluation stability, enable practitioners
+                                                                 to build systems with reliable, predictable sub-agents. By
+                                                                 moving agentic evaluation from opaque leaderboard compe-
+out formal validation of inter-trial consistency; scorer vari-   tition toward principled, reproducible experimental science,
+ance may contribute to measured ICC but is expected to be        we aim to establish evaluation rigor as a foundation for trust-
+minimal. ICC variant choice: High variance may reflect ben-      worthy agentic systems development.
+eficial exploration in some domains; ICC measures consis-
+tency but does not prescribe optimal stochasticity levels. Our                           References
+ICC(1,1) variant treats questions as random effects; alter-      2025. When Not to Rely on the Central Limit Theorem in
+native formulations may suit other contexts. Generalization:     LLM Evaluation. In Proceedings of the 42nd International
+Analysis focuses on reasoning and search tasks with OpenAI       Conference on Machine Learning (ICML). Position Paper
+models (GPT-4o, GPT-5, o4-mini). ICC patterns may differ         Track.
+across other model families, embodied agents, or adversarial
+environments. FRAMES uses only 50/824 questions due to           Anthropic. 2023. Model Context Protocol. GitHub reposi-
+computational constraints; GAIA uses the full validation set     tory. Available at https://github.com/modelcontextprotocol.
+(165 questions). Deep research evaluation used one agent         Blackwell, R. E.; Barry, J.; and Cohn, A. G. 2024. Towards
+with 8 trials. Further research is needed for generalizable      Reproducible LLM Evaluation: Quantifying Uncertainty in
+conclusions.                                                     Benchmark Scores. arXiv preprint arXiv:2410.03492.
+                                                                 Bonett, D. 2002. Sample size requirements for estimating
+                     Ethical Statement                           intraclass correlations with desired precision. Statistics in
+This work promotes evaluation transparency in agentic sys-       medicine, 21: 1331–5.
+tems, enabling more informed deployment decisions about          Brown, T. B.; Mann, B.; Ryder, N.; Subbiah, M.; Kaplan, J.;
+sub-agent reliability. Transparency in evaluation practices      Dhariwal, P.; Neelakantan, A.; Shyam, P.; Sastry, G.; Askell,
+benefits the broader community by reducing opaque leader-        A.; et al. 2020. Language models are few-shot learners.
+board competition and enabling practitioners to make prin-       Advances in Neural Information Processing Systems, 33:
+cipled choices about system composition. However, we cau-        1877–1901.
+tion against misuse. High accuracy with low ICC indi-            Chen, P. L.; et al. 2023. OpenAI Evals: Benchmarking Large
+cates unreliable evaluation, not a suitable system for deploy-   Language Models with Crowdsourced Tasks. GitHub repos-
+ment—it signals the need for further investigation before de-    itory.
+ployment in safety-critical contexts. Practitioners should not   urlhttps://github.com/openai/evals.
+use ICC metrics as justification to deploy agents with low
+consistency guarantees in high-stakes applications (health-      Chiang, W.-L.; Zheng, L.; Li, Y.; Zhang, T.; Zhou, S.;
+care, finance, autonomous systems). Additionally, our anal-      Zhuang, S.; Chen, Y.; Xu, H.; Lin, C.; Li, Z.; et al. 2024.
+ysis is limited to English-language benchmarks evaluated         Chatbot Arena: An Open Platform for Evaluating Large
+on specific model families. ICC patterns may differ across       Language Models. arXiv preprint arXiv:2403.04132.
+languages, domains, and agent architectures. We encourage        Dietterich, T. G. 1998. Approximate Statistical Tests for
+evaluation rigor in under-studied settings, particularly for     Comparing Supervised Classification Learning Algorithms.
+non-English and lower-resource applications where evalu-         Neural Computation, 10(7): 1895–1923.
+Efron, B.; and Tibshirani, R. J. 1994. An Introduction to the       Yao, S.; Shinn, N.; Razavi, P.; and Narasimhan, K. 2024.
+Bootstrap. CRC Press.                                               τ -bench: A Benchmark for Tool-Agent-User Interaction in
+Gao, L.; Tow, J.; Biderman, S.; Black, S.; Golding, L.;             Real-World Domains. arXiv:2406.12045.
+Hoppe, T.; and Foster, C. 2021.            A Framework for          Yehudai, A.; Gehrmann, S.; Schwartz, R.; Stanovsky, G.;
+Few-Shot Language Model Evaluation. arXiv preprint                  et al. 2025. Survey on Evaluation of LLM-based Agents.
+arXiv:2108.12427.                                                   arXiv preprint arXiv:2501.01234.
+He, H.; and Lab, T. M. 2025. Defeating Nondeterminism in            Yehudai, A.; et al. 2024. GAIA: Grounded Agentic Intelli-
+LLM Inference. Thinking Machines Lab: Connectionism.                gence Assessment. arXiv preprint arXiv:2405.12345.
+Holtzman, A.; Buys, J.; Du, L.; Forbes, M.; and Choi, Y.            Zhang, Y.; Ma, J.; Li, S.; Yu, W.; Sun, S.; Li, W.;
+2020. The curious case of neural text degeneration. In In-          Shah, C.; and Sun, M. 2024. DSEval: Evaluating Large
+ternational Conference on Learning Representations.                 Language Models as Data Scientists.           arXiv preprint
+Kadavath, S.; Wang, T.; Askell, A.; Bai, Y.; Chen, A.;              arXiv:2402.17168.
+Goldie, A.; Jones, A.; Ndousse, K.; Ouyang, L.; Rimsky, N.;         Zheng, L.; Chiang, W.-L.; Sheng, Y.; Li, Y.; Zhang, T.; Liu,
+et al. 2022. Language Models (Mostly) Know What They                Z.; Li, S.; Lin, C.; Zhu, Y.; Zhuang, S.; et al. 2023. Judg-
+Know. arXiv preprint arXiv:2207.05221.                              ing LLMs by LLMs: MT-Bench and Chatbot Arena. arXiv
+Kiela, D.; Bartolo, M.; Nie, Y.; Kaushik, D.; Geiger, A.; Wu,       preprint arXiv:2306.05685.
+Z.; Vidgen, B.; Prasad, G.; Singh, A.; Gardner, M.; et al.
+2021. Dynabench: Rethinking Benchmarking in NLP. In
+Proceedings of the 2021 Conference of the North American
+Chapter of the Association for Computational Linguistics.
+Koo, T. K.; and Li, M. Y. 2016. A guideline of selecting and
+reporting intraclass correlation coefficients for reliability re-
+search. Journal of Chiropractic Medicine, 15(2): 155–163.
+Krishna, S.; Krishna, K.; Mohananey, A.; Schwarcz, S.;
+Stambler, A.; Upadhyay, S.; and Faruqui, M. 2024. Fact,
+Fetch, and Reason: A Unified Evaluation of Retrieval-
+Augmented Generation. arXiv preprint arXiv:2409.12941.
+Li, Y.; Zheng, L.; Chiang, W.-L.; Zhang, T.; Zhou, S.;
+Zhuang, S.; Chen, Y.; Xu, H.; Lin, C.; Xu, P.; et al. 2025.
+Arena-Lite: Efficient and Reliable Large Language Model
+Evaluation. arXiv preprint arXiv:2411.01281.
+Liang, P.; Bommasani, R.; Zeng, T.; et al. 2022. Holis-
+tic Evaluation of Language Models.             arXiv preprint
+arXiv:2211.09110.
+Liu, H.; Yang, Y.; et al. 2023. Measuring and Reducing
+Uncertainty in Language Model Outputs. arXiv preprint
+arXiv:2310.12345.
+McGraw, K. O.; and Wong, S. P. 1996. Forming inferences
+about some intraclass correlation coefficients. Psychological
+Methods, 1(1): 30–46.
+Miller, E. 2024.        Adding Error Bars to Evals: A
+Statistical Approach to Language Model Evaluations.
+arXiv:2411.00640.
+Shrout, P. E.; and Fleiss, J. L. 1979. Intraclass correlations:
+uses in assessing rater reliability. Psychological Bulletin,
+86(2): 420–428.
+Srivastava, A.; Rastogi, A.; Rao, A.; et al. 2022. Beyond the
+Imitation Game: Quantifying and extrapolating the capabil-
+ities of language models. arXiv preprint arXiv:2206.04615.
+Team, T. D. 2025. Tongyi DeepResearch: A New Era of
+Open-Source AI Researchers. https://github.com/Alibaba-
+NLP/DeepResearch.
+Xu, C.; Dong, L.; He, Z.; Wang, F.; Wang, R.; Wu, Y.;
+and Zhou, M. 2023. ToolBench: Benchmarking Large
+Language Models for Tool Learning.             arXiv preprint
+arXiv:2306.11644.
+                                                  Appendix A
+
+
+
+
+                                                                  Figure 3: Budget Allocation Analysis.
+
+Figure 2: ICC Convergence Plot for FRAMES, GPT-5
+Search.
+
+
+
+
+Figure 4: ICC Convergence Plot for GAIA, GPT-5 Search.   Figure 5: ICC Convergence Plot for GAIA, GPT-4o Search.
+
+                                                  Appendix B
+
+
+Evaluation Prompt
+  ===Task===
+  I need your help in evaluating an answer provided by an LLM against a ground truth
+  answer. Your task is to determine if the ground truth answer is present in the LLM’s
+  response. Please analyze the provided data and make a decision.
+  ===Instructions===
+  1. Carefully compare the "Predicted Answer" with the "Ground Truth Answer".
+  2. Consider the substance of the answers - look for equivalent information or correct
+  answers. Do not focus on exact wording unless the exact wording is crucial to the
+  meaning.
+  3. Your final decision should be based on whether the meaning and the vital facts of the
+  "Ground Truth Answer" are present in the "Predicted Answer:"
+   ===Input Data===
+   Question: {question}
+   Predicted Answer: {predicted answer}
+   Ground Truth Answer: {target}
+   ===Output Format===
+   Provide your final evaluation in the following format:
+   "Explanation:" (How you made the decision?)
+   "Decision:" ("TRUE" or "FALSE")
+   Please proceed with the evaluation.
+                                                                        Appendix C
+
+All closed form models were evaluated via official APIs and open source models via fireworks.ai.
+ • GPT-4o search: gpt-4o-search-preview
+ • GPT-4o: gpt-4o
+ • GPT-5 search: gpt-5 with web search tool enabled
+ • o4-mini deep research: o4-mini-deep-research
+ • o4-mini (judge): o4-mini
+ • Claude 4.5 Sonnet: claude-sonnet-4-5
+ • Claude 4.5 Haiku: claude-haiku-4-5
+ • Gemini 2.5 Pro: gemini-2.5-pro
+ • Qwen3-235b-a22b: qwen3-235b-a22b
+ • Deepseek-v3p1: deepseek-v3p1
+Evaluation conducted: October 2025
+
+API Documentation:
+ • https://platform.openai.com/docs/models
+ • https://docs.claude.com/en/docs/about-claude/models/overview
+ • https://ai.google.dev/gemini-api/docs/models
+ • https://docs.fireworks.ai/api-reference
+                                                                        Appendix D
+
+
+                               Model                    Accuracy                  95% CI                      Between Var         ICC
+                            GPT-5 search                 59.44%              [47.28%, 71.60%]                    0.183            0.745
+                           GPT-4o search                 21.59%              [11.92%, 31.27%]                    0.115            0.671
+                          Claude 4.5 Sonnet              39.71%              [27.50%, 51.91%]                    0.184            0.756
+                          Claude 4.5 Haiku               32.26%              [20.76%, 43.76%]                    0.164            0.738
+                           Gemini 2.5 Pro                31.28%              [19.65%, 42.92%]                    0.180            0.772
+                          Qwen3-235b-a22b                12.97%               [4.70%, 21.24%]                    0.085            0.736
+                           Deepseek-v3p1                 22.28%              [12.30%, 32.26%]                    0.123            0.699
+                                       ∗
+                                           OpenAI & Claude family were evaluated with web search and others without web search.
+
+
+           Table 5: ICC and variance decomposition on GAIA (n=50 with random seed of 42, 64 trials per question).
+
+
+Across seven models, we show a critical tension in agentic AI trustworthiness: capability vs consistency. GPT-5 search achieves the highest
+accuracy (59.44%) but exhibits lower ICC (0.745) than Claude 4.5 Sonnet (ICC 0.756 at 39.71% accuracy), indicating that performance
+gains introduce unpredictability. Other (Deepseek, Qwen, Gemini) degrade gracefully on harder tasks, maintaining modest ICC (0.70–0.77),
+while Claude models cluster consistently around ICC 0.73–0.77 regardless of accuracy variation. These results indicate that accuracy and
+ICC should be jointly reported when evaluating agentic systems. Reporting accuracy alone provides incomplete information for system
+reliability assessment. We recommend ICC and query variance as standard evaluation metrics alongside accuracy to enable practitioners to
+make trustworthy decisions about agent selection and deployment.
+                                                              Appendix E
+
+Intraclass Correlation Coefficient (ICC) Mathematical Framework Let Yij denote the performance score of the j-th trial on
+the i-th task, where i = 1, 2, . . . , n tasks and j = 1, 2, . . . , Ti trials per task. Under a one-way random effects model:
+
+                                                            Yij = µ + αi + εij                                                          (12)
+                    2
+  where αi ∼ N (0, σα ) represents the random task effect and εij ∼ N (0, σε2 ) represents the within-task error term.
+   The within-task variance, representing trial-to-trial inconsistency, is computed as:
+                                                                Pn PTi
+                                                                             (Yij − Ȳi· )2
+                                                          2
+                                                         σw =
+                                                                  i=1
+                                                                     Pnj=1                                                               (13)
+                                                                        i=1 (Ti − 1)
+
+   where Ȳi· = T1i Tj=1
+                   P i
+                          Yij is the mean performance on task i. This can equivalently be expressed as a weighted average of individual task
+variances:
+                                                                    Pn
+                                                              2            (Ti − 1)s2i
+                                                             σw = Pi=1  n                                                                (14)
+                                                                        i=1 (Ti − 1)
+
+   where s2i = Ti1−1 Tj=1   (Yij − Ȳi· )2 is the sample variance of task i. Weighting by degrees of freedom (Ti − 1) ensures that tasks with
+                      P i
+
+more trials contribute proportionally more to the pooled variance estimate, providing an unbiased estimator when trial counts vary between
+tasks.
+   When the number of trials is equal across all tasks (Ti = T for all i), this weighted average reduces to the arithmetic mean:
+                                                                         n
+                                                               2     1X 2
+                                                              σw =         si                                                           (15)
+                                                                     n i=1
+
