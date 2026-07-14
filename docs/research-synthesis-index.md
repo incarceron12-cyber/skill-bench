@@ -445,8 +445,42 @@ cover the boundary; no feedback-specific schema follows.
 | [SaaS-Bench](../papers/agent-benchmarks/2026-07-11-saas-bench-stateful-workflow-validity.md) | A | Adds deployable cross-application state and dense native checks, while showing that seeded preconditions, dependent consequences, weak joins, and artifact proxies can make a weighted checkpoint score diverge from run-attributable professional progress |
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Contributes multimodal professional artifacts and expert preference evidence while showing that preference is not an absolute readiness threshold |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Shows why deterministic artifact grading still needs clean-start attestation, requested-criterion coverage, alternate-path tests, and verifier falsification |
+| [DORA](../papers/agent-benchmarks/2026-07-14-dora-disaster-response-consequence-validity.md) | A | Separates real-source and label truth, one executable analytical witness, endpoint agreement, professional acceptance, recipient uptake, action, and consequence; exposes uncalibrated geometry/numeric tolerances and absent operational evidence |
 
 **Repository consequence:** Score families remain separate, artifact views have admissibility contracts, and task/trial records preserve both produced artifacts and consequential workspace state. Editable artifacts need native, executable/recalculated, rendered, and trace evidence plus authoritative mutation tests; inherited size and one reference witness do not establish work performed or maintainability. Scored state checks must also distinguish environment readiness from trial-created deltas and identify shared-cause or descendant dependencies. The internal initial-state replay rejects pre-satisfied, stale, copied-witness, and omitted-transition cases, accepts a declared alternative, and abstains on invalid initialization; its seven synthetic matches validate only fixture/scorer behavior ([replay](../pilots/task-initial-state-conformance/replay-report.json)).
+
+DORA adds an **analysis-to-consequence ladder**: `source event/snapshot and valid
+time → task requirement and authority → source/label truth → one analytical witness
+under a configured tool/perception package → endpoint/artifact observation →
+professional acceptance → recipient uptake → authorized attempted/realized action →
+intended and collateral consequence`. No link inherits the next. Historical imagery
+supports source realism, not automatically the validity of an authored operational
+question, constant, objective, route, threshold, recommendation, or use. GT
+substitution can stabilize one reference while removing uncertainty faced by the
+evaluated or field system; a canonical path is one witness, not an alternative-
+complete or safe policy.
+
+Bind each requirement and threshold to source snapshot/valid time, qualified
+authority, assumptions and transformations, intended recipient, protected
+constraints, and reviewer disposition. Admit reviewed alternative paths/answers,
+partial orders, abstention, and escalation. Calibrate scalar and geometry predicates
+in physical or decision units against boundary cases and stakeholder loss rather
+than convenience. Preserve artifact acceptance, recipient interpretation and uptake,
+authorization, attempted versus realized state, collateral effects, and whether an
+outcome is observed, simulated, or expert-projected. Cluster estimates by shared
+event/task lineage and separate tool/data/perception/interface/task/grader surfaces
+from supported roots.
+
+The reviewed DORA v1 reports 515 tasks over 45 historical events and 108 typed tools,
+but its model-backed canonical trajectory reaches only 80.48% agreement with the
+GT-derived endpoint. Unnamed expert authority, one outcome-derived witness,
+uncalibrated 20%/20-pixel/.5-IoU gates, no accepted alternatives, missing cited
+Appendices C–H, and no verifiable task/tool/trajectory/result release limit it to an
+offline analytical-package design claim. It supplies no operational-response,
+safety, professional-validity, capability, production-fitness, or readiness evidence.
+Existing authority, evidence-state, artifact, action-safety, trace, root/surface,
+task-health, metric, and validity machinery already hosts the boundary; no disaster-
+specific schema or pilot follows.
 
 ## 5. Graders and metrics are measured systems with their own failure modes
 

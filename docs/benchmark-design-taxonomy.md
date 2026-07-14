@@ -688,6 +688,63 @@ argument, metric-monitoring, expert-participation, and future elicitation-sessio
 records; do not create a parallel schema or implement the blocked session contract
 without a real consented session.
 
+### 2.5f An analytical witness is not an operational consequence oracle
+
+Real source material, a verified label, an executable reference path, an accepted
+artifact, and a beneficial outcome are different validity objects. Preserve the
+full ladder:
+
+```text
+source event/snapshot and valid time
+  → task requirement, assumptions, and authority
+    → source or label truth under a declared observer
+      → one analytical witness and configured execution
+        → endpoint/artifact observation and professional acceptance
+          → recipient uptake and authorized attempted action
+            → realized intended/collateral state → stakeholder consequence
+```
+
+No rung inherits the next. Historical or production provenance attaches first to
+the source, not automatically to the authored question, constants, objective,
+threshold, route, recommendation, or use. Ground-truth substitution is an
+instrument-construction intervention: it may stabilize one downstream reference
+while suppressing uncertainty present in the evaluated or operational system. Keep
+at least three oracle roles separate: **source/label truth**, **analytical witness**,
+and **operational acceptability or consequence**. A canonical path proves one
+feasible derivation only; it does not prove necessity, completeness, safety,
+optimality, or authority.
+
+Task-level lineage must bind source snapshot, license and valid time; contributor or
+framework clause and authority scope; requirement, assumptions, transformations,
+thresholds, protected constraints, intended recipient, and reviewer disposition.
+Represent independently reviewed alternate paths/answers or partial orders,
+prohibited actions, uncertainty, and legitimate abstention/escalation. Endpoint
+tolerances must be expressed in decision-relevant units and justified by loss or
+consequence: pixel distance, overlap, relative error, string equality, and weighted
+field averages are merely configured predicates until map scale, stakeholder impact,
+boundary cases, and false-accept/false-reject costs calibrate them.
+
+For consequence claims, preserve artifact acceptance, recipient interpretation and
+uptake, authorization, attempted versus realized action, protected-state
+preservation, collateral effects, affected stakeholders, and whether each outcome
+is observed, simulated, or expert-projected. Estimate uncertainty at the source
+event or task-package lineage level when tasks share events, assets, tools, authors,
+or templates; task rows are not automatically independent. Diagnose tool, data,
+perception, interface, task, grader, and agent surfaces separately, and name a root
+only after event evidence, intervention, or qualified adjudication supports it.
+
+DORA makes this boundary unusually visible: 515 reported tasks compile one authored
+geospatial path into typed endpoints over real historical imagery, while the
+model-backed canonical path reaches only 80.48% agreement with GT-derived answers.
+Its unnamed expert lineage, uncalibrated 20%/20-pixel/.5-IoU gates, absent alternatives,
+missing Appendices C–H, and unavailable task/tool/trajectory/result package block
+audit of the empirical instrument and every operational promotion [DORA]. The source
+supports typed manifests, path-versus-endpoint diagnosis, and imperfect-witness
+execution—not emergency-response competence, safety, professional validity,
+capability, production fitness, or readiness. Existing authority, evidence-state,
+artifact, action-safety, trace, root/surface, task-health, metric, and validity
+records are the implementation homes; no disaster-specific schema or pilot follows.
+
 ### 2.6 Frame, content, assembly, and inference have different denominators
 
 Do not infer suite validity by adding healthy tasks or broad labels. Preserve
@@ -1839,6 +1896,7 @@ fidelity separately from score calibration [EB, AP].
 | Conditional agent reliability profiling | response matrix over matched repeats, preserved perturbations, decision-time confidence, and typed consequences | repeatability mistaken for capability; authored variants/exposure treated as deployment robustness; wrapper recovery credited to agent; post-hoc confidence and generic severity promoted to readiness | full immutable v3 paper and protocol-level review; two benchmark families, five incompletely controlled repeats, unvalidated interventions/severity, and no paper-pinned experiment code [AR] |
 | Work-activity and handoff-centered reporting | many-to-many activity map, tested-setting claim subtraction, persistent product bound to recipient/next operation, strongest and excluded claims | preliminary labels mistaken for representative coverage; visual realism or product polish mistaken for responsibility, downstream usability, or deployment evidence | full immutable v1 paper; LLM-mediated O*NET/ESCO descriptive taxonomy and three purposive report demonstrations, with no reliability, stability, reconstruction, recipient-use, or framework-effect validation [DR] |
 | Frozen-state successor resumability (Handoff Debt) | matched checkpoint/view intervention; separate fidelity, recipient sufficiency, endpoint, outcome-aware continuation effort, and lifecycle cost | evaluator-derived state leakage; nested checkpoints treated as tasks; outcome-dependent stopping called rediscovery; authoring cost omitted; one coding runtime promoted to human/professional validity | full immutable v1 paper/source and aggregate-table audit, but no verifiable empirical release, task IDs, checkpoints, payloads, run records, or analysis [HD] |
+| High-consequence analytical tool pipelines (DORA) | source/label truth, one executable analytical witness, typed endpoint, recipient/action, and observed or simulated consequence kept distinct | real historical sources and deterministic replay mistaken for task authority, calibrated tolerances, alternative-complete planning, safe operational action, or beneficial outcome | full immutable v1 PDF/text/source review; missing Appendices C–H and no verifiable task/tool/trajectory/result release block empirical replay and operational-validity claims [DORA] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -1995,6 +2053,12 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     adjudication, real review cost, clustered uncertainty, intervention effects,
     and licensed uses. Signal activation cannot silently become defect prevalence,
     system comparison, quality, safety, capability, or production-readiness evidence.
+47. **An analytical witness is not a consequence oracle:** keep real-source
+    provenance, task/requirement authority, source or label truth, one executable
+    path, endpoint acceptance, recipient uptake, attempted/realized action, and
+    stakeholder consequence separate; calibrate tolerances to decision loss,
+    preserve alternatives and abstention, and cluster by shared source event or task
+    lineage before any operational, safety, capability, or readiness promotion.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -2423,6 +2487,14 @@ them:
   clustered expert workshop exposes benchmark-to-consequence warrant disagreement;
   it does not establish calibrated uplift, cyber risk, expected harm, causal
   transfer, decision usefulness, capability, professional validity, or readiness.
+- **[DORA]**
+  `papers/agent-benchmarks/2026-07-14-dora-disaster-response-consequence-validity.md`;
+  reviewed immutable v1 PDF/text/source hashes and release-search provenance are
+  recorded there. The source archive omits cited Appendices C–H, and no author-owned
+  task/tool/trajectory/result package was verifiable at review time. Historical
+  source realism and one GT-derived analytical witness do not establish calibrated
+  operational acceptability, consequence, safety, professional validity,
+  capability, production fitness, or readiness.
 - **[HC]**
   `papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md`;
   reviewed immutable v1 PDF/text and inspected one-day-post-v1 official release
