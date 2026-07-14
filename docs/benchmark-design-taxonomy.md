@@ -1098,6 +1098,67 @@ side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
 
+### 3.2a Deterministic evidence-path checks inherit the validity of their contract
+
+A repeatable scorer can establish only that a frozen predicate was applied to a
+frozen observation. Before interpreting the result, preserve a proof-carrying
+contract chain:
+
+```text
+public requirement and affected-party authority
+  → authoritative sources, access policy, and valid-time rule
+    → claim-specific evidence/search universe and admissible alternatives
+      → adapter observation and information-flow stages
+        → deterministic predicate observation
+          → semantic/professional observation where needed
+            → aggregation, bounded claim, and decision
+```
+
+Type runtime information flow as `request → result_exposure → content_access →
+model_visibility → citation_or_adoption → action → effect`. A blocked request is
+a policy-attempt observation, not evidence of exposure, leakage, harm, or causal
+use. Preserve filtered and unfiltered result identities where policy permits,
+adapter errors, actor/role/purpose, subsystem, valid interval, and policy version.
+This refines the broader context ladder in §2.5c and retrieval invariant 19 rather
+than creating another trace subsystem [GE].
+
+Negative claims require a bounded search-universe record: universe owner and
+authority; included sources/indices and known omissions; snapshot and valid time;
+query/operator semantics; pagination, truncation, and retry state; access failures;
+index synchronization/completeness evidence; and residual uncertainty. The licensed
+statement is “not found within U under Q at T,” never global absence by default.
+Direct retrieval of predeclared IDs is one witness path, not proof that the search
+mechanism or universe was complete. Store independently reviewed sufficient evidence
+sets or sparse necessary checkpoints, mutate valid omitted paths and irrelevant
+results, and return `insufficient_evidence` when completeness is unsupported [GE,
+WB].
+
+Likewise, an event join, temporal order, or shared entity key is a
+`configured_dependency`; call it causal only when intervention or a warranted causal
+model, rival-mechanism analysis, and qualified adjudication support the promotion.
+LongMedBench's recorded next event is not automatically a decision oracle;
+BigFinanceBench's narrated checkpoint is not audited evidence use; Workspace-Bench's
+dependency graph is not causal adoption; and GroundEval's exact internal mechanism
+label is not counterfactual reasoning [GE, LM, WB]. Public basis and recoverable
+evidence locators are required for every exact private field.
+
+Observer comparisons must hold decisive evidence views fixed. Compare deterministic,
+model, and human observers predicate by predicate against independent labels with the
+same contract, trace, artifacts, and state-query opportunity; a prose-only observer
+is an explicit insufficient-view control, not an accuracy baseline [GE, ARB].
+GroundEval's release usefully supplies deterministic actor/time, configured-artifact,
+and search-coverage mechanics, but its paper corpus, 96 questions, trajectories,
+judge records, and results are absent. Its Table 6 matches release code that multiplies
+the whole combined score by `(1-v)^2`, not published Equation 1, while release
+aggregation retains only actor-gate violations rather than the stated three types.
+The 82 passing unit tests and compact example generation establish selected code
+behavior—not contract authority/completeness, causal validity, verified absence,
+observer superiority, professional validity, capability, safety, production fitness,
+or readiness [GE]. Existing provenance-observation, alternative-path, artifact-view,
+trace, task-health, metric, and validity machinery are the implementation homes.
+
+### 3.2b Disagreement can be evidence about the instrument or the construct
+
 For ordinal plural grading, agreement, panel-relative severity/location, model
 fit, repeated-call stability, and decision validity are non-substitutable. A
 connected assignment may identify relative rater locations only under explicit
@@ -1704,6 +1765,7 @@ fidelity separately from score calibration [EB, AP].
 | Cross-family execution substrate (BrowserGym) | canonical benchmark contract + adapter realization + trial-policy identity; differential conformance | common method signature or scalar hides heterogeneous evaluator, reset, retry, backend, observation, and error semantics | full immutable v2 paper plus inspected March 2026 official release; broad transport evidence, not exact-paper reproduction, native/adapted equivalence, common scale, safety, or professional validity [BG] |
 | Executable workflow composition (WorkArena++) | typed obligation DAG, composable setup/oracle/validator, milestone/terminal split, reversal and reset evidence | chained atomic difficulty or polling history mistaken for planning, realism, or complete consequential work | full immutable v2 paper plus inspected February 2026 official release, which postdates the paper; strong construction evidence, but floor effects, small convenience human study, single software, reset uncertainty, and no occupational, safety, or exact-reproduction validation [WA]; internal replay is synthetic conformance only [CW] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
+| Deterministic evidence-path evaluation (GroundEval) | actor/time policy, staged information-flow observation, bounded negative-search basis, configured-dependency checks, and dual answer/path evidence | authored contract determinism mistaken for authority, completeness, alternative-path coverage, causality, safety, or observer superiority; hidden exact labels; equation/code drift | full immutable v2 paper plus complete author-owned preprint snapshot and local 82-test/example audit; selected mechanics are inspectable, while the reported corpus, questions, trajectories, judge records, and results are absent [GE] |
 | Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
 | Evolving-information workspace evaluation (ClawArena) | evidence-emission/update map, persistent workspace state, and update-to-check crosswalk | authored omniscience, untyped claim transitions, answer-bearing feedback, explicit preferences, mostly syntactic checks, unsafe shell execution, one-run order effects | full immutable v2 paper plus inspected official v1.0.0 and later release with timing boundaries; 337 rounds and 327 checker scripts audited, not professional-truth or reliability evidence [CA] |
 | Single-specification task generation (Anchor) | versioned task IR, four projection types, solver witness, and cross-projection conformance tests | omitted professional rules propagate consistently; translator drift; canonical witness mistaken for completeness; public oracle/check leakage; mutable environment | full immutable v1 paper plus inspected one-day-post-v1 official release; all 300 packages statically audited and two lineages traced, not semantic-equivalence or professional-validity proof [AK] |
@@ -1862,6 +1924,11 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     uncertainty separately; an encoded masking edge or passing execution surface
     does not establish claim truth, artifact validity, professional success, safety,
     or readiness.
+45. **Determinism does not validate the authored contract:** preserve authority,
+    valid time, staged request-to-effect observations, bounded search-universe
+    completeness, admissible alternatives, and configured dependency separately;
+    exact replay cannot silently establish global absence, causality, observer
+    superiority, professional validity, capability, safety, or readiness.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1884,6 +1951,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
+| Deterministic path replay vs valid evidence contract | GroundEval repeats actor/time, configured-artifact, and search-coverage predicates, but one outcome-informed authored contract, hidden exact fields, arbitrary search-space construction, configured event joins, unequal judge views, missing empirical artifacts, and Equation 1/Table 6/release drift prevent authority, completeness, causal, or observer-superiority claims [GE]. | On unlike domains, freeze contracts before trials; independently audit authority and public basis; plant alternate sufficient paths, incomplete/truncated/stale universes, blocked versus exposed evidence, and rival dependencies; compare deterministic/model/human observers under equal decisive views and retain insufficiency separately. |
 | Open retrieval realism vs shortcut-free causal measurement | Search-time contamination finds strong post-exposure associations for exact answer-bearing pages, but weak detectors, self-selected access, mutable search, and non-equivalent traces do not identify a clean counterfactual [SC]. | Pair ecological open-retrieval audits with replayable snapshots and randomized masking of protected answer artifacts while holding legitimate sources, configured system, task, and budget fixed; report exposure prevalence separately from effect. |
 | Stable belief vs justified revision under evolving evidence | ClawArena operationalizes staged messages/files and reversals, but authored truth, detailed forward feedback, fixed order, and absent claim-level transition records confound retrieval, adoption, revision, and transfer [CA]. | Plant typed correction, supersession, conditional-applicability, and irrelevant-update cases; log availability/access/adoption; require changed and invariant checks; cross feedback policy with reset and held-out equivalent forms. |
 | Single-source coherence vs propagated specification error | Anchor's compiler aligns generated identifiers and accepts its oracle, but omitted rules and translator/checker assumptions can remain consistently wrong [AK]. | Mutation-test each projection edge, include legitimate alternate witnesses and adversarial partial-credit states, obtain independent expert adjudication, and report formal, executable, instruction-equivalent, verifier, and professional-validity gates separately. |
@@ -2113,6 +2181,14 @@ them:
   release paths/hashes are recorded there. The release inspection did not mirror
   the complete multi-gigabyte trajectory corpus, and the evidence is bounded to
   sampled web-agent trajectories and the preserved observer views.
+- **[GE]**
+  `papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md`;
+  reviewed immutable v2 PDF/text and complete author-owned preprint snapshot paths
+  and hashes are recorded there. The release supports selected deterministic
+  scorer/generator mechanics and compact examples, not the unavailable paper
+  experiment, contract authority/completeness, causal identification, global
+  verified absence, observer superiority, professional validity, capability,
+  safety, production fitness, or readiness.
 - **[SC]**
   `papers/agent-benchmarks/2026-07-10-search-time-contamination.md`; reviewed
   immutable v1 PDF/text paths and hashes are recorded there. Its medical-QA

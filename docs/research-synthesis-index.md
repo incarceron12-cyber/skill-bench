@@ -446,6 +446,7 @@ cover the boundary; no feedback-specific schema follows.
 | [AgentRewardBench](../papers/agent-benchmarks/2026-07-10-agentrewardbench-judge-reliability.md) | B | Exposes judge reliability, evidence-view, trajectory, annotation, and observer-access issues |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
+| [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
 | [JADE](../papers/agent-benchmarks/2026-07-11-jade-dynamic-professional-grading.md) | B | Separates invariant requirements from response-created claims/consequences, while exposing variable denominators, shared-cue judging, verifier fail-open behavior, and unvalidated score fusion |
 | [Adversarial verifier hardening](../papers/agent-benchmarks/2026-07-14-adversarial-verifier-hardening-validity.md) | A/B | Makes iterative false-accept search, patch provenance, and fixed held-out attack replay inspectable, while directly showing that a narrow solver witness can yield 0% attack success together with near-total legitimate-solution rejection |
 | [SaaS-Bench](../papers/agent-benchmarks/2026-07-11-saas-bench-stateful-workflow-validity.md) | A | Release audit shows that a checkpoint becomes partial-progress evidence only when it was not pre-satisfied, is attributable to the run, has declared necessity/sufficiency, and does not double-count one upstream event through dependent consequences |
@@ -474,6 +475,29 @@ prevalence claim. The KernelBench case directly demonstrates that 0% known-attac
 success can coexist with 0% benign pass before post-loop repair. Therefore
 `known_exploit_rejected` is task-health regression evidence, not verifier
 soundness/completeness, safety, professional validity, or readiness.
+
+Deterministic evidence-path scoring adds a prior contract-validity gate. Preserve
+`request → result exposure → content access → model visibility → citation/adoption
+→ action → effect`; a blocked request is not a leak, harm, or causal-use result.
+Negative claims must be bounded as “not found within U under Q at T,” with universe
+authority, source/index coverage, snapshot, query operators, pagination/truncation,
+access failures, completeness evidence, and residual uncertainty. Event joins and
+shared IDs remain configured dependencies unless intervention or a warranted causal
+model supports promotion. Known artifact sets are witness paths, not necessarily
+complete paths; admit independently reviewed alternatives and return insufficiency
+when the observer or search universe cannot support a verdict.
+
+GroundEval's full v2/release audit supports deterministic behavior for selected
+actor/time, configured-artifact, and search-coverage mechanics. It does not validate
+the authored contracts or its judge comparison: prose-only judges lacked the private
+contract/state supplied to the deterministic scorer. The release also omits the
+paper's empirical corpus, questions, trajectories, judge records, and results; Table
+6 matches release code rather than published Equation 1, and release aggregation
+retains only one of the three stated violation types. Therefore compare deterministic,
+model, and human observers predicate by predicate under equal decisive evidence
+views. Existing provenance-observation, alternative-path, trace, task-health,
+metric, and validity machinery should carry this boundary; no GroundEval-specific
+grader or schema is justified.
 
 Open-ended grading adds a two-population boundary. Fixed requirements retain a
 common public basis and denominator; response-triggered criteria may inspect only
