@@ -1098,6 +1098,64 @@ side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
 
+### Review selection is part of the measurement design
+
+Human or model review begins with an inclusion treatment, not with a neutral set
+of trajectories. Preserve one linked **review-selection episode**:
+
+```text
+immutable eligible population
+  → detector/version and inclusion mechanism
+    → reviewer evidence view and observation
+      → plural labels and adjudication
+        → supported defect
+          → accepted intervention
+            → replay or field effect
+              → downstream utility
+```
+
+The population record identifies trajectory IDs and hashes; configured system,
+task/domain, harness, time, reward/outcome, and shared-lineage clusters; duplicate,
+retry, truncated, missing, invalid, and delayed-label disposition. The inclusion
+record identifies detector and normalization hashes, signal evidence locators,
+score/priority formula, thresholds, quotas, tie policy, exclusions, budget, seed,
+with/without-replacement policy, inclusion probability, cross-stream overlap, and
+nonresponse. The review record binds rater identity, authority, assignment,
+independence, actual evidence view, time and cost, raw label, rationale/evidence
+locator, and adjudication lineage. Finally, declare intended use—discovery,
+prevalence/drift, regression, safety audit, task authoring, or preference-data
+candidate—and licensed and prohibited inferences [SIG].
+
+Operate two linked but non-substitutable streams. A frozen **probability sentinel**
+supports prevalence, drift, subgroup rates, and enriched-stream false-negative
+audits when support and missingness are adequate. An **enriched discovery queue**
+optimizes case-finding and rare-pattern investigation. Its changed inclusion
+probabilities are the mechanism of value, so unweighted issue rates, agent/system
+comparisons, safety incidence, and calibration claims from that queue are invalid.
+Design weights do not repair zero support, unknown inclusion, outcome-conditioned
+selection, or detector development on the analysis pool.
+
+Keep `signal_observed`, `review_worthy`, `candidate_defect`,
+`defect_adjudicated` (with root/surface status), `intervention_accepted`,
+`replay_effect`/`field_effect`, and `downstream_utility` separate. Measure reviewer
+minutes, trace size/turns, required state queries, annotator count, adjudication,
+detector compute, confirmed-defect yield, recurrence, severity-weighted benefit,
+and total cost; cluster uncertainty by source task/incident/configured system.
+Rows-per-positive is queue yield, not labor efficiency or causal utility.
+
+Signals supplies bounded evidence that lexical/event features enriched a 100-slot
+historical τ-bench review queue for a permissive hypothesis-generating label. Its
+pool, sample IDs, exact detector/triage policy, overlap, labels, costs, and analysis
+are unreleased, and task/configuration dependence is ignored. The later Plano
+implementation is post-v1 evidence and converts descriptive signals—including
+environment exhaustion—into emitted quality scores contrary to the paper's stated
+use boundary. Therefore preserve detector consumers and claim/use lineage and fail
+closed on metric promotion [SIG]. AgentRewardBench addresses the next observation
+stage; AgentLens, Anthropic, and Amazon motivate diagnosis/task-health routing;
+Nubank addresses a later offline-to-online association. None fills the missing
+selection or intervention-effect link. Existing trace, rater, task-health, metric,
+configured-system, and validity records are the implementation homes.
+
 ### 3.2a Deterministic evidence-path checks inherit the validity of their contract
 
 A repeatable scorer can establish only that a frozen predicate was applied to a
@@ -1720,6 +1778,7 @@ and validity records are the implementation homes; no new schema follows.
 | Participation/authority ledger | govern expert contribution and transformed artifacts | purpose/consent, reciprocal value, decision rights, transformation lineage, reconsent, approval that never propagates implicitly |
 | Execution validity record | establish whether a trial had the declared boundary and opportunity | tool-scoped canary probes, adapter/launcher/environment hashes, fixture identity, service health, mandatory evidence, invalid/unscorable reason |
 | Metric specification and monitoring record | turn trial observations into a reproducible population estimand and governed trigger | eligible population/unit, versions, missingness, clustering/dependence, aggregation/uncertainty, slices, baseline/window, threshold/loss, alert/audit/remediation/rollback |
+| Review-selection episode | preserve how a large trial/trajectory population became a bounded review sample and what later use it can support | population snapshot and clusters; detector/version; probability, overlap, missingness, evidence view; rater/adjudication lineage; sentinel versus enriched role; time/cost; licensed/prohibited claims; intervention/outcome links |
 | Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system, task/form population, environment/time, retry policy, intervention preservation and exposure evidence, matched clustered repeats, decision-time evidence view, consequence/loss model |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
@@ -1765,6 +1824,7 @@ fidelity separately from score calibration [EB, AP].
 | Cross-family execution substrate (BrowserGym) | canonical benchmark contract + adapter realization + trial-policy identity; differential conformance | common method signature or scalar hides heterogeneous evaluator, reset, retry, backend, observation, and error semantics | full immutable v2 paper plus inspected March 2026 official release; broad transport evidence, not exact-paper reproduction, native/adapted equivalence, common scale, safety, or professional validity [BG] |
 | Executable workflow composition (WorkArena++) | typed obligation DAG, composable setup/oracle/validator, milestone/terminal split, reversal and reset evidence | chained atomic difficulty or polling history mistaken for planning, realism, or complete consequential work | full immutable v2 paper plus inspected February 2026 official release, which postdates the paper; strong construction evidence, but floor effects, small convenience human study, single software, reset uncertainty, and no occupational, safety, or exact-reproduction validation [WA]; internal replay is synthetic conformance only [CW] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
+| Trajectory review selection (Signals) | probability-sentinel and enriched-discovery streams linked by an immutable population/inclusion/review/use episode | enriched yield mistaken for prevalence, comparison, detector accuracy, labor efficiency, supported defect, intervention effect, or utility; descriptive signals silently promoted to quality scores | full immutable v1 paper/source plus post-v1 author-associated implementation audit; bounded 300-slot queue-yield evidence, with empirical pool, selection ledger, labels, costs, and analysis unreleased [SIG] |
 | Deterministic evidence-path evaluation (GroundEval) | actor/time policy, staged information-flow observation, bounded negative-search basis, configured-dependency checks, and dual answer/path evidence | authored contract determinism mistaken for authority, completeness, alternative-path coverage, causality, safety, or observer superiority; hidden exact labels; equation/code drift | full immutable v2 paper plus complete author-owned preprint snapshot and local 82-test/example audit; selected mechanics are inspectable, while the reported corpus, questions, trajectories, judge records, and results are absent [GE] |
 | Retrieval-leakage auditing (search-time contamination) | information-flow policy and staged result/access/match/visibility/adoption/effect chain | legitimate retrieval conflated with shortcut access; detector stages under-validated; endogenous exposure mistaken for causal inflation; proprietary trace inequivalence | full immutable v1 paper; 6,803 medical-QA audit items, partial explicit-answer-detector validation, no auditable causal correction or cross-domain prevalence [SC] |
 | Evolving-information workspace evaluation (ClawArena) | evidence-emission/update map, persistent workspace state, and update-to-check crosswalk | authored omniscience, untyped claim transitions, answer-bearing feedback, explicit preferences, mostly syntactic checks, unsafe shell execution, one-run order effects | full immutable v2 paper plus inspected official v1.0.0 and later release with timing boundaries; 337 rounds and 327 checker scripts audited, not professional-truth or reliability evidence [CA] |
@@ -1929,6 +1989,12 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     completeness, admissible alternatives, and configured dependency separately;
     exact replay cannot silently establish global absence, causality, observer
     superiority, professional validity, capability, safety, or readiness.
+46. **Review yield is not population inference or downstream utility:** freeze the
+    eligible population and inclusion policy; keep probability-sentinel and
+    enriched-discovery streams separate; preserve evidence views, plural labels,
+    adjudication, real review cost, clustered uncertainty, intervention effects,
+    and licensed uses. Signal activation cannot silently become defect prevalence,
+    system comparison, quality, safety, capability, or production-readiness evidence.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -1951,6 +2017,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
+| Enriched review yield vs representative monitoring and useful intervention | Signals reports more hypothesis-generating labels in a signal-selected queue, but omits the eligible pool, detector/score policy, inclusion probabilities, overlap, labels, reviewer time, clustered inference, confirmed defects, fixes, and downstream outcomes; its later implementation promotes descriptive signals into quality scores [SIG]. | On a frozen cross-domain trajectory pool, run a probability sentinel beside a versioned enriched sampler; preserve overlap and all inclusion probabilities, duplicate plural labels, adjudicate defects, measure reviewer minutes and detector cost, replay accepted fixes on held-out task clusters, and report prevalence/drift, discovery yield, false negatives, recurrence, and downstream utility separately. |
 | Deterministic path replay vs valid evidence contract | GroundEval repeats actor/time, configured-artifact, and search-coverage predicates, but one outcome-informed authored contract, hidden exact fields, arbitrary search-space construction, configured event joins, unequal judge views, missing empirical artifacts, and Equation 1/Table 6/release drift prevent authority, completeness, causal, or observer-superiority claims [GE]. | On unlike domains, freeze contracts before trials; independently audit authority and public basis; plant alternate sufficient paths, incomplete/truncated/stale universes, blocked versus exposed evidence, and rival dependencies; compare deterministic/model/human observers under equal decisive views and retain insufficiency separately. |
 | Open retrieval realism vs shortcut-free causal measurement | Search-time contamination finds strong post-exposure associations for exact answer-bearing pages, but weak detectors, self-selected access, mutable search, and non-equivalent traces do not identify a clean counterfactual [SC]. | Pair ecological open-retrieval audits with replayable snapshots and randomized masking of protected answer artifacts while holding legitimate sources, configured system, task, and budget fixed; report exposure prevalence separately from effect. |
 | Stable belief vs justified revision under evolving evidence | ClawArena operationalizes staged messages/files and reversals, but authored truth, detailed forward feedback, fixed order, and absent claim-level transition records confound retrieval, adoption, revision, and transfer [CA]. | Plant typed correction, supersession, conditional-applicability, and irrelevant-update cases; log availability/access/adoption; require changed and invariant checks; cross feedback policy with reset and held-out equivalent forms. |
@@ -2181,6 +2248,14 @@ them:
   release paths/hashes are recorded there. The release inspection did not mirror
   the complete multi-gigabyte trajectory corpus, and the evidence is bounded to
   sampled web-agent trajectories and the preserved observer views.
+- **[SIG]**
+  `papers/agent-benchmarks/2026-07-14-signals-trajectory-triage-sampling-validity.md`;
+  reviewed immutable v1 PDF/text/source and post-v1 author-associated Plano release
+  paths/hashes are recorded there. The paper supports selected-queue yield under one
+  annotation target; absent pool, inclusion, label, cost, and intervention records
+  block prevalence, comparison, detector-validity, utility, safety, capability, and
+  readiness claims. The later implementation is not the empirical release and its
+  quality-score emission is preserved as a downstream-use divergence.
 - **[GE]**
   `papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md`;
   reviewed immutable v2 PDF/text and complete author-owned preprint snapshot paths

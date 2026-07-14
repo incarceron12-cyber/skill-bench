@@ -444,6 +444,7 @@ cover the boundary; no feedback-specific schema follows.
 |---|---:|---|
 | [Anthropic agent evaluation lifecycle](concepts/anthropic-agent-evaluation-lifecycle.md) | A | Provides a production vocabulary of tasks, trials, graders, transcripts, and multi-grader evaluation patterns |
 | [AgentRewardBench](../papers/agent-benchmarks/2026-07-10-agentrewardbench-judge-reliability.md) | B | Exposes judge reliability, evidence-view, trajectory, annotation, and observer-access issues |
+| [Signals trajectory triage](../papers/agent-benchmarks/2026-07-14-signals-trajectory-triage-sampling-validity.md) | B | Separates probability-sentinel monitoring from enriched case discovery and makes the trajectory-population → inclusion policy → review → adjudication → intervention boundary explicit; its unreleased pool and selection ledger support queue-yield evidence, not prevalence or production utility |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
 | [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
@@ -476,6 +477,36 @@ study corpus is absent, its `ExactMatch` is normalized substring inclusion, and
 semantic judges see final text rather than referenced files or traces. Existing
 criterion, evidence-view, adapter, task-health, metric, and validity records are
 the correct homes; no new schema follows.
+
+Trajectory review adds a prior **selection episode** before grader observation:
+`eligible population snapshot → detector and inclusion mechanism → reviewed
+evidence view → plural labels and adjudication → supported defect → accepted
+intervention → replay/field effect → downstream utility`. Freeze task,
+configured-system, harness, time, retry/duplicate, and lineage clusters in the
+population record; version detector rules, scores, thresholds, quota/tie policy,
+seed, inclusion probability, overlap, nonresponse, and invalid handling. Preserve
+the intended downstream use and licensed/prohibited claims. A frozen probability-
+sentinel stream can support prevalence, drift, subgroup, and false-negative
+estimation; an enriched stream can increase discoveries per review budget. Do not
+pool or compare systems from the latter without known support and design weights.
+`signal activation`, `review-worthy`, `supported defect`, `accepted fix`,
+`replay/field effect`, and `utility` are non-substitutable states.
+
+[Signals](../papers/agent-benchmarks/2026-07-14-signals-trajectory-triage-sampling-validity.md)
+reports 82/100 majority-positive signal-selected slots versus 54/100 random slots
+in one undisclosed historical τ-bench pool. Missing pool identity, detector/score
+policy, overlap, inclusion probabilities, review-time costs, label records, and
+task/configuration-clustered inference bound this to case-finding yield under one
+annotation target. Its post-v1 Plano implementation is later engineering evidence,
+not the empirical release, and materially diverges by emitting quality scores that
+also penalize environment exhaustion despite the paper's descriptive/use warning.
+Read this with AgentRewardBench for observation validity, AgentLens and the Amazon/
+Anthropic lifecycle guidance for diagnosis and task-health routing, Nubank for the
+still-unmeasured offline→online outcome bridge, and many-facet evidence for rater
+effects. Existing trace, grader, task-health, metric-monitoring, configured-system,
+and validity records suffice; no trajectory-only subsystem follows. No prevalence,
+comparative-system, causal, professional-validity, capability, safety, production-
+fitness, or readiness claim is licensed.
 
 Adversarial grader revision needs three independently versioned populations:
 counterexamples used to search and patch, legitimate alternatives used to constrain
