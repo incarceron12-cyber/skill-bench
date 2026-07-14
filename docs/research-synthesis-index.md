@@ -172,6 +172,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [OdysseyBench](../papers/agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md) | B | Connects dialogue-distributed requirements to office-state action while exposing persistent-memory, evaluator-dispatch, collateral-state, and professional-validity gaps |
 | [LongMedBench](../papers/agent-benchmarks/2026-07-14-longmedbench-longitudinal-clinical-validity.md) | B | Separates history volume and factual access from history necessity and consequence validity; its no-history result and retrospective next-event oracle show why a long record alone does not establish longitudinal decision competence |
 | [SciAgentArena](../papers/agent-benchmarks/2026-07-14-sciagentarena-scientific-work-validity.md) | B | Adds matched step-wise versus dependent-pipeline scientific workflow evaluation and premise-validity tasks, while showing why mixed task units, configured-system bundles, propagated failures, fallbacks, and incomplete run/release evidence block real-world-science, novelty, autonomy, reliability, impact, or readiness claims |
+| [AstaBench](../papers/agent-benchmarks/2026-07-14-astabench-scientific-suite-aggregation-validity.md) | B | Adds versioned common-suite operations, typed tool/openness labels, solve→score separation, artifact-triangulated grading, and score–cost frontiers while showing that incompatible component units, evidence views, metrics, eligibility sets, and policy weights do not form one validated research-assistance scale |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Demonstrates expert procedural skills, long-horizon artifacts, and observable boundaries without implying one domain should define the full benchmark |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Contributes broad executable workflow machinery while separating occupational frame, workflow universe, realized/versioned suite, and licensed inference population |
 | [Design Report for Knowledge-Work Benchmarks](../papers/agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | A | Adds a work-activity → tested-setting → persistent-product → licensed-claim reporting chain and makes omitted responsibilities and downstream handoffs explicit; its preliminary 18-label inventory is a revisable vocabulary, not validated coverage |
@@ -190,6 +191,22 @@ persistent product or state to its recipient and next operation, then inspect
 source fidelity, scope/boundary compliance, and destination usability separately.
 The strongest supported claim and named excluded claims should accompany every
 result; visual occupational resemblance does not supply the missing links.
+
+AstaBench sharpens suite assembly into a **typed portfolio estimand**:
+`component evidence vector + eligibility/missingness vector + resource vector +
+aggregation policy + claim boundary`. A shared runner and macro-average do not
+make exact-match code items, retrieval estimates, model-judged hypotheses, and
+multi-artifact projects commensurate. Preserve each component's construct, unit
+hierarchy, source/selection, configured-system and tool eligibility, evidence
+view, scorer, metric, intended/valid/invalid/substantive denominators, clustering,
+uncertainty, and resource boundary. Make the component vector primary; any scalar
+must name its stakeholder weights, hard gates, missingness rule, and loss policy,
+with sensitivity to item-weighted, component-macro, category-balanced, and
+noncompensatory alternatives. AstaBench's 1,918 test plus 486 validation items,
+purposive CS-heavy mixture, unmatched custom/private tools, task-specific invalid
+policies, post-v2 code/scorer drift, gated dataset, and absent self-contained run
+archive support portfolio-operation evidence—not a latent scientific-capability,
+professional-validity, productivity, safety, or readiness claim.
 
 The comparative evolution view adds a second boundary: a newer benchmark is
 not automatically a validated successor because it adds more files, longer
@@ -525,6 +542,7 @@ specific schema or pilot follows.
 | [PaperBench](../papers/agent-benchmarks/2026-07-15-paperbench-replication-rubric-validity.md) | A | Provides released leaf labels and a criterion-level judge study while showing that pooled-leaf class-macro F1, invalid-as-zero handling, and local agreement do not validate paper-level scores or replication decisions |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
 | [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
+| [Auto Benchmark Audit](../papers/agent-benchmarks/2026-07-14-auto-benchmark-audit-task-defect-validity.md) | B | Makes path-grounded inspection of instruction, environment, reference, and grader scalable while separating configured-auditor labels and selected-finding precision from confirmed-defect prevalence, repaired-instrument validity, and corrected capability |
 | [JADE](../papers/agent-benchmarks/2026-07-11-jade-dynamic-professional-grading.md) | B | Separates invariant requirements from response-created claims/consequences, while exposing variable denominators, shared-cue judging, verifier fail-open behavior, and unvalidated score fusion |
 | [Adversarial verifier hardening](../papers/agent-benchmarks/2026-07-14-adversarial-verifier-hardening-validity.md) | A/B | Makes iterative false-accept search, patch provenance, and fixed held-out attack replay inspectable, while directly showing that a narrow solver witness can yield 0% attack success together with near-total legitimate-solution rejection |
 | [AsymmetryZero](../papers/agent-benchmarks/2026-07-14-asymmetryzero-semantic-eval-contracts.md) | B | Makes criterion, grader mode, panel vote, weight, threshold, cost, and adapter realization inspectable; its private available-case study shows why cross-model dissent, repeated-call instability, criterion correctness, task-decision agreement, and use/decision loss must remain separate |
@@ -556,6 +574,23 @@ leaf-label concordance; it does not validate a replication threshold or expert
 substitution. Existing rubric, artifact, trace, metric, task-health, reliability, and
 validity records are the durable homes; the queued replay should test this boundary
 without creating a science-specific schema.
+
+Automated benchmark auditing adds a **candidate-defect lifecycle** before score
+revision: `immutable instrument → auditor identity and entitled evidence view →
+candidate finding → independent adjudication plus missed-defect probe → retain,
+quarantine, repair, or retire decision → new version → equivalent-form revalidation
+→ historical-score and construct sensitivity`. Static and outcome-visible
+trajectory audits are different observer conditions. Path resolution does not
+establish entailment; a maintainer change, expert judgment, executable
+counterexample, and repaired rerun remain distinct evidence. Keep auditor-label
+prevalence, confirmed-defect prevalence, deletion-mask sensitivity, common-task
+paired change, repaired-form performance, and rank/decision sensitivity separate.
+ABA's purposive capped and clustered portfolio, one unrepeated auditor, selected
+positive adjudication, unknown clean-task false negatives, missing 34,285-task
+records and exclusion masks, post-v2 release, and no repaired reruns support triage
+only—not automatic invalidation, corrected capability, professional validity, or
+readiness. Existing task-health, review-selection, metric, grader, validity, and
+change-log records host this lifecycle; no audit-specific contract follows.
 
 Repeated evaluation adds a **decision-keyed estimand hierarchy**, not one
 “reliability” scalar: `intended attempt ledger → service availability → execution-

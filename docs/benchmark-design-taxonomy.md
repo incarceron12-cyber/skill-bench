@@ -1988,6 +1988,8 @@ and validity records are the implementation homes; no new schema follows.
 | Evidence-state transition record | separate evolving world state, emitted claims, applicability, access/adoption, belief revision, and artifact consequence | authority/scope/valid-time, contradiction/supersession, update-to-check crosswalk, changed and invariant predicates |
 | Task projection manifest | detect drift among public requirements, affordances, witnesses, and checks | evidence-backed requirement atoms, IR/sampler/projector/output hashes, bidirectional coverage, declared invariances, solver/validity separation, conformance tests |
 | Suite assembly argument | distinguish a broad frame and healthy pool from the administered sample and licensed population inference | frame/content exclusions, eligible pool, selection/seed/order, lineage clusters, intended/realized mixture, weights, precision/stopping, invalid/missing policy, alternate-assembly sensitivity, bounded claim |
+| Portfolio estimand | keep heterogeneous component evidence primary and make any suite scalar an explicit use policy rather than a latent capability claim | component construct and unit hierarchy; selection and configured-system/tool eligibility; evidence view/scorer/metric; plural denominators; clustering/uncertainty; raw resource boundary; weights, hard gates, missingness/loss policy, sensitivity, excluded interpretations |
+| Candidate-defect lifecycle | route automated or human audit findings through adjudication, repair, and revalidation without rewriting history or laundering auditor authority | immutable instrument and auditor/evidence-view identity; path-grounded candidate; clean sentinels/known-defect controls; plural authority/disagreement; retain/quarantine/repair/retire disposition; changed loci and hashes; alternative-path and equivalent-form rerun; original/deletion/common-task/repaired-form sensitivity |
 | Persistent-workspace record | distinguish file presence and authored relevance from observed or causal use while preserving state integrity | inventory/overlay hashes, placement and valid time, permissions/network, typed and alternate relations, evidence-view-bound access/write, protected/mutable zones, pre/post mutations, cleanup |
 | Sparse workflow-transition record | distinguish one witness path and final state from run-attributable stage completion | pinned initial state, pre/postconditions, alternative paths, necessity/sufficiency, state delta, evidence views, downstream consequence, invalid-environment policy |
 | Composite-workflow contract | distinguish executable chaining from supported workflow and planning claims | typed obligation DAG, produced/consumed state, equivalent paths, milestone/terminal split, reversal replay, validator cadence, reset attestation, atomic baseline, family clustering, workflow provenance |
@@ -2000,6 +2002,20 @@ coverage or absolute professional-quality estimation. Mid-range checks often
 carry the most rank information, while rare hard safety/contradiction checks may
 be strategically indispensable. Keep separate panel objectives and report rank
 fidelity separately from score calibration [EB, AP].
+
+A common suite runner establishes transport and operations, not measurement
+commensurability. Component vectors and eligibility patterns remain primary;
+portfolio aggregation is a versioned stakeholder policy over typed evidence.
+AstaBench's incompatible component units, metrics, evidence views, custom/private
+tool treatments, and cost boundaries make this distinction concrete [ASTA].
+
+Task-health audit findings enter as candidates, not deletions. Static and
+outcome-visible trajectory audits are distinct observer conditions; path citation,
+maintainer action, expert adjudication, executable counterexample, and repaired
+rerun are non-substitutable evidence. Preserve original scores and compare deletion
+masks with common-task and repaired-equivalent-form estimands before changing a
+capability claim. ABA's selected positive validation and absent clean-task/full-
+corpus evidence support scalable triage, not autonomous invalidation [ABA].
 
 ## 6. Family map: what each benchmark pattern contributes
 
@@ -2221,6 +2237,15 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     and missingness sensitivity. An estimator name or visually stable curve cannot
     turn benchmark-population-relative evidence into an agent trait or a universal
     repeat budget.
+50. **A suite scalar is a policy, not a discovered capability scale:** retain
+    component constructs, units, evidence views, eligibility, denominators,
+    uncertainty, and resources; name weights, gates, missingness, loss, and
+    sensitivity before aggregation. Common transport and broad coverage cannot
+    silently confer commensurability, professional validity, or readiness.
+51. **An audit finding is not a defect or score correction:** bind the immutable
+    instrument, auditor, evidence entitlement, candidate, adjudication, clean
+    sentinel, disposition, changed loci, and repaired-form validation. Deletion
+    sensitivity cannot silently become defect prevalence or corrected capability.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -2413,6 +2438,18 @@ them:
 
 ## Provenance keys
 
+- **[ASTA]**
+  `papers/agent-benchmarks/2026-07-14-astabench-scientific-suite-aggregation-validity.md`;
+  reviewed immutable v2 PDF/text plus pinned post-v2 code and immutable dataset
+  manifest are recorded there. Dataset bytes were gated, hosted search remained
+  external, scorer defaults drifted, and no self-contained paper-run package was
+  found; evidence supports suite operations, not one scientific-capability scale.
+- **[ABA]**
+  `papers/agent-benchmarks/2026-07-14-auto-benchmark-audit-task-defect-validity.md`;
+  reviewed immutable v2 PDF/text plus full pinned post-v2 release inspection are
+  recorded there. Small BenchGuard tables were reproduced, but the full task audit
+  corpus and deletion masks were absent; evidence supports candidate-finding triage,
+  not confirmed prevalence, automatic deletion, or corrected capability.
 - **[ET]** `schemas/EXPERTISE_TRANSFER.md` and
   `schemas/expertise-transfer.schema.json` (implemented repository contract).
 - **[LH]** `papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md`;
