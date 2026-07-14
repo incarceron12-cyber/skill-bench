@@ -126,6 +126,7 @@ and elicitation machinery rather than a domain-specific schema.
 | Review | Primary question | Secondary tags |
 |---|---|---|
 | [Agent Reliability Profile](agent-benchmarks/2026-07-11-agent-reliability-profile.md) | How should repeated success, failure severity, recovery, and operational reliability be profiled? | reliability, repetition, operations |
+| [Stochastic Agent Evaluations](agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md) | When do repeated binary trials support a variance-component reliability claim, and why is variance of finite-trial task means not ICC(1,1) or a transferable repeat budget? | ICC, repeated trials, clustered uncertainty, missingness, configured systems |
 | [Agentic Confidence Calibration](agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md) | When does trajectory-derived confidence predict one configured trial's success, and what additional transport, decision-loss, and workload evidence is required before using it for review, escalation, or acceptance? | confidence calibration, selective prediction, decision validity, logprobs |
 | [STRACE](agent-benchmarks/2026-07-09-strace.md) | How can long-horizon failures be localized to supported upstream causes? | causal diagnosis, traces, repair |
 | [Harness-Bench](agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | How should launcher, tool, permission, sandbox, and environment differences be isolated? | harness, reproducibility, system identity |
