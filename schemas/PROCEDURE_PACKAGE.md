@@ -1,10 +1,14 @@
 # Procedure-package conformance contract v0.1
 
 `procedure-package.schema.json` and
-`scripts/validate_procedure_package.py` provide a small, format-agnostic adapter
-for checking whether a generated procedure/data/tool/oracle package is internally
-coherent. It is **not** an SOP-specific benchmark and does not establish that the
-procedure is professionally correct.
+`scripts/validate_procedure_package.py` provide a strict tabular mock-tool
+calibration contract for checking whether one generated
+procedure/data/tool/oracle package is internally coherent. Released-instrument
+validation later falsified the original claim that its outer boundary was
+format-agnostic; the backward-linked layered successor is documented in
+`schemas/PROCEDURE_INSTRUMENT_LAYERS.md`. v0.1 remains unchanged as a regression
+instrument. Neither contract is SOP-specific or establishes that a procedure is
+professionally correct.
 
 The package sits between existing authoring and measurement records:
 
