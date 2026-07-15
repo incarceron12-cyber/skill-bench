@@ -667,6 +667,7 @@ specific schema or pilot follows.
 | [Rubric-modification interventions](../papers/agent-benchmarks/2026-07-11-rubric-modification-human-autorater-agreement.md) | B | Makes examples, context, criterion-call topology, score transformation, and aggregation part of instrument identity; agreement gains can coexist with shared cueing or construct change |
 | [AI Agent Reliability](../papers/agent-benchmarks/2026-07-11-agent-reliability-profile.md) | B | Separates accuracy from repeatability, perturbation sensitivity, confidence quality, and violation consequences while binding each estimate to a configured operational profile |
 | [Stochastic Agent Evaluations](../papers/agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md) | B | Makes task-level repeats and released response matrices inspectable while showing that the published variance-of-task-means ratio is not ICC(1,1), omitted invalids change the estimand, and repeat budgets are decision- and population-specific |
+| [Performance-optimization benchmark reliability](../papers/agent-benchmarks/2026-07-15-performance-optimization-benchmark-reliability.md) | B | Separates executable artifacts from environment-sensitive criterion validity; four-profile/three-round replay and fixed-output rescoring expose reference-signal loss, near-zero margins, and score leverage, while the absent study release and bounded design do not establish machine-invariant transport, causal rank effects, portfolio capability, saturation, or professional validity |
 | [LiveBench](../papers/agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | B | Makes benchmark renewal operational through rotating recent-source forms, temporary private roles, deterministic checks, and reruns, while exposing equivalent-form, outcome-conditioned selection, exposure, and grader-drift limits |
 | [WorkBench Revisited](../papers/agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | B | Shows why repaired current measurement and longitudinal continuity need linked forms and task-level score bridges rather than one homogeneous time series |
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
@@ -738,6 +739,32 @@ task-health, metric, configured-system, grader, and validity records suffice; no
 new schema or QA/retrieval scope commitment follows, and repeated internal
 synthetic trials alone license no professional-validity, production-reliability,
 safety, fitness, or readiness claim.
+
+Environment-sensitive artifact criteria add a distinct **criterion operating
+envelope** inside this hierarchy: `replayable → criterion-valid here → transport-
+supported → decision-stable`. Preserve base/reference/candidate identity; engine,
+software, hardware, resources, workload, preparation, cache, concurrency, and
+timeout; intended cells and typed invalids; repeated raw observations; paired
+contrast and criterion margin; environment/round/interaction structure;
+aggregation leverage; and the stakeholder-loss policy. Semantic or artifact
+validity does not imply stable runtime, memory, rendering, recalculation, database,
+or simulation status. One local threshold crossing does not imply transport, and
+fixed-output rank sensitivity does not identify a universally correct aggregator.
+
+The full [performance-optimization reliability review](../papers/agent-benchmarks/2026-07-15-performance-optimization-benchmark-reliability.md)
+finds bounded descriptive evidence across 740 official reference patches, four
+cloud processor profiles, and three rounds: many references lose their original
+admission signal under a strict all-cell rule; one benchmark family has near-zero
+reference margin; and harmonic aggregation can concentrate leverage and reorder
+fixed public outputs. The study provides no raw-cell release, replicated machine
+population, held-out environment, hierarchical transport estimate, repeated agent
+trials, or stakeholder loss basis. Its best-of-ten public union is selected
+portfolio coverage—not one system's capability or saturation. Saturation remains a
+separate use-indexed judgment requiring a declared system/feasible-portfolio
+population, attempts, cutoff, exposure, time, cost, milestone, and renewal decision.
+Existing execution-validity, task-health, artifact-admissibility, response-matrix,
+metric, and validity contracts suffice; no coding- or performance-specific schema
+or synthetic pilot follows.
 
 AsymmetryZero adds a specific **jury-substitution ladder**: raw evidence view →
 individual observation → criterion decision → task decision/rank → downstream

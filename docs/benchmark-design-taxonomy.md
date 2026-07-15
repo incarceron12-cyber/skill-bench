@@ -1498,6 +1498,68 @@ allocation, and held-out validation before calls. The paper's visually chosen
 `8–16` and `≥32` waypoints from selected GAIA/FRAMES matrices do not transfer to
 other task populations, configured systems, graders, or decisions [SAE].
 
+### 3.3a Resource-sensitive criteria need an operating envelope
+
+Executable artifact validity and criterion stability are separate. A workbook
+may recalculate correctly while its latency classification changes by spreadsheet
+engine; a semantically equivalent patch may pass tests while its speed advantage
+changes by processor; a simulation, query, render, or model may remain correct
+while memory, runtime, or numerical-tolerance status changes with workload and
+environment. For every resource- or environment-sensitive criterion preserve:
+
+```text
+criterion target and unit → authoritative base/reference/candidate artifacts
+  → engine, software, hardware, resource, and workload operating envelope
+    → preparation, warmup, order, cache, concurrency, timeout, and repeat protocol
+      → intended cells, repeated raw observations, and typed invalid-cell reasons
+        → paired contrast, threshold margin, uncertainty, and transport evidence
+          → aggregation, leverage, loss policy, and bounded decision
+```
+
+Environment identity therefore attaches both to each trial and to the evidence
+that licenses the criterion. Keep semantic/artifact validity, directional
+improvement, threshold attainment, and reference-level attainment as different
+predicates. A near-zero contrast is fragile even when absolute variation is small;
+report the task-level criterion margin against observed variation and the decision
+threshold rather than promoting one historical crossing into a timeless label.
+Type intended, started, infrastructure-invalid, functionally invalid,
+measurement-invalid, and substantively below-threshold cells; do not encode an
+invalid measurement as a severe substantive failure [POR].
+
+Use four non-inheriting lifecycle states: **replayable** means the reference and
+task execute; **criterion-valid here** means the reference meets the rule in one
+declared environment cell; **transport-supported** means repeated and preferably
+held-out bridge evidence preserves the criterion's interpretation over a declared
+envelope; **decision-stable** means the intended comparison survives reasonable,
+predeclared aggregation and stakeholder-loss policies. A strict intersection over
+observed cells can be an intentionally conservative admission rule, but it is not
+a transport probability or evidence about a new machine, engine, load state, or
+date. Decompose task, environment, round/batch, and interaction effects where the
+design supports it; otherwise report the pooled variation only as descriptive.
+
+Aggregation remains a use policy. Show task-level influence or denominator share,
+tail identities, threshold/floor sensitivity, invalid handling, and the loss model
+that makes mean, median, harmonic, minimum, or noncompensatory treatment legitimate.
+Fixed-output rescoring establishes policy sensitivity, not one universally correct
+ranking. Portfolio coverage must name eligible configured systems, attempts,
+scaffold dependence, cutoff, milestone, selection rule, cost, and joint execution
+feasibility; a best-of-several historical union is not one system's capability.
+**Saturation is independent of all four states** and is use-indexed: it additionally
+requires a declared system or feasible portfolio population, attempt budget, time,
+cost, exposure/contamination evidence, milestone, and renewal decision [POR].
+
+The reviewed performance-optimization audit replays 740 official reference patches
+from three purposively selected coding benchmarks on four cloud processor profiles
+and three rounds. It provides bounded evidence of strict cross-cell reference-signal
+loss, near-zero signal margins in one family, and ranking/leverage sensitivity under
+fixed-output rescoring. Its absent study release, coarse invalid-cell typing, four-
+profile/nonreplicated-host frame, three rounds, pooled variation, selected public
+outputs, and no repeated agent trials block machine-invariant validity, causal rank,
+portfolio-capability, prospective-saturation, professional-quality, production, or
+readiness claims [POR]. Existing benchmark-bundle, execution-validity, task-health,
+metric-monitoring, artifact-admissibility, response-matrix, and validity-argument
+machinery are the durable homes; no performance-specific contract follows.
+
 Keep three commonly collapsed reliability objects distinct: **empirical repeat
 reliability** over matched attempts, **predicted success for one trial** from an
 evidence view available at a declared decision time, and **supported causal
@@ -3224,6 +3286,16 @@ them:
   The evidence supports response-matrix, estimator, and missingness audit—not
   transferable repeat budgets, agent-intrinsic reliability, professional validity,
   production reliability, safety, fitness, or readiness.
+- **[POR]**
+  `papers/agent-benchmarks/2026-07-15-performance-optimization-benchmark-reliability.md`;
+  reviewed immutable v1 PDF/text/HTML paths and hashes plus release-search
+  provenance are recorded there. The paper audits 740 reference patches over four
+  processor profiles and three rounds, but releases no raw timing cells, exact
+  snapshots, rescoring code, annotations, or result corpus. Its strict intersection,
+  score-policy sensitivity, and selected public-output union support bounded
+  criterion-health evidence—not machine-invariant validity, transport probability,
+  causal rank effects, configured-system reliability, saturation, professional
+  capability, production fitness, or readiness.
 - **[ACC]**
   `papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md`;
   reviewed immutable v1 PDF/text/source hashes and provenance are recorded there.
