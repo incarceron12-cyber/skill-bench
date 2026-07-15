@@ -412,6 +412,75 @@ and measure criterion, graph, verdict, ranking, and score stability across repea
 Existing criterion, evidence-view, validity, metric, artifact, trace, and task-
 health contracts are the implementation homes; do not create a parallel schema.
 
+### 2.3b An adaptive rubric is a sampled instrument, not inferred authority
+
+Task-conditioned criterion generation can reduce the obvious mismatch between a
+universal chat rubric and a particular work product, but it adds a stochastic
+projection stage. Preserve the full instrument path rather than treating the
+generated rubric as part of the task or the judge as its validator:
+
+```text
+task requirements and instance identity
+  → candidate criterion-set draw → authority/applicability adjudication
+    → criterion-specific admissible evidence → observer draw
+      → aggregation and eligibility/filter policy → thresholded decision and loss
+```
+
+Each stage has a different claim. **Task-to-criterion projection** asks whether a
+candidate covers the disclosed requirement without adding a surprise obligation.
+**Criterion authority** asks who may approve its obligation, consequence, evidence
+view, and threshold. **Semantic instance conformance** asks whether task, source,
+reference, and rubric concern the same entities, dates, deliverable, and decision,
+not merely whether their IDs and schemas resolve. **Observation** asks whether the
+configured grader can support the criterion verdict. **Aggregation/filtering**
+defines a score population and compensation policy. **Threshold validity** asks
+whether the resulting accept, reject, or escalate decision has bounded stakeholder
+loss. None inherits validity from the previous stage [ADA, XB].
+
+Version rubric generation independently from observation. Generator identity
+includes model/service, prompt and examples, decoding/seed, source view, task-family
+equivalence and cache policy, retry/fallback, and criterion-set hash. Observer
+identity includes model/service, rubric draw, evidence view and transformations,
+modality support, prompt/examples, decoding/seed, and **call topology**: one joint
+trajectory call and `step × criterion` calls induce different context competition,
+error dependence, cost, and missingness. Aggregator identity includes applicability
+handling, confidence semantics and denominator, dependency/overlap policy, gates,
+weights, and normalization. A filter additionally creates an eligibility/deferral
+estimand; post-filter agreement must not be compared with an all-case baseline as
+though the measured population were fixed [ADA].
+
+Cross rubric-generation draws with observer draws on the same frozen artifacts or
+trajectories. Retain the complete intended-attempt ledger and explicit
+`not_applicable`, `insufficient_evidence`, invalid-generation, invalid-observation,
+and deferred states rather than converting low relevance, missing criteria, absent
+modalities, or parser failure into low substantive quality. Map each candidate to
+authorized obligations as preserved, omitted, spurious, split, merged,
+contradictory, threshold-shifted, or evidence-view-shifted; test legitimate
+alternatives, omitted hard gates, misleading self-report, and threshold-near cases.
+Report criterion and decision error, rubric-draw and observer-draw variance,
+selection burden, severe-error loss, and total cost separately.
+
+AdaRubric motivates this decomposition but does not validate it. Its reported
+fixed-rubric score correlation and three-run agreement do not estimate regenerated-
+rubric variance or decision loss; item-level human and training evidence is absent.
+The pinned post-v3 release uses one trajectory-wide call rather than the paper's
+`K×N` topology, omits stated semantic validation/fallback/cache and multimodal
+paths, and multiplies scores by confidence without normalizing by confidence, so a
+low-relevance step lowers quality [ADA]. XpertBench supplies the complementary
+failure: its displayed Education rubric grades a digital-clock lesson plan while
+the assigned task requests a Confucius–Socrates screenplay. A large contributor
+pool and expert review counts therefore cannot substitute for instance-level
+projection evidence; its one expert-scored GPT-5 response is a versioned grader
+intervention, not calibration or proof that expert intent transferred [XB].
+
+**Invariant:** no generated criterion may affect a substantive score until its
+instance, public basis, authority, applicability, evidence route, dependency, and
+decision role are dispositioned; any unsupported mandatory observation blocks the
+corresponding claim. Existing criterion, projection, evidence-view, configured-
+grader, response-matrix, metric, task-health, and validity objects are the durable
+homes. Do not create an adaptive-rubric schema or reward-learning build before
+authorized reference criteria are available.
+
 ### 2.4 Evolving evidence is a typed state transition, not a changed answer key
 
 A task's private basis must not collapse every event, source statement, and
@@ -499,6 +568,24 @@ implemented optional `task.projection_manifest` therefore treats the IR as an
 evidence-backed hypothesis, recomputes projection hashes, enforces four-way
 coverage and public basis, and keeps capability/readiness evidence false in its
 internal conformance fixture.
+
+Structural linkage is weaker than **semantic instance conformance**. Before release,
+compare typed task requirements against the assigned source, reference, rubric,
+and checker across entity, role, deliverable, objective/decision, valid time,
+jurisdiction, unit, and representation. A representation may vary only when it is
+declared invariant under the task contract; a nearby task with the same work shape
+must fail closed when an entity, date, objective, or deliverable changes. Preserve
+component versions, payload hashes, evidence locators, assignment identity, and
+conflict versus missing predicates so a valid package cannot silently score the
+wrong instance [XB].
+
+The internal cross-instance canary admits a Markdown-to-HTML reference change that
+preserves the declared supplier-decision contract and rejects both the observed
+XpertBench screenplay/lesson-plan substitution and a builder-authored supplier/date
+swap [DIC]. This is deterministic, builder-authored calibration of validator
+behavior only. It supplies no expert validity, grader accuracy, semantic-
+equivalence completeness, cross-domain generalization, agent capability, reward
+quality, professional validity, production fitness, or readiness evidence.
 
 ### 2.5a Session-derived tasks are bounded counterfactual projections
 
@@ -3334,6 +3421,28 @@ them:
   evidence; the small clustered BizBench comparison and outcome-conditioned,
   heterogeneous HealthBench transfer do not establish criterion validity,
   expert equivalence, calibrated fusion, cross-domain capability, or readiness.
+- **[ADA]**
+  `papers/agent-benchmarks/2026-07-15-adarubric-adaptive-trajectory-instrument-validity.md`;
+  reviewed immutable v3 PDF/text and pinned post-v3 official release paths and
+  hashes are recorded there. The paper supplies no empirical release; paper/code
+  contradictions in validation, call topology, confidence aggregation, caching,
+  multimodality, and reliability limit it to candidate instrument architecture,
+  not criterion authority, grader accuracy, decision validity, reward utility,
+  deployment fitness, or readiness.
+- **[XB]**
+  `papers/agent-benchmarks/2026-07-15-xpertbench-scaled-expert-task-validity.md`;
+  reviewed immutable v4 PDF/text, v1 comparison, paper-linked platform responses,
+  and unverified release leads are recorded there. The paper's own appendix has a
+  task–rubric instance mismatch, while tasks, criteria, contributor ledgers,
+  anchors, judgments, configurations, repeats, and scoring code are unavailable;
+  scale and a one-shot expert-scored exemplar do not establish participation,
+  grader, professional, or readiness validity.
+- **[DIC]** `pilots/dynamic-criterion-conformance/instance-conformance.json` and
+  `scripts/validate_dynamic_criteria.py`; deterministic builder-authored internal
+  calibration with one source-grounded and one synthetic cross-instance
+  substitution plus an allowed representation change. It establishes validator
+  behavior only, not expert validity, grader accuracy, equivalence completeness,
+  cross-domain generalization, capability, reward quality, or readiness.
 - **[WA]**
   `papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md`;
   reviewed immutable v2 PDF/text and pinned official February 2026 archive paths
