@@ -2,7 +2,12 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+const site = process.env.SITE_URL;
+const base = process.env.SITE_BASE || '/';
+
 export default defineConfig({
+	site,
+	base,
 	integrations: [
 		starlight({
 			title: 'Skill Bench',

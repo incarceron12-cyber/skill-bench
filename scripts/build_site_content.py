@@ -7,6 +7,7 @@ projection under site/src/content/docs/generated and a dashboard data file.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 from collections import Counter
@@ -20,6 +21,13 @@ MANAGED_DIRECTORIES = ("charter", "insights", "landscape", "methodology", "paper
 DATA_OUT = SITE / "src" / "data" / "generated-dashboard.json"
 GITHUB_BLOB = "https://github.com/incarceron12-cyber/skill-bench/blob/main/"
 GITHUB_TREE = "https://github.com/incarceron12-cyber/skill-bench/tree/main/"
+SITE_BASE = "/" + os.environ.get("SITE_BASE", "").strip("/") if os.environ.get("SITE_BASE", "").strip("/") else ""
+
+
+def internal_url(path: str) -> str:
+    """Prefix a root-relative route for project-hosted deployments such as GitHub Pages."""
+    return f"{SITE_BASE}{path}"
+
 
 PAGE_MAP = {
     "PROJECT_CHARTER.md": "/charter/",
@@ -59,10 +67,10 @@ def normalize_repo_path(source: Path, raw_target: str) -> str | None:
 
 def site_target(repo_path: str, anchor: str = "") -> str:
     if repo_path in PAGE_MAP:
-        return PAGE_MAP[repo_path] + anchor
+        return internal_url(PAGE_MAP[repo_path] + anchor)
     if repo_path.startswith("papers/agent-benchmarks/") and repo_path.endswith(".md"):
         slug = Path(repo_path).stem
-        return f"/papers/{slug}/" + anchor
+        return internal_url(f"/papers/{slug}/" + anchor)
     path = ROOT / repo_path
     base = GITHUB_TREE if path.is_dir() else GITHUB_BLOB
     return base + repo_path + anchor
@@ -108,7 +116,7 @@ def emit_markdown(source_rel: str, output_rel: str, description: str) -> dict[st
     output = GENERATED / output_rel
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(frontmatter(title, description) + body.rstrip() + "\n")
-    return {"title": title, "source": source_rel, "url": "/" + output_rel.removesuffix(".md").replace("/index", "") + "/"}
+    return {"title": title, "source": source_rel, "url": internal_url("/" + output_rel.removesuffix(".md").replace("/index", "") + "/")}
 
 
 def review_title(path: Path) -> str:
@@ -134,7 +142,7 @@ def emit_reviews() -> list[dict[str, str]]:
             {
                 "title": title,
                 "slug": slug,
-                "url": f"/papers/{slug}/",
+                "url": internal_url(f"/papers/{slug}/"),
                 "date": date_match.group(1) if date_match else "",
                 "source": rel,
             }
@@ -173,7 +181,7 @@ def emit_paper_index(reviews: list[dict[str, str]]) -> dict[str, str]:
     output.parent.mkdir(parents=True, exist_ok=True)
     description = "Thematically organized navigation across the evidence-backed paper review corpus."
     output.write_text(frontmatter(title, description) + "\n".join(summary) + body.rstrip() + "\n")
-    return {"title": title, "source": "papers/topic-index.md", "url": "/papers/"}
+    return {"title": title, "source": "papers/topic-index.md", "url": internal_url("/papers/")}
 
 
 def queue_projection() -> tuple[dict[str, int], list[dict[str, object]]]:

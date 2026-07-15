@@ -90,6 +90,16 @@ Before making the site public, decide:
 
 The projection intentionally excludes credentials and local paper/source archives. Review queue rationales and next actions before publishing them on a public hostname.
 
-## Continuous integration
+## Continuous deployment
 
-`.github/workflows/site.yml` performs a clean projection, Astro check, static build, and artifact upload when site or canonical public-content files change. It does not deploy externally until a hosting target and access model are selected.
+`.github/workflows/site.yml` performs a clean projection, validates canonical sources, runs Astro checks, builds the static site, and deploys it to GitHub Pages whenever relevant content reaches `main`.
+
+The project-hosted URL is:
+
+```text
+https://incarceron12-cyber.github.io/skill-bench/
+```
+
+The workflow sets Astro's base path to `/skill-bench`, cancels superseded deployments, and republishes when the site, charter, docs, papers, or work queue change. It reflects the latest **pushed commit**, not uncommitted local worker state.
+
+Caddy remains an optional replacement if a custom domain, private access, or self-hosting is selected later.
