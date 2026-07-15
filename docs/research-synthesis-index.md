@@ -454,11 +454,37 @@ eventually received one of two required records; the other received none. This i
 instrumentation evidence and a candidate interface failure, not an agent inquiry,
 parser-causal, information-supply, expert/professional, cross-domain, safety, or
 readiness result: the shapes differ, each cell has two repeats, and no matched
-request-interface contrast was run. Preserve raw intent, request syntax, parser
-mapping, access state, adoption, stopping, endpoint, invalidity, and cost; test
-natural-language versus minimally structured requests prospectively while holding
-the evidence graph and non-interface components fixed, and verify that structure
-does not become an answer-bearing cue.
+request-interface contrast was run.
+
+The subsequent frozen [v2 protocol](../pilots/evidence-request-interface-v2/protocol.json)
+and [executed study](../pilots/evidence-request-interface-v2/execution/study-report.json)
+did run that prospective contrast and retained 8/8 valid attempts: two synthetic
+shapes × natural/structured interfaces × two purposive repeats, with no shape
+pooling. All six structured requests were syntactically valid but unmatched by the
+undisclosed exact-synonym map, yielding no releases. Eight natural requests yielded
+five matches, three ambiguous parses, five releases, and five terminal citations
+to released IDs; citation remains an adoption proxy only. In vendor-disposition,
+both natural repeats passed at 1.0 quality/zero decision loss and both structured
+repeats scored 0.667/one. In segment-release, natural repeats scored 0.833/zero and
+0.667/one, while structured repeats scored 0.667/one and 0.833/zero, so there is no
+stable shape-wide endpoint ordering. The
+[flow audit](../pilots/evidence-request-interface-v2/execution/flow-audit.json)
+preserves selection, expression, parser, access, terminal-citation proxy, stopping,
+endpoint, and token cost separately.
+
+The durable conclusion is narrower than “structure helps”: selected topic and
+request validity do not imply realizability in a private interface vocabulary, and
+parser/access effects do not establish topic-selection quality. Semantic selection
+quality, another structured vocabulary's counterfactual, belief adoption beyond
+terminal citation, stable interface effects, and professional or cross-domain
+transport remain unidentified. Preserve raw intent, request syntax, parser mapping,
+access state, adoption, stopping, endpoint, invalidity, and cost. A next conformant
+instrument should expose an interpretation receipt and one bounded repair
+transition so ambiguity and attempted recovery are observable; this is an
+instrumentation need, not a prediction that receipt/repair improves endpoints.
+The v2 evidence supports no agent-capability, causal-inquiry-benefit, expert,
+professional, clinical, compliance, population, production, deployment, safety,
+or readiness claim.
 
 Across Skill-derived tasks, behavior-derived hidden factors, and language-simulated
 environments, internal agreement supports a common **projection claim ladder**:

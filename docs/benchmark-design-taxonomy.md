@@ -231,15 +231,15 @@ available evidence graph → selected evidence target → expressed request and 
 The parser, aliases, request schema, clarification behavior, access delay/denial,
 and budget charges are configured environment components. A semantically relevant
 free-text request can fail at expression or deterministic routing even when the
-target was appropriate; a structured menu can improve realization while also
-leaking the candidate set or answer. Therefore record raw request, intended target
-and expected-value basis, parser identity/version, mapped candidates and
-confidence, access transition, released content locator, adoption evidence, and
-endpoint separately. Ambiguous, malformed, synonym, multi-target, and negative-
-control requests must fail closed rather than silently map to one evidence atom.
-Compare interfaces prospectively on frozen evidence graphs, budgets, policies,
-configured systems, and graders before attributing endpoint differences to inquiry
-quality.
+target was appropriate; a structured syntax can constrain expression but still be
+unrealizable against a private parser vocabulary, while a menu can leak the
+candidate set or answer. Therefore record raw request, intended target and
+expected-value basis, parser identity/version, mapped candidates and confidence,
+access transition, released content locator, adoption evidence, and endpoint
+separately. Ambiguous, malformed, synonym, multi-target, and negative-control
+requests must fail closed rather than silently map to one evidence atom. Compare
+interfaces prospectively on frozen evidence graphs, budgets, policies, configured
+systems, and graders before attributing endpoint differences to inquiry quality.
 
 The internal matched evidence-acquisition slice retained 12/12 valid configured-
 agent attempts across two purposive synthetic shapes [EAI]. Both active
@@ -253,6 +253,33 @@ a candidate interface failure; with two repeats per cell, different synthetic
 shapes, and no matched interface ablation, it does **not** identify agent inquiry
 ability, parser causality, an information-supply effect, expert/professional
 validity, cross-domain generality, safety, or readiness.
+
+The prospective v2 interface study then retained 8/8 valid attempts in a frozen
+two-shape × two-interface × two-repeat active-only matrix [ERI]. Across the four
+structured attempts, all six emitted requests were syntactically valid, but all
+six were unmatched by the undisclosed frozen exact-synonym map; no evidence was
+released. Across the four natural-request attempts, eight requests produced five
+matches and three ambiguous parses, five releases, and five terminal citations to
+released IDs. Citation is an adoption proxy only. Preserve the shape-specific
+endpoints rather than pooling: vendor-disposition natural requests passed at 1.0
+quality with zero decision loss in both repeats, whereas structured requests scored
+0.667 with decision loss one in both; segment-release natural requests scored
+0.833/zero and 0.667/one, while structured requests scored 0.667/one and 0.833/zero.
+Thus endpoint direction was stable only within the purposive vendor shape and was
+not a measure of inquiry quality.
+
+This result separates an agent's selected and expressed topic from whether that
+topic is realizable in the configured interface vocabulary. It observes parser and
+access consequences, not the semantic quality of topic selection, a counterfactual
+under another structured vocabulary, belief adoption beyond terminal citation, or
+a stable interface effect. With n=2 purposive repeats per cell, it also supports no
+agent-capability, causal-inquiry-benefit, expert, professional, clinical,
+compliance, population, cross-domain, production, deployment, safety, or readiness
+claim. A conformant next instrument should return a receipt containing the
+interpreted topic/candidates, parser status, and access consequence, then permit one
+bounded repair transition before a terminal decision. That would make ambiguity
+observable and repair attempts traceable; it is an instrumentation requirement,
+not evidence that receipt or repair causally improves the endpoint.
 
 ### 2.2b Professionally correct non-completion is a counterfactual action contract
 
@@ -3327,6 +3354,16 @@ them:
   matched request-interface ablation support no causal inquiry, capability,
   expert/professional-validity, cross-domain, safety, production, or readiness
   claim.
+- **[ERI]** `pilots/evidence-request-interface-v2/protocol.json` (SHA-256
+  `6f1d487f46b25f901826de8bb5ff56ea4585aafb78308ce4c13d8555044cd04d`),
+  `pilots/evidence-request-interface-v2/execution/study-report.json` (SHA-256
+  `f387505394ef3fb6649900cba7177ac1b1b4bf9ac570ddd3a78be653a440608b`),
+  `pilots/evidence-request-interface-v2/execution/flow-audit.json`, and eight
+  hash-verified retained trial reports. The frozen components and all trial-report
+  hashes replayed exactly. This builder-authored, synthetic, active-only study has
+  two purposive repeats per cell and no pooled effect; it supports exact internal
+  interface-flow observations and no capability, causal, professional, population,
+  cross-domain, production, safety, or readiness claim.
 - **[XM]** `pilots/experience-memory-transfer/replay-report.json` and
   `pilots/experience-memory-transfer/README.md`; three builder-authored,
   deterministic synthetic conditions establish QA/action separation, harmful-
