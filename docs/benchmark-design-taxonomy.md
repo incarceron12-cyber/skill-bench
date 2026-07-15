@@ -272,14 +272,34 @@ This result separates an agent's selected and expressed topic from whether that
 topic is realizable in the configured interface vocabulary. It observes parser and
 access consequences, not the semantic quality of topic selection, a counterfactual
 under another structured vocabulary, belief adoption beyond terminal citation, or
-a stable interface effect. With n=2 purposive repeats per cell, it also supports no
-agent-capability, causal-inquiry-benefit, expert, professional, clinical,
-compliance, population, cross-domain, production, deployment, safety, or readiness
-claim. A conformant next instrument should return a receipt containing the
-interpreted topic/candidates, parser status, and access consequence, then permit one
-bounded repair transition before a terminal decision. That would make ambiguity
-observable and repair attempts traceable; it is an instrumentation requirement,
-not evidence that receipt or repair causally improves the endpoint.
+a stable interface effect.
+
+The subsequent frozen v3 study implemented the proposed non-answer-bearing
+interpretation receipt and one bounded repair while retaining the natural-request
+condition, same semantic parser, byte-identical scenarios, budget, release rules,
+six-check endpoint grader, and two purposive repeats per shape [ERR]. All 8/8
+attempts replayed as service-, environment-, and artifact-valid. In
+vendor-disposition, both conditions emitted two matched requests, released and
+terminally cited the same permit and insurance records, and passed at 1.0 quality
+with zero decision loss in both repeats; the receipt condition needed no repair. In
+segment-release, each receipt/repair attempt first combined two topics, received an
+`ambiguous` receipt, then repaired once to the adjusted-quality audit. Both natural
+and receipt/repair conditions nevertheless released and terminally cited the same
+single audit record and scored 5/6 (0.833) with zero decision loss in both repeats;
+all four omitted the metric dictionary.
+
+This is evidence that a receipt can make the parser's interpretation observable and
+that the bounded recovery transition is executable, **not** that it improves
+evidence access or endpoints. Keep request, receipt, repair, release, terminal-
+citation proxy, stopping, endpoint, and cost separate: reported dollar cost was
+zero, but the retained attempts consumed 14,757–34,980 tokens each (213,223 total),
+and receipt/repair used more tokens in every matched pair. Do not pool the two
+purposive shapes or infer inquiry quality from the shared endpoints. Across v2 and
+v3, structured syntax, interpretation feedback, and repair are distinct configured-
+interface interventions; none establishes semantic selection quality, belief
+adoption, a stable causal interface benefit, capability, expert/professional
+validity, population or cross-domain generality, compliance, safety, production
+fitness, deployment, or readiness.
 
 ### 2.2b Professionally correct non-completion is a counterfactual action contract
 
@@ -3364,6 +3384,17 @@ them:
   two purposive repeats per cell and no pooled effect; it supports exact internal
   interface-flow observations and no capability, causal, professional, population,
   cross-domain, production, safety, or readiness claim.
+- **[ERR]** `pilots/evidence-request-receipt-repair-v3/protocol.json` (SHA-256
+  `06c19672e3380cc2991b8d69ac0ce33250e4d247d961c4ef508fb4f179daf1bd`),
+  `pilots/evidence-request-receipt-repair-v3/execution/study-report.json` (SHA-256
+  `4490b20b1a5cce11969acc2bd9e7832c8ac95bfffea916c377f9f309c42aca91`),
+  `pilots/evidence-request-receipt-repair-v3/execution/flow-audit.json`, and eight
+  retained request/receipt/repair trial records. Frozen-component preflight and all
+  trial-report hashes replayed exactly. This builder-authored synthetic study has
+  two purposive repeats per cell and no pooled effect; it establishes exact
+  observability/recoverability mechanics only, not inquiry quality, endpoint
+  improvement, capability, causal, expert/professional, population, cross-domain,
+  compliance, safety, production, deployment, or readiness validity.
 - **[XM]** `pilots/experience-memory-transfer/replay-report.json` and
   `pilots/experience-memory-transfer/README.md`; three builder-authored,
   deterministic synthetic conditions establish QA/action separation, harmful-

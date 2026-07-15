@@ -505,19 +505,36 @@ stable shape-wide endpoint ordering. The
 preserves selection, expression, parser, access, terminal-citation proxy, stopping,
 endpoint, and token cost separately.
 
-The durable conclusion is narrower than “structure helps”: selected topic and
+The durable v2 conclusion is narrower than “structure helps”: selected topic and
 request validity do not imply realizability in a private interface vocabulary, and
-parser/access effects do not establish topic-selection quality. Semantic selection
-quality, another structured vocabulary's counterfactual, belief adoption beyond
-terminal citation, stable interface effects, and professional or cross-domain
-transport remain unidentified. Preserve raw intent, request syntax, parser mapping,
-access state, adoption, stopping, endpoint, invalidity, and cost. A next conformant
-instrument should expose an interpretation receipt and one bounded repair
-transition so ambiguity and attempted recovery are observable; this is an
-instrumentation need, not a prediction that receipt/repair improves endpoints.
-The v2 evidence supports no agent-capability, causal-inquiry-benefit, expert,
-professional, clinical, compliance, population, production, deployment, safety,
-or readiness claim.
+parser/access effects do not establish topic-selection quality.
+
+The frozen [v3 protocol](../pilots/evidence-request-receipt-repair-v3/protocol.json)
+and [executed study](../pilots/evidence-request-receipt-repair-v3/execution/study-report.json)
+then added a non-answer-bearing interpretation receipt and one bounded repair while
+holding the natural-request condition, semantic parser, scenarios, budget, release
+rules, endpoint grader, and n=2 purposive repeats per cell fixed. Preflight and
+replay verified all frozen hashes and retained 8/8 valid attempts. In vendor-
+disposition, both conditions made two matched requests, released and terminally
+cited the same two records, and passed at 1.0/zero decision loss in both repeats. In
+segment-release, the receipt exposed an ambiguous combined request and one repair
+was exercised in each receipt/repair repeat; both conditions still released and
+terminally cited the same single audit record and scored 5/6 (0.833)/zero because
+all four attempts omitted the metric dictionary. The
+[v3 flow audit](../pilots/evidence-request-receipt-repair-v3/execution/flow-audit.json)
+keeps request, receipt, repair, access, terminal-citation proxy, stop, endpoint, and
+cost separate. Reported dollar cost was zero, but retained token use was
+14,757–34,980 per attempt and 213,223 total; receipt/repair used more tokens in each
+matched pair.
+
+The v3 result demonstrates observability of parser interpretation and executable
+bounded recovery, not endpoint improvement. Do not pool the two shapes or treat
+identical endpoints as evidence of semantic selection quality, belief adoption,
+stable interface benefit, or cost effectiveness. Across v2 and v3, structured
+syntax, receipts, and repair are distinct configured-interface interventions.
+Neither study supports agent-capability, causal-inquiry-benefit, expert,
+professional, clinical, compliance, population, cross-domain, production,
+deployment, safety, or readiness claims.
 
 Across Skill-derived tasks, behavior-derived hidden factors, and language-simulated
 environments, internal agreement supports a common **projection claim ladder**:
