@@ -1664,6 +1664,60 @@ fitness, or readiness [DC]. Existing authority/participation, trace, artifact-st
 transition, task-health, metric, and validity records host the episode; no desktop-
 specific schema follows.
 
+#### Simulator fidelity needs information sufficiency before consequence promotion
+
+A participant simulator is an instrumented realization, not a transparent proxy
+for a person. Keep five claims separate: **communicative fidelity** (style, pacing,
+affect, and disclosure), **assigned-goal fidelity** (consistency with an authored
+objective), **one-step state-transition fidelity**, **free-running decision/stopping
+fidelity**, and **consequence fidelity** (transport of policy rankings, effects,
+burden, harms, and outcomes to real participants). Evidence for an earlier claim
+does not license a later one. Preserve the typed ladder:
+
+```text
+participant realization and target population/stakes
+  → authorized observable context at the decision time
+    → observable-state sufficiency for the claimed latent target
+      → one-step transition fidelity under matched histories
+        → free-running state persistence, stopping, silence, and terminal fidelity
+          → agent-policy ranking/effect transport
+            → authorized real-participant consequence
+```
+
+For every rung, bind participant/population unit; stakes and outcome window;
+context provenance, valid time, consent/privacy basis, and actor-specific evidence
+views; target state and independent label evidence; simulator model/prompt/profile,
+sampling, retries, failure and non-response semantics; observer; discrepancy
+estimand; clustering, censoring, missingness, and invalid policy; and supported and
+excluded claims. A simulator may legitimately estimate a population-level
+distribution such as `P(response | authorized observable context)` when the context
+cannot identify one person's private motivation. That does not license
+person-specific latent-state reproduction. Conversely, adding an outcome-bearing
+proxy can improve prediction while invalidly revealing future or private state.
+
+Outcome-conditioned discrepancy is a useful **falsification**: it can reveal that
+marginally plausible simulation concentrates error among people who later refuse,
+withdraw, or experience harm. It does not identify whether the source is missing
+behavioral support, insufficient observable state, or an outcome proxy that mixes
+unobserved causes. Nor does an action-conditioned discrepancy identify a tactic's
+causal effect when agent actions respond to prior participant state. Policy-effect
+or production-agent claims require matched or randomized policy comparisons under
+simulator and consented real/replay conditions, with preserved stopping and real
+consequences.
+
+The reviewed payment-linked production-dialogue study is strong evidence for this
+claim boundary, not for a validated user model. Its same-prefix probes isolate a
+one-step response operator and report larger engagement-positive bias among
+eventual non-payers under simulator, prompt, and LLM-instrument swaps. But the one
+Chinese matchmaking-sales corpus, future-outcome stratification, unspecified
+non-payment censoring and customer clustering, teacher-forced probes, unvalidated
+state/action instrument, unavailable claimed release, incomplete consent/privacy
+evidence, and observational tactic analysis block person fidelity, free-running
+fidelity, causal tactic, policy transport, production-agent, cross-domain,
+professional-validity, safety, and readiness claims [USDF]. Existing configured-
+system, participation/consent, trace, longitudinal transition, task-health, metric,
+and validity records host this ladder; no simulator-specific schema follows.
+
 ### 4.0b Feedback is a role- and channel-specific intervention
 
 Feedback can be ecologically legitimate support—a client's correction, a test
@@ -2095,6 +2149,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
 | Authority-gated workflow elicitation (laboratory workflow twins) | claim-level role gates and mandatory nulls; evidence→claim→projection lineage; root condition separated from a masking success channel | graph/query executability mistaken for knowledge truth, calibrated confidence, causal validity, operational benefit, or cross-domain transfer | full immutable 48-page v1 paper and deep review; four reported assay sessions in one department, proprietary substantive artifacts, and no ground-truth or operational-outcome validation [LWT] |
 | Configurable participant systems (HAS-Bench) | participant realization, participation-policy vector, authority-event lineage, and availability/exercise/uptake/effect/burden separation | simulated social roles called humans; bundled prompt/tool/information/authority/budget contrasts; event counts mistaken for benefit or human cost | full immutable v1 paper and deep review; paper-reported scenarios/results only, no verifiable official artifact, real task participants, repeated cells, or reported process-judge audit [HAS] |
+| Consequence-linked user-simulator audit | participant realization→authorized observable-state sufficiency→one-step/free-running fidelity→policy transport→real consequence ladder | human-like or assigned-goal dialogue promoted to decision fidelity; future outcome treated as simulator-visible latent truth; observational response differences promoted to causal tactic or production-agent effects | full immutable v1 paper and deep review over one private payment-linked production corpus; same-prefix one-step evidence only, with unavailable claimed release, unvalidated labels, unspecified censoring/clustering, and no free-running or policy-transport trial [USDF] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
@@ -2303,6 +2358,12 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     instrument, auditor, evidence entitlement, candidate, adjudication, clean
     sentinel, disposition, changed loci, and repaired-form validation. Deletion
     sensitivity cannot silently become defect prevalence or corrected capability.
+52. **Simulator fluency is not decision or consequence fidelity:** preserve
+    authorized observable-state sufficiency, population-versus-person estimands,
+    one-step and free-running stopping behavior, policy transport, and real
+    consequence separately. Future-outcome discrepancy may falsify marginal
+    realism, but cannot silently identify latent state, tactic effects, human
+    equivalence, or production-agent quality.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -2313,6 +2374,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Mid-difficulty efficiency vs rare critical coverage | Psychometric work favors informative middle checks; benchmark mission requires hard safety and expert traps [EB, AP]. | Maintain separate ranking and critical diagnostic sets; test rank fidelity and primitive coverage independently. |
 | Workflow compliance vs latent expertise | Observable transitions are more judgeable, but exact procedure following can substitute for judgment [LH]. | Include at least two expert-approved procedures and held-out consequence variants. |
 | Configurable assistance vs identified human-participation effect | HAS-Bench makes roles/channels observable, but its A1/A3/A4 contrasts bundle prompt, tools, information, authority, initiative, and budget while all task participants are model simulators [HAS]. | On well-defined matched tasks, factorially vary one participation-policy component at a time; counterbalance consented humans and pinned simulators, repeat/equate forms, validate process observers independently, and report outcome, safety, latency, active/wait time, interruption, correction, privacy, and accountability separately. |
+| Outcome-linked simulator error vs valid policy/consequence transport | Same-prefix probes on one payment-linked corpus report more engagement-positive simulator bias for eventual non-payers, but future outcome may reflect private or later causes; teacher forcing, unvalidated labels, observational agent actions, censoring/clustering gaps, and no free-running policy trial prevent person, causal-tactic, or production-agent claims [USDF]. | Cross independently validated observable-state signals with simulator policy and matched history; compare population calibration with any person-specific target; preserve refusal/silence in bounded free-running rollouts; then compare frozen agent-policy rankings/effects under simulator, replay, and consented human conditions where justified. |
 | Learning from failures vs benchmark contamination | STRACE/ACE support localized lessons; ACE also degrades under weak feedback and changes the online estimand [ST, ACE]. | Quarantine lessons, validate on held-out scenario clusters, and audit private-evidence flow before promotion. |
 | Aggregate leaderboard vs diagnostic instrument | Reduced rankings are cheaper, while root-cause layers produce more actionable but uncertain claims [EB, ST]. | Report both without one composite; evaluate whether diagnoses predict expert-prescribed remediations on repeat trials. |
 | Evolving agent vs evolving benchmark | Longitudinal guidance requires persistent state, while living benchmarks must also revise tasks and graders; changing both makes ability and difficulty jointly endogenous [SE]. | Freeze an anchor instrument within each stream; when the benchmark changes, run a bridge panel and report version effects before resuming evolution claims. |
@@ -2580,6 +2642,16 @@ them:
   authored phased-interaction and native-endpoint package pattern, not causal
   interaction benefit, simulator-human parity, human collaboration, professional
   validity, capability, safety, production fitness, or readiness.
+- **[USDF]**
+  `papers/agent-benchmarks/2026-07-15-user-simulator-decision-fidelity.md`;
+  reviewed immutable v1 PDF/text paths and hashes are recorded there. The study
+  supplies one-corpus payment-linked, teacher-forced, same-prefix next-turn
+  evidence. Its claimed release is unlocatable; raw dialogue/outcomes are private;
+  censoring, customer clustering, panel selection, state/action-label validity,
+  consent/privacy data flow, free-running behavior, and policy transport remain
+  unresolved. It supports outcome-conditioned falsification and an information-
+  sufficiency boundary, not person fidelity, causal tactics, human equivalence,
+  production-agent quality, professional validity, safety, or readiness.
 - **[CT]** `papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md`;
   reviewed immutable v3 paper and inspected release paths/hashes are recorded
   there. The release lacked the reported task and grading artifacts.
