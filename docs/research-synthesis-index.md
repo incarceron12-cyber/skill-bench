@@ -913,6 +913,7 @@ appropriate executable follow-up, not a DevOps- or memory-specific schema.
 | [ClawArena](../papers/agent-benchmarks/2026-07-10-clawarena-evolving-information.md) | B | Provides persistent evidence and workspace updates while motivating typed corrections, retractions, supersession, and changed/unchanged checks |
 | [LongMemEval-V2](../papers/agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md) | B | Separates trajectory-history storage from bounded evidence delivery and shows representation/reader effects; does not measure held-out action transfer or harmful stale guidance |
 | [EvoMemBench](../papers/agent-benchmarks/2026-07-15-evomembench-memory-scope-content-validity.md) | B | Adds an in-/cross-episode × knowledge/execution organizing grid and broad adapter substrate while showing that scope/content labels do not identify one construct when task lineage, current-context necessity, write correctness, retrieval, endpoint, grader, missingness, and compute change together |
+| [MemSyco-Bench](../papers/agent-benchmarks/2026-07-15-memsyco-memory-authority-validity.md) | B | Separates semantic relevance from decision authority through ignore/constrain/defer/supersede/use policies, while its synthetic labels, uncalibrated judge, missing adoption/action evidence, and nonfactorial families bound conclusions to configured answer behavior |
 
 **Repository consequence:** Projection manifests, candidate-lesson lifecycle, longitudinal stream/evolution contracts, immutable hashes, validation gates, and rollback. Experience-derived knowledge needs two linked, non-substitutable estimands: evidence-grounded retrospective retrieval and intervention benefit on held-out action. Failed attempts, realized procedures, inferred causes, environment/version scope, stale claims, safe alternatives, and harmful transfer must remain typed rather than flattened into notes.
 
@@ -930,6 +931,22 @@ professional capability, or readiness. The existing experience-memory-transfer
 pilot and longitudinal/configured-system contracts already host the repair.
 
 The internal experience-memory replay now makes that separation executable for one deterministic synthetic fixture: evidence-only memory answers retrospective QA correctly while producing harmful stale transfer, whereas provenance-gated promotion passes both QA and the planted held-out safety check ([replay](../pilots/experience-memory-transfer/replay-report.json)). This validates fixture and validator behavior, not the planted causal story, a general promotion policy, agent-memory improvement, professional competence, or deployment safety. Real validation requires unseen task families, repeated stochastic consumers, source-clustered uncertainty, rollback probes, and expert-grounded action consequences.
+
+MemSyco-Bench adds a complementary **memory-authority rule**: retrieval relevance
+does not determine whether historical information may act as factual evidence,
+transfer across subjects or recipients, survive a superseding update, defeat a
+stronger current source, or control a personalized choice. Preserve source and
+represented-subject authority, purpose/recipient/scope, valid time and
+supersession, admissible role and precedence, then observe
+write → retrieval → presentation → adoption/rejection → action → consequence.
+Its released 1,550-row policy suite and retrieved-but-wrong diagnostics make the
+problem concrete, but GPT-5.5-assisted authored labels, no independent factual or
+represented-user review, nonfactorial task families, a model judge without
+calibration/repeats, conditional valid-call denominators, and no paper-run corpus
+support only a synthetic configured-system stress-test claim. Existing
+source-authority, information-flow, valid-time, experience-memory, state,
+invalid-trial, grader, and validity contracts already host the repair; no
+personal-assistant or memory-only scope commitment follows.
 
 These sources are important to the compounding system and adaptive-agent evaluation, but they must not make self-improvement the benchmark's primary objective.
 
