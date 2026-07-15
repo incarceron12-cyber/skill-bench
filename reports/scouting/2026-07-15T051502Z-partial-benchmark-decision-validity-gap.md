@@ -1,6 +1,7 @@
 # Scouting note — partial benchmark decision-validity gap
 
-**Timestamp:** 2026-07-15T05:15:02Z  
+**Timestamp:** 2026-07-15T05:15:02Z
+
 **Scope:** Narrow expansion against charter objectives A/C. Queue inspection found 251 tasks: 244 completed, four blocked, two pending human decisions, and one pending build; no source/research/review task remained. Existing reviews cover reduced-panel rank fidelity, psychometric task selection, repeated-trial reliability, and metric validity, but not whether a partial task run preserves a predeclared pairwise benchmark decision under explicit coverage and unresolved-comparison constraints.
 
 ## Substantive finding — triage only
