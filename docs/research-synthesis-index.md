@@ -162,6 +162,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 |---|---:|---|
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Demonstrates large-scale expert-authored multimodal occupational task acquisition while exposing sampling, weighting, witness, and inference limitations |
 | [OccuBench](../papers/agent-benchmarks/2026-07-15-occubench-language-simulator-validity.md) | A | Demonstrates cheap cross-domain synthetic tool-environment packaging while separating occupational labels and closed-loop simulator/verifier agreement from transition validity, professional authority, matched fault resilience, and real-environment transport |
+| [AutomationBench](../papers/agent-benchmarks/2026-07-15-automationbench-workflow-projection-validity.md) | A | Adds broad executable multi-app state, strict conjunction with negative guards, task-local reset, and tool-discoverability interventions while separating synthetic contract conformance from work-demand provenance, production transition transport, complete consequence coverage, and readiness |
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
@@ -221,7 +222,11 @@ counterfactual artifact integrity, checkpoint progress, or professional
 readiness. The completed [OfficeBench audit](../papers/agent-benchmarks/2026-07-11-officebench-cross-application-office-validity.md)
 supports typed cross-store state-transition and selected task-predicate claims, but
 its synthetic tasks, app-count confounding, narrow evidence views, and mutable
-environment do not establish professional-work validity. The completed WorkArena L1
+environment do not establish professional-work validity. The completed AutomationBench
+audit adds broad task-local synthetic multi-app transitions, hidden evidence, and strict
+state predicates, but its co-authored task/state/transition/grader loop and absent
+reference-service transport support simulator conformance rather than production
+automation. The completed WorkArena L1
 audit supports enterprise-UI and selected native-state operation claims,
 not representative knowledge work; WorkArena++ closes the composition-method gap but
 not occupational validity.
