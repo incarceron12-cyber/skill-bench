@@ -169,6 +169,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
 | [DeskCraft](../papers/agent-benchmarks/2026-07-14-deskcraft-interactive-workflow-validity.md) | B | Adds native professional-artifact checks and phased requirement delivery while separating authored interaction opportunity, trigger realization, authority, adoption, state-preserving repair, endpoint effect, burden, recipient uptake, and consequence |
+| [User-simulator decision fidelity](../papers/agent-benchmarks/2026-07-15-user-simulator-decision-fidelity.md) | A | Uses real payment-linked dialogue to expose outcome-correlated disengagement error while showing that future-outcome stratification, observable-state sufficiency, person-specific simulation, free-running fidelity, policy transport, and real consequence require separate warrants |
 | [WorkArena L1](../papers/agent-benchmarks/2026-07-12-workarena-l1-knowledge-work-validity.md) | B | Makes parameterized enterprise-UI setup, selected native-state predicates, and task-owned cleanup inspectable while separating atomic operation success from work sampling, collateral-state, professional-use, and readiness claims |
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
@@ -382,6 +383,23 @@ professional-validity, capability, safety, production-fitness, and readiness
 claims. Existing participation/authority, trace, artifact-transition, task-health,
 metric, and validity machinery is the durable home; no desktop-specific schema
 follows.
+
+Outcome-linked dialogue evidence adds a missing gate before this interaction
+ladder can be treated as a model of people: `participant realization →
+authorized observable-state sufficiency → one-step transition fidelity → free-
+running fidelity → agent-policy transport → real consequence`. Communicative
+realism and assigned-goal consistency do not validate refusal, stopping,
+commitment, or willingness decay. Conversely, stratifying simulator error by a
+person's future outcome does not prove that outcome-correlated latent state was
+recoverable from the simulator's evidence view. The reviewed production-sales
+paper reports a robust buyer/non-buyer contrast under simulator, prompt, and
+LLM-instrument swaps, but one private corpus, unspecified non-payment censoring
+and customer clustering, no human state-label validation, teacher-forced one-
+turn probes, observational tactic analysis, and an unavailable claimed release
+block human-equivalence, causal mechanism, policy-effect, cross-domain,
+professional-validity, production-agent, safety, and readiness claims. Existing
+participant, trace, metric, task-health, validity, consent, and longitudinal
+records can carry the gate; no simulator-specific subsystem follows.
 
 ## 3. Expertise transfer is an intervention that must be separated from the measuring instrument
 
