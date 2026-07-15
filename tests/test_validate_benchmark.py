@@ -15,6 +15,7 @@ PROJECTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-task-projection-manife
 WORKSPACE_FIXTURE = ROOT / "tests" / "fixtures" / "valid-persistent-workspace-conformance.json"
 ACTION_SAFETY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-adversarial-action-conformance.json"
 CONTEXT_COMPRESSION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-context-compression-conformance.json"
+STORAGE_RETENTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-storage-retention-conformance.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
@@ -26,6 +27,7 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         cls.workspace = json.loads(WORKSPACE_FIXTURE.read_text(encoding="utf-8"))
         cls.action_safety = json.loads(ACTION_SAFETY_FIXTURE.read_text(encoding="utf-8"))
         cls.context_compression = json.loads(CONTEXT_COMPRESSION_FIXTURE.read_text(encoding="utf-8"))
+        cls.storage_retention = json.loads(STORAGE_RETENTION_FIXTURE.read_text(encoding="utf-8"))
 
     def projection_bundle(self):
         bundle = copy.deepcopy(self.valid)
@@ -53,6 +55,12 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         bundle["task"]["context_compression"] = copy.deepcopy(self.context_compression["task_context_compression"])
         bundle["trials"][0]["context_compression"] = copy.deepcopy(self.context_compression["trial_context_compression"])
         bundle["trials"][0]["trace"]["events"].extend(copy.deepcopy(self.context_compression["synthetic_trace_events"]))
+        return bundle
+
+    def storage_retention_bundle(self):
+        bundle = copy.deepcopy(self.valid)
+        bundle["task"]["storage_retention"] = copy.deepcopy(self.storage_retention["task_storage_retention"])
+        bundle["trials"][0]["storage_retention"] = copy.deepcopy(self.storage_retention["trial_storage_retention"])
         return bundle
 
     def validate_mutation(self, mutation) -> None:
@@ -406,6 +414,52 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
             handle.flush()
             with self.assertRaisesRegex(ValidationFailure, "raw evidence sha256 mismatch"):
                 validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_valid_storage_retention_frontier_preserves_plural_utility(self) -> None:
+        bundle = self.storage_retention_bundle()
+        self.assertEqual([], semantic_errors(bundle))
+        results = {item["condition"]: item for item in bundle["trials"][0]["storage_retention"]["condition_results"]}
+        self.assertLess(results["cas"]["retained_bytes"], results["raw"]["retained_bytes"])
+        summary_utilities = {item["utility"]: item["outcome"] for item in results["summary_only"]["utility_results"]}
+        self.assertEqual("passed", summary_utilities["handoff"])
+        self.assertEqual("failed", summary_utilities["executable_replay"])
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_storage_retention_rejects_byte_and_shared_growth_drift(self) -> None:
+        bundle = self.storage_retention_bundle()
+        raw = bundle["trials"][0]["storage_retention"]["condition_results"][0]
+        raw["retained_bytes"] += 1
+        raw["shared_store"]["growth_bytes"] += 1
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("retained_bytes does not equal" in error for error in errors))
+        self.assertTrue(any("shared-store growth" in error for error in errors))
+
+    def test_storage_retention_rejects_broken_transformation_lineage(self) -> None:
+        bundle = self.storage_retention_bundle()
+        cas = next(item for item in bundle["trials"][0]["storage_retention"]["condition_results"] if item["condition"] == "cas")
+        cas["representations"][1]["source_representation_id"] = "missing-source"
+        cas["transformations"] = []
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("broken representation lineage" in error for error in errors))
+        self.assertTrue(any("missing transformation evidence" in error for error in errors))
+
+    def test_storage_retention_rejects_private_residue_after_deletion(self) -> None:
+        bundle = self.storage_retention_bundle()
+        selective = next(item for item in bundle["trials"][0]["storage_retention"]["condition_results"] if item["condition"] == "selective_private_deletion")
+        selective["representations"][0]["privacy"] = "private"
+        selective["remote_canary"]["observed"] = "detected"
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("selective deletion requires" in error for error in errors))
+        self.assertTrue(any("remote canary detection contradicts" in error for error in errors))
+
+    def test_storage_retention_preserves_failed_and_invalid_attempts(self) -> None:
+        bundle = self.storage_retention_bundle()
+        raw = next(item for item in bundle["trials"][0]["storage_retention"]["condition_results"] if item["condition"] == "raw")
+        raw["attempts"] = [raw["attempts"][0]]
+        self.assertTrue(any("failed and invalid-service attempt residue" in error for error in semantic_errors(bundle)))
 
 
 if __name__ == "__main__":

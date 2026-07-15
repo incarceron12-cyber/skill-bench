@@ -412,6 +412,87 @@ def _validate_context_compression(
             errors.append(f"{label}: compression treatment requires measured compressor calls")
 
 
+def _validate_storage_retention(
+    contract: dict[str, Any], observation: dict[str, Any] | None,
+    errors: list[str], prefix: str,
+) -> None:
+    """Validate retention stocks against typed utility, lineage, and lifecycle evidence."""
+    required_conditions = {"raw", "none", "cas", "summary_only", "selective_private_deletion"}
+    required_utilities = {
+        "conversation_reconstruction", "request_reconstruction", "executable_replay",
+        "between_turn_resume", "workflow_recovery", "provenance_query", "causal_diagnosis",
+        "grader_replay", "handoff", "selective_deletion",
+    }
+    if set(contract["conditions"]) != required_conditions:
+        errors.append("task.storage_retention: require raw, none, CAS, summary-only, and selective-private-deletion conditions")
+    if set(contract["required_utilities"]) != required_utilities:
+        errors.append("task.storage_retention: required utility predicate coverage is incomplete")
+    _check_unique(contract["channels"], "channel_id", "task.storage_retention.channels", errors)
+    channel_ids = {item["channel_id"] for item in contract["channels"]}
+    if not {"setup", "execution", "evaluator", "local", "remote"} <= set(contract["boundaries"]):
+        errors.append("task.storage_retention: setup/execution/evaluator and local/remote boundaries are mandatory")
+    for channel in contract["channels"]:
+        if not channel["included"] and not channel.get("exclusion_reason"):
+            errors.append(f"task.storage_retention channel {channel['channel_id']}: excluded channel requires a reason")
+    if observation is None:
+        return
+    if (observation["instrument_id"], observation["version"]) != (contract["instrument_id"], contract["version"]):
+        errors.append(f"{prefix}.storage_retention: instrument identity/version mismatch")
+    if observation["fixed_trace_sha256"] != contract["fixed_trace_sha256"]:
+        errors.append(f"{prefix}.storage_retention: fixed-trace identity mismatch")
+    results = observation["condition_results"]
+    _check_unique(results, "condition", f"{prefix}.storage_retention.condition_results", errors)
+    if {item["condition"] for item in results} != required_conditions:
+        errors.append(f"{prefix}.storage_retention: matched condition coverage is incomplete")
+    attempt_statuses: set[str] = set()
+    for result in results:
+        condition = result["condition"]
+        label = f"{prefix}.storage_retention condition {condition}"
+        _check_unique(result["attempts"], "attempt_id", f"{label}.attempts", errors)
+        attempt_statuses.update(item["status"] for item in result["attempts"])
+        representations = result["representations"]
+        _check_unique(representations, "representation_id", f"{label}.representations", errors)
+        representation_by_id = {item["representation_id"]: item for item in representations}
+        for item in representations:
+            if item["channel_id"] not in channel_ids:
+                errors.append(f"{label}, representation {item['representation_id']}: unknown channel_id")
+            source_id = item.get("source_representation_id")
+            if source_id and source_id not in representation_by_id:
+                errors.append(f"{label}, representation {item['representation_id']}: broken representation lineage")
+            if bool(source_id) != bool(item.get("transformation_id")):
+                errors.append(f"{label}, representation {item['representation_id']}: transformed representation requires source and transformation identities")
+        measured_bytes = sum(item["bytes"] for item in representations)
+        if result["retained_bytes"] != measured_bytes:
+            errors.append(f"{label}: retained_bytes does not equal representation bytes")
+        if abs(result["byte_days"] - result["retained_bytes"] * result["retention_days"]) > 1e-6:
+            errors.append(f"{label}: byte_days does not replay from retained bytes and duration")
+        shared = result["shared_store"]
+        if shared["growth_bytes"] != shared["after_bytes"] - shared["before_bytes"]:
+            errors.append(f"{label}: shared-store growth does not replay")
+        utilities = result["utility_results"]
+        _check_unique(utilities, "utility", f"{label}.utility_results", errors)
+        if {item["utility"] for item in utilities} != required_utilities:
+            errors.append(f"{label}: utility predicate coverage mismatch")
+        utility_by_id = {item["utility"]: item for item in utilities}
+        if condition == "none" and (representations or result["retained_bytes"] != 0):
+            errors.append(f"{label}: no-persistence condition retained state")
+        if condition == "none" and any(item["outcome"] == "passed" for item in utilities if item["utility"] != "selective_deletion"):
+            errors.append(f"{label}: no-persistence condition cannot pass retention-dependent utility")
+        transformation_ids = {item["transformation_id"] for item in result["transformations"]}
+        for item in representations:
+            if item.get("transformation_id") and item["transformation_id"] not in transformation_ids:
+                errors.append(f"{label}, representation {item['representation_id']}: missing transformation evidence")
+        if condition == "selective_private_deletion":
+            private_retained = [item["representation_id"] for item in representations if item["privacy"] in {"private", "restricted"}]
+            deletion_passed = result["deletions"] and all(item["outcome"] == "passed" for item in result["deletions"])
+            if private_retained or not deletion_passed or utility_by_id["selective_deletion"]["outcome"] != "passed":
+                errors.append(f"{label}: selective deletion requires passed deletion evidence and no retained private representation")
+        if result["remote_canary"]["observed"] == "detected" and utility_by_id["selective_deletion"]["outcome"] == "passed":
+            errors.append(f"{label}: remote canary detection contradicts passed selective deletion")
+    if not {"failed", "invalid_service"} <= attempt_statuses:
+        errors.append(f"{prefix}.storage_retention: conformance slice must preserve failed and invalid-service attempt residue")
+
+
 def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     """Return cross-reference and completed-trial invariant violations."""
     errors: list[str] = []
@@ -460,6 +541,9 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     context_compression_contract = task.get("context_compression")
     if context_compression_contract:
         _validate_context_compression(context_compression_contract, None, {}, errors, "task")
+    storage_retention_contract = task.get("storage_retention")
+    if storage_retention_contract:
+        _validate_storage_retention(storage_retention_contract, None, errors, "task")
 
     requirement_by_id: dict[str, dict[str, Any]] = {}
     for skill in skills:
@@ -650,6 +734,14 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
                 errors.append(f"{prefix}.context_compression: task contract requires a trial observation")
             else:
                 _validate_context_compression(context_compression_contract, context_compression_observation, event_by_id, errors, prefix)
+        storage_retention_observation = trial.get("storage_retention")
+        if storage_retention_observation and not storage_retention_contract:
+            errors.append(f"{prefix}.storage_retention: observation has no task contract")
+        elif storage_retention_contract:
+            if storage_retention_observation is None:
+                errors.append(f"{prefix}.storage_retention: task contract requires a trial observation")
+            else:
+                _validate_storage_retention(storage_retention_contract, storage_retention_observation, errors, prefix)
         recovery_relations: dict[str, list[tuple[str, str]]] = {}
         for edge in trace["dependencies"]:
             if edge["from_event_id"] not in event_ids or edge["to_event_id"] not in event_ids:

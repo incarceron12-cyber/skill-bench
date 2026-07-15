@@ -42,6 +42,7 @@ Version 0.2 also recomputes each local procedural skill's SHA-256 when
 | Persistent workspace identity, placement, dependency hypotheses, process observations, mutations, and cleanup are separate | File existence, authored relevance, observed access/write, and causal use are different claims; a correct deliverable can coexist with destructive workspace state. | `papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md` §§ Representative task trace, Unique insight, Transferable benchmark design lessons 1–8 |
 | Source authority, exposure, adoption, attempted action, intercepted/realized state, recovery, and utility are separate | Source placement is not exposure; exposure is not adoption; a tool call is not a realized consequence; and refusal is not secure useful completion. | `papers/agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md` §§ Unique insight, Transferable benchmark-design lessons 1–5 |
 | Context compression is a versioned, trace-linked state transformation with immutable raw evidence | Terminal reward or token savings cannot establish fidelity, alternate-future sufficiency, or auditability; reset and reformatting are confounds rather than compression effects. | `papers/agent-benchmarks/2026-07-13-acon-context-compression-validity.md` §§ The paper's own examples falsify a strong fidelity claim, Transfer to skill-bench |
+| Post-run storage is a typed stock linked to operational utility | Fewer retained bytes dominate only when the same authorized reconstruction, recovery, provenance, diagnosis, handoff, grading, and deletion predicates survive under a matched fixed trace and declared boundary. | `papers/agent-benchmarks/2026-07-15-agentfootprint-storage-reconstructability-validity.md` §§ Unique insight, Transfer to skill-bench |
 
 The fixture `tests/fixtures/valid-benchmark-bundle.json` is deliberately a
 failed completed trial. It demonstrates that a score of zero can still preserve
@@ -177,6 +178,34 @@ Mutation tests reject fidelity upgrades over failed invariants, missing treatmen
 controls or trace lineage, raw-input and compressor drift, and incomplete
 invariant coverage. These fixtures make no agent-capability, professional-
 validity, reliability, production-fitness, or readiness claim.
+
+## Storage-retention utility conformance
+
+Optional `task.storage_retention` and `trial.storage_retention` records extend the
+bundle's configured-system resource evidence without introducing a storage-only
+subsystem. The task contract declares setup, execution, evaluator, local, remote,
+and shared-store boundaries; typed channels; a fixed-trace identity; five matched
+retention conditions; ten distinct utility predicates; and strict claim ceilings.
+Trial observations separate workspace artifacts from framework/evaluator residue,
+logical objects from representations, local stock from shared-store growth,
+accepted attempts from failed/provider-invalid residue, and bytes from byte-days.
+
+The semantic validator recomputes retained bytes, byte-days, and shared-store
+growth; validates representation/transformation lineage; requires every condition
+and utility predicate exactly once; forbids retention-dependent utility claims in
+the no-persistence arm; preserves failed and invalid-service attempt residue; and
+requires all-channel deletion evidence with no private representation or remote
+canary left before selective deletion may pass.
+
+`tests/fixtures/valid-storage-retention-conformance.json` is an internal synthetic
+five-condition slice over one fixed recorded trajectory. It plants nested JSON,
+SQLite, exact-content CAS lineage, a transformed near duplicate, a changed
+same-size representation, shared-store growth, a remote canary, failed and invalid
+attempts, summary-only loss, and selective private deletion. The fixture shows why
+CAS can preserve replay at fewer bytes while summary-only preserves handoff but
+not executable replay, and why raw retention can support diagnosis while failing
+deletion. These are contract-calibration outcomes only—not production efficiency,
+agent capability, professional validity, reliability, or readiness evidence.
 
 ## Required 2×2 ablation
 
