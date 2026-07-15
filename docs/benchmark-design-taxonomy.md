@@ -962,6 +962,36 @@ professional-capability estimates.
 
 ALE's released PowerMill evaluator adds a concrete bypass: a pre-existing `agent_sim.stl` can enter a test path that skips collision checking and simulation. The internal seven-case replay rejects pre-satisfied, stale, copied-reference, and omitted-transition outcomes, accepts one declared alternate path, and marks invalid initialization as environment invalid. These are builder-authored synthetic conformance results only—not ALE reproduction, verifier completeness, agent capability, prevalence, expert validity, or readiness [ALE, IS].
 
+#### Temporal artifacts require native, rendered, and export-time evidence
+
+A state visible at one instant cannot establish behavior over an interval. For any
+time-indexed or compositional artifact, route criteria through a typed ladder:
+
+```text
+source identity + time basis → native editable structure
+  → rendered audiovisual interval → exported bytes and declared properties
+    → creative/professional acceptance → recipient use and consequence
+```
+
+Bind interval/frame/sample locator, track/layer/component identity, synchronization
+tolerance and its loss basis, source→project→render→export lineage, required and
+preserved regions, permitted invariances, and the exact observer view. A screenshot
+may establish a static UI value; it cannot prove playback timing. A progress dialog
+cannot prove a decodable export; a plausible render cannot prove editability; and
+one expert demonstration is a solvability witness rather than a mandatory action
+sequence. Missing source, native, render, or export evidence yields
+`insufficient_evidence` or `invalid_artifact`, not ordinary criterion failure [CV].
+
+CutVerse motivates the distinction through 186 reported expert-demonstrated media
+tasks and 631 screenshot-oriented milestones, but does not release the task corpus,
+parser, evaluator, VM identities, result ledger, or judge annotations; its later
+generic Windows harness cannot reproduce v1 [CV]. The internal 11-case replay makes
+source/native/render/export routing, tolerance boundaries, wrong-interval/component,
+broken-editability, export mismatch, missing-view, and alternate-sequence outcomes
+executable [TA]. It validates deterministic fixture behavior only—not observer
+accuracy, creative quality, expert validity, agent capability, reliability,
+professional validity, production fitness, or readiness.
+
 ### 2.8 Executable composition is not a workflow-validity argument
 
 Composing seeded setup, oracle actions, and state validators can efficiently create
@@ -1132,6 +1162,19 @@ and `invalid` or `insufficient_evidence` separately from a substantive negative.
 Artifact views, full trajectories, environment queries, agent reasoning, and
 private state are different observation treatments. Agreement between observers
 with unequal views does not isolate judgment ability [ARB].
+
+Treat plural channels as **requirement routes**, not interchangeable votes. Bind
+each criterion to its authoritative evidence object and time: a final response may
+show disclosure or reasoning; a request log may show attempted authority use; a
+service event or pre/post state may show committed consequence; native structure,
+rendered intervals, and exported bytes establish different artifact predicates.
+Record channels required, channels actually captured, transformation/freshness,
+observer version, and cross-channel contradictions. A tool timeout followed by a
+committed side effect, an invocation with no state change, and a correct unsupported
+claim require different verdicts. Calibrate the composed observer on a blinded
+sample spanning every agreement/disagreement cell; incremental detections selected
+by one observer cannot estimate either observer's sensitivity or false-accept rate
+[CE].
 
 Preserve deterministic outputs, model judgments, and every human label as
 separate immutable observations before resolution. Duplicate labels need stable
@@ -2148,12 +2191,20 @@ and validity records are the implementation homes; no new schema follows.
 | Role-versioned suite membership | distinguish coverage, regression, frontier, calibration, and retired uses of the same task | immutable membership hash, role/tier, admission evidence, outcome-selection flag and snapshot, exposure state, transition event, replacement bridge, retirement reason |
 | Counterfactual artifact record | establish editability and behavioral integrity rather than current-value similarity | native/executable/rendered/trace views, pinned engine, initial-to-final mutation surface, authoritative perturbations, dependency propagation, invariants, permitted formula/layout equivalence, witness health |
 | Action-safety record | distinguish source presence, attempted behavior, realized consequence, recovery, and useful completion | authority matrix, placement/exposure/adoption evidence, tool event, interceptor, pre/post state, severity/reversibility, residual harm, containment canaries, separate safety/utility outcomes |
+| Reduced-evaluation use | bind any lower-cost panel, ordering, or stopping proposal to the estimand it may preserve | immutable full record and configured systems; `score`, `rank`, `pairwise_threshold`, `regression`, `diagnostic`, or `gate_preservation` use; threshold/loss; eligible overlap and typed invalids; selection/order/seeds; construct and critical strata; error/deferral/coverage targets; clustered uncertainty; replay/prospective status; expiry/drift triggers |
 
-A reduced panel serves **ranking efficiency**, not automatically diagnostic
-coverage or absolute professional-quality estimation. Mid-range checks often
-carry the most rank information, while rare hard safety/contradiction checks may
-be strategically indispensable. Keep separate panel objectives and report rank
-fidelity separately from score calibration [EB, AP].
+A reduced evaluation is **claim/use indexed**, not a generic task fraction.
+Ranking, score estimation, thresholded pairwise selection, regression detection,
+diagnostic localization, and preservation of noncompensatory safety/compliance
+gates are different estimands. Mid-range checks can carry rank information while
+rare hard checks remain strategically indispensable. Preserve the complete
+response matrix first; then bind any reduced policy to its full-record target,
+configured-system and eligible-task population, missing/invalid/overlap policy,
+selection/order and seeds, grouping authority, hard-inclusion strata, error and
+deferral denominators, tested budget grid, uncertainty, and expiry. Retrospective
+replay compressibility is not prospective sequential stopping, future-form
+transport, reliability, diagnostic sufficiency, or validation of the full-record
+decision itself [EB, AP, PD].
 
 A common suite runner establishes transport and operations, not measurement
 commensurability. Component vectors and eligibility patterns remain primary;
@@ -2590,7 +2641,16 @@ them:
     transition, a declared alternative, and invalid initialization. This validates
     local fixture/scorer behavior only; real-task execution, alternate-path review,
     expert adjudication, and adversarial grader calibration remain required [IS].
-21. **Pending evidence-gated selective-review validation —
+21. **Completed temporal-artifact conformance, not creative or professional
+    validity — `build-temporal-artifact-conformance-slice`:** the existing artifact-
+    transition pilot now routes source lineage, native structure, rendered intervals,
+    and export identity through separate observers across 11 deterministic cases,
+    including timing boundaries, wrong interval/component, missing views, broken
+    editability, export mismatch, and a legitimate alternate sequence. This validates
+    fixture/scorer behavior only; observer calibration, expert judgment, agent trials,
+    reliability, professional validity, production fitness, and readiness remain
+    unsupported [CV, TA].
+22. **Pending evidence-gated selective-review validation —
     `validate-trajectory-confidence-selective-review`:** do not build a confidence-
     specific schema or run on one-shot/synthetic-only cells. Wait for diverse pilots
     with valid repeated attempts, then exercise the frozen policy comparison in §8.
@@ -2599,6 +2659,29 @@ them:
 
 ## Provenance keys
 
+- **[CE]**
+  `papers/agent-benchmarks/2026-07-15-claw-eval-multichannel-trajectory-validity.md`;
+  reviewed immutable v3 PDF/text/HTML plus a complete pinned post-v3 official release
+  audit are recorded there. The release contains 300 manifests/graders but no exact
+  paper run corpus or fault injector; its manifest criterion inventory diverges from
+  the paper and selected hybrid-only adjudication does not calibrate either observer.
+- **[CV]**
+  `papers/agent-benchmarks/2026-07-15-cutverse-temporal-creative-artifact-validity.md`;
+  reviewed immutable v1 PDF/text plus a complete pinned post-v1 official release
+  audit are recorded there. The later archive is a generic Windows runner with one
+  Notepad example and placeholder evaluation, not the paper's 186 tasks, media,
+  parser, milestones, environments, runs, or result evidence.
+- **[PD]**
+  `papers/agent-benchmarks/2026-07-15-partial-agent-benchmark-decision-validity.md`;
+  reviewed immutable v1 HTML, official-repository PDF, complete pinned release, and
+  executed public replay paths are recorded there. Evidence supports retrospective
+  preservation of one completed-record decision under a declared policy—not
+  prospective stopping, score/rank/diagnostic/reliability preservation, professional
+  validity, safety, or readiness.
+- **[TA]**
+  `pilots/artifact-transition-conformance/v0.2-temporal/replay-report.json`;
+  11 deterministic builder-authored cases establish source/native/render/export
+  observer routing and fail-closed fixture behavior only.
 - **[ASAS]**
   `papers/agent-benchmarks/2026-07-15-agentic-skills-at-scale-projection-validity.md`;
   reviewed immutable v1 PDF/text and the complete pinned 1,110-task release audit are
