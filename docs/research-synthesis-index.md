@@ -331,7 +331,17 @@ with [AgentCo-op](../papers/agent-benchmarks/2026-07-11-agentcoop-typed-handoffs
 [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md)
 (availability, access, and causal use differ), and
 [ACON](../papers/agent-benchmarks/2026-07-13-acon-context-compression-validity.md)
-(task-sufficient compression is not state-faithful). Existing handoff-usability,
+(task-sufficient compression is not state-faithful). Add
+[decision fidelity under context compression](../papers/agent-benchmarks/2026-07-15-decision-fidelity-context-compression.md):
+a summary can preserve individually plausible facts while reweighting caveats,
+comparators, and offsets enough to change a named downstream policy, but agreement
+with that policy remains evaluator-relative and can preserve the policy's error.
+State fidelity, task sufficiency, decision-instrument preservation, independent
+decision correctness, and stakeholder consequence therefore require separate
+records. The paper's one sampled summary per method, three-call generated-probability
+instrument, absent clustered uncertainty and factuality audit, unvalidated LLM fact
+roles, and unreleased commercial case support no investment, professional, production,
+or readiness claim. Existing handoff-usability,
 workspace, transition, compression, trace, metric, task-health, and validity
 machinery already hosts the requirements. The internal two-shape handoff producer,
 consumer, adjudication, and counterfactual records establish only configured
