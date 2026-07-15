@@ -18,6 +18,10 @@ class EvidenceRequestReceiptRepairV3Tests(unittest.TestCase):
    if case.get("kind") in {"multi_target_ambiguity","unknown_topic_negative","domain_token_perturbation"}:self.assertEqual([],case["observed"]["mapped_evidence_ids"] if case["observed"]["status"]=="unmatched" else case["observed"]["mapped_evidence_ids"][:0])
  def test_protocol_and_zero_call_preflight(self):
   self.assertTrue(self.runner.verify_protocol(False)["passed"]);report=json.loads((PILOT/"preflight/canary-report.json").read_text());self.assertTrue(report["passed"]);self.assertEqual(0,report["model_calls"])
+ def test_posthoc_flow_audit_preserves_stage_separation(self):
+  path=PILOT/"execution/flow-audit.json"
+  if not path.exists():self.skipTest("posthoc audit not run")
+  audit=json.loads(path.read_text());self.assertEqual({"intended":8,"retained":8,"eligible":8},audit["denominators"]);self.assertTrue(audit["no_rescoring"]);self.assertTrue(audit["no_shape_pooling"]);self.assertEqual(4,len(audit["shape_specific_pairs"]));self.assertTrue(all("request" in x and "receipt" in x and "repair" in x and "access" in x and "adoption" in x and "stop" in x and "endpoint" in x and "cost" in x for x in audit["attempt_flows"]))
  def test_execution_replays_when_present(self):
   report=PILOT/"execution/study-report.json"
   if not report.exists():self.skipTest("prospective execution not run")
