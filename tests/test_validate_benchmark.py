@@ -17,6 +17,7 @@ ACTION_SAFETY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-adversarial-action-
 CONTEXT_COMPRESSION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-context-compression-conformance.json"
 STORAGE_RETENTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-storage-retention-conformance.json"
 COMPONENT_REALIZATION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-component-realization-conformance.json"
+REFERENCE_FIXTURE = ROOT / "tests" / "fixtures" / "valid-reference-observability-bundle.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
@@ -30,6 +31,7 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         cls.context_compression = json.loads(CONTEXT_COMPRESSION_FIXTURE.read_text(encoding="utf-8"))
         cls.storage_retention = json.loads(STORAGE_RETENTION_FIXTURE.read_text(encoding="utf-8"))
         cls.component_realization = json.loads(COMPONENT_REALIZATION_FIXTURE.read_text(encoding="utf-8"))
+        cls.reference = json.loads(REFERENCE_FIXTURE.read_text(encoding="utf-8"))
 
     def projection_bundle(self):
         bundle = copy.deepcopy(self.valid)
@@ -303,6 +305,33 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         state = bundle["task"]["artifact_views"][0]
         state["transformation"] = copy.deepcopy(bundle["task"]["artifact_views"][1]["transformation"])
         self.assertTrue(any("authoritative view cannot" in error for error in semantic_errors(bundle)))
+
+    def test_valid_reference_role_and_observability_fixture(self) -> None:
+        validate_file(REFERENCE_FIXTURE, DEFAULT_SCHEMA, check_paths=True)
+        comparison = self.reference["task"]["checks"][0]["reference_comparison"]
+        self.assertEqual("surpasses_reference", comparison["relation"])
+        self.assertEqual("passed", comparison["independent_verification"]["state"])
+
+    def test_reference_surpass_requires_matched_baseline_and_verification(self) -> None:
+        bundle = copy.deepcopy(self.reference)
+        comparison = bundle["task"]["checks"][0]["reference_comparison"]
+        del comparison["matched_baseline"]
+        comparison["independent_verification"] = {"state": "pending", "evidence_locators": []}
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("requires matched baseline" in error for error in errors))
+        self.assertTrue(any("requires passed independent verification" in error for error in errors))
+
+    def test_execution_claim_rejects_report_only_observer(self) -> None:
+        bundle = copy.deepcopy(self.reference)
+        comparison = bundle["task"]["checks"][0]["reference_comparison"]
+        comparison["relation"] = "execution_reproduced"
+        comparison["observer_evidence_types"] = ["report_prose"]
+        self.assertTrue(any("cannot be supported from report prose alone" in error for error in semantic_errors(bundle)))
+
+    def test_public_unexposed_reference_requires_versioned_policy(self) -> None:
+        bundle = copy.deepcopy(self.reference)
+        del bundle["task"]["reference_materials"][0]["exposure_policy"]
+        self.assertTrue(any("requires a versioned exposure policy" in error for error in semantic_errors(bundle)))
 
 
     def test_valid_task_projection_manifest(self) -> None:

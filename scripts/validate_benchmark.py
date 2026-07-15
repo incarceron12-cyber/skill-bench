@@ -608,6 +608,7 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     skills = bundle["procedural_skills"]
     rubrics = bundle["rubrics"]
     sources = task["source_pack"]
+    references = task.get("reference_materials", [])
     primitives = task["domain_primitives"]
     contracts = task["artifact_contracts"]
     artifact_views = task.get("artifact_views", [])
@@ -622,6 +623,7 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         (skills, "skill_id", "procedural_skills"),
         (rubrics, "rubric_id", "rubrics"),
         (sources, "source_id", "task.source_pack"),
+        (references, "reference_id", "task.reference_materials"),
         (primitives, "primitive_id", "task.domain_primitives"),
         (contracts, "artifact_id", "task.artifact_contracts"),
         (artifact_views, "view_id", "task.artifact_views"),
@@ -632,6 +634,7 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         _check_unique(items, key, location, errors)
 
     source_ids = {item["source_id"] for item in sources}
+    reference_by_id = {item["reference_id"]: item for item in references}
     skill_by_id = {item["skill_id"]: item for item in skills}
     rubric_by_id = {item["rubric_id"]: item for item in rubrics}
     artifact_ids = {item["artifact_id"] for item in contracts}
@@ -693,6 +696,15 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
             if check_id not in check_ids:
                 errors.append(f"primitive {primitive['primitive_id']}: unknown check_id {check_id!r}")
 
+    for reference in references:
+        reference_id = reference["reference_id"]
+        if reference["source_id"] not in source_ids:
+            errors.append(f"reference {reference_id}: unknown source_id {reference['source_id']!r}")
+        if reference["release_status"] == "public" and reference["exposure_status"] == "not_observed" and "exposure_policy" not in reference:
+            errors.append(f"reference {reference_id}: public target marked not_observed requires a versioned exposure policy")
+        if reference["exposure_status"] == "observed_exposed" and not reference["exposure_evidence"]:
+            errors.append(f"reference {reference_id}: observed exposure requires evidence")
+
     for view in artifact_views:
         view_id = view["view_id"]
         if view["artifact_id"] not in artifact_ids:
@@ -725,6 +737,26 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
         for source_id in check["evidence_source_ids"]:
             if source_id not in source_ids:
                 errors.append(f"check {check['check_id']}: unknown evidence source_id {source_id!r}")
+        comparison = check.get("reference_comparison")
+        if comparison:
+            relation = comparison["relation"]
+            reference_id = comparison["reference_id"]
+            if reference_id not in reference_by_id:
+                errors.append(f"check {check['check_id']}: unknown comparison reference {reference_id!r}")
+            if comparison["observer_evidence_sufficiency"] == "sufficient" and not comparison["observer_evidence_locators"]:
+                errors.append(f"check {check['check_id']}: sufficient observer evidence requires locators")
+            execution_relations = {"execution_reproduced", "metric_matched", "metric_improved_under_matched_protocol", "surpasses_reference"}
+            evidence_types = set(comparison["observer_evidence_types"])
+            if relation in execution_relations and not evidence_types.intersection({"command_trace", "execution_result"}):
+                errors.append(f"check {check['check_id']}: execution comparison cannot be supported from report prose alone")
+            verification = comparison["independent_verification"]
+            if verification["state"] == "passed" and not verification["evidence_locators"]:
+                errors.append(f"check {check['check_id']}: passed independent verification requires evidence")
+            if relation in {"metric_improved_under_matched_protocol", "surpasses_reference"}:
+                if "matched_baseline" not in comparison:
+                    errors.append(f"check {check['check_id']}: {relation} requires matched baseline identity and protocol")
+                if verification["state"] != "passed":
+                    errors.append(f"check {check['check_id']}: {relation} requires passed independent verification")
         envelope = check.get("admissibility")
         if envelope:
             duplicates = _duplicates(f"{item['view_id']}:{item['control_id']}" for item in envelope["required_controls"])
