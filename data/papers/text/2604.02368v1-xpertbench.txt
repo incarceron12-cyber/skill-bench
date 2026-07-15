@@ -1,0 +1,1236 @@
+                                             Xpertbench: Expert Level Tasks with Rubrics-Based
+                                                                 Evaluation
+
+                                                                                        ByteDance Seed
+
+                                                                                Full author list in Contributions
+
+
+
+
+arXiv:2604.02368v1 [cs.AI] 27 Mar 2026
+                                                                                           Abstract
+                                              As Large Language Models (LLMs) exhibit plateauing performance on conventional benchmarks, a
+                                              pivotal challenge persists: evaluating their proficiency in complex, open-ended tasks characterizing
+                                              genuine expert-level cognition. Existing frameworks suffer from narrow domain coverage, reliance
+                                              on generalist tasks, or self-evaluation biases. To bridge this gap, we present XpertBench, a
+                                              high-fidelity benchmark engineered to assess LLMs across authentic professional domains.
+                                              XpertBench consists of 1,346 meticulously curated tasks across 80 categories, spanning finance,
+                                              healthcare, legal services, education, and dual-track research (STEM and Humanities). These
+                                              tasks are derived from over 1,000 submissions by domain experts–including researchers from elite
+                                              institutions and practitioners with extensive clinical or industrial experience–ensuring superior
+                                              ecological validity. Each task uses detailed rubrics with mostly 15-40 weighted checkpoints to assess
+                                              professional rigor. To facilitate scalable yet human-aligned assessment, we introduce ShotJudge, a
+                                              novel evaluation paradigm that employs LLM judges calibrated with expert few-shot exemplars to
+                                              mitigate self-rewarding biases.
+                                              Our empirical evaluation of state-of-the-art LLMs reveals a pronounced performance ceiling: even
+                                              leading models achieve a peak success rate of only 66%, with a mean score around 55%. Models also
+                                              exhibit domain-specific divergence, showing non-overlapping strengths in quantitative reasoning
+                                              versus linguistic synthesis.. These findings underscore a significant "expert-gap" in current AI
+                                              systems and establish XpertBench as a critical instrument for navigating the transition from
+                                              general-purpose assistants to specialized professional collaborators.
+
+
+
+
+                                         1   Introduction
+                                         As Large Language Models (LLMs) evolve from passive QA systems into autonomous agents, current evaluation
+                                         paradigms are increasingly exposing their limitations. Traditional "exam-style" benchmarks (e.g., MMLU-Pro
+                                         [1], GPQA [2]) provide easy verifiability but suffer from rapid saturation. Recent efforts to mitigate this have
+                                         largely focused on raising the difficulty ceiling, curating extreme edge-cases [3] or unsolved mathematical
+                                         problems [4]. Yet, scaling difficulty within a closed-form paradigm still reduces evaluation to isolated questions
+                                         with singular answers. Even benchmarks targeting agentic capabilities and deep web retrieval, such as GAIA
+                                         [5] and BROWSECOMP [6], ultimately collapse complex, multi-step research into short factoids or specific
+                                         reference strings. By flattening open-ended synthesis and professional judgment into point-estimate metrics,
+                                         these frameworks maintain a severe disconnect between empirical scores and practical utility. Therefore, it is
+                                         imperative that the field transcends static knowledge testing and reorients towards evaluating end-to-end,
+                                         authentic tasks that mirror expert-level workflows as LLMs are increasingly integrated as professional co-pilots.
+
+
+                                                                                                 1
+To bridge the disconnect between empirical scores on traditional benchmarks and the practical utility of
+AI systems, we introduce XpertBench, a high-fidelity benchmark explicitly engineered to evaluate LLMs on
+end-to-end, real-world expert workflows. To ensure superior ecological validity, XpertBench is constructed
+driven by three core characteristics:
+    • Open-Ended, Long-Horizon Tasks: Diverging from closed-form, "exam-style" paradigms that primarily
+      test static knowledge recall, XpertBench focuses on tasks akin to deep research. Genuine expert
+      problem-solving is inherently ill-structured; it requires navigating ambiguity, synthesizing extensive
+      domain-specific literature, and resolving conflicting constraints—capabilities that point-estimate metrics
+      completely fail to capture.
+    • High-Stakes, Comprehensive Domain Coverage: We anchor our evaluation in seven professional domains
+      (e.g., Finance, Law, Healthcare, Education) chosen for their substantial economic contribution, high
+      cognitive complexity, and significant societal impact. Compared to recent efforts like $OneMillion-
+      Bench and GDPval, XpertBench not only significantly scales up the volume of tasks but uniquely
+      incorporates historically underrepresented yet critical fields such as Education (24.4%) and Humanities
+      & Social Sciences (8.6%), making it significantly more persuasive in evaluating "generalist" professional
+      capabilities.
+    • Elite Expert Curation and Granular Rubrics: We implemented a highly rigorous, expert-centric curation
+      pipeline engaging over 1,000 elite domain experts (e.g., active researchers, CFAs, CPAs, MDs, JDs).
+      Following a stringent two-stage qualification, these experts meticulously reconstructed their daily
+      professional challenges into 1,346 testable scenarios. After multi-stage peer-review filtering to eliminate
+      subjective edge cases, every single task is underpinned by an objective, multi-faceted evaluation rubric
+      featuring 15–40 granular checkpoints.
+Our empirical evaluation of 12 state-of-the-art models across this benchmark yields profound insights into the
+true boundaries of frontier AI. Overall, the Claude and GPT model families distinctly separate themselves
+from the pack, delivering the most robust and practically viable expert-level experiences. However, a closer
+inspection reveals significant capability gaps: model performance noticeably deteriorates on end-to-end
+workflows in the STEM and Education domains, where rigid formal logic and long-horizon pedagogical
+planning are paramount. Beyond top-line scores, our fine-grained behavioral analysis exposes critical failure
+modes in how current models falter. Rather than making simple factual errors, models frequently suffer
+from retrieval interference—where persistent web browsing introduces extraneous noise that distracts from
+the core analytical trajectory, severely degrading ultimate usability. Furthermore, models exhibit severe
+principle hallucinations; a fundamental conceptual misstep early in a task often cascades, rendering the entire
+subsequent reasoning chain logically incoherent and practically unusable. Finally, our analysis highlights
+pronounced domain-specific specialization: for instance, GPT-5.4-high overwhelmingly dominates Finance
+(84.65%) but lags in STEM (42.84%), whereas Claude-Opus-4.6-thinking excels in Law and Humanities. This
+scale of evidence conclusively demonstrates that a singular “omni-capable” expert model does not yet exist.
+In summary, our core contributions are three-fold:
+    • A High-Fidelity Benchmark: We release XpertBench, an unprecedented, multi-domain benchmark that
+      significantly expands the scale, coverage, and depth of expert-level evaluation, serving as a critical
+      instrument for measuring real-world AI utility.
+    • A Robust Evaluation Pipeline: We formalize a fixed, high-quality methodological pipeline—from expert-
+      driven task curation and dual-weighted atomic rubrics to the ShotJudge paradigm—establishing a
+      scalable, human-aligned standard for end-to-end generative assessment.
+    • Critical Diagnostics of Frontier Models: We provide deep empirical insights into the behavioral flaws of
+      leading LLMs, demonstrating how non-overlapping domain expertise, retrieval interference, and reasoning
+      hallucinations currently bottleneck the transition from general assistants to specialized professional
+      co-pilots.
+
+2   Related Work
+
+
+                                                       2
+      Expert Recruitment             Task Prompt                               Rubric Design                        Evaluation
+          &Training                    Curation                              & Quality Control                    (SHOTJUDGE)
+                                            High-Difficulty                                                       One-Shot Examples
+                                                                                 LLM-Assisted Draft
+                                            Task Creation                                                          Baseline
+       Academic          Industry
+      Researchers         Experts                                                                                   (GPT-5)              Response
+
+                                                                        Expert Refinement
+                                                                                                                Expert
+                                          Multi-Stage
+         Background Screening                                             &Development                          Scoring
+                                       Filtering Criteria
+                                                                                                                                           Rubrics
+                                                                          Atomic Objectives            Senior
+         Domain-Specific Exam                                                                          Expert   Candidate
+                                                                           Dual Weighting
+                                      Discriminative difficulty                                        Review    Model
+                                                                          Dimension Tags       Iterative
+                                                                                                                                                ✘
+
+            Pilot Annotation        Real-World Representativeness                                               Response
+                                                                                              Validation
+                                                                                                 Loop
+                                       Objective Verifiability
+             Senior Review                                                                                                  LLM Judge
+
+
+
+                 Qualified                                                       Finalized Weighted                    Candidate Score
+                Expert Panel            Final Dataset                                   Rubrics                        ∑$!"# weight ! ∗ 𝑥%
+                                                                                                                  S=                       (𝑥% 𝜖 0,1 )
+                                                                                                                         ∑$!"# weight#
+
+
+
+Figure 1 Overview of the benchmark construction and evaluation pipeline, consisting of expert recruitment, task
+curation, rubric design, and the SHOTJUDGE evaluation framework.
+
+2.1   Expert-level-task
+Consequently, a variety of specialized benchmarks have emerged to assess expertise in narrow professional
+fields. For instance, MedQA and PubMedQA [7, 8] evaluate medical knowledge, SciBench [9] and LegalBench
+[10] assess technical problem-solving in STEM and law, and FinBen [11] provides a comprehensive suite of
+financial tasks. However, while these benchmarks are valuable within their specific disciplines, their isolated
+nature fails to measure the cross-domain synthesis and adaptable reasoning essential for real-world, versatile
+AI assistants.
+Recent benchmarks have sought to address earlier limitations by increasing task difficulty and domain coverage.
+For instance, MMLU-Pro [1] and GPQA [2] evaluate deep domain knowledge, while Humanity’s Last Exam
+(HLE) [12] introduces 2,500 expert-level questions where frontier models still score below 10% accuracy.
+FrontierMath [4] targets research-level mathematical reasoning with problems so challenging that leading
+models solve less than 2% of them. Concurrently, AgentBench [13] and GAIA [5] focus on multi-step task
+execution. Despite these advances, a fundamental limitation persists: these frameworks still rely on an
+"exam-based" paradigm designed around well-defined questions with verifiable answers. Such tasks primarily
+test knowledge recall or advanced retrieval. Consequently, they fail to capture the ill-structured, open-ended
+nature of real-world expert problem-solving, which frequently requires navigating ambiguity and resolving
+conflicting constraints.
+Concurrently, the emergence of Deep Research Agents has prompted a new line of benchmarks focused on
+complex, open-ended research tasks. BrowseComp [6] evaluates agents’ ability to locate hard-to-find information
+through persistent web browsing, while DeepResearch Bench [14] provides 100 PhD-level research tasks across
+22 fields with dual evaluation frameworks (RACE and FACT). DEER [15] proposes a comprehensive evaluation
+framework for deep research reports using expert-systematized rubric items and exhaustive claim-level fact-
+checking. These benchmarks represent an important shift toward evaluating generative, research-oriented
+capabilities, yet they primarily target the information retrieval and synthesis pipeline rather than the
+domain-specific professional judgment that characterizes expert practice.
+XpertBench diverges from these precedents by prioritizing ecological validity. Rather than relying on academic
+proxies, we source 1346 tasks directly from the workflows of active practitioners across seven high-demand
+domains. By anchoring our benchmark in authentic professional challenges, we transcend the knowledge-
+retrieval bottleneck and provide a more rigorous assessment of LLMs’ ability to function within the complex
+heuristics of real-world professional practice.
+
+
+
+
+                                                                    3
+2.2    Rubrics evaluated benchmark
+As LLM outputs shift from short-form answers to complex, generative artifacts, traditional metrics like Exact
+Match or ROUGE have become increasingly obsolete. This has necessitated a shift toward rubric-based
+evaluation, which decomposes holistic quality into granular, interpretable dimensions.
+Existing literature primarily bifurcates into two evaluative extremes. On one end, automated "LLM-as-a-judge"
+frameworks, such as AlpacaEval [16], MT-Bench [17], Arena-Hard [18] and WildBench [19] offer unparalleled
+scalability but are frequently criticized for methodological circularity. WildBench further advances this line
+by sourcing challenging tasks from real users and employing task-specific checklists, yet still relies on LLM
+judges for scoring. Furthermore, while recent frameworks like Prometheus [20] introduce fine-grained rubric
+learning, they still face challenges in generalizing beyond their synthetic training distributions. JudgeBench
+[21] explicitly evaluates the reliability of LLM-based judges themselves, revealing that even strong models like
+GPT-4o perform only marginally better than random guessing on challenging response pairs—underscoring
+the fragility of automated evaluation. When models are evaluated against AI-generated criteria, there is an
+inherent risk of "self-enhancement bias," where the judge rewards stylistic alignment with its own training
+distribution rather than authentic professional merit. On the other end, human-centric frameworks like HELM
+[22] or ChatbotArena [23] offer higher fidelity but are constrained by logistical and financial bottlenecks,
+particularly when the tasks require highly specialized (e.g., PhD or JD-level) expertise.
+Furthermore, existing rubrics often suffer from a granularity deficit. Many frameworks employ coarse-grained
+Likert scales or generic criteria (e.g., "helpfulness," "coherence") that fail to capture the nuanced technical
+requirements of professional-grade outputs. While recent works like SimpleQA [24] attempt to re-introduce
+factuality-based rigor, they often sacrifice the multi-dimensional assessment necessary for open-ended expert
+tasks. RubricEval [25] proposes a human-LLM hybrid framework where experts generate instruction-level
+criteria and LLM evaluators score against detailed rubrics, demonstrating improved alignment but remaining
+limited to general-purpose instructions rather than domain-specific professional standards.
+To reconcile the tension between evaluative rigor and scalability, we introduce ShotJudge. Unlike prior
+methods that rely on "black-box" AI judgments, our methodology is underpinned by expert-anchored rubrics
+comprising 15-40 granular, weighted checkpoints per task. By utilizing human-expert assessments as few-shot
+calibration anchors, ShotJudge ensures that the automated judge remains grounded in professional standards
+rather than latent model biases. This hybrid approach allows XpertBench to maintain the precision of expert
+peer review while achieving the throughput required for large-scale model benchmarking.
+
+3     Overview of XpertBench
+We introduce XpertBench, a multi-domain benchmark designed to evaluate the true performance boundaries
+of Large Language Models (LLMs) in high-value, open-ended, and long-horizon tasks. The dataset comprises
+1,346 complex tasks that require models to demonstrate capabilities ranging from strategic planning and
+logical deduction to professional judgment and cultural interpretation.
+The composition of XpertBench is driven by a rigorous domain selection process targeting knowledge-intensive
+sectors characterized by three pivotal criteria: substantial economic contribution, high cognitive complexity,
+and significant societal impact. As detailed in Table 1, the dataset spans seven distinct professional domains,
+selected to mirror the operational realities of the modern tertiary sector. So sectors characterized by high
+cognitive complexity and significant societal impact is targeted. We prioritize Finance and Law to evaluate
+capabilities in high-stakes decision-making, requiring precise statutory interpretation and risk assessment
+essential for economic stability. Complementing these are the Education and Medical sectors, which address
+critical dimensions of public welfare by testing pedagogical planning and clinical judgment in developmental and
+life-critical contexts. Finally, to capture the full spectrum of theoretical reasoning, the benchmark incorporates
+STEM, Computer Science & Mathematics, and Humanities & Social Sciences (HSS); this combination assesses
+diverse intellectual demands, ranging from the rigorous logical deduction required in applied sciences to the
+nuanced cultural interpretation central to the humanities.
+
+
+
+
+                                                        4
+                                                       Healthcare
+                                                     CS 5.6%
+                                                    6.8%          Education
+                                               HSS                    24.4%
+                                               8.6%
+                                                      Total Tasks
+                                             Law         1346
+                                            16.0%                        EAS
+                                                                        20.4%
+                                                      Finance
+                                                       18.1%
+
+
+
+          Education 24.4%                                         Engineering & Applied Sciences (EAS) 20.4%
+           Educational Program & Project Design (106)              Technical Analysis & Diagnostic Assessment (93)
+           Curriculum Design & Lesson Planning (100)               Engineering Design & Solution Development (62)
+           Educational Consulting & Planning Services (40)         Research Protocol & Experimental Design (61)
+           Subject Teaching & Tutoring (32)                        Literature Review & Academic Writing (35)
+           Educational Research & Academic Writing (28)            Theoretical Modeling & Computational
+           Educational Analysis & Assessment Reporting (23)        Simulation (24)
+          Law 16.0%                                               Finance 18.1%
+           Litigation Documents & Judicial Instruments (64)        Equity Research & Corporate Analysis (107)
+           Legal Research & Case Retrieval (49)                    Macroeconomic & Policy Analysis (50)
+           Legal Opinion & Memorandum Drafting (32)                Financial Accounting & Regulatory Compliance (28)
+           Contract Compliance & Regulatory Response (26)          Asset Allocation & Fund Evaluation (24)
+           Dispute Resolution & Trial Negotiation (22)             Financial Engineering & Risk Management (18)
+           Legal Due Diligence & Transaction                       Commodities & Futures Research (17)
+           Documentation (22)
+                                                                  Humanities & Social Sciences (HSS) 8.6%
+          Computer Science (CS) 6.8%                               Philological Study & Historical Source
+                                                                   Research (40)
+           System Architecture & Technical Planning (47)
+           Algorithm Design & Theoretical Research (29)            Social Research & Professional Consulting (38)
+           Software Development & Data Practice (16)               Artistic Creation & Cultural Criticism (19)
+                                                                   Theoretical Inquiry & Philosophical
+          Healthcare & Medicine (Healthcare) 5.6%                  Construction (19)
+           Clinical Diagnosis & Case Analysis (47)
+           Medical Research & Experimental Design (28)
+
+
+Figure 2 Distribution of tasks across professional domains in XpertBench, highlighting the balance between STEM
+and Humanities fields.
+
+3.1   Expert Recruitment and Training
+Experts are sourced through the Xpert Data Platform. To ensure annotation quality align with the complex do-
+mains of XpertBench, the expert pool—sourced through a hybrid approach of direct registration, peer referrals,
+and vendor partnerships—primarily consists of two profiles: active researchers from top-tier universities and
+seasoned practitioners with substantial industry experience. Consequently, the expert panel is characterized by
+distinguished academic and professional credentials. Academically, approximately 61% of the contributors are
+affiliated with China’s premier research institutions (Project 985 and 211) and elite domain-specific universities,
+supplemented by more than two hundred experts from globally renowned overseas institutions. Professionally,
+every member possesses a minimum of three years of practical experience. The team’s domain authority is
+
+
+                                                              5
+Table 1 Detailed Statistics of XpertBench across Professional Domains. EAS stands for Engineering and Applied
+Sciences; HSS stands for Humanities and Social Sciences. Healthcare refers to Healthcare & Medicine.
+
+          Domain               # Tasks    # of Rubrics       Prompt Length    Primary Competency
+
+          Finance                244           17                 533             Market Analysis
+          Law                    215           18                 413           Juridical Reasoning
+          Education              329           15                 960         Pedagogy & Planning
+          EAS                    275           19                 699          Technical Mechanism
+          HSS                    116           15                 373         Cultural Interpretation
+          Computer Science        92           17                 558            Logical Deduction
+          Healthcare              75           16                 371            Clinical Judgment
+
+          Total / Average        1346          17                 631        Cross-Domain Expertise
+
+
+
+further reinforced by high-value industry certifications, including 183 legal professional qualifications, 163
+medical practitioner licenses, and a substantial presence of CFA, CPA, and CATTI holders.
+Prior to formal participation, each expert undergo a two-stage rigorous qualification process: (1) completing a
+domain-specific proficiency examination, and (2) candidates performed a trial annotation (or task authoring)
+under the same instructions that govern the full data-collection pipeline. Trial outputs are reviewed by at
+least one senior domain annotator; submissions that fail to meet the review standards are returned for revision
+or rejected. This process ensures that all experts thoroughly understand task requirements and maintain
+consistent annotation standards. Experts demonstrating insufficient proficiency or inconsistent quality are
+excluded from the final annotation team.
+
+3.2   Prompt Curation
+Following the qualification process, we engage trained experts to contribute authentic task prompts derived
+from their real-world professional scenarios. To ensure alignment with the benchmark’s rigorous standards, all
+experts undergo a standardized training protocol prior to task creation. This training explicitly distinguish
+between academic “exam questions” and authentic “professional tasks,” guiding experts to formulate complex,
+open-ended scenarios that mirror actual workflows rather than rote knowledge retrieval. Experts are instructed
+to design tasks that challenge the reasoning frontiers of state-of-the-art models, focusing on scenarios with
+low estimated pass rates to ensure the benchmark maintains high discriminative power and avoids saturation.
+To ensure dataset diversity, each expert is limited to submitting a maximum of three prompts. Experts are
+instructed to provide comprehensive descriptions encompassing three key components: (1) the specific work
+scenario or context, (2) relevant background materials or domain knowledge required, and (3) detailed output
+requirements or deliverables. In addition, each expert is required to supply a reference answer illustrating
+the expected standard of professional reasoning and output quality. This structured approach ensures that
+collected prompts closely reflect genuine professional demands and maintain ecological validity.
+From an initial pool of over 1,000 submitted prompts, we implement a rigorous multi-stage selection process
+conducted by our internal panel of domain experts. We filter prompts that pose substantial challenges to
+current state-of-the-art LLMs, ensuring the benchmark effectively distinguishes model capabilities and avoids
+ceiling effects. Prompts are also required to represent typical and high-frequency tasks within each professional
+domain, rather than edge cases or overly specialized scenarios. By examining both the prompt specifications
+and expert-provided reference answers, we retain only those prompts with clearly definable success criteria and
+objective evaluation protocols, excluding items that relied on subjective preference. Through this systematic
+quality control process, we curate a final dataset of 1346 prompts spanning over 80 distinct task categories,
+achieving both breadth across domains and depth within specialized areas.
+
+
+
+
+                                                         6
+3.3     Rubric Design and Quality Control
+For each curated task, we adopt a structured, rubric-anchored evaluation framework to ensure that model
+performance can be assessed with high granularity, objectivity, and reproducibility.
+LLM-Assisted Rubric Generation. We first employ state-of-the-art LLMs (Claude Opus 4.1 or Gemini 2.5
+Pro) to generate initial evaluation rubrics based on the prompt specifications and expert-provided reference
+answers. This LLM-assisted approach provides a structured foundation for experts to refine and develop
+comprehensive assessment criteria, ensuring consistency while reducing manual effort.
+Expert-Driven Criteria Development. Building upon the LLM-generated drafts, the original prompt contributors
+or additional annotation experts are tasked with crafting detailed evaluation criteria (hereafter referred to as
+"rubrics") . The majority of tasks comprise 15-40 checkpoints, with each checkpoint designed to capture a
+specific, essential element of high-quality model responses. To ensure atomicity and objectivity, we enforce
+the following design principles:
+      • Granularity: Each checkpoint must focus on a single, well-defined requirement and cannot conflate
+        multiple evaluation aspects.
+      • Objectivity: Checkpoints must be formulated as objective statements that can be unambiguously labeled
+        as TRUE (satisfied) or FALSE (unsatisfied) based on model outputs.
+      • Specificity: Checkpoints must explicitly specify the concrete content, format, or reasoning elements that
+        model responses should contain.
+Checklist Weighting and Tagging. To reflect the varying importance of different evaluation criteria, experts
+assign dual-level weights to each checkpoint. At the qualitative level, checkpoints are categorized as Essential,
+Important, or Optional, indicating their relative impact on overall assessment quality. Complementing this
+categorical classification, experts provide quantitative weights ranging from 1 to 10 based on professional
+judgment of each checkpoint’s relative importance, without predefined distribution constraints. This dual-
+weighting scheme enables both coarse-grained prioritization and fine-grained score calibration during evaluation.
+Additionally, experts classify each checkpoint into predefined evaluation dimensions. For example, (e.g.,
+factual accuracy, logical coherence, domain-specific expertise) to facilitate multi-faceted analysis of model
+capabilities(See table 2).
+Quality Control. To ensure rubric quality, each completed set of criteria undergo review by at least one
+additional expert in the same domain. Reviewers examine the factual validity, clarity, atomicity, and weight
+assignments of every criterion, providing line-level revision requests where needed. Criteria failing to meet
+rubric standards would be returned to the annotators for revision; this process continue iteratively until all
+issues are resolved. In addition, approximately 30% of tasks underwent internal spot-checks by senior domain
+experts, who further evaluate rubric consistency, task alignment, and evaluability. Tasks with irreparable
+issues are either substantially revised or discarded.
+
+4     Evaluation
+To facilitate a scalable yet expert-aligned assessment, we utilize ShotJudge, an evaluation paradigm that
+grounds automated scoring in human-expert reasoning via few-shot in-context learning. Recognizing the limita-
+tions of zero-shot LLM-as-a-judge approaches—specifically their tendency toward stylistic bias[26]—ShotJudge
+employs expert-annotated exemplars to calibrate the judge’s evaluative threshold. In our implementation, we
+employ GPT-5 as the anchor baseline model and Gemini 2.5 Pro as the primary LLM Judge. The methodology
+is operationalized through a two-stage process: expert anchoring and calibrated automated scoring.
+Expert Anchoring and Meta-Evaluation. The foundational stage involves generating "gold-standard" evaluative
+rationales. A primary cohort of domain experts conducts a rigorous blind review of responses generated by
+the baseline model. Following the rubric dimensions established in §3.1, experts provide binary judgments
+(s ∈ {0, 1}) for each criterion, accompanied by a detailed qualitative justification (rationale). This step ensures
+
+
+
+
+                                                         7
+Table 2 Comprehensive Evaluation Rubric Dimensions. This table outlines the specific dimensions and their
+corresponding detailed descriptions used to assess and score candidate model responses.
+
+  Dimension                        Description
+
+  Instruction Following            Accurately identifying and understanding task instructions, requirements, and
+                                   goals.
+  Constraint Satisfaction          Strictly adhering to explicit constraints and requirements stipulated in the prompt.
+  Accuracy & Factual Correctness   Precision and integrity of domain-specific concepts, theories, regulations, and
+                                   factual data.
+  Information Processing           Ability to extract, synthesize, and integrate information from literature or given
+                                   contexts.
+  Logical Coherence                Rigor of reasoning, completeness of argumentation, and sound analysis of causal
+                                   relationships.
+  Domain Expertise                 Application of core industry mindsets, critical thinking, analytical methods, tools,
+                                   and theoretical frameworks.
+  Completeness & Executability     Wholeness and practical feasibility of the proposed business or research processes.
+  Normativity & Compliance         Adherence to regulatory requirements, academic integrity standards, and industry
+                                   norms.
+  Safety & Risk Management         Ability to identify risks, control hazards, and analyze potential errors or biases.
+  Novelty & Creativity             Generation of novel insights, innovative methods, and unique perspectives.
+  Linguistic Quality               Accuracy, professionalism, fluency, and appropriateness of language expression.
+  Structure & Formatting           Organization of content structure and effectiveness of visual presentation.
+  Depth of Analysis                Excavation of fundamental problem essences and explanation of underlying mecha-
+                                   nisms.
+  Interdisciplinary Integration    Synthesis across diverse domains and comprehensive application of multiple per-
+                                   spectives.
+  Information Richness             Inclusion of value-added, supplementary, or beneficial information beyond the core
+                                   requirement.
+  Other                            Miscellaneous relevant factors not covered by other dimensions.
+
+
+that the evaluative signal captures not only the correctness of the output but also the professional nuance
+required by the task.
+To ensure the reliability of these anchors, a secondary cohort of senior experts conducts a cross-verifying meta-
+evaluation of the initial annotations. This hierarchical review process filters out idiosyncratic biases, producing
+a robust set of expert-annotated ground truths that serve as the "logical blueprint" for the automated judge.
+One-Shot Calibrated Scoring. In the automated phase, the LLM judge is provided with a prompt context
+containing: (i) the original task prompt, (ii) the expert-designed rubric, and (iii) the baseline model’s response
+paired with its corresponding expert-validated rationales and scores as one-shot exemplars.
+By leveraging these exemplars, the LLM judge is instructed to emulate the expert’s reasoning patterns when
+evaluating a candidate model’s response. For each criterion ci , the judge outputs a binary score xi ∈ {0, 1}.
+The final performance metric is derived via a weighted aggregation:
+                                                   Pn
+                                                        wi xi
+                                              S = Pi=1n                                                    (1)
+                                                      i=1 wi
+
+where wi represents the expert-assigned weight for the i-th criterion. This mechanism ensures that the final
+score is an interpretable reflection of professional standards, effectively bridging the gap between human
+expertise and automated scalability.
+Human-AI Alignment. To validate the reliability of ShotJudge, we conduct an alignment analysis between the
+LLM judge and human experts. We adopt the Consistency minus Discordance Rate (CDR) as the primary
+reliability metric, defined as P (agree) − P (disagree). This metric specifically penalizes "rank reversals" where
+
+
+                                                          8
+the judge’s preference contradicts the expert’s. Our results show that ShotJudge achieves a CDR of 52.0%,
+significantly outperforming standard zero-shot LLM-as-a-judge baselines. This robust alignment demonstrates
+that the one-shot calibration effectively transmits expert evaluative intent to the automated system. Due to
+the extensive human labor required for expert anchoring and meta-evaluation, we construct a highly curated
+XpertBench-Gold subset (N=245) via stratified sampling across domains. This subset serves as the primary
+testbed for our empirical evaluation using ShotJudge.
+
+5      Experiments and Results
+We conduct a comprehensive evaluation of several state-of-the-art large language models—namely Claude-
+Opus-4.6-thinking, GPT-5.4-high, Doubao-2.0-pro, and Gemini-3.1-pro across the XpertBench-Gold subset
+(N=245). Because the rigorous expert calibration process limits the sample sizes for Computer Science and
+Healthcare in this current gold subset, we focus our fine-grained domain analysis on the five primary domains,
+while retaining all 245 tasks for the overall performance metric. As depicted in Figure 3, Claude-Opus-
+4.6-thinking impressively achieves the dominant position with an overall score of 66.20%. This remarkable
+performance establishes a new state-of-the-art baseline, with GPT-5.4-high (64.78%) and Doubao-2.0-pro
+(64.51%) following closely behind.
+
+                                                    Main Leaderboard: Overall Performance
+
+           Claude-Opus-4.6-thinking                                                                                            66.20
+
+                       GPT-5.4-high                                                                                           64.78
+
+                    Doubao-2.0-pro                                                                                         64.51
+
+                       GPT-5.2-high                                                                                   61.03
+
+                        GPT-5-high                                                                                 58.70
+
+                     Gemini-3.1-pro                                                                        55.05
+
+                       Gemini-3-pro                                                                   53.43
+
+                   Kimi-k2-thinking                                                                   53.30
+
+                     Gemini-3-flash                                                                50.98
+
+    Claude-Sonnet-4.5-thinking-azure                                                       46.00
+
+ DeepSeek-V3.1-Terminus-thinking                                                       45.10
+                                                                                                                           Model Family
+                           GLM-4.6                                                    44.30                                       GPT
+                                                                                                                                  Claude
+                                                                                                                                  Gemini
+                Doubao-1.6-thinking                                                42.10                                          Doubao
+                                                                                                                                  DeepSeek
+                     Gemini-2.5-pro                                        38.20                                                  GLM
+                                                                                                                                  Kimi
+
+                                       0    10        20         30        40                 50               60                  70
+                                                                  Overall Score (%)
+                              Figure 3 Results on XpertBench-Gold evaluation subset (N=245).
+
+
+A granular analysis of domain-specific performance (Table 3) reveals significant distinctions in model capabilities
+
+
+                                                            9
+Table 3 Model Performance Breakdown on the XpertBench-Gold subset (N=245) across Different Domains. The
+highest score in each category is highlighted in bold. EAS stands for Engineering and Applied Sciences; HSS stands for
+Humanities and Social Sciences.
+
+
+  Model                                      Overall    Finance       Law       Education        EAS        HSS
+
+  Claude-Opus-4.6-thinking                   66.20%      73.25%      65.54%       57.96%       49.58%      83.02%
+  GPT-5.4-high                               64.78%      84.65%      64.79%       59.29%       42.84%      80.58%
+  Doubao-2.0-pro                             64.51%      73.82%      65.06%       55.35%       44.88%      80.09%
+  GPT-5.2-high                               61.03%      71.22%      56.88%       58.43%       46.13%      76.15%
+  GPT-5-high                                 58.70%      64.50%      54.70%       56.90%       48.20%      68.50%
+  Gemini-3.1-pro                             55.05%      62.43%      53.88%       52.43%       37.30%      69.04%
+  Gemini-3-pro                               53.43%      62.96%      48.59%       48.59%       36.34%      71.45%
+  Kimi-k2-thinking                           53.30%      55.00%      58.00%       54.40%       37.10%      66.40%
+  Gemini-3-flash                             50.98%      57.45%      50.22%       47.10%       31.56%      70.66%
+  Claude-Sonnet-4.5-thinking-azure           46.00%      44.50%      58.70%       44.50%       27.50%      54.90%
+  DeepSeek-V3.1-Terminus-thinking            45.10%      46.10%      51.90%       41.90%       32.20%      55.20%
+  GLM-4.6                                    44.30%      52.70%      47.20%       39.10%       27.40%      49.70%
+  Doubao-1.6-thinking                        42.10%      40.80%      49.40%       45.90%       29.50%      50.60%
+  Gemini-2.5-Pro                             38.20%      30.30%      47.30%       47.90%       25.50%      52.30%
+
+
+similar to the trade-offs observed between accuracy and aesthetics in prior works. While top-tier models excel
+significantly in knowledge-intensive domains, their specific strengths vary. Claude-Opus-4.6-thinking sets the
+benchmark in Law (65.54%) and Humanities (83.02%), whereas GPT-5.4-high demonstrates a commanding lead
+in Finance (84.65%), outperforming competitive models like Doubao-2.0-pro (73.82%). Notably, GPT-5.4-high
+demonstrates superior proficiency in the Education domain (59.29%), while Claude-Opus-4.6-thinking leads
+in STEM (49.58%), suggesting these latest thinking-augmented and scaled models offer stronger alignments
+with complex formal logic.
+Furthermore, we observe a divergence between generation and logic capabilities in the STEM category.
+Despite being the newer iteration, GPT-5.2-high (46.13%) is slightly outperformed by GPT-5-high (48.20%)
+in STEM tasks, indicating that the latter may retain an edge in strict calculation or formal logic consistency.
+Additionally, the domestic model Kimi-k2-thinking shows remarkable competitiveness, securing a top-tier
+position (53.30%) that effectively matches Gemini-3-pro (53.43%), particularly distinguishing itself with strong
+performance in legal contexts (58.00%) where it rivals the top international models.
+Significant Capability Gaps Revealed at the Expert-Level Frontier. Our benchmark proves to be exceptionally
+challenging for the current generation of LLMs, including both leading proprietary and open-source models. We
+observe a substantial performance delta: the state-of-the-art (SOTA) model (e.g., Claude-Opus-4.6-thinking
+and GPT-5.4-high), augmented with retrieval/search capabilities, achieve only a ∼65–66% success rate. This
+stands in stark contrast to the majority of other models, which cluster around a ∼50% completion rate. This
+wide performance gap underscores that current models lack the robust reasoning, planning, and knowledge
+synthesis required for genuine expert-level problem-solving, highlighting a significant frontier for future
+research.
+Pronounced Domain-Specific Specialization and Capability Divergence. We find that “expert intelligence”
+is not monolithic. Our fine-grained evaluation reveals pronounced specialization among SOTA models,
+indicating that no single model universally dominates all domains. For instance, GPT-5.4-high demonstrates
+overwhelming superiority in Finance (84.65%), outperforming the runner-up by over 10 percentage points, yet
+it falls significantly behind the leading tier in STEM (42.84%). Conversely, Claude-Opus-4.6-thinking exhibits
+a more balanced "generalist" profile but still shows variance. These systematic specialization patterns imply
+
+
+                                                         10
+that a single "best" model does not exist for expert workloads; instead, model choice must be matched to
+domain and task requirements.
+
+
+
+
+                                                  11
+6     Contributions
+Core Contributors (α-β order)
+Xue Liu, Xin Ma, Yuxin Ma, Yongchang Peng, Duo Wang† , Zhoufutu Wen, Ge Zhang† , Kaiyuan Zhang
+({wangduo.neuron, zhangge.eli}@bytedance.com)
+
+Contributors (α-β order)
+Xinyu Chen, Tianci He, Jiani Hou, Liang Hu, Ziyun Huang, Yongzhe Hui, Jianpeng Jiao, Chennan Ju, Yingru
+Kong, Yiran Li, Mengyun Liu, Luyao Ma, Fei Ni, Yiqing Ni, Yueyan Qiu, Yanle Ren, Zilin Shi, Zaiyuan
+Wang, Wenjie Yue, Shiyu Zhang, Xinyi Zhang, Kaiwen Zhao, Zhenwei Zhu
+
+Advisors
+Shanshan Wu (wushanshan.sarah@bytedance.com)
+Qi Zhao (zhaoqi@bytedance.com)
+Wenhao Huang (huang.wenhao@bytedance.com)
+
+
+
+†
+ denotes corresponding authors.
+Contributors without explicit affiliations are from ByteDance Seed. During the work, Yuxin, Xinyu, Ziyun,
+Yongzhe, Chennan, Yingru, Yiran, Luyao, Yiqing, Yueyan, Yanle, Zilin, Wenjie, and Shiyu are interns at
+ByteDance Seed.
+
+7     Xpert Platform
+7.1   What is Xpert Platform
+Xpert is an expert-level data service platform under ByteDance, committed to becoming the industry’s leading
+specialized training data and evaluation solution provider. Our vision is to transform the deep knowledge
+and rich experience of experts across various industries into high-quality data, providing critical momentum
+for AGI and unlocking greater commercial and social value. The platform brings together approximately
+3,000 rigorously selected experts, including master’s and doctoral scholars from China’s top-tier 985/211
+universities as well as industry professionals with 2-10 years of rich practical experience in finance, law,
+healthcare, education, and others. Link:https://xpert.bytedance.com/
+
+7.2    Xpert Leaderboard Intro
+Unlike mainstream exam-oriented evaluations, Xpert Leaderboard focuses on assessing AI’s ability to solve
+expert-level complex tasks in the real world, dedicated to driving AI to create greater economic value.
+Link:https://xpert.bytedance.com/leaderboard
+
+
+
+
+                                                    12
+References
+ [1] Yubo Wang, Xueguang Ma, Ge Zhang, Yuansheng Ni, Abhranil Chandra, Shiguang Guo, Weiming Ren, Aaran
+     Arulraj, Xuan He, Ziyan Jiang, et al. MMLU-pro: A more robust and challenging multi-task language understanding
+     benchmark. In Advances in Neural Information Processing Systems, volume 37, 2024.
+ [2] David Rein, Betty Li Hou, Asa Cooper Stickland, Jackson Petty, Richard Yuanzhe Pang, Julien Dirani, Julian
+     Michael, and Samuel R. Bowman. GPQA: A graduate-level Google-proof Q&A benchmark. In Proceedings of the
+     First Conference on Language Modeling, 2024.
+ [3] Center for AI Safety, Scale AI, and HLE Contributors Consortium. A benchmark of expert-level academic
+     questions to assess AI capabilities. Nature, 649:1139–1146, 2026.
+ [4] Elliot Glazer, Ege Erdil, Tamay Besiroglu, Diego Chicharro, Evan Chen, Alex Gunning, Caroline Falkman Olsson,
+     Jean-Stanislas Denain, Anson Ho, Emily de Oliveira Santos, et al. FrontierMath: A benchmark for evaluating
+     advanced mathematical reasoning in AI. arXiv preprint arXiv:2411.04872, 2024.
+ [5] Grégoire Mialon, Clémentine Fourrier, Craig Swift, Thomas Wolf, Yann LeCun, and Thomas Scialom. GAIA:
+     a benchmark for general AI assistants. In The Twelfth International Conference on Learning Representations,
+     2024.
+ [6] Jason Wei, Mia Cho, Aidan Cummings, Karina Guo, Shixiang Shane Hu, Simon Kang, Heidy Khlaaf, Neal Miao,
+     Oam Neyman, Noa Rubin, et al. BrowseComp: A simple yet challenging benchmark for browsing agents. arXiv
+     preprint arXiv:2501.12959, 2025.
+ [7] Di Jin, Eileen Pan, Nassim Oufattole, Wei-Hung Weng, Hanyi Fang, and Peter Szolovits. What disease does
+     this patient have? a large-scale open domain question answering dataset from medical exams. Applied Sciences,
+     11(14):6421, 2021.
+ [8] Qiao Jin, Bhuwan Dhingra, Zhengping Liu, William Cohen, and Xinghua Lu. PubMedQA: A dataset for biomedical
+     research question answering. In Proceedings of the 2019 Conference on Empirical Methods in Natural Language
+     Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP), pages
+     2567–2577, 2019.
+ [9] Xiaoxuan Wang, Ziniu Hu, Pan Lu, Yanqiao Zhu, Jieyu Zhang, Satyen Subramaniam, Arjun R. Loomba, Shichang
+     Zhang, Yizhou Sun, and Wei Wang. SciBench: Evaluating college-level scientific problem-solving abilities of large
+     language models. In Proceedings of the Forty-First International Conference on Machine Learning, 2024.
+[10] Neel Guha, Julian Nyarko, Daniel E. Ho, Christopher Ré, Adam Chilton, Aditya Narayana, Alex Chohlas-Wood,
+     Austin Peters, Brandon Waldon, Daniel N. Rockmore, et al. LegalBench: A collaboratively built benchmark
+     for measuring legal reasoning in large language models. In Advances in Neural Information Processing Systems,
+     volume 36, pages 59201–59242. Curran Associates, Inc., 2023.
+[11] Qianqian Xie, Weiguang Han, Zhengyu Chen, Ruoyu Xia, Xiao Zhang, Yueru He, Mengxi Xiao, Dong Li, Yongfu
+     Dai, Duanyu Feng, et al. FinBen: A holistic financial benchmark for large language models. In Advances in
+     Neural Information Processing Systems, volume 37, 2024.
+[12] Long Phan, Alice Gatti, Ziwen Han, Nathaniel Li, Josephina Hu, Hugh Zhang, Sean Shi, Michael Choi, Anish
+     Agrawal, Arnav Chopra, et al. Humanity’s last exam. Nature, 2026.
+[13] Xiao Liu, Hao Yu, Hanchen Zhang, Yifan Xu, Xuanyu Lei, Hanyu Lai, Yu Gu, Hangliang Ding, Kaiwen Men,
+     Kejuan Yang, et al. AgentBench: Evaluating LLMs as agents. In The Twelfth International Conference on
+     Learning Representations, 2024.
+[14] Mingxuan Du, Benfeng Xu, Chiwei Zhu, Licheng Zhang, Xiaorui Wang, and Zhendong Mao. DeepResearch Bench:
+     A comprehensive benchmark for deep research agents. In International Conference on Learning Representations,
+     2026.
+[15] Yifan Zhang, Yifan Chen, Haoyang Liu, Zhicheng Fang, et al. DEER: A comprehensive and reliable benchmark
+     for deep research agents on expert-level research tasks. arXiv preprint arXiv:2512.17776, 2025.
+[16] Xuechen Li, Tianyi Zhang, Yann Dubois, et al. AlpacaEval: An Automatic Evaluator for Instruction-following
+     Models. https://github.com/tatsu-lab/alpaca_eval, 2023.
+
+
+
+
+                                                         13
+[17] Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin, Zhuohan
+     Li, Dacheng Li, Eric P. Xing, Hao Zhang, Joseph E. Gonzalez, and Ion Stoica. Judging LLM-as-a-judge with
+     MT-Bench and chatbot arena. In Advances in Neural Information Processing Systems, volume 36, 2023.
+[18] Tianle Li, Wei-Lin Chiang, Evan Frick, et al. Arena-Hard Auto: Evaluating LLMs with Human-in-the-loop
+     Standards. https://lmsys.org/blog/2024-04-19-arena-hard/, 2024.
+[19] Bill Yuchen Lin, Yuntian Deng, Khyathi Raghavi Chandu, Faeze Brahman, Abhilasha Srivastava, Abhilasha
+     Ravichander, Yejin Choi, and Noah A. Smith. WildBench: Benchmarking LLMs with challenging tasks from real
+     users in the wild. In Advances in Neural Information Processing Systems, volume 37, 2024.
+[20] Seungone Bi, Christoph Koch, Guoyin Chen, Trevor Agarwal, et al. Prometheus: Inducing fine-grained evaluation
+     capability in language models. In The Twelfth International Conference on Learning Representations, 2024.
+[21] Sijun Zhou, Nuo Huang, Ran Xu, Renren Yan, Muning Li, Yanghua Xiao, and Libby Hemphill. JudgeBench: A
+     benchmark for evaluating LLM-based judges. In International Conference on Learning Representations, 2025.
+[22] Percy Liang, Rishi Bommasani, Tony Lee, Dimitris Tsipras, Dilara Soylu, Michihiro Yasunaga, Yian Zhang,
+     Deepak Narayanan, Yuhuai Wu, Ananya Kumar, et al. Holistic evaluation of language models. Transactions on
+     Machine Learning Research, 2023.
+[23] Wei-Lin Chiang, Lianmin Zheng, Ying Sheng, Anastasios Nikolas Angelopoulos, Tianle Li, Dacheng Li, Hao
+     Zhang, Banghua Zhu, Michael Jordan, Joseph E. Gonzalez, and Ion Stoica. Chatbot arena: An open platform for
+     evaluating LLMs by human preference. In Proceedings of the Forty-First International Conference on Machine
+     Learning, 2024.
+[24] Jason Wei, Karina Nguyen, Hyung Won Chung, Yunxin Joy Jiao, Spencer Papay, Amelia Glaese, John Schulman,
+     and William Fedus. Measuring short-form factuality in large language models, 2024.
+[25] Meera Bhat, Xi Fang, and Jacob Steinhardt. RubricEval: A scalable human-LLM evaluation framework for
+     open-ended tasks. Stanford CS224N Final Reports, 2024.
+[26] Peiyi Wang, Lei Li, Liang Chen, Zefan Cai, Dawei Zhu, Binghuai Lin, Yunbo Cao, Qi Liu, Tianyu Liu, and
+     Zhifang Sui. Large language models are not fair evaluators, 2023.
+
+
+
+
+                                                       14
+Appendix
+A       Example Tasks and Scoring Rubrics
+In this appendix, we present representative example tasks and their corresponding scoring rubrics for each of
+the five evaluation categories: Finance, Law, Education, STEM, and Humanities & Social Sciences (HSS).
+
+A.1     Finance
+Corporate strategy analysis, financial reporting, market research, and business case studies.
+
+A.1.1    Example Task
+As a senior analyst at a major credit rating agency, your task is to prepare an in-depth comparative analysis
+for the rating committee, evaluating the operational performance and financial discipline of two U.S. aerospace
+and defense giants—Lockheed Martin and Northrop Grumman—against the macro backdrop of heightened
+global geopolitical tensions and sustained defense budget growth during 2022–2023.
+Conduct precise quantitative comparisons and analyses of the following companies strictly within the complete
+macroeconomic cycle period from January 1, 2022, to December 31, 2023:
+    1. Lockheed Martin Corporation (NYSE: LMT) – The world’s largest defense contractor, renowned for its
+       dominant position in aviation (e.g., the F-35 fighter jet).
+    2. Northrop Grumman Corporation (NYSE: NOC) – A defense giant with formidable technological moats
+       in aerospace, mission systems, and strategic weapons (e.g., the B-21 stealth bomber).
+Core Analysis Requirements:
+
+    1. Future Revenue Visibility Comparison:
+          • The “Book-to-Bill Ratio” serves as the lifeline for gauging a defense company’s future revenue growth
+            potential. Locate the “Net Sales” for FY2023 in both companies’ annual reports. Additionally,
+            find the “Net Orders” or calculate it from the change in “Total Backlog” within the Management
+            Discussion and Analysis (MD&A) or Financial Data Summary sections of their annual reports.
+          • Based on the above data, calculate each company’s “Order-to-Sales Ratio” for FY 2023. What does
+            a ratio above or below 1.0 signify? How does the difference in their order-to-sales ratios reflect
+            their varying performance in securing new contracts and replenishing order backlogs?
+    2. Core Profitability Engine Comparison:
+          • A company’s profit engine determines its earnings quality. Examine the “Business Segment
+            Information” in the notes to the financial statements for both companies. Identify and compare the
+            “Operating Margin” for all business segments (e.g., Aerospace, Missiles, Mission Systems, Space) in
+            FY2023.
+          • Identify the core business segment with the highest operating margin for each company in FY2023.
+            How do the differences between these high-margin segments reveal fundamental distinctions in
+            technological barriers, market positioning, and profitability between the two companies?
+    3. Cash Flow Generation Efficiency Comparison:
+          • The ability to convert accounting profits into actual cash is crucial for assessing a company’s
+            financial health. Locate the following items in each company’s consolidated financial statements
+            for fiscal year 2023: “Net cash provided by operating activities,” “Capital expenditures,” and “Net
+            earnings.”
+
+
+
+
+                                                       15
+         • Based on these figures, calculate each company’s “Free Cash Flow Conversion Rate” for FY 2023.
+           How does a significant disparity in this ratio reveal differences in their efficiency regarding working
+           capital management, project execution, and converting profits into available cash?
+  4. Conclusion Summary:
+         • Based on the quantitative analysis of future revenue visibility, core profit engines, and cash flow
+           efficiency, summarize the key factors (e.g., ability to win new contracts, technological moats in
+           high-margin businesses, and cash flow management efficiency) that led to the significant divergence
+           in operational and financial performance between Lockheed Martin and Northrop Grumman during
+           FY2023—a year of increased defense budgets.
+Ensure your analysis is grounded in verifiable data and logically rigorous. Avoid any future predictions or
+investment advice.
+
+A.1.2   Scoring Rubric
+
+                               Table A.1 Scoring rubric for the Finance example task.
+
+                             Criterion                                  Points   Importance          Tag
+ Based on FY2023 data, calculate Lockheed Martin’s book-to-bill          10       Essential      Authenticity
+ ratio as approximately 1.16. The calculation must use correct
+ net order amounts and total revenue. A ±2% margin of error is
+ allowed.
+ Based on FY2023 data, calculate Northrop Grumman’s book-                10       Essential      Authenticity
+ to-bill ratio as approximately 1.14. The calculation must use
+ correct net order amounts and total revenue. A ±2% margin of
+ error is allowed.
+ Accurately explain the meaning of a book-to-bill ratio (Book-to-        10       Essential         Depth
+ Bill) above 1.0, i.e., new orders exceed current period revenue,
+ indicating strong future revenue visibility.
+ Accurately identify LMT’s business segment with the highest             10       Essential      Authenticity
+ operating margin in 2023 as “Missiles and Fire Control.”
+ Accurately state that the “Missiles and Fire Control” segment’s         10       Essential      Authenticity
+ operating margin is approximately 13.7%. A ±0.3% margin of
+ error is allowed.
+ Accurately identify Northrop Grumman’s business segment with            10       Essential      Authenticity
+ the highest operating margin in 2023 as “Mission Systems.”
+ Accurately state that the “Mission Systems” segment’s operating         10       Essential      Authenticity
+ margin is approximately 14.8%. A ±0.3% margin of error is
+ allowed.
+ Compare the differences in high-margin business segments be-             7      Important          Depth
+ tween the two companies and relate them to their respective
+ technological barriers or market positioning (e.g., precision strike
+ systems vs. advanced electronic systems).
+ Based on FY2023 data, calculate Lockheed Martin’s free cash              7      Important       Authenticity
+ flow conversion rate as approximately 90.0%. A ±2% margin of
+ error is allowed.
+ Based on FY2023 data, calculate Northrop Grumman’s free cash             7      Important       Authenticity
+ flow conversion rate as approximately 102.1%. A ±2% margin
+ of error is allowed.
+
+
+
+
+                                                            16
+ Table A.1 (continued)
+                              Criterion                                   Points   Importance        Tag
+
+ Accurately point out that Northrop Grumman has higher cash                 7      Important        Depth
+ flow efficiency and relate it to superior working capital manage-
+ ment capabilities.
+ At the end of the report, synthesize the three quantitative analy-         7      Important      Instruction
+ ses to summarize the core drivers behind performance differences                                  Following
+ between the two companies.
+
+
+
+A.2     Law
+Legal document drafting, complex legal reasoning, evidence analysis, and legal argumentation.
+
+A.2.1   Example Task
+I am the Legal Affairs Manager of a state-owned enterprise supply chain company in Guangxi Province
+(hereinafter referred to as “Guangxi Company”). You are aware of the legal facts as shown in Attachment 1.
+As the Legal Affairs Manager of Guangxi Company, based on the aforementioned legal facts and in conjunction
+with legal practice and theory:
+  1. Based on legal theory, determine whether the agreement signed between Guangxi Company and China
+     Construction Bank on June 1, 2023, constitutes a loan relationship or a factoring contract relationship?
+  2. What is the validity of the Factoring Financing Agreement signed between a financing guarantee company
+     in Yunnan Province and Guangxi Company?
+  3. If the financing guarantee company in Yunnan Province asserts rights against Guangxi Company or
+     Yunnan Company based on the factoring contract relationship under the Factoring Financing Agreement,
+     how should the liability be allocated between Yunnan Company and Guangxi Company?
+
+A.2.2   Scoring Rubric
+
+                                  Table A.2 Scoring rubric for the Law example task.
+
+                              Criterion                                   Points   Importance        Tag
+ Accurately identify the legal relationship between Guangxi Com-            7      Important     Requirement
+ pany and China Construction Bank as accounts receivable pledge                                  Identification
+ financing, rather than a factoring contract relationship.
+ Ability to clarify the core reasons for determining a loan contract        7      Important      Logicality
+ relationship, i.e., the financing behavior in this case lacks the core
+ element of “accounts receivable transfer” required for a factoring
+ contract.
+ Accurately analyze that lack of factoring qualifications does not          7      Important    Professionalism
+ necessarily render the Factoring Financing Agreement invalid,
+ and reach a conclusion favoring contract validity.
+ Ability to cite key legal principles or provisions to argue why lack       7      Important    Professionalism
+ of factoring qualifications does not constitute an “effectiveness-
+ mandatory provision” that would invalidate the contract.
+ Accurately point out that in recourse factoring, the factor (fi-           7      Important       Accuracy
+ nancing guarantee company) has no sequential restrictions when
+ asserting rights against the creditor (Guangxi Company) and
+ the debtor (Yunnan Company).
+
+
+
+
+                                                              17
+ Table A.2 (continued)
+                             Criterion                                 Points   Importance           Tag
+
+ Ability to analyze the legal consequences and liability allocation      7      Important         Logicality
+ for all parties if the Factoring Financing Agreement is deemed
+ invalid.
+ Ability to cite Article 761 of the Civil Code regarding the defini-     7      Important         Accuracy
+ tion of factoring contracts as the legal basis for analysis.
+ Ability to recognize and elaborate on judicial practice disputes        7      Important      Professionalism
+ regarding the impact of operating factoring business without
+ qualifications on contract validity.
+ Ability to elaborate on theoretical viewpoints supporting “no           7      Important      Professionalism
+ sequential restrictions on recourse,” such as the “assignment
+ guarantee theory.”
+ Ability to identify and point out that the subject matter of the        7      Important       Requirement
+ Factoring Financing Agreement in this case is “future accounts                                 Identification
+ receivable” and recognize its transferability.
+ Must not mistakenly equate accounts receivable “pledge” with            7      Important         Accuracy
+ “transfer,” thereby misjudging a loan relationship as a factoring
+ relationship.
+ Must not absolutize legal application; must not simply deem             7      Important         Logicality
+ the Factoring Financing Agreement invalid based on “lack of
+ qualifications” or “exceeding business scope” without conducting
+ in-depth analysis.
+ Must not misunderstand recourse factoring; must not erroneously         7      Important         Accuracy
+ believe the factor must first exhaust remedies against the accounts
+ receivable debtor (Yunnan Company) before seeking recourse
+ from the creditor (Guangxi Company).
+
+
+
+A.3     Education
+Instructional & curriculum design, pedagogical assessment, student learning analysis, and educational research
+synthesis.
+
+A.3.1   Example Task
+Please create a philosophical dialogue script about Confucius and Socrates from the perspective of a screen-
+writer.
+Set the encounter between the two sages in their twilight years, disregarding temporal and spatial constraints.
+The script’s core theme revolves around a profound debate concerning views on life and death. The dialogue
+style should align with the linguistic characteristics reflected in the works of Confucius and Socrates. The
+dialogue must accurately reflect their respective philosophical beliefs and views on life and death, incorporating
+relevant biographical facts from their lives to support their arguments. The entire script must be written in
+modern Chinese. Reasonable artistic interpretation is permitted, but historical accuracy and philosophical
+integrity must be maintained. The final output must adhere to standard screenplay formatting requirements.
+
+A.3.2   Scoring Rubric
+
+
+
+
+                                                           18
+                              Table A.3 Scoring rubric for the Education example task.
+
+                             Criterion                                  Points   Importance        Tag
+ Teaching objectives adopt “three-dimensional objectives” with            7      Important    Standardization
+ point-by-point elaboration, and each dimension must list at least
+ one observable, measurable specific behavioral objective.
+ Each dimension of teaching objectives requires layered design,           7      Important     Completeness
+ with clear evaluation criteria set for three categories of students:
+ better, moderate, and more severe.
+ Each dimension of teaching objectives must use measurable action         7      Important    Standardization
+ verbs and provide specific conditions or standards (e.g., “able to
+ read correctly within 3 attempts”).
+ Teaching focus must clearly state “able to write time format             7      Important      Instruction
+ correctly (HH:MM)” and provide one example.                                                     Following
+ Difficulty explanation should simultaneously provide the main           10       Essential    Completeness
+ methods to overcome difficulties and corresponding teaching aids.
+ All listed teaching methods must appear in at least two specific         7      Important     Completeness
+ application scenarios in the subsequent teaching process.
+ Teaching process includes five stages: introduction, new con-            7      Important      Instruction
+ tent, consolidation, summary, and homework assignment, with                                     Following
+ approximate time allocation noted for each stage.
+ Each stage of instructional design must reflect student-                 7      Important    Comprehensive
+ centeredness and list at least two opportunities for student au-                              Application
+ tonomous inquiry or self-evaluation.
+ Introduction stage must review analog clock knowledge and               10       Essential     Instruction
+ compare with digital clocks through teacher demonstration or                                    Following
+ physical demonstration.
+ Instructional design needs to incorporate specific vocational life      10       Essential    Completeness
+ cases.
+ New content section must use mnemonics to teach reading digital         10       Essential     Instruction
+ clocks and immediately have students complete one practice using                                Following
+ the mnemonic after explanation.
+ New content section must mention using Seewo games or other             10       Essential    Completeness
+ interactive software for immediate consolidation.
+ New content section must provide at least two complete dialogue         10       Essential    Completeness
+ examples between teacher–student or student–student, reflecting
+ interaction details.
+ Consolidation/application stage reflects participation of all stu-       7      Important     Completeness
+ dents, with each activity accompanied by detailed rule descrip-
+ tions.
+ Homework assignment must be layered and life-oriented, provid-           7      Important     Completeness
+ ing one example (such as a sample time record table).
+ Identify and note: Currently, the People’s Education Press com-          7      Important     Requirement
+ pulsory education textbooks in mainland China do not include                                  Identification
+ clock-related knowledge at the elementary level; therefore, other
+ materials will be referenced.
+
+
+
+A.4    STEM
+Technical problem solving, experimental design, data analysis, and scientific reasoning.
+
+
+                                                            19
+A.4.1   Example Task
+A research group needs to construct a genomic cosmid library using pJTU++++ (approximately 9.5 kb in
+size) as the vector. After completing the cosmid library construction, the empty vector rate must be verified.
+Twenty single colonies (labeled 1–20) were randomly selected. Plasmids were extracted from these colonies
+and transformed into E. coli DH5α. Verification was performed using restriction enzyme MboI digestion.
+Electrophoresis results are shown in Figure 1 of the second image. Lanes 1–20 display digested cosmids, while
+lanes 21–22 show undigested cosmids from columns 1 and 2. These plasmids were then transferred into E. coli
+ET12567. After re-extracting the plasmids, restriction enzyme digestion was performed using MboI and its
+homolog Sau3AI (both share identical cleavage sites, as shown in the first image below). The electrophoresis
+results are depicted in Figure 2 of the second image.
+Questions:
+
+   1. Based on the above conditions and comprehensive analysis of electrophoresis patterns in Figures 1 and
+      2 of the second image, what is the empty vector rate among the 20 selected single colonies?
+   2. What is the minimum average size of the foreign fragment in the 20 plasmids shown in the figure?
+   3. Why do Figures 1 and 2 in the second figure show differences when the same plasmid is digested with
+      the same restriction enzyme MboI and its restriction enzyme Sau3AI?
+Attachments:
+
+
+
+
+Figure A.1 The recognition sequence and cleavage sites (indicated by triangles) of the restriction enzymes MboI and
+Sau3AI. Both enzymes recognize the same 5′ -GATC-3′ nucleotide sequence.
+
+
+
+
+                                                        20
+Figure A.2 Agarose gel electrophoresis results for plasmid verification. Top (Figure 1): Digestion profiles of plasmids
+extracted from E. coli DH5α. Lanes 1–20 are samples treated with MboI; lanes 21–22 (CE) are undigested control
+plasmids. Bottom (Figure 2): Digestion profiles of the same plasmids after being transferred to and extracted from E.
+coli ET12567. The left panel shows digestion with MboI, and the right panel shows digestion with Sau3AI. ’M’ denotes
+the DNA molecular weight marker (ladder).
+
+
+A.4.2   Scoring Rubric
+
+                          Table A.4 Scoring rubric for the STEM example task (Part 1).
+
+                             Criterion                                 Points    Importance              Tag
+ Analyze the reason for unsuccessful digestion: Dam methylation         10         Essential         Information
+ modification in DH5α blocks restriction enzyme digestion.                                            Processing
+ Determine the state of fragments in the map: bands represent           10         Essential        Professionalism
+ circular plasmids whose migration rate is affected by conforma-
+ tion (supercoiled, open circular, etc.); they cannot reflect actual
+ size and cannot be used to determine empty vectors.
+ Observe the restriction map and determine that plasmids have           10         Essential        Professionalism
+ been successfully digested into linear fragments. The sum of
+ bands can reflect the total length of “vector + foreign fragment,”
+ which is the key basis for determining empty vectors.
+ Analyze the reason for successful digestion: ET12567 is a               7        Important         Professionalism
+ methylation-deficient strain (dam− dcm− ), and digestion suc-
+ cessfully produces linear fragments.
+ Explain the difference in migration rate between circular plasmids      7        Important         Professionalism
+ (especially supercoiled) in electrophoresis and linear DNA used
+ as markers (supercoiled migrates faster than linear DNA of the
+ same size).
+
+
+
+
+                                                           21
+Table A.4 (continued)
+                           Criterion                                 Points   Importance        Tag
+
+Point out that bands near 10 kb in Figure 1 only represent            10       Essential    Information
+circular plasmid conformations, unrelated to the actual size of                              Processing
+the plasmid (vector + foreign fragment), and cannot directly
+determine whether it is empty based on position.
+Empty plasmids contain only the vector (9.5 kb); after digestion      10       Essential      Accuracy
+in ET12567, the sum of their linear fragments should be close to
+9.5 kb (vector bands only).
+In Figure 2, the sum of restriction fragments of all lanes is far     10       Essential      Accuracy
+greater than 9.5 kb, proving that all contain foreign fragments,
+with an empty vector rate of 0.
+Explain that “sum of fragments” must include all visible bands         7      Important       Accuracy
+(to avoid missing small fragments); if empty, it only includes
+vector bands.
+Compare the differences in restriction maps between empty and         10       Essential   Professionalism
+non-empty vectors in ET12567 (empty: single or few vector
+bands; non-empty: multiple fragments, sum > vector).
+Identify that Figure 2 has been successfully digested into lin-       10       Essential      Accuracy
+ear fragments, and accurate size determination must rely on
+restriction fragments in Figure 2.
+Specifically explain the migration rate order of three conforma-       7      Important       Accuracy
+tions (supercoiled > linear > open circular).
+Give examples to illustrate the migration position differences         7      Important    Professionalism
+between circular and linear DNA of the same size (e.g., a super-
+coiled plasmid larger than 10 kb may migrate to the position of
+the 10 kb linear marker).
+Calculation formula: foreign fragment size = (sum of all linear       10       Essential   Professionalism
+fragment sizes in a lane in Figure 2) − vector size (9.5 kb).
+Lower limit determination must consider band overlap (large            7      Important    Professionalism
+fragment overlap leading to underestimation of sums) and small
+fragment omission (low brightness or running off the gel); the
+minimum fragment sum among the 20 samples yields a foreign
+fragment size ≥19 kb.
+Give an example of fragment sum estimation for a lane (e.g.,           7      Important    Professionalism
+band sum ≈25 kb, foreign fragment ≈25−9.5=15.5 kb).
+Explain that “at least greater than 15 kb” is a conservative lower     7      Important       Accuracy
+limit (actual average approximately 20 kb), to avoid underesti-
+mation of true size due to technical errors.
+Restriction-modification systems consist of methyltransferases        10       Essential      Accuracy
+(marking own DNA) and restriction endonucleases (cutting un-
+marked foreign DNA).
+Methyltransferases modify recognition sequences (e.g., Dam            10       Essential      Accuracy
+methylase modifies the N6 position of adenine in GATC), pre-
+venting own DNA from being cut by homologous restriction
+endonucleases.
+Distinguish between recognition sites of Dam (adenine methy-           7      Important       Accuracy
+lation in GATC sequence) and Dcm (cytosine methylation in
+CCWGG sequence) methylases.
+
+
+
+
+                                                         22
+ Table A.4 (continued)
+                             Criterion                                Points   Importance            Tag
+
+ Explain the “self-protection” logic of restriction-modification       10       Essential      Professionalism
+ systems (methylation marks as “self,” unmarked as “foreign” to
+ be cut).
+ DH5α: dam+ dcm+ , contains functional Dam and Dcm methy-              10       Essential         Accuracy
+ lases; plasmid GATC sites are modified by Dam methylation.
+ ET12567: dam− 13::Tn9 (Dam-deficient), dcm− 6 (Dcm-deficient);        10       Essential         Accuracy
+ plasmid GATC sites have no methylation modification.
+ Specifically explain the mechanism by which dam gene muta-             7      Important       Professionalism
+ tion (transposon insertion) in ET12567 causes Dam methylase
+ inactivation.
+ Compare specific methylation modification sites in plasmids be-       10       Essential      Professionalism
+ tween the two strains: DH5α: A methylation in GATC; ET12567:
+ no such modification.
+ MboI: sensitive to Dam methylation; cannot cut if recognition         10       Essential         Accuracy
+ site GATC is methylated (e.g., plasmids in DH5α).
+ Sau3AI: an isoschizomer of MboI (recognizes GATC), but insen-         10       Essential         Accuracy
+ sitive to Dam methylation; can cut regardless of whether GATC
+ is methylated.
+ In Figure 1, DH5α plasmids cannot be cut by MboI due to GATC          10       Essential         Accuracy
+ methylation; in Figure 2, ET12567 plasmids have no methylation,
+ so both MboI and Sau3AI can cut, producing linear fragments.
+ Point out the methylation sensitivity specificity of Sau3AI (only     10       Essential         Accuracy
+ sensitive to CpG methylation, insensitive to Dam/Dcm methy-
+ lation; in this case, since ET12567 has no methylation, both
+ enzymes yield the same result).
+ Explain the definition of “isoschizomers” (recognize the same site    10       Essential      Professionalism
+ but may have different sensitivity to modifications) and compare
+ the enzymatic property differences between MboI and Sau3AI.
+
+
+
+A.5     Humanities & Social Sciences (HSS)
+Critical analysis, theory application, academic writing, and research methods.
+
+A.5.1   Example Task
+In the capacity of a screenwriter, please create a philosophical dialogue script featuring Confucius and Socrates.
+The premise is that the two sages meet in their final years, transcending temporal and spatial constraints.
+The script’s core theme must be a profound debate centered on their respective philosophies of life and death.
+The dialogue style must be consistent with the linguistic styles demonstrated by Confucius and Socrates in
+their respective works (e.g., the Analects and the Platonic dialogues). The dialogue content must accurately
+conform to their distinct philosophical ideas and views on mortality, and may moderately integrate biographical
+facts from their lives as argumentative support.
+The entire script is required to be output in Modern Chinese. Reasonable artistic license is permitted, but
+the accuracy of historical facts and philosophical tenets must be ensured. The final output must adhere to
+standard script formatting requirements.
+
+A.5.2   Scoring Rubric
+
+
+
+                                                          23
+                           Table A.5 Scoring rubric for the HSS example task (Part 2).
+
+                            Criterion                                 Points   Importance         Tag
+Content accuracy and depth, restoration of Confucius’s philo-          10.0     Essential   Professionalism
+sophical thought: Accurately and three-dimensionally present
+Confucius’s view on life and death, integrating the pragmatism
+of “not yet knowing life, how can one know death,” the value
+pursuit of “hearing the Way in the morning, one can die content
+in the evening,” and the tension of “fearing Heaven’s mandate
+while doing one’s best,” with “benevolence” and “ritual” as the
+fundamental starting point of all his thoughts and actions.
+Qualification review (threshold requirement), comprehensive com-       10.0     Essential   Format Structure
+pliance review: This checks whether the work fully meets the
+basic requirements in format, language, content setting, and
+factual accuracy. The work must simultaneously satisfy all of
+the following conditions: 1. Format completeness. 2. Language
+standardization (prohibition of semi-classical/modern Chinese
+mixed with classical Chinese, etc.). 3. Premise compliance (Con-
+fucius and Socrates meeting in their final years and the “ignoring
+temporal/spatial/language” setting). 4. Historical accuracy, no
+tampering with key historical facts. 5. Dialogue balance, pre-
+sented as bidirectional, back-and-forth dialogue, rather than
+continuous one-way responses or lecture mode.
+Content accuracy and depth, restoration of Socrates’s philo-           10.0     Essential   Professionalism
+sophical thought: Accurately present his core idea that “the
+unexamined life is not worth living,” treating “death” as the
+ultimate test of “care of the soul,” and embodying his unique
+method of argumentation (maieutics).
+Content accuracy and depth, use of historical background and           10.0     Essential      Accuracy
+events: Ability to use the macro situation of both figures being
+at “the turning point from prosperity to decline, seeking the Way
+but not meeting it” as the narrative tone, accurately employing
+historical facts such as “Western hunt capturing the qilin” and
+“Athenian trial,” making them internal drivers of the philosophical
+debate rather than merely external plot devices. All historical
+details (characters, time) are accurate.
+Core task completion, effectiveness and depth of intellectual          10.0     Essential      Logicality
+confrontation: Truly achieves intellectual confrontation and col-
+lision, with both sides’ arguments able to question each other
+and progress layer by layer, rather than “talking past each other.”
+The debate can go from the surface of views on life and death to
+the fundamental differences behind views on Heaven’s mandate,
+truth, soul, and social responsibility.
+Core task completion, logical progression of debate: The debate        10.0     Essential      Logicality
+process is logically clear, with questions interlocking, naturally
+transitioning from one argument to the next, ultimately leading
+to a meaningful dramatic climax or philosophical reflection. If
+characters undergo conceptual changes, clearly present the con-
+tinuous trajectory “from evidence to psychological inference to
+behavioral/linguistic representation.”
+Core task completion, restoration of Socrates’s “maieutics” style:     10.0     Essential   Professionalism
+Accurately reproduces Socrates’s “maieutics” style of guiding
+deep thinking through continuous questioning and revealing
+contradictions in the other’s views.
+
+
+
+
+                                                          24
+Table A.5 (continued)
+                             Criterion                                  Points   Importance         Tag
+
+Core task completion, restoration of Confucius’s “heuristic” dia-        10.0     Essential   Professionalism
+logue style: Accurately reproduces Confucius’s heuristic style of
+being concise, using many metaphors, teaching according to ap-
+titude, aiming to “draw the bow without shooting,” emphasizing
+“teaching by words and deeds,” full of authority and moral care.
+Core task completion, extension of thought and ending treatment:         2.0      Optional       Innovation
+The ending is not just the conclusion of the debate but also
+the sublimation of thought. Creatively proposes a profound
+consensus of “harmony in diversity,” or uses an open ending to
+reflect the continuity and complexity of East-West civilizational
+dialogue, reasonable and with lingering aftertaste.
+Dramatic construction and narrative, plot design and dramatic            10.0     Essential      Innovation
+conflict: Plot design is clever, dramatic conflict is entirely driven
+by internal intellectual contradictions, and the climax (such as
+dual death events) greatly strengthens the philosophical theme
+rather than being superficial.
+Dramatic construction and narrative, character development               10.0     Essential    Completeness
+(main and supporting): Main characters are three-dimensional
+and full, with thought and emotion interwoven. If there are
+supporting characters, their words and actions effectively serve
+main character development and theme expression rather than
+being tools; characters’ actions, expressions, and behaviors are
+highly consistent with their respective identities and situations.
+Dramatic construction and narrative, functionality of scene set-         10.0     Essential      Innovation
+ting: Scene setting is not just background but can act as a “third
+character” to drive dialogue, with symbolic elements effectively
+reflecting characters’ inner states or philosophical conflicts.
+Dramatic construction and narrative, use of scenes and symbolic          2.0      Optional       Innovation
+imagery: The use of symbolic imagery (jade pendant/qilin/poi-
+soned wine) is exquisite and natural, effectively creating atmo-
+sphere and deeply integrating with the philosophical theme, with
+clear and recognizable metaphorical associations and multiple
+interpretive spaces.
+Language and format standards, script format professionalism:            10.0     Essential   Format Structure
+Format is complete, layout is professional, scene directions (ac-
+tions, expressions, etc.) are precise and expressive, effectively
+guiding secondary creation.
+Language and format standards, use of modern Chinese and                 10.0     Essential      Language
+literary quality: Language is fluent, concise, and literary, able to                             Expression
+accurately convey characters’ identities, personalities, and the
+weight of thought using modern, accessible language.
+Language and format standards, avoiding inappropriate “classical         10.0     Essential      Language
+style”: Fully follows modern Chinese requirements, skillfully cre-                               Expression
+ating classical charm through word choice and sentence structure
+rather than simply piling up classical Chinese vocabulary.
+
+
+
+
+                                                            25
+
