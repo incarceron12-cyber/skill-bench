@@ -653,6 +653,7 @@ specific schema or pilot follows.
 | [Agentic Confidence Calibration](../papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md) | B | Separates predicted success for one configured trajectory from repeated reliability and causal diagnosis; its unreleased labels/configurations, post-outcome features, clustering omissions, asymmetric transfer, and logprob dependence block decision-utility or universal-calibration claims |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
 | [PaperBench](../papers/agent-benchmarks/2026-07-15-paperbench-replication-rubric-validity.md) | A | Provides released leaf labels and a criterion-level judge study while showing that pooled-leaf class-macro F1, invalid-as-zero handling, and local agreement do not validate paper-level scores or replication decisions |
+| [AdaRubric](../papers/agent-benchmarks/2026-07-15-adarubric-adaptive-trajectory-instrument-validity.md) | B | Separates task-conditioned criterion generation, step/dimension observation, and filtering, while its absent empirical release and paper/code contradictions show that fixed-rubric score correlation, repeat agreement, and training gains do not validate adaptive criteria, decisions, rewards, or deployment |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
 | [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
 | [Auto Benchmark Audit](../papers/agent-benchmarks/2026-07-14-auto-benchmark-audit-task-defect-validity.md) | B | Makes path-grounded inspection of instruction, environment, reference, and grader scalable while separating configured-auditor labels and selected-finding precision from confirmed-defect prevalence, repaired-instrument validity, and corrected capability |
@@ -689,6 +690,23 @@ leaf-label concordance; it does not validate a replication threshold or expert
 substitution. Existing rubric, artifact, trace, metric, task-health, reliability, and
 validity records are the durable homes; the queued replay should test this boundary
 without creating a science-specific schema.
+
+AdaRubric adds a distinct **adaptive-instrument variance boundary**:
+`task/trajectory sample × rubric-generation draw × observer draw × aggregation/filter
+policy × decision threshold`. Fixed-rubric repeated judgment estimates only one slice.
+Cross independently regenerated rubrics with repeated observer calls, then adjudicate
+criterion preservation, omission, spurious additions, applicability, dependencies,
+alternative paths, evidence-view shifts, threshold changes, and decision loss. Keep
+rubric adaptability, criterion authority, judge repeatability, regenerated-instrument
+stability, decision equivalence, and reward usefulness as separate claims. Pearson
+score correlation and Krippendorff alpha do not bridge them. The post-v3 official
+release further makes implementation correspondence part of validity: it uses one
+trajectory-wide call rather than the paper's `K×N` calls, lacks the stated semantic
+validation/fallback/cache, has no multimodal evidence path or empirical artifacts,
+and multiplies scores by confidence without normalizing by confidence, so low
+relevance becomes a quality penalty. Existing criterion, evidence-view, configured-
+grader, response-matrix, task-health, metric, and validity records remain the correct
+homes; no adaptive-rubric subsystem follows.
 
 Automated benchmark auditing adds a **candidate-defect lifecycle** before score
 revision: `immutable instrument → auditor identity and entitled evidence view →
