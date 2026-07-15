@@ -174,6 +174,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [WorkArena L1](../papers/agent-benchmarks/2026-07-12-workarena-l1-knowledge-work-validity.md) | B | Makes parameterized enterprise-UI setup, selected native-state predicates, and task-owned cleanup inspectable while separating atomic operation success from work sampling, collateral-state, professional-use, and readiness claims |
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
+| [EntCollabBench](../papers/agent-benchmarks/2026-07-15-entcollabbench-role-permission-validity.md) | B | Makes static role-scoped tool execution, explicit HTTP routing, task-local state effects, and policy-document decisions inspectable while separating configured capability, usable handoff, delegated authority, approval classification, and authoritative approval effect |
 | [OdysseyBench](../papers/agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md) | B | Connects dialogue-distributed requirements to office-state action while exposing persistent-memory, evaluator-dispatch, collateral-state, and professional-validity gaps |
 | [LongMedBench](../papers/agent-benchmarks/2026-07-14-longmedbench-longitudinal-clinical-validity.md) | B | Separates history volume and factual access from history necessity and consequence validity; its no-history result and retrospective next-event oracle show why a long record alone does not establish longitudinal decision competence |
 | [SciAgentArena](../papers/agent-benchmarks/2026-07-14-sciagentarena-scientific-work-validity.md) | B | Adds matched step-wise versus dependent-pipeline scientific workflow evaluation and premise-validity tasks, while showing why mixed task units, configured-system bundles, propagated failures, fallbacks, and incomplete run/release evidence block real-world-science, novelty, autonomy, reliability, impact, or readiness claims |
@@ -328,6 +329,9 @@ payloads, runs, or analysis; excludes note-generation cost; nests 181 handoffs i
 75 issues; and leaves a possible official-state-label leak unresolved. Read it
 with [AgentCo-op](../papers/agent-benchmarks/2026-07-11-agentcoop-typed-handoffs-localized-repair.md)
 (typed transport is not semantic or receiver-use validity),
+[EntCollabBench](../papers/agent-benchmarks/2026-07-15-entcollabbench-role-permission-validity.md)
+(static role/tool isolation and free-text peer routing expose real chain failures,
+but do not establish task-scoped authority, accountable delegation, or approval-state effect),
 [DELEGATE-52](../papers/agent-benchmarks/2026-07-11-delegate52-delegated-artifact-integrity.md)
 (requested delta and preservation are orthogonal),
 [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md)
