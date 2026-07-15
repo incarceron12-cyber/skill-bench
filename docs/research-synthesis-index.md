@@ -993,6 +993,7 @@ revision before adding another lifecycle schema.
 | [UnderSpecBench](../papers/agent-benchmarks/2026-07-13-underspecbench-action-boundary-validity.md) | B | Separates private intended transition from public authorization, resolvable uncertainty, attempted action, realized effect, and observer coverage |
 | [MemoryArena](../papers/agent-benchmarks/2026-07-13-memoryarena-interdependent-experience-action.md) | B | Makes prior-session evidence consequential through dependency-bearing action while exposing feedback, state-reconstruction, retrieval, adoption, and grader confounds |
 | [MemOps](../papers/agent-benchmarks/2026-07-15-memops-lifecycle-memory-validity.md) | B | Crosses expected lifecycle events with trigger, target, state, application, and trajectory probes while showing that an authored gold trace is not an observed store mutation, deletion guarantee, adoption record, or causal root |
+| [PM-Bench](../papers/agent-benchmarks/2026-07-16-pmbench-prospective-memory-validity.md) | B | Makes delayed obligation activation, updates, hidden-cue monitoring, lures, exact timing, and replay diagnostics executable while showing that an ungraded advance choice is not an ongoing task and query counts are not interference cost |
 
 **Repository consequence:** Root/surface attribution, causal trace slices, recovery records, invalid-trial handling, and task-health lifecycle records. Apparent requests should also admit a counterfactual action contract: observable disqualifying evidence, authority and threshold, legitimate alternatives, required state and communication consequences, abstention/escalation, and collateral harm. Decision, rationale, artifact preservation, communication, cost, and harm remain separate observations. Matched persist/stop and comply/dissent forms are required to distinguish calibrated judgment from generic quitting or contrarianism; substantive action must be tested independently of lexical realization, with paraphrase contrasts and retained semantic adjudication. AARRI's inspectable authored suite motivates this design but its missing sampling frame, contributor accounting, human baseline/agreement, repeats/uncertainty, verifier-wide audit, complete configuration, contamination-safe split, environment evidence, and paper-pinned release prevent researcher-quality or cross-domain capability claims.
 
@@ -1052,6 +1053,18 @@ adoption, or consequences. Preserve expected projection, attempted operation,
 realized store/workspace delta, evidence presentation, adoption, and consequence as
 different records. Response non-disclosure is only the first rung of forgetting; it
 does not establish active-store, replica, cache, log, or reconstruction deletion.
+
+PM-Bench adds a complementary **prospective obligation → concurrent work**
+boundary. Its near-paper release makes activation, cancellation/rescheduling,
+dependencies, cue visibility, monitoring, due sets, lures, timing, and replayed
+errors unusually inspectable. But the nominal ongoing activity is an arbitrary,
+ungraded `A/B/C` advance token, so the reported score identifies obligation-menu
+selection on one synthetic week—not dual-task interference, primary-work quality,
+or operational utility. Future delayed-requirement slices must report obligation
+reliability jointly with primary artifact/state quality, preservation, query/token/
+time cost, collateral effects, and stakeholder-weighted consequences. Neutral
+interrupts, channel hints, task reminders, and oracle cues are distinct evidence
+interventions; none should be silently labeled an internal memory improvement.
 
 ## 7. Task generation and evolution require conformance, provenance, and rollback
 
