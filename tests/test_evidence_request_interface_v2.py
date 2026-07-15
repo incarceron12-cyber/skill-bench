@@ -21,4 +21,10 @@ class EvidenceRequestInterfaceV2Tests(unittest.TestCase):
   report=PILOT/"execution/study-report.json"
   if not report.exists():self.skipTest("prospective execution not run yet")
   rebuilt=self.runner.replay();self.assertEqual(json.loads(report.read_text()),rebuilt);self.assertEqual(8,rebuilt["denominators"]["intended"]);self.assertEqual(4,len(rebuilt["paired_descriptive_contrasts"]));self.assertTrue(rebuilt["no_pooled_effect"])
+ def test_posthoc_flow_audit_preserves_stage_separation(self):
+  path=PILOT/"execution/flow-audit.json"
+  if not path.exists():self.skipTest("prospective execution not run yet")
+  audit=json.loads(path.read_text());self.assertEqual({"intended":8,"retained":8,"eligible":8},audit["denominators"]);self.assertTrue(audit["no_rescoring"])
+  self.assertEqual(5,audit["summary"]["natural_request"]["matched"]);self.assertEqual(6,audit["summary"]["structured_request"]["unmatched"])
+  self.assertTrue(all("stopping" in row and "parser" in row and "adoption" in row for row in audit["attempt_flows"]))
 if __name__=="__main__":unittest.main()
