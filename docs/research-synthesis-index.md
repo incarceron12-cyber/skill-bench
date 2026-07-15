@@ -409,6 +409,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 |---|---:|---|
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Directly motivates public-skill versus private-check boundaries and skill/rubric factorial comparisons |
 | [SkillsBench](../papers/agent-benchmarks/2026-07-10-skillsbench-paired-skill-efficacy.md) | A | Sharpens matched skill/no-skill comparisons and the need for repeated paired trials and uncertainty |
+| [Skills Are Not Islands](../papers/agent-benchmarks/2026-07-15-skill-supply-chain-dependency-risk-validity.md) | B | Shows that a Skill treatment may be a transitive Skill/package/service graph while separating static audit reachability from installed, visible, invoked, vulnerable, and consequential runtime state |
 | [Agentic Skills at Scale](../papers/agent-benchmarks/2026-07-15-agentic-skills-at-scale-projection-validity.md) | A | Scales paired Skill/no-Skill authoring to 1,110 released packages while exposing that Skill-derived demand, tasks, instruction rubrics, goal rubrics, and one shared judge identify projected-procedure compliance more directly than independent utility |
 | [AFTER](../papers/agent-benchmarks/2026-07-13-after-procedural-memory-transfer-validity.md) | A | Separates source-context gain, equivalent-form reuse, changed-context transport, and cross-model consumption while exposing complete-case selection, configured-system gaps, feedback/authoring overlap, and trace-diversity/volume confounding |
 | [SLBench](../papers/agent-benchmarks/2026-07-13-slbench-skill-relation-validity.md) | B | Makes precondition, postcondition, constraint, conjunction, fallback, exception, override, and conflict relations executable, while exposing that LLM-co-designed extraction, case generation, and evidence contracts need independent projection and grader validation |
@@ -450,6 +451,22 @@ occupational authority, real-environment robustness, or professional validity.
 Existing projection, authority/participation, configured-system, environment,
 artifact/state, task-health, metric, trace, and validity contracts are the durable
 homes; no Skill-, map-, or language-simulator subsystem follows.
+
+Skill packages add a separate **component-realization ladder**:
+`declared/reference evidence → version-resolved lock graph → mounted/installed
+graph → model/tool-visible graph → selected/invoked graph → attempted action →
+realized state or information-flow consequence → diagnosed harm or utility`.
+Static transitive reachability is valuable preflight and audit evidence, but no
+rung inherits the next. The immutable ASSC paper reports high agreement with its
+author-produced SKILL-DEP labels and large inferred graphs, yet releases no code,
+labels, schema, snapshot, or outputs; its multi-layer set has 100 depth-selected
+Skill graphs, service edges are not recursively resolved, package versions and
+valid time are not preserved in the risk counts, and roots are strongly clustered
+within a rapidly changing registry. Preserve exact component/version/source and
+edge evidence across paired conditions, then observe installation, visibility,
+invocation, policy decisions, and consequences separately. Reachability to a
+package name, regex, or authority surface is not vulnerability, exploitability,
+agent compromise, safety, capability, professional validity, or readiness.
 
 Framing interventions add a public-set boundary: `full public package + reviewed
 admissible framings → immutable ambiguity edit → decision-relevant unresolved
