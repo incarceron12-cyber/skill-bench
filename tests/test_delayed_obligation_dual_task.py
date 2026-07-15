@@ -21,4 +21,6 @@ class DelayedObligationDualTaskTests(unittest.TestCase):
   p=self.m.load(self.m.PROTOCOL);self.assertTrue(all(v is False for v in p["claim_boundaries"].values()));self.assertEqual(6,len(p["schedule"]["rows"]));self.assertTrue(p["reporting"]["no_shape_pooling"])
  def test_preflight_passes_without_model_calls(self):
   r=self.m.preflight(False);self.assertTrue(r["passed"]);self.assertEqual(0,r["model_calls"])
+ def test_validity_record_keeps_attempt_claim_bounded(self):
+  v=json.loads((P/"validity-record.json").read_text());self.assertEqual("unsupported",v["construct_and_generalization"]["status"]);self.assertIn("Do not rank treatments",v["decision_use"]["prohibited"])
 if __name__=="__main__":unittest.main()
