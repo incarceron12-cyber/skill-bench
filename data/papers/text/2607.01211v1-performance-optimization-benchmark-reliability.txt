@@ -1,0 +1,892 @@
+                                                    Are Performance-Optimization Benchmarks
+                                                       Reliably Measuring Coding Agents?
+                                                      Zhi Chen                                   Zhensu Sun*                                         Yuling Shi
+                                          Singapore Management University              Singapore Management University                      Shanghai Jiao Tong University
+                                                Singapore, Singapore                         Singapore, Singapore                                 Shanghai, China
+                                             zhi.chen.2023@smu.edu.sg                         zssun@smu.edu.sg                                 yuling.shi@sjtu.edu.cn
+                                                                         David Lo                                             Lingxiao Jiang
+                                                              Singapore Management University                        Singapore Management University
+                                                                    Singapore, Singapore                                   Singapore, Singapore
+                                                                    davidlo@smu.edu.sg                                     lxjiang@smu.edu.sg
+
+
+
+
+arXiv:2607.01211v1 [cs.SE] 1 Jul 2026
+                                           Abstract—Repository-level performance-optimization bench-              benchmarks such as GSO [10], SWE-Perf [11], and SWE-
+                                        marks such as GSO, SWE-Perf, and SWE-fficiency evaluate                   fficiency [12] require agents to edit real projects and evaluate
+                                        coding agents by applying patches to real repositories and                those edits with executable workloads, reference patches, and
+                                        comparing runtime against unoptimized baselines and official
+                                        reference patches. Their leaderboard scores are increasingly used         benchmark-specific scoring rules.
+                                        as evidence of coding-agent progress, but those scores can conflate          Such performance benchmarks differ significantly from
+                                        runtime instability, benchmark-specific scoring rules, and how            functional repair benchmarks because they measure a non-
+                                        many tasks are already solved by at least one public submission.          functional property. Functional repair benchmarks such as
+                                        We audit these issues across the three benchmarks. First, we              SWE-Bench mainly judge whether the relevant tests pass, a
+                                        replay the official reference patches for 740 code optimization
+                                        tasks across four common types of Google Cloud machines. Most             binary and usually reproducible outcome [13]. Performance
+                                        benchmark tasks can be replayed, but their reference patches              benchmarks must run the base program, the reference patch,
+                                        satisfy the original benchmark validity rules in every cross-             and submitted patches under workloads, then compare noisy
+                                        machine replay for only 39/102 GSO tasks, 11/140 SWE-Perf                 runtime measurements. These measurements are not fixed
+                                        tasks, and 411/498 SWE-fficiency tasks; SWE-Perf is especially            quantities: they fluctuate across runs because of CPU schedul-
+                                        fragile because many reference patches produce close-to-zero
+                                        runtime changes. Second, we show that public submission rank-             ing, cache state, memory bandwidth contention, and machine-
+                                        ings depend strongly on the benchmark scoring rule. Among eight           level microarchitectural effects [14]–[16]. The same patch can
+                                        public submissions shared by GSO and SWE-fficiency, the official          therefore behave faster, slower, or statistically unsupported
+                                        rankings disagree on 9 of 28 pairwise submission comparisons,             depending on where and how it is replayed, which brings
+                                        and SWE-fficiency’s leaderboard scoring rule assigns the worst            instability to the benchmarks’ final evaluation.
+                                        ten tasks overly high score weights of 58.5%–82.8%. Third,
+                                        looking across 10 public submissions for each task, we find that             Recent repository-level benchmarks address this problem
+                                        at least one submission matches or beats the reference patch on           with repeated trials, outlier filtering, statistical tests, reference
+                                        85.3% (384/450) of replay-valid GSO and SWE-fficiency tasks,              patches, and workload-selection rules. However, a fundamental
+                                        and beats the unoptimized base code on 99.8% (449/450). Our               question remains: to what extent can we trust their eval-
+                                        study complements leaderboard scores by identifying tasks with            uation results, even with these countermeasures in place?
+                                        more reliable performance signals, quantifying per-task score
+                                        contributions, and exposing the remaining performance gaps that           We therefore audit three recent repository-level performance-
+                                        are hidden by aggregate rankings.                                         optimization benchmarks: GSO [10], SWE-Perf [11], and
+                                           Index Terms—software engineering benchmarks, performance               SWE-fficiency [12]. We ask whether official reference patches
+                                        optimization, coding agents, benchmark validity                           remain valid under cross-machine replay, how scoring rules
+                                                                                                                  shape leaderboard rankings, and whether replay-valid tasks
+                                                                    I. I NTRODUCTION                              still expose clear performance gaps for recent top submissions.
+                                           Improving software performance is a practical and commer-              Notably, these public leaderboards consist of OpenHands-
+                                        cially important software-engineering task. Given a codebase              based submissions, each pairing the agent scaffold with one
+                                        and a workload, a coding agent is expected to produce a                   underlying foundation model [17]–[19]. In the remaining text
+                                        patch that preserves correctness while improving the program’s            of this paper, we use submission for the evaluated agent
+                                        performance [1]–[3]. Code-efficiency benchmarks have also                 configuration and use model names only as shorthand labels
+                                        grown in scope. Earlier benchmarks focus on function-level                for the underlying model component [20]–[22].
+                                        edits [4], standalone programs [5], [6], and function-level and              Our systematic assessment yields three main insights. First,
+                                        file-level code generation tasks [7]–[9]. Recent repository-level         the validity of reference patches is less reliable than what
+                                                                                                                  may be assumed by benchmark users. We replay every official
+                                          * Corresponding author.                                                 reference patch across four Google Cloud machine types
+
+
+
+                                                                                                              1
+and three rounds, while preserving each benchmark’s official              public patches and that the remaining gap is mainly about
+workloads and performance validity rules. Most tasks remain               reaching reference-patch speed.
+executable, but only 39/102 GSO tasks, 11/140 SWE-Perf                    The rest of the paper is organized as follows. Section II
+tasks, and 411/498 SWE-fficiency tasks satisfy their original          defines the benchmark selection and research questions. Sec-
+validity rules in all cross-machine replays. SWE-Perf is es-           tion III studies cross-machine reference-patch validity. Sec-
+pecially fragile because many reference patches produce only           tion IV audits scoring-rule sensitivity. Section V asks how
+close-to-zero runtime changes. This means that some official           many replay-valid tasks are covered when we look across
+tasks lose their performance signals when replayed on different        10 public submissions for each task. Section VI discusses
+machines, even if the task remains executable.                         implications for benchmark users, agent builders, and future
+   Second, benchmark scoring rules can strongly shape sub-             benchmark design.
+mission rankings. Among eight public submissions shared
+                                                                                            II. S TUDY D ESIGN
+by GSO and SWE-fficiency, the official leaderboards dis-
+agree on 9 of the 28 pairwise submission orders. Part of               A. Benchmark Selection
+this disagreement comes from the scoring rule itself: SWE-                We study three repository-level benchmarks that directly
+fficiency’s leaderboard scoring rule gives very large weight           target coding agents on performance optimization. Note that
+to low-speedup tasks, so the worst ten tasks can carry 58.5–           we are not surveying every efficiency benchmark for code
+82.8% of a submission’s score weight. A simple bounded-                models, nor every open-source benchmark artifact. We include
+penalty diagnostic changes 6/8 submission ranks and flips 8/28         benchmarks only when they (1) evaluate repository-level edits,
+head-to-head comparisons. The ranking is therefore not only            (2) target runtime optimization with executable workloads or
+a submission comparison; it also reflects the penalty budget           tests that compare code states, and (3) appear as recent, visible
+built into the scoring rule.                                           peer-reviewed benchmark papers rather than leaderboard-only,
+   Third, because current agent systems often use multi-agent          code-only, or unpublished proposals. These criteria select
+workflows rather than a single run, we ask an optimistic               GSO, SWE-Perf, and SWE-fficiency because they combine
+task-level question: if we look across 10 public submissions           executable tasks with reviewed task definitions and are likely
+for each replay-valid task, which tasks still fall short of            to be reused to evaluate claims about agents’ performance-
+the reference patch? This separates tasks already covered              engineering ability.
+by at least one public submission from tasks that still ex-
+pose performance-optimization gaps. Across 450 replay-valid                                        TABLE I
+                                                                          R EPOSITORY- LEVEL PERFORMANCE - OPTIMIZATION BENCHMARKS .
+GSO and SWE-fficiency tasks, at least one public submission
+matches or beats the reference patch on 384 tasks; all 450 have        Benchmark      Scale              Runtime performance comparison tests
+a passing public patch; and 449 have a patch that beats the base       GSO            102 tasks from 10 Generated performance tests selected to compare
+program. The remaining 66 tasks are therefore rarely basic             NeurIPS 2025   repos             base and reference optimization commits [10].
+correctness failures. Most already have a useful public opti-          SWE-Perf       140 tasks from 9   Unit tests filtered from source repositories to
+                                                                       ICML 2026      repos              compare original and PR-modified commits [11].
+mization, but that optimization does not yet reach reference-
+patch speed. The remaining gap is thus less about finding any          SWE-fficiency 498 tasks from 9    Annotated workload scripts compare pre-edit and
+                                                                       ICML 2026     repos               expert-optimized commits [12].
+working optimization and more about reaching or exceeding
+the reference-level target. As public submissions improve,
+future benchmarks may need stronger reference targets to keep          B. Research Questions
+separating stronger submissions from weaker ones.                      RQ1: Do official reference patches remain valid under
+   Together, these results imply that leaderboard scores alone         cross-machine replay?
+are not enough to interpret the progress of performance-               Motivation: Code performance-optimization benchmarks are
+optimization agents. Readers need to know which tasks have             machine-agnostic: their tasks ask agents to optimize a pro-
+stable reference signals, how much the scoring rule amplifies          gram, without targeting a particular CPU model or machine
+extreme cases, and how the remaining unsolved tasks affect             configuration. This setup assumes that each benchmark’s ref-
+the submissions’ scores.                                               erence patch, together with the workload used to distinguish
+   Our contributions in this paper are as follows:                     patches, produces a performance signal that survives rea-
+• We replay 740 official reference patches across four cloud           sonable machine variation. Cross-machine replay is therefore
+   machine types and twelve machine-round combinations,                important: if the reference optimization is not stable across
+   showing where each benchmark’s reference signal remains             machines, later submission comparisons on the same bench-
+   stable and where it does not.                                       mark rest on an unstable target. The replay checks whether
+• We audit leaderboard rankings with released public outputs,          each task remains evaluable, faster than base, and valid by its
+   showing that scoring rules can materially change submission         original benchmark rule.
+   rankings and that SWE-fficiency’s leaderboard scoring rule          RQ2: How do leaderboard scoring rules shape submission
+   is especially sensitive to a few low-performing tasks.              rankings?
+• We inspect task-level outputs across public submissions,             Motivation: A benchmark compresses hundreds of task out-
+   showing that most already have passing, faster-than-base            comes into one submission score. This compression decides
+
+
+
+                                                                   2
+which submission appears stronger. In performance optimiza-                                                                  TABLE II
+tion, the same patches can look different depending on whether                                                       R EPLAY MACHINE PROFILES .
+the rule counts only patches that match or beat the benchmark                                                                                                         Google Cloud
+                                                                              Google Compute Engine                       Processor platform
+reference patch, gives partial credit for smaller speedups, or                                                                                                         release year
+heavily penalizes very slow tasks. If a submission’s rank                     n2-standard-64                              Intel Cascade Lake, 2nd Gen Xeon,                        2019
+                                                                                                                          2.80GHz
+depends on these scoring choices, then the leaderboard ranking
+alone does not tell readers what kind of progress the submis-                 n2d-standard-64                             AMD Milan, 3rd Gen EPYC, 7B13                            2021
+
+sion made. It is therefore necessary to make the scoring rules                n4-standard-64                              Intel Emerald Rapids, 5th Gen Xeon,                      2024
+                                                                                                                          Platinum 8581C
+explicit, compare shared public submissions under them, and
+                                                                              n4d-standard-64                             AMD Turin, 5th Gen EPYC, 9B45                            2025
+audit whether rankings are driven by broad task performance
+or by a small set of high-leverage scoring cases.                             Note: Processor labels combine Google Cloud platform names with checked-in lscpu
+                                                                              metadata; release years identify replay diversity over Google Cloud generations.
+RQ3: Do benchmark tasks remain hard for top submis-
+sions?
+                                                                              the minimum performance direction: the reference patch must
+Motivation: In practice, current agent systems often use multi-
+                                                                              beat the base program in every replay round and machine,
+agent workflows rather than relying on a single run [23], [24].
+                                                                              Tref ,r,m < Tbase,r,m . Original-rule valid checks the bench-
+However, the public leaderboards we analyze rank individual
+                                                                              mark’s own construction standard: the replay must still satisfy
+OpenHands-based submissions, each pairing the agent scaffold
+                                                                              the rule that originally qualified the task as a performance-
+with one underlying model [2]. This mismatch matters because
+                                                                              optimization instance. Table III lists those original rules from
+different submissions may solve different tasks, so a single
+                                                                              the benchmark papers [10]–[12].
+leaderboard entry should not be treated as the boundary of
+task solvability. We therefore inspect task-level outputs across
+                                                                                                                      TABLE III
+public submissions to estimate how many tasks are covered by                                             O RIGINAL BENCHMARK VALIDITY RULES .
+at least one submission and whether the remaining gaps come
+from correctness, speedup depth, or optimization strategy.                    Benchmark                   Original validity rule
+                                                                              GSO                         Each selected generated test must still pass correctness/equivalence
+III. RQ1: C ROSS -M ACHINE R EFERENCE -PATCH VALIDITY                                                     checks and keep a replay-time speedup of at least 1.2× over the
+                                                                                                          base commit. For final low-test tasks, tests with speedup above
+   We replay every official reference patch on four Google                                                1.1× are treated as fallback-compatible, matching GSO’s low-test
+Cloud machine profiles and reapply each benchmark’s original                                              construction fallback.
+
+validity rule. The goal is not to invent a stricter benchmark,                SWE-Perf                    Each selected efficiency unit test must pass on the original and
+                                                                                                          modified commits. After 20 timing repetitions and IQR outlier
+but to test whether the original reference signal survives                                                filtering, the recomputed Mann–Whitney minimum-gain value must
+reasonable cross-machine variation.                                                                       remain above the dataset threshold: δi > 0.05.
+                                                                              SWE-fficiency               The official workload and correctness guards must run successfully.
+A. Experiment Design                                                                                      The base mean workload runtime minus the expert-patched mean
+                                                                                                          workload runtime must be larger than twice the post-edit
+Machine selection. To test whether official reference patches                                             workload-runtime standard deviation.
+remain faster than the unoptimized base under common ma-
+chine differences, we use four Google Cloud machine profiles1
+with the same resource configuration: 64 vCPUs and 256GB of                   B. RQ1.1 Replay Evaluability
+memory. This resource configuration also matches the Google
+                                                                                 Results. We first check whether each reference patch replay
+Cloud n2-standard-64 setup reported by GSO and SWE-
+                                                                              completes and returns a usable score. Table IV counts tasks
+fficiency in their original benchmark experiments [10], [12].
+                                                                              that complete in all three rounds on each replay machine. Most
+We therefore anchor the replay campaign in the same cloud
+                                                                              tasks are fully evaluable: GSO has 4/102 tasks that are not
+provider and resource configuration, then vary the processor
+                                                                              evaluable, SWE-Perf has 2/140, and SWE-fficiency has 0/498.
+platform around that baseline. The profiles cover the two main
+server CPU vendors, Intel and AMD, and include both older                                                                                                 (100%)
+                                                                                               Official tasks                                               498 (94%)
+and newer Google Cloud processor generations. This keeps the                             500
+                                                                                               Faster than base                                                  470
+                                                                                               Original-rule valid
+cloud provider and resource configuration fixed while varying                                                                                                              (83%)
+                                                                                                                                                                            411
+                                                                                         400
+the kind of hardware difference that benchmark users are likely
+to encounter in practice (Table II).
+                                                                               # tasks
+                                                                                         300
+
+Experiment setup. We follow each benchmark’s guidance and
+reuse the official tasks, reference patches, selected tests, and                         200
+                                                                                                                                  (100%)
+                                                                                                                                    140
+workload definitions. For each benchmark, we use the latest                                    (100%) (89%)
+                                                                                                 102
+                                                                                         100            91
+public repository version available before our April 30, 2026                                                     (38%)                    (34%)
+                                                                                                                                             48
+                                                                                                                    39                             (8%)
+data-collection cutoff.                                                                   0
+                                                                                                                                                    11
+
+Evaluation metrics. We report two task-level metrics because                                              GSO                          SWE-Perf                 SWE-fficiency
+
+
+reference stability has two layers. Faster-than-base checks
+                                                                              Fig. 1. Task counts after each replay check. Counts require passing all 12
+  1 https://docs.cloud.google.com/compute/docs/general-purpose-machines       machine-round replays (four machines across three rounds).
+
+
+
+
+                                                                          3
+                      Intel Cascade Lake             Intel Emerald Rapids                                           r1          r2              r3
+                      AMD Milan                      AMD Turin
+
+             GSO
+  relative                                                                                                                           0% no change
+  density
+
+
+
+
+              -100%       -90%        -80%        -70%        -60%         -50%          -40%     -30%     -20%      -10%          0%        10%        20%          30%
+                                                                                   Runtime change (%)
+
+
+             SWE-Perf
+  relative                                                                                                                                      0% no change
+  density
+
+
+
+
+              -80%             -70%           -60%              -50%              -40%           -30%       -20%            -10%             0%                10%
+                                                                                   Runtime change (%)
+
+
+             SWE-fficiency
+  relative                                                                                                                                              0% no change
+  density
+
+
+
+
+              -100%         -90%           -80%          -70%          -60%          -50%          -40%      -30%        -20%            -10%          0%            10%
+                                                                                   Runtime change (%)
+
+
+Fig. 2. Reference-patch runtime-change distributions by machine and replay round. Negative values mean the reference patch reduces runtime; positive values
+mean it increases runtime. SWE-Perf concentrates near the zero-change boundary, while GSO and SWE-fficiency show larger runtime reductions.
+
+
+
+                               TABLE IV                                                       C. RQ1.2 Reference Validity Under Replay
+R EPLAY EVALUABILITY. C OMPLETE - BY- MACHINE COUNTS REQUIRE ALL
+   THREE ROUNDS ON N 2/ N 2 D / N 4/ N 4 D TO PRODUCE USABLE SCORES .
+
+        Benchmark         Official    Complete by machine       Not evaluable
+                                                                                                We next apply the two metrics from the experiment design.
+        GSO                 102         99 / 98 / 99 / 99              4
+        SWE-Perf            140       138 / 138 / 138 / 138            2
+                                                                                              The faster-than-base metric only asks whether the reference
+        SWE-fficiency       498       498 / 498 / 498 / 498            0                      patch beats the base commit in every machine-round replay.
+                                                                                              The original-rule valid metric is stricter: it reapplies the
+   GSO failures come from one functional-equivalence failure,                                 benchmark’s own task-inclusion rule. Figure 1 summarizes
+one missing external-data dependency, one image-decoding                                      both results using each benchmark’s official task count as the
+failure, and one x86 64 CPU-instruction portability failure.                                  denominator; not-evaluable tasks remain in that denominator
+SWE-Perf failures come from missing dependencies in the                                       and are counted as not passing the later timing checks.
+evaluation image. SWE-fficiency has no replay-evaluability
+                                                                                                 Results. Figure 1 shows the deficiencies of reference
+failure under our replay setup. We reported all four GSO cases
+                                                                                              patches. A simple runtime check shows that the reference
+and both SWE-Perf cases to the benchmark maintainers.
+                                                                                              patches in only 91/102 GSO tasks, 48/140 SWE-Perf tasks,
+     Finding RQ1.1                                                                            and 470/498 SWE-fficiency tasks ran faster than the base code
+ Most reference optimizations are replayable, but a small                                     across machines. And, reapplying each benchmark’s original
+ number fail because external resources, build/evaluation                                     validity rule leaves only 39, 11, and 411 valid tasks. The drop
+ dependencies, or CPU-specific instructions do not port                                       is the largest for SWE-Perf, where 129 reference patches no
+ across machines.                                                                             longer show statistically supported gain across machines.
+
+
+
+                                                                                          4
+                              TABLE V                                                    reference patches that become slower than the base program
+                 RUNTIME SIGNAL AND REPLAY VARIATION .                                   in at least one machine-round, and reapplying each bench-
+ Benchmark       Tasks   Median runtime change   Median runtime std.   Std./signal       mark’s original construction rule narrows the valid set to 39
+ GSO               98                 -54.20%                3.81pp       0.07×          GSO tasks, 11 SWE-Perf tasks, and 411 SWE-fficiency tasks.
+ SWE-Perf         138                  -0.03%                1.41pp      43.23×          Third, the failures are not explained simply by larger runtime
+ SWE-fficiency    498                 -56.04%                2.41pp       0.04×
+                                                                                         noise. SWE-Perf reference patches cluster near zero runtime
+     Finding RQ1.2
+                                                                                         change, so small timing shifts can erase statistical support;
+                                                                                         GSO and SWE-fficiency usually retain much larger runtime
+ All three benchmarks have reference patches that run slower                             reductions. One likely reason is benchmark construction:
+ than the base program in at least one cross-machine replay;                             SWE-Perf derives efficiency checks from existing repository
+ applying each benchmark’s own construction rule leaves                                  unit tests and accepts reference gains above a 5% thresh-
+ even fewer tasks valid.                                                                 old, whereas GSO and SWE-fficiency rely on more explic-
+D. RQ1.3 Runtime Signal and Replay Variation                                             itly performance-oriented workloads or generated stress tests.
+                                                                                         Future performance-optimization benchmarks should validate
+   We next examine why tasks fail the original-rule check.
+                                                                                         that their workloads stress the optimized path strongly enough
+Because the benchmarks report performance in different units,
+                                                                                         and that accepted reference patches have clear margins over
+we convert every usable replay to a common runtime change
+                                                                                         runtime noise; otherwise, machine-level noise can be mistaken
+percentage. Negative values mean the reference patch runs
+                                                                                         for a patch-level performance difference.
+faster than the base program; positive values mean it runs
+slower. For GSO and SWE-fficiency, replay outputs are                                    IV. RQ2: H OW D O B ENCHMARK S CORING RULES S HAPE
+speedup ratios: a speedup of s means the reference patch runs                                          S UBMISSION R ANKINGS ?
+s times faster than the base program (s = Tbase /Tref ). We
+convert them to runtime change as 1/s−1; for example, 1.20×                                 This section audits how released task-level outputs become
+speedup becomes a −16.7% runtime change. For SWE-Perf,                                   the scores in leaderboard rankings. The goal is to separate two
+the benchmark already reports a significance-aware runtime-                              effects: what submitted patches did on individual tasks, and
+reduction score; we only flip its sign so that faster reference                          how each benchmark scoring rule weights those outcomes into
+patches are negative on the shared runtime-change scale.                                 one leaderboard score.
+   Table V reports both signal size and replay variation [14]–
+                                                                                         A. Experiment Design
+[16]. The median runtime change shows how far the reference
+patch is from no change, while the within-task standard                                  Benchmark selection. We include benchmarks that expose
+deviation shows how much the 12 machine-round replays vary.                              the artifacts needed for a metric audit: public submissions,
+We also report std./signal = median std./|median change|;                                per-task evaluation outcomes, and the final score used to rank
+larger values mean replay variation is large relative to the                             submissions. As of our April 30, 2026 data-collection cutoff,
+measured speed change.                                                                   GSO and SWE-fficiency released such public ranking data.
+   Results. The table rules out a simple “more machine noise”                            SWE-Perf did not have comparable public agent-output data,
+explanation for SWE-Perf. Its median within-task standard                                so it is excluded from this analysis.
+deviation is 1.41 percentage points, lower than GSO and SWE-                             Scoring rules. To interpret rank shifts, the scoring rule must
+fficiency. The problem is signal size: the median SWE-Perf                               be stated at the task level: what does one task contribute to
+runtime change is only -0.03%, so even small timing shifts                               a submission’s final score? The answer differs sharply across
+can cross zero or lose statistical support. Figure 2 shows the                           the two benchmarks.
+same pattern: 101/138 SWE-Perf tasks have median changes                                 GSO (binary reference-level gate). A submitted patch is
+within five percentage points of zero. In contrast, GSO and                              counted as either a success or a failure [10]. For a submission
+SWE-fficiency have much larger median runtime reductions,                                m over N tasks, the submission score is
+so similar or larger absolute replay variation rarely changes                                                        #reference-level successes
+the task-level conclusion.                                                                     OPT@1(m) = 100 ·                                 .
+                                                                                                                                 N
+     Finding RQ1.3
+                                                                                         A reference-level success is a correct submitted patch whose
+ SWE-Perf replay failures are mainly a small-signal prob-                                speedup matches or exceeds the official reference patch.
+ lem: its reference patches cluster near no runtime change,
+                                                                                         • Reward. A correct reference-level patch adds one success,
+ while GSO and SWE-fficiency reference patches usually
+                                                                                           worth at most 100/N score points. For GSO’s 102 tasks,
+ have larger speedup margins.
+                                                                                           one more success is worth 0.98 points.
+E. RQ1 Summary                                                                           • Penalty. An incorrect or below-reference patch adds zero
+
+  The cross-machine replay gives a three-step answer. First,                               successes; it loses 100/N points. Correct but below-
+most reference patches are runnable across machines, so the                                reference speedups receive no partial credit.
+main issue is not basic evaluability. Second, runnable does                              SWE-fficiency (SpeedUp Ratio with harmonic mean). In-
+not imply benchmark-valid: all three benchmarks contain                                  stead of a binary gate, SWE-fficiency compares the submitted
+
+
+
+                                                                                     5
+patch’s speedup with the reference patch’s speedup [12]. Its                                           TABLE VI
+task score is the SpeedUp Ratio (SR):                                                  O FFICIAL RANKS FOR SHARED SUBMISSIONS .
+
+                              speedupm,i                                             Model label                 GSO          SWE-fficiency Move
+                   SRm,i =                .
+                             speedupref,i                                                                  Rank Score Rank             Score
+                                                                                     Claude Opus 4.6             1    41.18       3   0.1553       ↓2
+A value below 1 means the submitted patch is slower than the                         GPT-5.2                     2    27.45       4   0.1482       ↓2
+reference patch; a value above 1 means it beats the reference                        Claude Opus 4.5             3    26.47       1   0.2250       ↑2
+                                                                                     Gemini 3 Pro                4    18.63       7   0.1024       ↓3
+patch on that workload. The released task outputs treat failed                       Claude Sonnet 4.5           5    14.71       5   0.1162        –
+or incorrect patches as no effective edit, which can place them                      Gemini 3 Flash              6     9.80       6   0.1056        –
+                                                                                     GPT-5                       7     6.86       2   0.1571       ↑5
+far below the reference patch. The benchmark aggregates SR                           Gemini 2.5 Pro              8     3.92       8   0.0313        –
+values with a harmonic mean [25], [26] after flooring each SR                         Note. Move is GSO rank → SWE-fficiency rank.
+at 0.001:
+                                     N                                makes agreement weaker than the official comparison and
+            HM(m) = P                              .
+                           i 1/ max(SRm,i , 0.001)
+                                                                      flips more pairs, which suggests that the harmonic scoring rule
+                                                                      itself is a sensitive part of the benchmark. We therefore treat
+Here, each task contributes 1/ti to the denominator, where
+                                                                      these rescoring results as diagnostics rather than replacement
+ti = max(SRm,i , 0.001). Lower denominator means higher
+                                                                      rankings. They show that scoring rules affect the ordering,
+final score.
+                                                                      while the task set and per-task outputs also matter (Table VII).
+• Reward. A task that matches the reference patch has
+  SR = 1 and contributes one denominator unit. If it beats the                                   TABLE VII
+  reference patch with SR = s > 1, it contributes only 1/s,            S CORING - RULE DIAGNOSTICS FOR THE EIGHT SHARED SUBMISSIONS .
+  so the reward is 1 − 1/s denominator units. For example,             Comparison                                    Spearman corr.   Pair flips    Rank movement
+  SR = 2 saves 0.5 units and SR = 10 saves 0.9 units; the              Official GSO vs. official SWE-fficiency                0.452       9/28      max 5
+  reward is capped below one unit.                                     Both with GSO scoring                                  0.762       6/28      max 3
+                                                                       Both with SWE-fficiency scoring                        0.238      11/28      max 5
+• Penalty. A below-reference task exceeds the SR = 1
+                                                                       Note. Spearman corr. compares the two rank orderings (-1 reverse, 1 identical) [27],
+  baseline by 1/SR − 1 denominator units: SR = 0.5 adds                [28]; pair flips count disagreements among the 28 unique head-to-head pairs.
+  1, SR = 0.01 adds 99, and the official floor f = 0.001
+  adds 999. In the 498-task SWE-fficiency evaluation, one                  Finding RQ2.1
+  floor-level task can outweigh a full reference-matching              The same submissions can rank differently across perfor-
+  denominator.                                                         mance benchmarks because scoring rules decide which task
+B. RQ2.1 Cross-Benchmark Metric Sensitivity                            outcomes count and how strongly they shape the final order.
+   We first ask whether the shared public submissions rank            C. RQ2.2 Low-Speedup Tail Dominance
+similarly across the two benchmarks, and whether the
+strong/weak judgments change when the same task outputs are              The scoring-rule comparison above suggests that SWE-
+scored by another benchmark’s rule. The comparison uses the           fficiency’s harmonic scoring rule deserves a closer audit. The
+eight public submissions that appear on both GSO and SWE-             concern is not simply that low-SR tasks receive low scores.
+fficiency. For each benchmark’s released per-task outputs, we         In a harmonic mean, each task enters the denominator as
+keep the outputs fixed and change only the aggregation rule:          1/ max(SR, 0.001), so a very low-SR task can have much
+SWE-fficiency outputs are rescored with the GSO reference-            more leverage than a typical task. To measure this leverage
+level gate, and available GSO outputs are rescored with SWE-          directly, we compute each task’s share of the score denomi-
+fficiency’s harmonic rule.                                            nator,
+                                                                                             1/ max(SRi , 0.001)
+   Results. The official ranks are not stable
+                                          across benchmarks.                         wi = P                        ,
+The eight shared submissions form 82 = 28 unique head-to-                                     j 1/ max(SRj , 0.001)
+
+head pairs when each pair is compared once; the two official          then sort tasks by wi within each shared submission and ask
+leaderboards disagree on 9 of them, and the GPT-5-labeled             how much score weight is carried by the worst 1, 5, and 10
+submission moves by five positions (Table VI).                        tasks.
+   Changing only the scoring rule explains part, but not all,            Results. Figure 3 shows that Worst-1 tasks carry 6.3–33.6%,
+of the mismatch. Re-aggregating the same SWE-fficiency                worst-5 tasks carry 31.4–73.1%, and worst-10 tasks carry
+task outputs with a GSO-style reference-level pass rate raises        58.5–82.8% of the official score denominator. This is large
+Spearman rank correlation with GSO from 0.452 to 0.762 and            for a 498-task benchmark: a small set of low-SR tasks can
+reduces discordant pairs from 9 to 6. In the other direction,         explain most of the aggregate score weight. For example, one
+applying SWE-fficiency’s harmonic scoring to available GSO            near-floor task in Claude Opus 4.5 has raw SR 0.00134 and
+per-task submission reports gives a Spearman rank corre-              carries 33.6% of the submission’s score weight.
+lation of 0.238 against the official SWE-fficiency ranking               This does not mean severe slowdowns should be ignored.
+and flips 11/28 head-to-head pairs. This second rescoring             Penalizing them is a reasonable benchmark choice. The issue
+
+
+
+                                                                  6
+                                                                                                              TABLE VIII
+                                 Worst 1    Worst 5   Worst 10
+                                                                                          B OUNDED - PENALTY DIAGNOSTIC WITH FLOOR f = 0.5.
+     Opus 4.5
+                                                                                 Rank Model                    Move Official HM HM (f = 0.5) Med. SR # SR>1
+        GPT-5
+                                                                                    1 Claude Opus 4.6             ↑2       0.1553            0.952     1.006    258
+     Opus 4.6
+                                                                                    2 GPT-5.2                     ↑2       0.1482            0.944     1.004    259
+                                                                                    3 Claude Opus 4.5             ↓2       0.2250            0.904     0.986    212
+      GPT-5.2                                                                       4 Gemini 3 Pro                ↑3       0.1024            0.888     0.993    235
+                                                                                    5 GPT-5                       ↓3       0.1571            0.867     0.950    228
+   Sonnet 4.5                                                                       6 Gemini 3 Flash               –       0.1056            0.818     0.919    185
+                                                                                    7 Claude Sonnet 4.5           ↓2       0.1162            0.767     0.858    164
+  Gemini Flash                                                                      8 Gemini 2.5 Pro               –       0.0313            0.613     0.497     38
+
+   Gemini Pro                                                                    Note. Move is relative to the official SWE-fficiency rank (floor f = 0.001).
+
+   Gemini 2.5
+                                                                                 order depends on the penalty budget given to one bad task,
+                 0         25              50          75           100          which readers should keep in mind when interpreting the score.
+                                  Score weight (%)
+                                                                                      Finding RQ2.3
+
+Fig. 3. Score weight of the worst 1, 5, and 10 tasks under SWE-fficiency’s
+                                                                                  Changing the single-task penalty cap reshuffles the SWE-
+harmonic mean.                                                                    fficiency leaderboard: 6/8 ranks move and 8/28 pairwise
+                                                                                  orders flip. Leaderboard scores reflect both submission
+is interpretability: when 10 tasks carry more than half of the                    performance and penalty design.
+denominator, the official harmonic mean behaves partly as
+a metric driven by the worst tasks. A rank difference may                        E. RQ2 Summary
+therefore reflect broad performance across the benchmark, or                        Taken together, the ranking results do not directly measure
+it may mostly reflect a few near-floor failures. This distinction                agent capability. They combine what submissions did on
+matters when interpreting the ranking.                                           individual tasks with how the benchmark turns those task
+                                                                                 outcomes into one leaderboard score. Among the eight shared
+     Finding RQ2.2
+                                                                                 submissions, the official GSO and SWE-fficiency rankings
+ SWE-fficiency’s final score is dominated by a few very                          disagree on 9 of the 28 pairwise orders. When the same
+ low-speedup tasks: the worst ten tasks carry 58.5–82.8%                         task outputs are re-scored with another rule, ranks still move,
+ of score weight, and one near-floor task can carry one third                    showing that both task outcomes and scoring design shape
+ of a submission’s score weight.                                                 the final order. The clearest difference is how much one bad
+                                                                                 task can hurt a submission. GSO gives each task one equal
+                                                                                 success/failure vote. SWE-fficiency uses continuous speedup
+D. RQ2.3 Exploring Reasonable Penalty Bounds
+                                                                                 ratios, but its harmonic mean with a 0.001 floor can let a
+   After measuring tail dominance, we ask how large the                          few near-zero tasks dominate the final score: the worst ten
+penalty for one slow or invalid task should be. The official                     tasks carry 58.5–82.8% of score weight. When we cap the
+SWE-fficiency floor f = 0.001 allows one near-zero SpeedUp                       maximum damage from one task, 6/8 ranks move and 8/28
+Ratio (SR) task to contribute 1000 denominator units, or 999                     pairwise comparisons flip. Thus, SWE-fficiency is best read
+more than an SR = 1 reference-matching task. In a 498-                           as a strict, tail-sensitive score: its leaderboard reflects both
+task benchmark, this means one severe failure can dominate                       submission behavior and the metric’s penalty design.
+many ordinary tasks, making the leaderboard score hard to                        V. RQ3: D O B ENCHMARK TASKS R EMAIN H ARD FOR T OP
+interpret. We therefore explore a simple bounded-penalty diag-                                          S UBMISSIONS ?
+nostic: keep harmonic aggregation, but make the largest below-
+                                                                                    In practice, current agent systems often use multi-agent
+reference penalty comparable to the largest possible above-
+                                                                                 workflows rather than relying on a single run [24], [29]–[31].
+reference reward. Because the harmonic reward is capped
+                                                                                 However, the public leaderboards we analyze rank individual
+below one denominator unit, we cap the extra penalty at one
+                                                                                 OpenHands-based submissions, each pairing the agent scaffold
+unit as well. This corresponds to raising the floor to 0.5: a
+                                                                                 with one underlying model [2]. This mismatch matters because
+very low-SR task contributes at most two denominator units,
+                                                                                 different submissions may solve different tasks. We therefore
+only one more than a neutral task. This probes how rankings
+                                                                                 look across 10 public submissions for each replay-valid task
+change when slow tasks are penalized but cannot dominate.
+                                                                                 and ask whether any submission reaches the reference patch.
+   Results. Table VIII shows that this design choice changes                     This gives an optimistic estimate of how many tasks are
+six of eight submission ranks and flips 8/28 pairwise sub-                       covered by at least one strong public submission; it does not
+mission orders relative to the official SWE-fficiency ranking.                   mean that one submission reaches the reference on all of them.
+With the cap, ranks become closer to median SR and above-
+reference task counts: Claude Opus 4.6 and GPT-5.2 move                          A. RQ3.1 How Many Tasks Remain Below Reference?
+above Claude Opus 4.5, while GPT-5 drops. The point is not                          The first step checks the replay-valid task subset: 39 GSO
+that f = 0.5 is the right constant. It is that the leaderboard                   tasks and 411 SWE-fficiency tasks. SWE-Perf is excluded
+
+
+
+                                                                             7
+            Correct patch          Beats base          Matches/beats ref.                                                    Best/ref. speedup
+                                                                                                                 <10%       10-50%       50-90%         90-100%
+                                                       86.1%
+  SWE-fficiency                                             99.8%                     SWE-fficiency (n=57)        8          21                   27
+                                                            100.0%
+
+
+                                                                                                 GSO (n=9)    2 6
+                                                  76.9%
+           GSO                                              100.0%                                           0        10     20      30      40        50
+
+                                                            100.0%                                          Reference-level misses by best/ref. speedup
+
+                  0       20     40      60       80      100
+                                                                                    Fig. 5. Best public patch speed relative to the reference patch for the 66 tasks
+                      Tasks covered by any top-10 run (%)                           that do not reach reference-patch speed.
+
+Fig. 4. Task outcomes across 10 public submissions on the replay-valid subset       it. For SWE-fficiency, the median is 87.9%, leaving 1.14×.
+(39 GSO, 411 SWE-fficiency tasks).                                                  Many tasks are near the reference: 27 SWE-fficiency tasks
+                                                                                    reach 90–100% of the reference patch’s speedup. The tail still
+because it has only 11 replay-valid tasks and no comparable                         matters, however: 8 SWE-fficiency tasks reach only 10–50%
+released public agent-solution data. For each task, we look                         and one is below 10%.
+across 10 public submissions and record whether at least one
+                                                                                         Finding RQ3.2
+submission reaches three milestones: passing tests, beating
+the unmodified base program, and matching or beating the                             Remaining tasks are rarely complete failures: all have a
+reference patch.                                                                     correct public patch, 65/66 beat the base program, and
+   Results. Figure 4 shows that test passing and base-program                        the median best patch reaches 85.3%/87.9% of reference
+speedup are nearly complete when we look across 10 public                            speedup on the two benchmarks.
+submissions. Every replay-valid GSO and SWE-fficiency task
+has at least one passing public patch, and 449/450 tasks have                       C. RQ3.3 Does the Hard Tail Require the Reference Strategy?
+a passing patch that beats the base program. The remaining                             The previous results show that the remaining tasks are often
+signal appears only at the stricter reference-level gate: at least                  not basic correctness failures: the best public patch usually
+one of the 10 public submissions matches the reference on                           passes tests and improves runtime, but still trails the reference
+384/450 tasks, leaving 66 tasks not reaching reference speed,                       patch. A natural hypothesis is that strategy choice explains this
+9/39 for GSO and 57/411 for SWE-fficiency.                                          gap. If high performance depends on targeting the right hot
+     Finding RQ3.1
+                                                                                    operation or using the right optimization mechanism, public
+                                                                                    patches that use a different strategy from the reference patch
+ Across 10 public submissions, most replay-valid tasks al-                          should leave larger speedup gaps. This subsection explores
+ ready have a strong public solution: 384/450 match or beat                         that hypothesis by comparing each best public patch with its
+ the reference patch, all 450 have a passing patch, and only                        reference patch. The reference is a diagnostic baseline, not an
+ 66 remain below reference.                                                         imitation target: a different strategy is acceptable if it reaches
+                                                                                    similar speedup.
+B. RQ3.2 Are the Remaining Tasks Truly Unsolved?                                       Annotation method. For each of the 66 tasks that still do not
+   The 66 tasks that still do not reach the reference-patch                         reach reference speed, we compare the reference patch with
+speed could be genuinely unsolved, or they could already                            the best public patch defined above. We use the high-level
+have useful public patches that are simply not as fast as the                       optimization categories from Peng et al.’s taxonomy [32], [33].
+reference patch. For each task, we inspect the best public                          We reuse their automated annotation script with GPT-5.5 as
+patch: among the 10 public submissions, the patch with the                          the annotation model to assign one category to each reference
+largest replayed speedup relative to the reference patch. Every                     patch and each best public patch. We schema-check the labels,
+task has a correct public patch, 65/66 already run faster than                      join them into reference-vs.-public pairs, and mark whether the
+the base program, and only one task has a best patch that                           best public patch uses the same category, a different category,
+passes tests without improving runtime. Individual attempts                         or no visible production optimization. We report both category
+still fail, but this task-level selection removes most task-level                   alignment and the remaining gap, measured as best-public
+blockers: across the 660 attempts behind these 66 tasks, 160                        speedup divided by reference-patch speedup. We manually
+fail functionality or validation, 3 do not complete, and 46 pass                    sanity-check the labels against patch diffs.
+correctness without improving runtime.                                                 Results. Table IX shows both the shape of the remaining
+   Results. Figure 5 shows that most remaining tasks are close                      tasks and how often the best public patch matches the ref-
+to the reference patch rather than broken outright. For GSO,                        erence category. Algorithm reference patches are the largest
+the best public patch reaches a median 85.3% of the reference                       group and are matched most often (21/31). Structure is split
+patch’s speedup and would need 1.17× more speedup to match                          (7/16 matched), while memory-heavy reference patches are
+
+
+
+                                                                                8
+                                  TABLE IX
+
+
+
+
+                                                                                         Best public/reference speedup (%)
+                     R EFERENCE - CATEGORY ALIGNMENT.                                                                        100
+                                                                                                                                                   90% near-ref.
+
+
+      Reference category          Ref. pairs   Same cat.         Diff. cat.                                                   80
+
+      Algorithm                           31        21/31             10/31
+      Structure                           16         7/16              9/16                                                   60
+                                                                                                                                                   50% half-ref.
+      Memory                              12         3/12              9/12
+      Build                                3          0/3               3/3                                                   40
+      Control                              3          1/3               2/3
+      Data struct.                         1          0/1               1/1
+                                                                                                                              20
+      Total                               66        32/66             34/66
+                                                                                                                               0
+usually approached through another category (9/12 different).                                                                      Same category                   Different category
+                                                                                                                                      (n=32)                             (n=32)
+Overall, 32/66 best public patches use the same high-level
+category as the reference patch, and 34/66 use a different                             Fig. 7. Best public/reference speedup by high-level strategy alignment.
+category or show no visible production optimization.
+                                                                                     passing public patch, and 449 have a patch that beats the
+                                            Best/reference                           base program. The remaining 66 tasks are therefore not mostly
+                              <10%        10-50%      50-90%          90-100%        basic correctness failures. They usually already have a correct
+                                                                                     and runtime-improving public patch, with median best-patch
+     Same category (n=32)         4       12                16                       speed reaching 85.3% of the reference speedup on GSO and
+                                                                                     87.9% on SWE-fficiency.
+                                                                                        The remaining speed gap also does not appear to be mainly
+  Different category (n=32)           6        14                11
+                                                                                     a broad strategy-selection problem. In 32/66 tasks, the best
+                                                                                     public patch uses the same high-level optimization category
+                              0           10         20               30
+                              Pairs by best/ref. patch speedup band
+                                                                                     as the reference patch; in 11 more, a different category still
+                                                                                     reaches 90–100% of the reference speedup. This suggests
+                                                                                     that public submissions often identify a useful performance
+Fig. 6. Best public/reference speedup ranges by high-level category alignment.
+                                                                                     direction, not merely a passing edit. What remains is deeper
+   Figures 6 and 7 compare the remaining speed gap by cate-                          optimization after the first correct speedup: without seeing the
+gory alignment. For this speedup comparison, we exclude the                          reference patch, the runs may stop short of the extra iteration
+two cases without visible production optimization, leaving 32                        needed to reach reference-patch speed.
+same-category and 32 different-category public optimizations.
+Same-category patches are closer to the reference on median                                                                             VI. D ISCUSSION
+(89.8% vs. 81.1%; remaining multiplier 1.12× vs. 1.23×),                                Our results suggest three practical implications for reading
+but the two groups overlap substantially: 16/32 same-category                        and designing performance-optimization benchmarks.
+cases still remain below 90% of the reference speedup, while                            For benchmark users: separate signal from measure-
+11/32 different-category cases reach 90–100%. Same-category                          ment design. Leaderboard scores are useful, but our results
+cases even include four below-50% gaps. Category alignment                           show that current benchmark scores should not be read as
+is therefore only a partial signal, not a sufficient condition for                   direct labels of agent capability. RQ1 shows that reference-
+near-reference performance. The remaining gap often reflects                         patch evidence can change across machines, especially when
+implementation depth: agents often find a useful optimization                        the runtime gain is close to zero. This means a reported
+idea but do not apply it broadly or carefully enough to match                        optimization can be hard to distinguish from runtime noise.
+the reference patch.                                                                 RQ2 shows a second layer of interpretation: even when task
+     Finding RQ3.3                                                                   outputs are fixed, the aggregation rule can decide how much
+                                                                                     one bad task matters. Under SWE-fficiency’s leaderboard
+ Optimization strategy mismatch is not the main reason tasks
+                                                                                     scoring rule, a few low-speedup tasks can account for most
+ stay below reference: among 66 tasks, 32 same-category
+                                                                                     of the score weight, so a rank difference may reflect broad
+ public patches remain slower, while 11 different-category
+                                                                                     task performance, a small set of severe failures, or both.
+ patches reach 90–100% of reference speed.
+                                                                                     Users of these benchmarks should therefore look beyond the
+                                                                                     leaderboard rank. At minimum, reports should distinguish
+D. RQ3 Summary                                                                       cross-machine verified tasks from unstable tasks, show per-
+   Looking across 10 public submissions shows that many                              task score weight, and compare submissions under aggregation
+replay-valid GSO and SWE-fficiency tasks are already solved                          rules that match the use case. For some users, strong worst-
+by at least one public submission. Across 450 tasks, 384                             case penalties are appropriate; for others, median-speedup or
+already match or beat the reference patch, all 450 have a                            reference-level coverage is more informative.
+
+
+
+                                                                                 9
+   For agent builders: interpret multi-agent gains at the                  configuration. Future underlying models, agent scaffolds, hard-
+task level. A single submitted run remains a valid and strict              ware, and benchmark policies may change the exact counts.
+competition setting, but it is not the same as asking how many             Data construction validity. We rely on each benchmark’s
+tasks today’s public submission outputs still leave unsolved.              released tasks, reference patches, public submissions, and
+RQ3 shows that, on the replay-valid GSO and SWE-fficiency                  scoring records. SWE-Perf is excluded from the metric and
+tasks, at least one of the 10 public submissions already                   RQ3 task analyses because comparable public agent-output
+reaches the reference patch on 384/450 tasks, and almost                   artifacts were unavailable.
+every remaining task has a correct patch that is faster than
+the base program. This matters for multi-agent workflows that                                 VIII. R ELATED W ORK
+can draw on several agent configurations [34], [35]. If a new                 Code-efficiency benchmarks have expanded from small
+agent configuration is evaluated only by making more tasks                 code units to full repositories. PIE studies performance-
+reach the reference patch, the remaining room is narrow and                improving edits, while EffiBench, Mercury, ENAMEL, ECCO,
+the measured improvement may depend heavily on a small                     EvalPerf/DPE, and ACECode evaluate whether generated
+set of tasks. This does not make the benchmarks useless;                   or revised code remains correct while improving effi-
+it changes what they are good for. They are still useful for               ciency [4]–[6], [37]–[41]. COFFE adds function- and file-
+studying the last step from “faster than base” to “as fast as              level tracks, while EffiBench-X, KernelBench, AlgoTune,
+the reference patch,” but less suitable as the only evidence of            and PerfCodeBench broaden evaluation across languages,
+general performance-engineering ability.                                   GPU kernels, numerical programs, and system-level high-
+   For future benchmark designers: move closer to the                      performance code [7], [42]–[45]. At the repository and project
+full performance engineering problem. Current benchmarks                   level, GSO, SWE-Perf, and SWE-fficiency evaluate edits
+provide executable workloads and reproducible task artifacts,              to real repositories with executable workloads, reference
+but they often simplify the task by exposing the optimized                 patches, and benchmark-specific metrics [10]–[12]. PerfBench,
+code region, workload, or stress test to the agent. Production             PEACE/PeacExec, ISO-Bench, FormulaCode, and CppPerf
+performance work usually starts earlier: engineers inspect                 respectively cover real-world performance bugs, project-level
+profiles, flame graphs, traces, latency breakdowns, or dash-               efficiency optimization with hybrid editing, inference work-
+boards, then choose which hot operation in a large codebase is             loads, large-codebase agent optimization, and performance-
+worth changing, infer which measurement matters, and judge                 improving C++ commits [46]–[50]. Together, these bench-
+whether a local edit will help the real workload without a                 marks show a clear shift from function-level efficiency to
+ready-made stress test for immediate feedback. Future bench-               repository-scale performance engineering [51]–[53].
+marks should preserve executable replay while adding this                     In contrast, we do not introduce another benchmark or
+diagnostic layer: hotspot localization from profiles or traces,            report a new agent leaderboard. We audit the released artifacts
+ambiguous optimization targets, validation against workloads               behind existing repository-level benchmarks: whether official
+not fully visible during patch search, and resource metrics                reference patches replay reliably, how scoring rules change
+beyond one runtime number. CPU time, latency, allocation                   public-submission rankings, and which replay-valid tasks still
+behavior, memory footprint, and regression risk all matter,                separate public submissions from reference patches.
+and optimizing one can hurt another [36]. The goal is not
+to discard today’s benchmarks, but to make the next ones test                                   IX. C ONCLUSION
+a harder workflow: finding the bottleneck, choosing a justified               Performance-optimization benchmarks now influence how
+optimization, implementing it across the right code paths, and             coding agents are judged, but their scores are not self-
+proving that it improves the workload that matters.                        explanatory. Our audit of three recent repository-level bench-
+                                                                           marks shows why. After replaying 740 official reference
+                 VII. T HREATS TO VALIDITY                                 patches across four cloud machines and three rounds, only
+Internal validity. Our replays and metric recomputations may               39/102 GSO tasks, 11/140 SWE-Perf tasks, and 411/498 SWE-
+still be affected by implementation choices, hardware varia-               fficiency tasks kept their original validity signal in every
+tion, and released artifact quality. The replay analysis therefore         replay. Leaderboard ranks also depend on the scoring rule:
+uses a strict all-replay rule: a task is replay-valid only when the        among the eight public submissions shared by GSO and SWE-
+reference patch satisfies the benchmark’s original construction            fficiency, the official rankings disagree on 9/28 pairwise or-
+rule in all 12 machine-round replays. This conservative rule               ders, and the worst ten low-speedup SWE-fficiency tasks carry
+may undercount usable tasks, but it protects later analyses from           58.5%–82.8% of the score weight. Finally, many replay-valid
+unstable reference signals.                                                tasks are already covered by at least one public submission:
+External validity. The results cover three recent repository-              384/450 match or beat the reference patch, and 449/450 beat
+level performance-optimization benchmarks and specific pub-                the base program. For the remaining tasks, the problem is
+lic leaderboard snapshots, not all coding-agent or performance-            usually not finding any working optimization, but closing the
+engineering settings. Our analysis across 10 public submis-                last speedup gap to the reference patch.
+sions is also a task-coverage proxy, not a newly engineered                   The next generation of performance-optimization bench-
+multi-agent workflow or a claim about any single submitted                 marks should therefore test more than patching a pre-specified
+
+
+
+                                                                      10
+entry point under a fixed workload. They should ask agents to                          [14] A. Georges, D. Buytaert, and L. Eeckhout, “Statistically rigorous
+reason from performance symptoms or profiles, choose opti-                                  java performance evaluation,” in Proceedings of the 22nd annual
+                                                                                            ACM SIGPLAN conference on Object-oriented programming systems,
+mization targets, and validate runtime improvements together                                languages and applications, ser. OOPSLA07. ACM, Oct. 2007, pp.
+with memory, latency, and other resource costs.                                             57–76. [Online]. Available: http://dx.doi.org/10.1145/1297027.1297033
+                                                                                       [15] T. Mytkowicz, A. Diwan, M. Hauswirth, and P. F. Sweeney,
+                              R EFERENCES                                                   “Producing wrong data without doing anything obviously wrong!”
+                                                                                            in Proceedings of the 14th international conference on Architectural
+ [1] J. Yang, C. Jimenez, A. Wettig, K. Lieret, S. Yao, K. Narasimhan,                      support for programming languages and operating systems, ser.
+     and O. Press, “SWE-agent: Agent-computer interfaces enable automated                   ASPLOS09. ACM, Mar. 2009, pp. 265–276. [Online]. Available:
+     software engineering,” in Advances in Neural Information Processing                    http://dx.doi.org/10.1145/1508244.1508275
+     Systems, A. Globerson, L. Mackey, D. Belgrave, A. Fan, U. Paquet,                 [16] T. Kalibera and R. Jones, “Rigorous benchmarking in reasonable time,”
+     J. Tomczak, and C. Zhang, Eds., vol. 37. Curran Associates, Inc.,                      in Proceedings of the 2013 international symposium on memory man-
+     2024, pp. 50 528–50 652.                                                               agement, ser. ISMM ’13. ACM, June 2013, pp. 63–74.
+ [2] X. Wang, B. Li, Y. Song, F. F. Xu, X. Tang, M. Zhuge, J. Pan,                     [17] J. Liu, K. Wang, Y. Chen, X. Peng, Z. Chen, L. Zhang, and Y. Lou,
+     Y. Song, B. Li, J. Singh, H. H. Tran, F. Li, R. Ma, M. Zheng, B. Qian,                 “Large language model-based agents for software engineering: A
+     Y. Shao, N. Muennighoff, Y. Zhang, B. Hui, J. Lin, R. Brennan,                         survey,” ACM Transactions on Software Engineering and Methodology,
+     H. Peng, H. Ji, and G. Neubig, “OpenHands: An open platform for AI                     Mar. 2026. [Online]. Available: http://dx.doi.org/10.1145/3796507
+     software developers as generalist agents,” in The Thirteenth International        [18] Y. Wang, W. Zhong, Y. Huang, E. Shi, M. Yang, J. Chen,
+     Conference on Learning Representations, 2025.                                          H. Li, Y. Ma, Q. Wang, and Z. Zheng, “Agents in software
+ [3] Y. Zhang, H. Ruan, Z. Fan, and A. Roychoudhury, “Autocoderover:                        engineering: survey, landscape, and vision,” Automated Software
+     Autonomous program improvement,” in Proceedings of the 33rd ACM                        Engineering, vol. 32, no. 2, Aug. 2025. [Online]. Available:
+     SIGSOFT International Symposium on Software Testing and Analysis,                      http://dx.doi.org/10.1007/s10515-025-00544-2
+     ser. ISSTA ’24. ACM, September 2024, pp. 1592–1604. [Online].                     [19] Z. Chen and L. Jiang, “Evaluating software development agents:
+     Available: http://dx.doi.org/10.1145/3650212.3680384                                   Patch patterns, code quality, and issue complexity in real-world
+ [4] A. G. Shypula, A. Madaan, Y. Zeng, U. Alon, J. R. Gardner, Y. Yang,                    github scenarios,” in 2025 IEEE International Conference on Software
+     M. Hashemi, G. Neubig, P. Ranganathan, O. Bastani, and A. Yazdan-                      Analysis, Evolution and Reengineering (SANER). IEEE, Mar. 2025,
+     bakhsh, “Learning performance-improving code edits,” in The Twelfth                    pp. 657–668. [Online]. Available: http://dx.doi.org/10.1109/SANER64
+     International Conference on Learning Representations, 2024.                            311.2025.00068
+ [5] D. Huang, Y. Qing, W. Shang, H. Cui, and J. Zhang, “EffiBench: Bench-             [20] M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. d. O. Pinto, J. Kaplan,
+     marking the efficiency of automatically generated code,” in Advances                   H. Edwards, Y. Burda, N. Joseph, G. Brockman, A. Ray, R. Puri,
+     in Neural Information Processing Systems, A. Globerson, L. Mackey,                     G. Krueger, M. Petrov, H. Khlaaf, G. Sastry, P. Mishkin, B. Chan,
+     D. Belgrave, A. Fan, U. Paquet, J. Tomczak, and C. Zhang, Eds., vol. 37.               S. Gray, N. Ryder, M. Pavlov, A. Power, L. Kaiser, M. Bavarian,
+     Curran Associates, Inc., 2024, pp. 11 506–11 544.                                      C. Winter, P. Tillet, F. P. Such, D. Cummings, M. Plappert, F. Chantzis,
+ [6] M. Du, L. A. Tuan, B. Ji, Q. Liu, and S.-K. Ng, “Mercury: A code                       E. Barnes, A. Herbert-Voss, W. H. Guss, A. Nichol, A. Paino, N. Tezak,
+     efficiency benchmark for code large language models,” in Advances                      J. Tang, I. Babuschkin, S. Balaji, S. Jain, W. Saunders, C. Hesse,
+     in Neural Information Processing Systems, A. Globerson, L. Mackey,                     A. N. Carr, J. Leike, J. Achiam, V. Misra, E. Morikawa, A. Radford,
+     D. Belgrave, A. Fan, U. Paquet, J. Tomczak, and C. Zhang, Eds., vol. 37.               M. Knight, M. Brundage, M. Murati, K. Mayer, P. Welinder,
+     Curran Associates, Inc., 2024, pp. 16 601–16 622.                                      B. McGrew, D. Amodei, S. McCandlish, I. Sutskever, and W. Zaremba,
+ [7] Y. Peng, J. Wan, Y. Li, and X. Ren, “COFFE: A code efficiency                          “Evaluating large language models trained on code,” 2021. [Online].
+     benchmark for code generation,” Proc. ACM Softw. Eng., vol. 2, no.                     Available: https://arxiv.org/abs/2107.03374
+     FSE, pp. 242–265, 2025.
+                                                                                       [21] E. Nijkamp, B. Pang, H. Hayashi, L. Tu, H. Wang, Y. Zhou,
+ [8] J. Austin, A. Odena, M. Nye, M. Bosma, H. Michalewski, D. Dohan,
+                                                                                            S. Savarese, and C. Xiong, “Codegen: An open large language
+     E. Jiang, C. Cai, M. Terry, Q. Le, and C. Sutton, “Program
+                                                                                            model for code with multi-turn program synthesis,” in The Eleventh
+     synthesis with large language models,” 2021. [Online]. Available:
+                                                                                            International Conference on Learning Representations, 2023. [Online].
+     https://arxiv.org/abs/2108.07732
+                                                                                            Available: https://openreview.net/forum?id=iaYcJKpY2B
+ [9] Y. Li, D. Choi, J. Chung, N. Kushman, J. Schrittwieser, R. Leblond,
+                                                                                       [22] B. Rozière, J. Gehring, F. Gloeckle, S. Sootla, I. Gat, X. E. Tan,
+     T. Eccles, J. Keeling, F. Gimeno, A. Dal Lago, T. Hubert, P. Choy,
+                                                                                            Y. Adi, J. Liu, R. Sauvestre, T. Remez, J. Rapin, A. Kozhevnikov,
+     C. de Masson d’Autume, I. Babuschkin, X. Chen, P.-S. Huang,
+                                                                                            I. Evtimov, J. Bitton, M. Bhatt, C. C. Ferrer, A. Grattafiori, W. Xiong,
+     J. Welbl, S. Gowal, A. Cherepanov, J. Molloy, D. J. Mankowitz,
+                                                                                            A. Défossez, J. Copet, F. Azhar, H. Touvron, L. Martin, N. Usunier,
+     E. Sutherland Robson, P. Kohli, N. de Freitas, K. Kavukcuoglu,
+                                                                                            T. Scialom, and G. Synnaeve, “Code llama: Open foundation models
+     and O. Vinyals, “Competition-level code generation with alphacode,”
+                                                                                            for code,” 2024. [Online]. Available: https://arxiv.org/abs/2308.12950
+     Science, vol. 378, no. 6624, pp. 1092–1097, Dec. 2022. [Online].
+     Available: http://dx.doi.org/10.1126/science.abq1158                              [23] T. Schick, J. Dwivedi-Yu, R. Dessi, R. Raileanu, M. Lomeli,
+[10] M. Shetty, N. Jain, J. Liu, V. Kethanaboyina, K. Sen, and I. Stoica,                   E. Hambro, L. Zettlemoyer, N. Cancedda, and T. Scialom, “Toolformer:
+     “GSO: Challenging software optimization tasks for evaluating SWE-                      Language models can teach themselves to use tools,” in Advances
+     agents,” in Advances in Neural Information Processing Systems, D. Bel-                 in Neural Information Processing Systems, A. Oh, T. Naumann,
+     grave, C. Zhang, H. Lin, R. Pascanu, P. Koniusz, M. Ghassemi, and                      A. Globerson, K. Saenko, M. Hardt, and S. Levine, Eds., vol. 36.
+     N. Chen, Eds., vol. 38. Curran Associates, Inc., 2025.                                 Curran Associates, Inc., 2023, pp. 68 539–68 551. [Online]. Available:
+[11] X. He, Q. Liu, M. Du, L. Yan, Z. Fan, Y. Huang, Z. Yuan,                               https://proceedings.neurips.cc/paper files/paper/2023/file/d842425e4bf7
+     and Z. Ma, “Swe-perf: Can language models optimize code                                9ba039352da0f658a906-Paper-Conference.pdf
+     performance on real-world repositories?” in Forty-third International             [24] Q. Wu, G. Bansal, J. Zhang, Y. Wu, B. Li, E. Zhu, L. Jiang, X. Zhang,
+     Conference on Machine Learning, 2026. [Online]. Available: https:                      S. Zhang, J. Liu, A. H. Awadallah, R. W. White, D. Burger, and
+     //openreview.net/forum?id=pNxw4i5Dp2                                                   C. Wang, “Autogen: Enabling next-gen llm applications via multi-agent
+[12] J. J. Ma, M. Hashemi, A. Yazdanbakhsh, K. Swersky, O. Press,                           conversation,” in First Conference on Language Modeling, 2024.
+     E. Li, V. J. Reddi, and P. Ranganathan, “Swe-fficiency: Can language                   [Online]. Available: https://openreview.net/forum?id=BAakY1hNKS
+     models optimize real-world repositories on real workloads?” in Forty-             [25] P. S. Bullen, Handbook of Means and Their Inequalities. Springer
+     third International Conference on Machine Learning, 2026. [Online].                    Netherlands, 2003. [Online]. Available: http://dx.doi.org/10.1007/978-9
+     Available: https://openreview.net/forum?id=J1lgJyP4Tm                                  4-017-0399-4
+[13] C. E. Jimenez, J. Yang, A. Wettig, S. Yao, K. Pei, O. Press, and                  [26] P. De, “The arithmetic mean - geometric mean - harmonic
+     K. R. Narasimhan, “Swe-bench: Can language models resolve real-                        mean: Inequalities and a spectrum of applications,” Resonance,
+     world github issues?” in The Twelfth International Conference on                       vol. 21, no. 12, pp. 1119–1133, Dec. 2016. [Online]. Available:
+     Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024.                  http://dx.doi.org/10.1007/s12045-016-0423-4
+     OpenReview.net, 2024.                                                             [27] C. Spearman, “The proof and measurement of association between two
+
+
+
+
+                                                                                  11
+     things,” The American Journal of Psychology, vol. 15, no. 1, p. 72,               [41] M. Harman, J. Ritchey, I. Harper, S. Sengupta, K. Mao, A. Gulati,
+     Jan. 1904. [Online]. Available: http://dx.doi.org/10.2307/1412159                      C. Foster, and H. Robert, “Mutation-guided llm-based test generation
+[28] M. G. KENDALL, “A new measure of rank correlation,” Biometrika,                        at meta,” in Proceedings of the 33rd ACM International Conference
+     vol. 30, no. 1-2, pp. 81–93, Jun. 1938. [Online]. Available:                           on the Foundations of Software Engineering, ser. FSE Companion ’25.
+     http://dx.doi.org/10.1093/biomet/30.1-2.81                                             ACM, June 2025, pp. 180–191.
+[29] S. Yao, J. Zhao, D. Yu, N. Du, I. Shafran, K. R. Narasimhan, and Y. Cao,          [42] Y. Qing, B. Zhu, M. Du, Z. Guo, T. Y. Zhuo, Q. Zhang, J. M. Zhang,
+     “React: Synergizing reasoning and acting in language models,” in The                   H. Cui, S.-M. Yiu, D. Huang, S.-K. Ng, and A. T. Luu, “EffiBench-
+     Eleventh International Conference on Learning Representations, 2023.                   X: A multi-language benchmark for measuring efficiency of LLM-
+     [Online]. Available: https://openreview.net/forum?id=WE vluYUL-X                       generated code,” in Advances in Neural Information Processing Systems,
+[30] S. Yao, D. Yu, J. Zhao, I. Shafran, T. Griffiths, Y. Cao, and                          D. Belgrave, C. Zhang, H. Lin, R. Pascanu, P. Koniusz, M. Ghassemi,
+     K. Narasimhan, “Tree of thoughts: Deliberate problem solving with                      and N. Chen, Eds., vol. 38. Curran Associates, Inc., 2025.
+     large language models,” in Advances in Neural Information Processing              [43] A. Ouyang, S. Guo, S. Arora, A. L. Zhang, W. Hu, C. Re, and
+     Systems, A. Oh, T. Naumann, A. Globerson, K. Saenko, M. Hardt,                         A. Mirhoseini, “KernelBench: Can LLMs write efficient GPU kernels?”
+     and S. Levine, Eds., vol. 36. Curran Associates, Inc., 2023, pp.                       in Proceedings of the 42nd International Conference on Machine Learn-
+     11 809–11 822. [Online]. Available: https://proceedings.neurips.cc/paper               ing, ser. Proceedings of Machine Learning Research, A. Singh, M. Fazel,
+       files/paper/2023/file/271db9922b8d1f4dd7aaef84ed5ac703-Paper-Con                     D. Hsu, S. Lacoste-Julien, F. Berkenkamp, T. Maharaj, K. Wagstaff, and
+     ference.pdf                                                                            J. Zhu, Eds., vol. 267. PMLR, 13–19 Jul 2025, pp. 47 356–47 415.
+[31] N. Shinn, F. Cassano, A. Gopinath, K. Narasimhan, and S. Yao,                     [44] O. Press, B. Amos, H. Zhao, Y. Wu, S. K. Ainsworth, D. Krupke,
+     “Reflexion: language agents with verbal reinforcement learning,”                       P. Kidger, T. Sajed, B. Stellato, J. Park, N. Bosch, E. Meril, A. Steppi,
+     in Advances in Neural Information Processing Systems, A. Oh,                           A. Zharmagambetov, F. Zhang, D. Pérez-Piñeiro, A. Mercurio, N. Zhan,
+     T. Naumann, A. Globerson, K. Saenko, M. Hardt, and S. Levine,                          T. Abramovich, K. Lieret, H. Zhang, S. Huang, M. Bethge, and O. Press,
+     Eds., vol. 36. Curran Associates, Inc., 2023, pp. 8634–8652. [Online].                 “AlgoTune: Can language models speed up general-purpose numerical
+     Available: https://proceedings.neurips.cc/paper files/paper/2023/file/1b               programs?” in Advances in Neural Information Processing Systems,
+     44b878bb782e6954cd888628510e90-Paper-Conference.pdf                                    D. Belgrave, C. Zhang, H. Lin, R. Pascanu, P. Koniusz, M. Ghassemi,
+[32] H. Peng, A. Gupte, R. Hasler, N. J. Eliopoulos, C.-C. Ho, R. Mantri,                   and N. Chen, Eds., vol. 38. Curran Associates, Inc., 2025.
+     L. Deng, K. Läufer, G. K. Thiruvathukal, and J. C. Davis, “Sysllmatic:           [45] H. Jing, W. Hu, H. Shi, H. Yang, S. Zhang, S. Chen, H. Li,
+     Large language models are software system optimizers,” Journal of                      and Y. Song, “PerfCodeBench: Benchmarking LLMs for system-
+     Systems and Software, vol. 240, p. 112929, Oct. 2026. [Online].                        level high-performance code optimization,” 2026. [Online]. Available:
+     Available: http://dx.doi.org/10.1016/j.jss.2026.112929                                 https://arxiv.org/abs/2605.15222
+[33] H. Peng, A. Zhong, R. A. C. Méndez, K. G. Kalu, and J. C. Davis,                 [46] S. Garg, R. Z. Moghaddam, and N. Sundaresan, “PerfBench: Can
+     “How do agents perform code optimization? an empirical study,”                         agents resolve real-world performance bugs?” in Proceedings of the
+     2025, accepted to MSR ’26: Proceedings of the 23rd International                       2026 International Workshop on Agentic Engineering, ser. AGENT ’26.
+     Conference on Mining Software Repositories. [Online]. Available:                       ACM, Apr. 2026, pp. 165–172.
+     https://arxiv.org/abs/2512.21757                                                  [47] X. Ren, J. Wan, Y. Peng, Z. Liu, M. Liang, D. Chen, W. Jiang, and
+[34] W. Li, Z. Chen, J. Lin, H. Cao, W. Han, S. Liang, Z. Zhang, K. Dong,                   Y. Li, “PEACE: Towards efficient project-level efficiency optimization
+     D. Li, C. Zhang, and Y. Liu, “Reinforcement learning foundations                       via hybrid code editing,” in 40th IEEE/ACM International Conference
+     for deep research systems: A survey,” 2025. [Online]. Available:                       on Automated Software Engineering, ASE 2025, Seoul, Korea, Republic
+     https://arxiv.org/abs/2509.06733                                                       of, November 16-20, 2025. IEEE, 2025, pp. 1831–1843.
+[35] W. Ma, Y. Li, Z. Chen, Y. Liu, L. Jiang, Q. Hu, and J. Tao, AgentGuard:           [48] A. Nangia, S. Mishra, A. Gokrani, and P. Chopra, “ISO-bench: Can
+     An Active Threat Discovery System for Package Confusion Using Multi-                   coding agents optimize real-world inference workloads?” in VerifAI-2:
+     Agent Collaboration. Springer Nature Singapore, 2026, pp. 69–83.                       The Second Workshop on AI Verification in the Wild, 2026. [Online].
+     [Online]. Available: http://dx.doi.org/10.1007/978-981-95-7820-7 5                     Available: https://openreview.net/forum?id=gPfqEnaKCy
+[36] Z. Sun, Z. Lin, Z. Chen, C. Yang, M. Zhou, L. Li, and D. Lo,                      [49] A. Sehgal, J. Hou, A. Sarkar, I. Mantripragada, S. Chaudhuri, J. J.
+     “Executing as you generate: Hiding execution latency in llm code                       Sun, and Y. Yue, “FormulaCode: Evaluating agentic optimization on
+     interpreters,” 2026. [Online]. Available: https://arxiv.org/abs/2604.00491             large codebases,” in Forty-third International Conference on Machine
+[37] R. Qiu, W. W. Zeng, J. Ezick, C. Lott, and H. Tong, “How efficient                     Learning, 2026. [Online]. Available: https://openreview.net/forum?id=
+     is LLM-generated code? a rigorous & high-standard benchmark,” in                       WArbqRUsAe
+     The Thirteenth International Conference on Learning Representations,              [50] T. Ho, K. Etemadi, and Z. Su, “CppPerf: An automated pipeline
+     2025. [Online]. Available: https://openreview.net/forum?id=suz4utPr9Y                  and dataset for performance-improving C++ commits,” 2026. [Online].
+[38] S. Waghjale, V. Veerendranath, Z. Wang, and D. Fried, “ECCO:                           Available: https://arxiv.org/abs/2605.10890
+     Can we improve model-generated code efficiency without sacrificing                [51] X. Hou, Y. Zhao, Y. Liu, Z. Yang, K. Wang, L. Li, X. Luo,
+     functional correctness?” in Proceedings of the 2024 Conference on                      D. Lo, J. Grundy, and H. Wang, “Large language models for software
+     Empirical Methods in Natural Language Processing, Y. Al-Onaizan,                       engineering: A systematic literature review,” ACM Transactions on
+     M. Bansal, and Y.-N. Chen, Eds. Miami, Florida, USA: Association                       Software Engineering and Methodology, vol. 33, no. 8, pp. 1–79, Nov.
+     for Computational Linguistics, Nov. 2024, pp. 15 362–15 376. [Online].                 2024. [Online]. Available: http://dx.doi.org/10.1145/3695988
+     Available: https://aclanthology.org/2024.emnlp-main.859/                          [52] A. Fan, B. Gokkaya, M. Harman, M. Lyubarskiy, S. Sengupta, S. Yoo,
+[39] J. Liu, S. Xie, J. Wang, Y. Wei, Y. Ding, and L. Zhang,                                and J. M. Zhang, “Large language models for software engineering:
+     “Evaluating language models for efficient code generation,” in                         Survey and open problems,” in 2023 IEEE/ACM International
+     First Conference on Language Modeling, 2024. [Online]. Available:                      Conference on Software Engineering: Future of Software Engineering
+     https://openreview.net/forum?id=IBCBMeAhmC                                             (ICSE-FoSE). IEEE, May 2023, pp. 31–53. [Online]. Available:
+[40] C. Yang, H. J. Kang, J. Shi, and D. Lo, “ACECode: A                                    http://dx.doi.org/10.1109/ICSE-FoSE59343.2023.00008
+     reinforcement learning framework for aligning code efficiency and                 [53] Q. Zhang, C. Fang, Y. Xie, Y. Zhang, S. Yu, W. Sun, Y. Yang,
+     correctness in code language models,” 2024. [Online]. Available:                       and Z. Chen, “A survey on large language models for software
+     https://arxiv.org/abs/2412.17264                                                       engineering,” Science China Information Sciences, vol. 69, no. 4, Mar.
+                                                                                            2026. [Online]. Available: http://dx.doi.org/10.1007/s11432-025-4670-0
+
+
+
+
+                                                                                  12
+
