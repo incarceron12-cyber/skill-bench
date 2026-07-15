@@ -94,5 +94,16 @@ class EvidenceAcquisitionEpisodeTests(unittest.TestCase):
                 validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
 
 
+    def test_agent_validation_status_does_not_require_manufactured_access_states(self) -> None:
+        package = copy.deepcopy(self.valid)
+        package["status"] = "internal_agent_validation_only"
+        package["scenarios"][0]["episodes"][0]["terminal_consequence"]["claim_scope"] = "internal_agent_validation_only"
+        package["scenarios"][0]["episodes"][0]["access_events"] = [
+            event for event in package["scenarios"][0]["episodes"][0]["access_events"]
+            if event["status"] != "ambiguous"
+        ]
+        self.assertFalse(semantic_errors(package))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -18,7 +18,8 @@ REQUIRED_ACCESS_STATUSES = {"released", "delayed", "denied", "ambiguous"}
 REQUIRED_UNSUPPORTED = {
     "professional capability", "clinical validity", "compliance validity",
     "agent capability", "causal inquiry benefit", "safety", "production fitness",
-    "deployment readiness", "cross-domain generality",
+    "deployment readiness", "cross-domain generality", "expert validity",
+    "population representativeness",
 }
 
 
@@ -38,8 +39,8 @@ def _duplicates(values: Iterable[str]) -> set[str]:
 
 def semantic_errors(package: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    if package.get("status") != "internal_synthetic_conformance_only":
-        errors.append("status must remain internal_synthetic_conformance_only")
+    if package.get("status") not in {"internal_synthetic_conformance_only", "internal_agent_validation_only"}:
+        errors.append("status must remain an allowed internal-only status")
     if not REQUIRED_UNSUPPORTED <= set(package.get("claim_limits", {}).get("unsupported", [])):
         errors.append("claim limits omit required unsupported upgrades")
 
@@ -170,7 +171,7 @@ def semantic_errors(package: dict[str, Any]) -> list[str]:
             if not episode["terminal_consequence"]["endpoint_evidence_locators"]:
                 errors.append(f"{owner}: terminal consequence lacks direct endpoint evidence")
 
-    if not REQUIRED_ACCESS_STATUSES <= observed_statuses:
+    if package.get("status") == "internal_synthetic_conformance_only" and not REQUIRED_ACCESS_STATUSES <= observed_statuses:
         errors.append(f"planted access-status coverage missing: {sorted(REQUIRED_ACCESS_STATUSES - observed_statuses)}")
     return errors
 

@@ -88,6 +88,14 @@ other professional inquiry; that requires independent domain authoring, real
 trials, matched repetitions, metric specifications, and bounded validity
 arguments.
 
+`internal_agent_validation_only` packages may retain actual configured-agent
+episodes over synthetic instruments. Unlike planted conformance packages, they
+need not manufacture all access statuses: only statuses caused by the frozen
+agent requests and access policy are admissible. They remain subject to the
+same flow, firewall, matched-condition, provenance, and claim-ceiling checks.
+The alternate terminal claim scope licenses only exact internal execution
+observations, not agent capability or professional validity.
+
 ## Design provenance
 
 | Contract choice | Primary evidence and limitation |
