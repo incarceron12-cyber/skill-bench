@@ -7,7 +7,7 @@
 - Paper: Keyu Li et al., *AgencyBench: Benchmarking the Frontiers of Autonomous Agents in 1M-Token Real-World Contexts*, arXiv:2601.11044v4, <https://arxiv.org/abs/2601.11044v4>
 - Version read: immutable v4, updated 23 April 2026; no withdrawal notice in the acquired metadata
 - Local PDF: `data/papers/pdfs/2601.11044v4-agencybench.pdf` (18 pages; SHA-256 `111675891b5adc8878acb4de73c92ccafd9c741b57809be68b1c41e11d4a34b0`)
-- Local full text: `data/papers/text/2601.11044v4-agencybench.txt` (89,933 characters / 88,980 bytes; SHA-256 `eb324394e527a0caff9773d27cb36d1186c2c32e8097e7fa19fc8eb68033f04d`)
+- Local full text: `data/papers/text/2601.11044v4-agencybench.txt` (88,980 characters / 89,933 bytes; SHA-256 `eb324394e527a0caff9773d27cb36d1186c2c32e8097e7fa19fc8eb68033f04d`)
 - Official repository: <https://github.com/GAIR-NLP/AgencyBench>
 - Pinned release: commit `ec65324be69e81bd4fe394ef6a86d48b8fa5da56`, dated 23 January 2026, seven days after v1 but three months before v4
 - Local release archive: `data/sources/releases/2601.11044v4-agencybench/GAIR-NLP-AgencyBench-ec65324.zip` (37,601,509 bytes; SHA-256 `e2b3e4474dc1ce7b7829fd9f7aedec2b561951202445ac3f4137143326599ee1`; `unzip -t` passed)
