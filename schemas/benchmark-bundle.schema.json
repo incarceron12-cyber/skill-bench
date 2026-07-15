@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://skill-bench.local/schemas/benchmark-bundle.schema.json",
   "title": "skill-bench benchmark bundle",
-  "description": "Executable contract joining a knowledge-work task, independently versioned procedural skills and rubrics, graders, trials, typed artifact views, evaluator-admissibility evidence, traces, causal failure labels, and optional longitudinal evolution protocols.",
+  "description": "Executable contract joining a knowledge-work task, independently versioned procedural skills and rubrics, configured-component dependency locks, graders, trials, typed artifact views, evaluator-admissibility evidence, traces, causal failure labels, and optional longitudinal evolution protocols.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "benchmark_version", "procedural_skills", "rubrics", "task", "graders", "trials"],
@@ -14,6 +14,7 @@
     "task": {"$ref": "#/$defs/task"},
     "graders": {"type": "array", "items": {"$ref": "#/$defs/grader"}},
     "trials": {"type": "array", "items": {"$ref": "#/$defs/trial"}},
+    "component_dependency_locks": {"type": "array", "items": {"$ref": "#/$defs/componentDependencyLock"}},
     "longitudinal_evaluation": {"$ref": "#/$defs/longitudinalEvaluation"}
   },
   "$defs": {
@@ -632,6 +633,126 @@
         }}
       }
     },
+    "componentIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_id", "kind", "display_name", "source_locator", "source_sha256", "version", "identity_status", "valid_time", "signals"],
+      "properties": {
+        "component_id": {"$ref": "#/$defs/identifier"},
+        "kind": {"enum": ["procedural_skill", "package", "service", "tool", "artifact"]},
+        "display_name": {"$ref": "#/$defs/nonEmpty"},
+        "source_locator": {"$ref": "#/$defs/nonEmpty"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "version": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/nonEmpty"}]},
+        "identity_status": {"enum": ["resolved", "unresolved", "ambiguous"]},
+        "collision_group": {"$ref": "#/$defs/identifier"},
+        "valid_time": {
+          "type": "object", "additionalProperties": false, "required": ["observed_at"],
+          "properties": {"observed_at": {"type": "string", "format": "date-time"}, "valid_from": {"type": "string", "format": "date-time"}, "valid_until": {"type": "string", "format": "date-time"}}
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["signal_id", "kind", "affected_versions", "match_status", "evidence"],
+            "properties": {
+              "signal_id": {"$ref": "#/$defs/identifier"}, "kind": {"enum": ["candidate_security", "quality", "compatibility"]},
+              "affected_versions": {"type": "array", "items": {"$ref": "#/$defs/nonEmpty"}, "uniqueItems": true},
+              "match_status": {"enum": ["affected", "not_affected", "unresolved"]}, "evidence": {"$ref": "#/$defs/nonEmpty"}
+            }
+          }
+        }
+      }
+    },
+    "componentRelation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relation_id", "from_component_id", "to_component_id", "kind", "evidence_type", "evidence_locator", "confidence", "dispute_status", "optional", "activation", "phase", "authority", "valid_time"],
+      "properties": {
+        "relation_id": {"$ref": "#/$defs/identifier"},
+        "from_component_id": {"$ref": "#/$defs/identifier"},
+        "to_component_id": {"$ref": "#/$defs/identifier"},
+        "kind": {"enum": ["declares", "imports", "installs", "calls", "renders_with", "reads"]},
+        "evidence_type": {"enum": ["author_declared", "inferred_static", "resolver", "registry_snapshot", "runtime_observed"]},
+        "evidence_locator": {"$ref": "#/$defs/nonEmpty"},
+        "confidence": {"oneOf": [{"type": "null"}, {"type": "number", "minimum": 0, "maximum": 1}]},
+        "dispute_status": {"enum": ["undisputed", "disputed", "unreviewed"]},
+        "optional": {"type": "boolean"},
+        "activation": {"enum": ["required", "conditional", "example_only", "development_only", "unknown"]},
+        "phase": {"enum": ["authoring", "install", "setup", "runtime", "evaluation", "unknown"]},
+        "authority": {"enum": ["none", "read", "write", "execute", "network", "credentialed_service", "unknown"]},
+        "valid_time": {
+          "type": "object", "additionalProperties": false, "required": ["observed_at"],
+          "properties": {"observed_at": {"type": "string", "format": "date-time"}, "valid_from": {"type": "string", "format": "date-time"}, "valid_until": {"type": "string", "format": "date-time"}}
+        }
+      }
+    },
+    "componentDependencyLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lock_id", "version", "sha256", "resolver", "registry_snapshots", "components", "relations", "clusters", "claim_boundaries", "provenance"],
+      "properties": {
+        "lock_id": {"$ref": "#/$defs/identifier"},
+        "version": {"$ref": "#/$defs/nonEmpty"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "resolver": {"$ref": "#/$defs/versionedComponent"},
+        "registry_snapshots": {"type": "array", "items": {"$ref": "#/$defs/versionedComponent"}},
+        "components": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/componentIdentity"}},
+        "relations": {"type": "array", "items": {"$ref": "#/$defs/componentRelation"}},
+        "clusters": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["cluster_id", "kind", "component_ids"],
+            "properties": {"cluster_id": {"$ref": "#/$defs/identifier"}, "kind": {"enum": ["cycle", "shared_dependency", "name_collision"]}, "component_ids": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true}}
+          }
+        },
+        "claim_boundaries": {
+          "type": "object", "additionalProperties": false,
+          "required": ["internal_calibration_only", "static_reachability_only", "capability_evidence", "safety_evidence", "professional_validity", "readiness_evidence"],
+          "properties": {"internal_calibration_only": {"const": true}, "static_reachability_only": {"const": true}, "capability_evidence": {"const": false}, "safety_evidence": {"const": false}, "professional_validity": {"const": false}, "readiness_evidence": {"const": false}}
+        },
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}}
+      }
+    },
+    "realizationStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "status", "event_ids", "evidence"],
+      "properties": {
+        "stage": {"enum": ["mounted", "installed", "visible", "selected", "invoked", "attempted", "realized"]},
+        "status": {"enum": ["observed_true", "observed_false", "not_observed", "not_applicable"]},
+        "event_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "evidence": {"$ref": "#/$defs/nonEmpty"},
+        "policy_decision": {"enum": ["allowed", "denied", "not_checked"]},
+        "before_state_sha256": {"$ref": "#/$defs/sha256"},
+        "after_state_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "componentRealization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lock", "pair_id", "intended_treatment_component_ids", "unrelated_lock_sha256", "observations"],
+      "properties": {
+        "lock": {"$ref": "#/$defs/versionedComponent"},
+        "pair_id": {"$ref": "#/$defs/identifier"},
+        "intended_treatment_component_ids": {"type": "array", "items": {"$ref": "#/$defs/identifier"}, "uniqueItems": true},
+        "unrelated_lock_sha256": {"$ref": "#/$defs/sha256"},
+        "observations": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["component_id", "version", "source_sha256", "stages"],
+            "properties": {
+              "component_id": {"$ref": "#/$defs/identifier"},
+              "version": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/nonEmpty"}]},
+              "source_sha256": {"$ref": "#/$defs/sha256"},
+              "stages": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"$ref": "#/$defs/realizationStage"}}
+            }
+          }
+        }
+      }
+    },
     "traceEvent": {
       "type": "object",
       "additionalProperties": false,
@@ -898,6 +1019,7 @@
         "action_safety": {"$ref": "#/$defs/actionSafetyObservation"},
         "context_compression": {"$ref": "#/$defs/contextCompressionObservation"},
         "storage_retention": {"$ref": "#/$defs/storageRetentionObservation"},
+        "component_realization": {"$ref": "#/$defs/componentRealization"},
         "trace": {"$ref": "#/$defs/trace"},
         "check_results": {"type": "array", "items": {"$ref": "#/$defs/checkResult"}},
         "aggregate_score": {"type": "number", "minimum": 0, "maximum": 1},

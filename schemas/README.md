@@ -228,6 +228,39 @@ separately across matched task seeds; do not collapse them into one score before
 checking whether the public skill improves deliverable quality rather than only
 rubric compliance.
 
+## Configured-component lock and realization conformance
+
+Optional `component_dependency_locks` and `trial.component_realization` records
+extend configured-system identity without creating a package manager. A lock pins
+mixed Skill, package, service, tool, and artifact identities; resolver and
+registry snapshots; exact source/version/hash and valid time; typed relation
+evidence, confidence, dispute, optionality, activation, phase, and authority;
+and explicit cycle/shared-dependency/name-collision clusters. The validator
+recomputes each canonical lock hash, fails closed on unresolved collision
+laundering, and checks candidate signals against the exact resolved version.
+A name-level advisory therefore cannot mark a different locked version affected.
+
+Trial observations preserve seven runtime stages separately: mounted, installed,
+visible, selected, invoked, attempted, and realized. Observed-true stages require
+trace evidence; invocation cannot be promoted without selection and visibility;
+attempts require a policy decision; denied attempts cannot become realized
+consequences; and realized consequences require distinct before/after state
+hashes. Example-only static mentions cannot silently become installed treatment
+state. Paired no-Skill/public-Skill arms declare the intended component factor,
+use a validator-recomputed hash of all unrelated components and relations, and
+must match that hash across the pair.
+
+`tests/fixtures/valid-component-realization-conformance.json` is an internal
+synthetic cross-domain conformance slice grounded in
+`papers/agent-benchmarks/2026-07-15-skill-supply-chain-dependency-risk-validity.md`.
+It plants two same-name/different-blob candidates, an example-only package, exact
+safe-version resolution, a mounted-but-unseen component, a denied mock service
+call, and a realized renderer state change. Mutation tests reject identity-cluster
+loss, example installation, version drift, safe-version risk promotion, denied
+service realization, unchanged-state realization, and unrelated paired-lock
+drift. Static reachability and these synthetic records establish no vulnerability,
+safety, capability, professional-validity, or readiness claim.
+
 ## Validate
 
 The validator requires Python's `jsonschema` package (tested with 4.26):

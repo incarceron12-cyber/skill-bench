@@ -16,6 +16,7 @@ WORKSPACE_FIXTURE = ROOT / "tests" / "fixtures" / "valid-persistent-workspace-co
 ACTION_SAFETY_FIXTURE = ROOT / "tests" / "fixtures" / "valid-adversarial-action-conformance.json"
 CONTEXT_COMPRESSION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-context-compression-conformance.json"
 STORAGE_RETENTION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-storage-retention-conformance.json"
+COMPONENT_REALIZATION_FIXTURE = ROOT / "tests" / "fixtures" / "valid-component-realization-conformance.json"
 
 
 class BenchmarkBundleValidationTests(unittest.TestCase):
@@ -28,6 +29,7 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         cls.action_safety = json.loads(ACTION_SAFETY_FIXTURE.read_text(encoding="utf-8"))
         cls.context_compression = json.loads(CONTEXT_COMPRESSION_FIXTURE.read_text(encoding="utf-8"))
         cls.storage_retention = json.loads(STORAGE_RETENTION_FIXTURE.read_text(encoding="utf-8"))
+        cls.component_realization = json.loads(COMPONENT_REALIZATION_FIXTURE.read_text(encoding="utf-8"))
 
     def projection_bundle(self):
         bundle = copy.deepcopy(self.valid)
@@ -61,6 +63,21 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
         bundle = copy.deepcopy(self.valid)
         bundle["task"]["storage_retention"] = copy.deepcopy(self.storage_retention["task_storage_retention"])
         bundle["trials"][0]["storage_retention"] = copy.deepcopy(self.storage_retention["trial_storage_retention"])
+        return bundle
+
+    def component_realization_bundle(self):
+        bundle = copy.deepcopy(self.valid)
+        bundle["component_dependency_locks"] = copy.deepcopy(self.component_realization["component_dependency_locks"])
+        public_trial = bundle["trials"][0]
+        public_trial["component_realization"] = copy.deepcopy(self.component_realization["public_skill_realization"])
+        no_skill_trial = copy.deepcopy(public_trial)
+        no_skill_trial["trial_id"] = "configured-components-no-skill"
+        no_skill_trial["trace"]["trace_id"] = "configured-components-no-skill-trace"
+        no_skill_trial["evaluation_versions"]["condition"] = "no_skill_shared_rubric"
+        no_skill_trial["evaluation_versions"]["skill"] = None
+        no_skill_trial["agent"]["skills_enabled"] = []
+        no_skill_trial["component_realization"] = copy.deepcopy(self.component_realization["no_skill_realization"])
+        bundle["trials"].append(no_skill_trial)
         return bundle
 
     def validate_mutation(self, mutation) -> None:
@@ -154,6 +171,63 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValidationFailure, "sha256"):
             self.validate_mutation(mutate)
+
+    def test_valid_configured_component_realization_pair(self) -> None:
+        bundle = self.component_realization_bundle()
+        self.assertEqual([], semantic_errors(bundle))
+        mounted_unseen = next(
+            item for item in bundle["trials"][0]["component_realization"]["observations"]
+            if item["component_id"] == "colliding-helper-a"
+        )
+        stages = {item["stage"]: item["status"] for item in mounted_unseen["stages"]}
+        self.assertEqual(("observed_true", "observed_false"), (stages["mounted"], stages["visible"]))
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_component_lock_rejects_name_collision_without_cluster(self) -> None:
+        bundle = self.component_realization_bundle()
+        bundle["component_dependency_locks"][0]["clusters"] = []
+        self.assertTrue(any("ambiguous identity requires a name_collision cluster" in error for error in semantic_errors(bundle)))
+
+    def test_component_lock_rejects_example_only_installation(self) -> None:
+        bundle = self.component_realization_bundle()
+        observation = next(item for item in bundle["trials"][0]["component_realization"]["observations"] if item["component_id"] == "example-parser")
+        installed = next(item for item in observation["stages"] if item["stage"] == "installed")
+        installed.update({"status": "observed_true", "event_ids": ["read-source"]})
+        self.assertTrue(any("example-only mention cannot become installed" in error for error in semantic_errors(bundle)))
+
+    def test_component_realization_rejects_version_drift(self) -> None:
+        bundle = self.component_realization_bundle()
+        observation = next(item for item in bundle["trials"][0]["component_realization"]["observations"] if item["component_id"] == "safe-renderer")
+        observation["version"] = "1.0.0"
+        self.assertTrue(any("observed version/hash drift" in error for error in semantic_errors(bundle)))
+
+    def test_component_signal_rejects_safe_version_as_affected(self) -> None:
+        bundle = self.component_realization_bundle()
+        bundle["component_dependency_locks"][0]["components"][1]["signals"][0]["match_status"] = "affected"
+        self.assertTrue(any("does not match exact resolved version" in error for error in semantic_errors(bundle)))
+
+    def test_component_realization_rejects_denied_service_consequence(self) -> None:
+        bundle = self.component_realization_bundle()
+        observation = next(item for item in bundle["trials"][0]["component_realization"]["observations"] if item["component_id"] == "optional-service")
+        realized = next(item for item in observation["stages"] if item["stage"] == "realized")
+        realized.update({"status": "observed_true", "before_state_sha256": "1" * 64, "after_state_sha256": "2" * 64})
+        self.assertTrue(any("denied attempt cannot be a realized consequence" in error for error in semantic_errors(bundle)))
+
+    def test_component_realization_rejects_unchanged_realized_state(self) -> None:
+        bundle = self.component_realization_bundle()
+        observation = next(item for item in bundle["trials"][0]["component_realization"]["observations"] if item["component_id"] == "safe-renderer")
+        realized = next(item for item in observation["stages"] if item["stage"] == "realized")
+        realized["after_state_sha256"] = realized["before_state_sha256"]
+        self.assertTrue(any("requires distinct before/after" in error for error in semantic_errors(bundle)))
+
+    def test_component_pair_rejects_unrelated_lock_drift(self) -> None:
+        bundle = self.component_realization_bundle()
+        bundle["trials"][1]["component_realization"]["unrelated_lock_sha256"] = "0" * 64
+        errors = semantic_errors(bundle)
+        self.assertTrue(any("unrelated lock hashes differ" in error for error in errors))
 
     def test_semantics_require_matched_longitudinal_treatments(self) -> None:
         bundle = copy.deepcopy(self.valid)

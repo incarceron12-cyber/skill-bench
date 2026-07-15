@@ -45,6 +45,114 @@ def canonical_sha256(value: Any) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+REALIZATION_STAGES = ("mounted", "installed", "visible", "selected", "invoked", "attempted", "realized")
+
+
+def _validate_component_locks(locks: list[dict[str, Any]], errors: list[str]) -> dict[str, dict[str, Any]]:
+    """Validate immutable mixed-component locks without promoting reachability to exposure."""
+    _check_unique(locks, "lock_id", "component_dependency_locks", errors)
+    lock_by_id = {item["lock_id"]: item for item in locks}
+    for lock in locks:
+        prefix = f"component lock {lock['lock_id']}"
+        payload = {key: value for key, value in lock.items() if key != "sha256"}
+        if lock["sha256"] != canonical_sha256(payload):
+            errors.append(f"{prefix}: stale lock sha256")
+        _check_unique(lock["components"], "component_id", f"{prefix}.components", errors)
+        _check_unique(lock["relations"], "relation_id", f"{prefix}.relations", errors)
+        _check_unique(lock["clusters"], "cluster_id", f"{prefix}.clusters", errors)
+        components = {item["component_id"]: item for item in lock["components"]}
+        collision_members = {
+            component_id
+            for cluster in lock["clusters"] if cluster["kind"] == "name_collision"
+            for component_id in cluster["component_ids"]
+        }
+        for component in lock["components"]:
+            component_id = component["component_id"]
+            if component["identity_status"] == "resolved" and component["version"] is None:
+                errors.append(f"{prefix}, component {component_id}: resolved identity requires an exact version")
+            if component["identity_status"] == "ambiguous" and component_id not in collision_members:
+                errors.append(f"{prefix}, component {component_id}: ambiguous identity requires a name_collision cluster")
+            for signal in component["signals"]:
+                expected = "unresolved" if component["version"] is None else (
+                    "affected" if component["version"] in signal["affected_versions"] else "not_affected"
+                )
+                if signal["match_status"] != expected:
+                    errors.append(f"{prefix}, component {component_id}: signal {signal['signal_id']} does not match exact resolved version")
+        for cluster in lock["clusters"]:
+            unknown = set(cluster["component_ids"]) - set(components)
+            if unknown:
+                errors.append(f"{prefix}, cluster {cluster['cluster_id']}: unknown components {sorted(unknown)}")
+        for relation in lock["relations"]:
+            if relation["from_component_id"] not in components or relation["to_component_id"] not in components:
+                errors.append(f"{prefix}, relation {relation['relation_id']}: references unknown component")
+            if relation["activation"] == "example_only" and not relation["optional"]:
+                errors.append(f"{prefix}, relation {relation['relation_id']}: example-only relation must be optional")
+    return lock_by_id
+
+
+def _validate_component_realization(
+    realization: dict[str, Any], lock_by_id: dict[str, dict[str, Any]], event_ids: set[str], errors: list[str], prefix: str
+) -> None:
+    """Validate stage evidence while keeping mount, visibility, action, and consequence distinct."""
+    ref = realization["lock"]
+    lock = lock_by_id.get(ref["component_id"])
+    if lock is None:
+        errors.append(f"{prefix}.component_realization: references unknown component lock")
+        return
+    if (ref["version"], ref["sha256"]) != (lock["version"], lock["sha256"]):
+        errors.append(f"{prefix}.component_realization: lock version/hash mismatch")
+    component_by_id = {item["component_id"]: item for item in lock["components"]}
+    _check_unique(realization["observations"], "component_id", f"{prefix}.component_realization.observations", errors)
+    unknown_treatments = set(realization["intended_treatment_component_ids"]) - set(component_by_id)
+    if unknown_treatments:
+        errors.append(f"{prefix}.component_realization: unknown intended treatment components {sorted(unknown_treatments)}")
+    intended = set(realization["intended_treatment_component_ids"])
+    unrelated_payload = {
+        "components": [item for item in lock["components"] if item["component_id"] not in intended],
+        "relations": [item for item in lock["relations"] if item["from_component_id"] not in intended and item["to_component_id"] not in intended],
+    }
+    if realization["unrelated_lock_sha256"] != canonical_sha256(unrelated_payload):
+        errors.append(f"{prefix}.component_realization: stale unrelated lock sha256")
+    example_only_targets = {
+        item["to_component_id"] for item in lock["relations"] if item["activation"] == "example_only"
+    } - {
+        item["to_component_id"] for item in lock["relations"] if item["activation"] != "example_only"
+    }
+    for observation in realization["observations"]:
+        component_id = observation["component_id"]
+        component = component_by_id.get(component_id)
+        if component is None:
+            errors.append(f"{prefix}.component_realization: unknown observed component {component_id!r}")
+            continue
+        if (observation["version"], observation["source_sha256"]) != (component["version"], component["source_sha256"]):
+            errors.append(f"{prefix}, component {component_id}: observed version/hash drift from lock")
+        _check_unique(observation["stages"], "stage", f"{prefix}, component {component_id}.stages", errors)
+        stages = {item["stage"]: item for item in observation["stages"]}
+        if set(stages) != set(REALIZATION_STAGES):
+            errors.append(f"{prefix}, component {component_id}: realization ladder must contain every stage exactly once")
+            continue
+        for stage in stages.values():
+            if set(stage["event_ids"]) - event_ids:
+                errors.append(f"{prefix}, component {component_id}: {stage['stage']} references unknown trace event")
+            if stage["status"] == "observed_true" and not stage["event_ids"]:
+                errors.append(f"{prefix}, component {component_id}: observed-true {stage['stage']} requires trace evidence")
+        if component_id in example_only_targets and stages["installed"]["status"] == "observed_true":
+            errors.append(f"{prefix}, component {component_id}: example-only mention cannot become installed treatment state")
+        for later, earlier in (("selected", "visible"), ("invoked", "selected"), ("attempted", "invoked"), ("realized", "attempted")):
+            if stages[later]["status"] == "observed_true" and stages[earlier]["status"] != "observed_true":
+                errors.append(f"{prefix}, component {component_id}: {later} cannot be true without {earlier}")
+        attempted = stages["attempted"]
+        realized = stages["realized"]
+        if attempted["status"] == "observed_true" and "policy_decision" not in attempted:
+            errors.append(f"{prefix}, component {component_id}: attempted action requires a policy decision")
+        if attempted.get("policy_decision") == "denied" and realized["status"] != "observed_false":
+            errors.append(f"{prefix}, component {component_id}: denied attempt cannot be a realized consequence")
+        if realized["status"] == "observed_true":
+            before, after = realized.get("before_state_sha256"), realized.get("after_state_sha256")
+            if before is None or after is None or before == after:
+                errors.append(f"{prefix}, component {component_id}: realized consequence requires distinct before/after state hashes")
+
+
 def _validate_projection_manifest(manifest: dict[str, Any], source_ids: set[str], errors: list[str]) -> None:
     """Validate task-IR hashes and bidirectional cross-projection coverage."""
     ir = manifest["ir"]
@@ -506,6 +614,9 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     checks = task["checks"]
     graders = bundle["graders"]
     trials = bundle["trials"]
+    component_locks = bundle.get("component_dependency_locks", [])
+    component_lock_by_id = _validate_component_locks(component_locks, errors)
+    realization_pairs: dict[str, list[tuple[str, str, dict[str, Any]]]] = {}
 
     for items, key, location in [
         (skills, "skill_id", "procedural_skills"),
@@ -710,6 +821,12 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
             errors.append(f"{prefix}.trace.events: events must be ordered by sequence")
         event_ids = {event["event_id"] for event in events}
         event_by_id = {event["event_id"]: event for event in events}
+        component_realization = trial.get("component_realization")
+        if component_realization:
+            _validate_component_realization(component_realization, component_lock_by_id, event_ids, errors, prefix)
+            realization_pairs.setdefault(component_realization["pair_id"], []).append((
+                trial["trial_id"], condition, component_realization
+            ))
         workspace_observation = trial.get("workspace")
         if workspace_observation and not workspace_contract:
             errors.append(f"{prefix}.workspace: observation has no task workspace contract")
@@ -806,6 +923,17 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
                     errors.append(f"{prefix}: aggregate_score {trial['aggregate_score']} != weighted score {expected:.6f}")
             elif result_ids == check_ids:
                 errors.append(f"{prefix}: completed trial cannot aggregate non-scored admissibility outcomes")
+
+    for pair_id, records in realization_pairs.items():
+        conditions = {condition for _, condition, _ in records}
+        if len(records) != 2 or not any(item.startswith("no_skill_") for item in conditions) or not any(
+            item.startswith("public_skill_") for item in conditions
+        ):
+            errors.append(f"component realization pair {pair_id}: requires exactly one no-skill and one public-skill arm")
+            continue
+        unrelated_hashes = {record[2]["unrelated_lock_sha256"] for record in records}
+        if len(unrelated_hashes) != 1:
+            errors.append(f"component realization pair {pair_id}: unrelated lock hashes differ across Skill arms")
 
     longitudinal = bundle.get("longitudinal_evaluation")
     if longitudinal:
