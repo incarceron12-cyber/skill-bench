@@ -18,7 +18,7 @@ If you are new to the repository, these are the most useful entry points:
 | Read this | Why it matters |
 |---|---|
 | [`PROJECT_CHARTER.md`](PROJECT_CHARTER.md) | **Master source of truth:** founding intent, broad cross-domain scope, objectives, success criteria, anti-drift rules, and document hierarchy |
-| [`site/`](site/) | **Research website:** Astro + Starlight dashboard for insights, paper reviews, benchmark comparisons, and next steps |
+| [`site/`](site/) | **Research website:** Astro + Starlight dashboard for insights, paper reviews, benchmark comparisons, and next steps; deployed at [`incarceron12-cyber.github.io/skill-bench`](https://incarceron12-cyber.github.io/skill-bench/) |
 | [`docs/research-synthesis-index.md`](docs/research-synthesis-index.md) | **Grouped insights and relevance map:** which papers matter most, why they matter, and how findings combine across sources |
 | [`docs/benchmark-landscape-research-program.md`](docs/benchmark-landscape-research-program.md) | Comparative program for established benchmark families, newer successors, strengths to retain, and limitations to improve |
 | [`papers/topic-index.md`](papers/topic-index.md) | Thematically organized navigation across the full deep-review corpus |
