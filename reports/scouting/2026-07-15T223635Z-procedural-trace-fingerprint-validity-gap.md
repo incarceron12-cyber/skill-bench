@@ -1,6 +1,7 @@
 # Scouting note — procedural trace fingerprint validity gap
 
-**Timestamp:** 2026-07-15T22:36:35Z  
+**Timestamp:** 2026-07-15T22:36:35Z
+
 **Scope:** Narrow expansion against charter objectives A/B/C. Queue inspection found 296 tasks: 290 completed, four blocked, one pending human prerequisite, and one claimed consolidation, with no source/research/review backlog. Recent scouting and completed reviews already cover failure attribution, multichannel traces, trajectory confidence, procedural skills, paired interventions, saturation, and evaluator validity. This run searched only for a missing question: whether a learned procedural representation can distinguish how configured agents work—and detect intervention-induced behavior change—without mistaking trace-format, task, interface, or vocabulary artifacts for skill transfer.
 
 ## Substantive finding — triage only
