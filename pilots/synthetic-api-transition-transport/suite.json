@@ -1,0 +1,93 @@
+{
+  "version": "1.0.0",
+  "suite_id": "conditional-resource-transition-transport-v1",
+  "frozen_design": true,
+  "initial_state": {
+    "resource": {"title": "Quarterly plan", "status": "draft", "owner": "Ari"},
+    "revision": 1,
+    "audit": []
+  },
+  "cases": [
+    {
+      "id": "normal-mutation",
+      "actions": [{"method": "PUT", "token": "writer-token", "if_match": "$INITIAL_ETAG", "payload": {"title": "Quarterly plan", "status": "approved", "owner": "Ari"}}],
+      "criteria": [
+        {"id": "normal-status", "kind": "response_statuses", "read_set": ["/responses/status"], "expected": [200]},
+        {"id": "normal-target", "kind": "path_equals", "read_set": ["/resource"], "path": "/resource", "expected": {"title": "Quarterly plan", "status": "approved", "owner": "Ari"}},
+        {"id": "normal-single-revision", "kind": "revision_delta", "read_set": ["/revision"], "expected": 1},
+        {"id": "normal-single-audit-effect", "kind": "audit_delta", "read_set": ["/audit"], "expected": 1},
+        {"id": "normal-etag-changed", "kind": "etag_changed", "read_set": ["/etag"], "expected": true}
+      ]
+    },
+    {
+      "id": "authorization-denial",
+      "actions": [{"method": "PUT", "token": "wrong-token", "if_match": "$INITIAL_ETAG", "payload": {"title": "Quarterly plan", "status": "approved", "owner": "Mallory"}}],
+      "criteria": [
+        {"id": "auth-status", "kind": "response_statuses", "read_set": ["/responses/status"], "expected": [401]},
+        {"id": "auth-no-mutation", "kind": "unchanged_state", "read_set": ["/resource", "/revision", "/etag", "/audit"], "expected": true}
+      ]
+    },
+    {
+      "id": "duplicate-put-retry",
+      "actions": [
+        {"method": "PUT", "token": "writer-token", "payload": {"title": "Quarterly plan", "status": "approved", "owner": "Ari"}},
+        {"method": "PUT", "token": "writer-token", "payload": {"title": "Quarterly plan", "status": "approved", "owner": "Ari"}}
+      ],
+      "criteria": [
+        {"id": "retry-status", "kind": "response_statuses", "read_set": ["/responses/status"], "expected": [200, 200]},
+        {"id": "retry-target", "kind": "path_equals", "read_set": ["/resource"], "path": "/resource", "expected": {"title": "Quarterly plan", "status": "approved", "owner": "Ari"}},
+        {"id": "retry-single-resource-effect", "kind": "revision_delta", "read_set": ["/revision"], "expected": 1},
+        {"id": "retry-single-audit-effect", "kind": "audit_delta", "read_set": ["/audit"], "expected": 1},
+        {"id": "retry-etag-changed", "kind": "etag_changed", "read_set": ["/etag"], "expected": true}
+      ]
+    },
+    {
+      "id": "stale-conditional-read",
+      "actions": [{"method": "GET", "if_none_match": "$CURRENT_ETAG"}],
+      "criteria": [
+        {"id": "stale-not-modified", "kind": "response_statuses", "read_set": ["/responses/status"], "expected": [304]},
+        {"id": "stale-body-absent", "kind": "response_bodies_absent", "read_set": ["/responses/body"], "expected": true},
+        {"id": "stale-read-only", "kind": "unchanged_state", "read_set": ["/resource", "/revision", "/etag", "/audit"], "expected": true}
+      ]
+    },
+    {
+      "id": "concurrent-lost-update",
+      "actions": [
+        {"method": "PUT", "token": "writer-token", "if_match": "$INITIAL_ETAG", "payload": {"title": "Quarterly plan", "status": "approved", "owner": "Ari"}},
+        {"method": "PUT", "token": "writer-token", "if_match": "$INITIAL_ETAG", "payload": {"title": "Quarterly plan", "status": "archived", "owner": "Ari"}}
+      ],
+      "criteria": [
+        {"id": "concurrent-status", "kind": "response_statuses", "read_set": ["/responses/status"], "expected": [200, 412]},
+        {"id": "concurrent-first-writer-preserved", "kind": "path_equals", "read_set": ["/resource"], "path": "/resource/status", "expected": "approved"},
+        {"id": "concurrent-single-revision", "kind": "revision_delta", "read_set": ["/revision"], "expected": 1},
+        {"id": "concurrent-single-audit-effect", "kind": "audit_delta", "read_set": ["/audit"], "expected": 1},
+        {"id": "concurrent-etag-changed", "kind": "etag_changed", "read_set": ["/etag"], "expected": true}
+      ]
+    },
+    {
+      "id": "invalid-payload",
+      "actions": [{"method": "PUT", "token": "writer-token", "if_match": "$INITIAL_ETAG", "payload": {"title": "Quarterly plan", "status": "not-a-status", "owner": "Ari"}}],
+      "criteria": [
+        {"id": "invalid-status", "kind": "response_statuses", "read_set": ["/responses/status"], "expected": [400]},
+        {"id": "invalid-no-mutation", "kind": "unchanged_state", "read_set": ["/resource", "/revision", "/etag", "/audit"], "expected": true}
+      ]
+    },
+    {
+      "id": "legitimate-merge-patch-route",
+      "actions": [{"method": "PATCH", "token": "writer-token", "if_match": "$INITIAL_ETAG", "payload": {"status": "approved"}}],
+      "criteria": [
+        {"id": "patch-status", "kind": "response_statuses", "read_set": ["/responses/status"], "expected": [200]},
+        {"id": "patch-target", "kind": "path_equals", "read_set": ["/resource"], "path": "/resource", "expected": {"title": "Quarterly plan", "status": "approved", "owner": "Ari"}},
+        {"id": "patch-single-revision", "kind": "revision_delta", "read_set": ["/revision"], "expected": 1},
+        {"id": "patch-single-audit-effect", "kind": "audit_delta", "read_set": ["/audit"], "expected": 1},
+        {"id": "patch-etag-changed", "kind": "etag_changed", "read_set": ["/etag"], "expected": true}
+      ]
+    }
+  ],
+  "invalid_run_policy": {
+    "expected_protocol_rejection": "valid_case_outcome",
+    "adapter_exception_or_missing_response": "invalid_run_excluded_from_strict_denominator_and_reported_separately",
+    "criterion_failure": "valid_run_failure"
+  },
+  "claim_ceiling": "Exact deterministic transport behavior of seven frozen builder-authored cases between two local adapters only; no production API fidelity, occupational validity, agent capability, prevalence, safety, or readiness claim."
+}
