@@ -217,6 +217,43 @@ builder-authored and deterministic. It establishes instrumentation behavior only
 not expert validity, agent capability, a treatment effect, prevalence, or
 cross-domain generalization [PR].
 
+#### Targeted inquiry includes an interface-realization boundary
+
+Do not score an evidence request as if the agent's latent information need moved
+directly into its context. Preserve the independently observable chain:
+
+```text
+available evidence graph → selected evidence target → expressed request and scope
+  → parser/router interpretation → access decision and realized release
+    → model-visible payload → adoption or rejection → stop/action → consequence
+```
+
+The parser, aliases, request schema, clarification behavior, access delay/denial,
+and budget charges are configured environment components. A semantically relevant
+free-text request can fail at expression or deterministic routing even when the
+target was appropriate; a structured menu can improve realization while also
+leaking the candidate set or answer. Therefore record raw request, intended target
+and expected-value basis, parser identity/version, mapped candidates and
+confidence, access transition, released content locator, adoption evidence, and
+endpoint separately. Ambiguous, malformed, synonym, multi-target, and negative-
+control requests must fail closed rather than silently map to one evidence atom.
+Compare interfaces prospectively on frozen evidence graphs, budgets, policies,
+configured systems, and graders before attributing endpoint differences to inquiry
+quality.
+
+The internal matched evidence-acquisition slice retained 12/12 valid configured-
+agent attempts across two purposive synthetic shapes [EAI]. Both active
+vendor-disposition attempts routed two requests, adopted both released records,
+and passed; both active segment-release attempts failed the six-check endpoint
+instrument after the deterministic free-text parser mapped controlling-metric
+requests ambiguously (one attempt later obtained one of two required records).
+All eight supplied-information controls passed. This demonstrates that the
+contract can preserve request→parser→access→adoption→endpoint evidence and exposes
+a candidate interface failure; with two repeats per cell, different synthetic
+shapes, and no matched interface ablation, it does **not** identify agent inquiry
+ability, parser causality, an information-supply effect, expert/professional
+validity, cross-domain generality, safety, or readiness.
+
 ### 2.2b Professionally correct non-completion is a counterfactual action contract
 
 A request to produce an artifact is not always an obligation to complete it.
@@ -3280,7 +3317,16 @@ them:
 - **[PR]** `pilots/problem-recognition-intervention/replay-report.json` and
   `pilots/problem-recognition-intervention/README.md`; six builder-authored,
   deterministic synthetic cells establish staged scorer and abstention behavior
-  only.
+  only, not expert validity, agent capability, treatment effects, prevalence, or
+  cross-domain generalization.
+- **[EAI]** `pilots/evidence-acquisition-matched-agent-v1/protocol.json`,
+  `pilots/evidence-acquisition-matched-agent-v1/execution/study-report.json`, and
+  retained attempt/episode records; 12 valid configured-agent attempts across two
+  builder-authored synthetic shapes establish request/parser/access/adoption trace
+  retention and one candidate interface failure only. Two repeats per cell and no
+  matched request-interface ablation support no causal inquiry, capability,
+  expert/professional-validity, cross-domain, safety, production, or readiness
+  claim.
 - **[XM]** `pilots/experience-memory-transfer/replay-report.json` and
   `pilots/experience-memory-transfer/README.md`; three builder-authored,
   deterministic synthetic conditions establish QA/action separation, harmful-

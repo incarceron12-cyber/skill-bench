@@ -440,6 +440,25 @@ records can carry the gate; no simulator-specific subsystem follows.
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
 
+Targeted inquiry has its own configured-interface boundary: `available evidence →
+selected target → expressed request → parser/router interpretation → realized
+access → visible payload → adoption → stop/action → consequence`. The frozen
+[matched evidence-acquisition slice](../pilots/evidence-acquisition-matched-agent-v1/README.md)
+retained 12/12 valid attempts over two purposive synthetic shapes. Both active
+vendor-disposition attempts passed after two requests released two adopted records;
+both active segment-release attempts failed the six-check endpoint after the
+deterministic free-text parser treated controlling-metric requests as ambiguous,
+while all eight supplied-information controls passed. One failed active attempt
+eventually received one of two required records; the other received none. This is
+instrumentation evidence and a candidate interface failure, not an agent inquiry,
+parser-causal, information-supply, expert/professional, cross-domain, safety, or
+readiness result: the shapes differ, each cell has two repeats, and no matched
+request-interface contrast was run. Preserve raw intent, request syntax, parser
+mapping, access state, adoption, stopping, endpoint, invalidity, and cost; test
+natural-language versus minimally structured requests prospectively while holding
+the evidence graph and non-interface components fixed, and verify that structure
+does not become an answer-bearing cue.
+
 Across Skill-derived tasks, behavior-derived hidden factors, and language-simulated
 environments, internal agreement supports a common **projection claim ladder**:
 `shared-projection conformance → independently grounded efficacy → equivalent-form
