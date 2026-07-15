@@ -1,0 +1,1181 @@
+                                        Agent-Based Software Artifact Evaluation
+                                        ZHAONAN WU, Huazhong University of Science and Technology, China
+                                        YANJIE ZHAO∗ , Huazhong University of Science and Technology, China
+                                        ZHENPENG CHEN, Tsinghua University, China
+                                        ZHENG WANG, Independent Researcher, China
+                                        HAOYU WANG, Huazhong University of Science and Technology, China
+                                        Artifact evaluation has been adopted in the Software Engineering (SE) research community for 15 years,
+                                        substantially improving research reproducibility across major SE conferences. However, this success has
+
+
+
+
+arXiv:2602.02235v1 [cs.SE] 2 Feb 2026
+                                        introduced a growing scalability challenge, as artifact evaluation relies heavily on reviewers’ manual execution
+                                        and debugging, leading to escalating human effort amid rapidly increasing paper submissions. To address
+                                        this problem, we investigate automated artifact evaluation. We first conduct a preliminary study on artifacts
+                                        from top-tier SE conferences and identify three key challenges: perceiving execution states, maintaining
+                                        stable execution environments, and recovering from execution errors. Inspired by these findings, we propose
+                                        ArtifactCopilot, the first end-to-end agent-based framework for automated artifact evaluation. Artifact-
+                                        Copilot automates environment construction, instruction execution, and error recovery by combining an
+                                        execution normalization strategy to ensure environment stability with an artifact evaluation graph that
+                                        transforms README documents into dependency-aware command graphs, enabling structured execution
+                                        planning, execution-state tracking, and error recovery. Evaluation on 48 real-world artifacts shows that
+                                        ArtifactCopilot matches human artifact evaluation outcomes for 85.42% of the artifacts, outperforming
+                                        Claude Code by 52.09 percentage points, while costing only $0.091 per artifact on average and requiring zero
+                                        human intervention for 45 out of 48 artifacts.
+                                        CCS Concepts: • Software and its engineering → Software engineering process; Software validation.
+                                        Additional Key Words and Phrases: artifact evaluation, large language models, software engineering
+                                        ACM Reference Format:
+                                        Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang. 2018. Agent-Based Software
+                                        Artifact Evaluation. In Proceedings of Make sure to enter the correct conference title from your rights confirmation
+                                        email (Conference acronym ’XX). ACM, New York, NY, USA, 20 pages. https://doi.org/XXXXXXX.XXXXXXX
+
+                                        1    Introduction
+                                        Artifact evaluation has become a cornerstone of software engineering research, with the ACM
+                                        establishing formal mechanisms to verify functional completeness and reproducibility [21, 35]. Since
+                                        its introduction at ESEC/FSE 2011, the practice has spread throughout premier conferences [21]. Yet
+                                        this success introduces a critical scalability challenge: evaluation capacity cannot keep pace with the
+                                        ∗ Yanjie Zhao is the corresponding author (yanjie_zhao@hust.edu.cn).
+
+
+                                        Authors’ Contact Information: Zhaonan Wu, zhaonanwu@hust.edu.cn, Huazhong University of Science and Technology,
+                                        China; Yanjie Zhao, yanjie_zhao@hust.edu.cn, Huazhong University of Science and Technology, China; Zhenpeng Chen,
+                                        zpchen@tsinghua.edu.cn, Tsinghua University, China; Zheng Wang, hackerzheng666@gmail.com, Independent Researcher,
+                                        China; Haoyu Wang, haoyuwang@hust.edu.cn, Huazhong University of Science and Technology, China.
+
+                                        Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee
+                                        provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the
+                                        full citation on the first page. Copyrights for components of this work owned by others than the author(s) must be honored.
+                                        Abstracting with credit is permitted. To copy otherwise, or republish, to post on servers or to redistribute to lists, requires
+                                        prior specific permission and/or a fee. Request permissions from permissions@acm.org.
+                                        Conference acronym ’XX, Woodstock, NY
+                                        © 2018 Copyright held by the owner/author(s). Publication rights licensed to ACM.
+                                        ACM ISBN 978-1-4503-XXXX-X/2018/06
+                                        https://doi.org/XXXXXXX.XXXXXXX
+
+
+                                                                                                            , Vol. 1, No. 1, Article . Publication date: February 2018.
+2                                                                 Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+rapid growth in submissions. As Table 1 shows, accepted papers in the research track at four major
+conferences (ASE, FSE, ICSE, ISSTA) have surged between 2022 and 2025, with ICSE 2025 alone
+accepting 245 papers. The longitudinal data analyzed in [27] reveals a sustained growth in ICSE
+research-track acceptances, increasing from 84 papers in 2015 to 234 papers in 2024, representing a
+2.8× increase over a decade.
+        Table 1. Acceptance statistics of top-tier software engineering conferences from 2022 to 2025.
+
+                  Conference                     2022                     2023                                2024                               2025
+                  ASE                         116 / 531           134 / 629 (+18.5%)                 155 / 587 (-6.7%)              246 / 1181 (+101.2%)
+                  FSE                          99 / 449            127 / 465 (+3.6%)                 121 / 474 (+1.9%)               135 / 612 (+29.1%)
+                  ICSE                        197 / 691            69 / 260 (-62.4%)                 59 / 265 (+1.9%)               245 / 1150 (+334.0%)
+                  ISSTA                        61 / 250           117 / 406 (+62.4%)                143 / 694 (+71.0%)               107 / 550 (-20.8%)
+
+
+
+
+        The author’s original manuscript has been archived in a    The research outputs are well documented, consistent,   The paper’s artifacts exceed baseline functionality and
+        public repository with a DOI or persistent identifier.     complete, and validated for practical use.              are thoroughly documented and structured for reuse
+                                                                                                                           and reproducibility.
+
+
+
+
+                                          Fig. 1. Three commonly used artifact evaluation badges.
+
+   The evaluation process itself remains fundamentally manual and labor-intensive. Reviewers
+follow author-provided instructions to verify artifacts can execute and reproduce claimed results,
+earning badges based on demonstrated capabilities (Figure 1). Recent studies reveal an uncomfort-
+able truth: successful evaluations often depend less on documented procedures than on reviewers’
+ad hoc debugging and environment repair [27]. This reliance on implicit expert knowledge sig-
+nificantly undermines both efficiency and consistency. Hermann et al. report that the absence of
+explicit quality standards leaves reviewers without guidance on acceptance thresholds, leading to
+inconsistent evaluations across reviewers, conferences, and years [21].
+   Artifact evaluation automation appears promising with the development of large language mod-
+els (LLMs) [20]. Recent advances in LLM-driven agents have demonstrated impressive capabilities
+across software engineering tasks, from bug localization to automatic repair [33, 37, 42]. Further-
+more, recent advances in repository-level environment setup and testing, such as [22] and [13],
+enable automated project building and execution. However, these agents target specific software
+engineering tasks and do not align well with the unique characteristics of artifact evaluation. Unlike
+other SE tasks with unified specifications and clear success criteria, artifact evaluation confronts
+diverse repository structures, instructions targeting paper reproduction rather than general execu-
+tion [7], and explicit verification against badge criteria [43]. To our knowledge, there have been no
+prior works on end-to-end automation of artifact evaluation.
+   We begin by asking: what makes artifact evaluation resistant to automation? To answer
+this question, we have constructed a dataset from the field of software engineering, which includes
+48 research papers and artifacts from the top four software engineering conferences. We then
+conducted a preliminary study on a quarter of the dataset and identified three representative
+challenges hindering artifact evaluation automation. First, perceiving execution states is hindered
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                        3
+
+
+by the lack of structured representation; documentation intermixes executable commands with
+narrative text, making it difficult to model and track the evaluation progress. Second, maintaining
+stable execution environments is complicated by dynamic boundary shifts; a single docker run
+command can transparently relocate operations from host to container, yet documentation rarely
+makes this transition explicit. Third, recovering from execution errors is hindered by failures that
+can arise throughout the workflow, from environment construction to command execution.
+   These findings drive the design of ArtifactCopilot, the first agent-based framework to au-
+tomate end-to-end artifact evaluation from PDF input to badge determination. Our core insight
+is treating evaluation as a state-aware workflow problem rather than simple script generation.
+To address the first challenge, we propose the AE Graph, which transforms unstructured doc-
+umentation into a structured state representation, enabling precise modeling of the evaluation
+progress. To tackle the second challenge, we introduce an environment-aware execution monitor
+that dynamically tracks context switches between host and container, ensuring commands are
+dispatched to the correct runtime. For the third challenge, we develop an agent framework for
+automated error recovery spanning both environment construction and artifact evaluation phases.
+   Evaluated on 48 real-world artifacts, ArtifactCopilot produces evaluation outcomes that
+match human-assigned artifact badges in 85.42% of cases, representing a substantial improvement
+over LLM-based script generation (20.83%) and Claude Code (33.33%), while incurring minimal
+human effort (0.11 interventions/artifact) and cost ($0.091/artifact). Ablation studies confirm the
+indispensability of key modules, showing that omitting the AE Graph, environment unification,
+or multi-agent collaboration, respectively, reduces success rates by 43.75%, 29.17%, and 22.92%. In
+summary, our contributions are as follows:
+• A new perspective on artifact evaluation automation. We conceptualize artifact evaluation
+  as a state-aware workflow problem rather than a one-shot script generation task, revealing
+  fundamental challenges in execution state perception, environment boundary management, and
+  error recovery that are not addressed by existing automation approaches.
+• An analytical foundation for understanding artifact evaluation. We construct a real-world
+  dataset of 48 artifact evaluations collected from top-tier software engineering conferences and
+  conduct a systematic preliminary study, providing the first empirical characterization of obstacles
+  that make artifact evaluation resistant to automation.
+• The first end-to-end automated artifact evaluation framework. We propose Artifact-
+  Copilot, an agent-based framework that transforms unstructured PDF documentation into a
+  structured execution model and automates artifact evaluation from instruction parsing to badge
+  determination through environment-aware monitoring, structured state representation, and
+  multi-agent error recovery.
+• Strong empirical results on real-world artifacts. Evaluated on 48 real-world artifacts, Ar-
+  tifactCopilot achieves an 85.42% agreement with human artifact evaluation outcomes, out-
+  performing LLM-based script generation and existing coding agents, while requiring minimal
+  human intervention (0.11 interventions per artifact) and low monetary cost ($0.091 per artifact).
+
+2   Dataset Construction
+Motivated by the challenges of automating artifact evaluation and the need for systematic assess-
+ment of automation tools, we prioritized the construction of a comprehensive dataset. To the best
+of our knowledge, there has been no prior research on constructing datasets for automated artifact
+evaluation. [7] is limited to artifacts utilizing LLM API calls; these rely on commercial APIs and lack
+the universality required for general artifact evaluation. Consequently, we constructed a dataset
+specifically designed to benchmark automated techniques.
+
+                                                       , Vol. 1, No. 1, Article . Publication date: February 2018.
+4                                                          Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+                                                                                                                                      Select Rules
+                                                                         Select Papers
+                                                                        Randomly and              Commercial                Private                  Specialized              Large Disk
+                                                                       Download Artifact           Software                 Dataset                   hardware                  Usage
+    Search for Software
+       Conferences                                                                                     -30                   --9                        -7                       -6
+                                Search for Papers
+                  ICSE    ASE    with AE Badge
+                                                                                       100 Artifacts         70 Artifacts             61 Artifacts             54 Artifacts            48 Artifacts
+                 ISSTA    FSE                       Candidate Papers
+
+
+
+
+                                           Fig. 2. Overview of dataset construction process.
+
+
+
+
+   The dataset construction workflow is illustrated in Figure 2. We sourced research papers from the
+ACM Digital Library [10], targeting four top-tier software engineering conferences—ICSE, FSE, ASE,
+and ISSTA. To ensure alignment with contemporary artifact evaluation standards, we prioritized
+conferences from 2024 onwards in which AE processes were concluded, and badge information
+was publicly available. The selected venues include ISSTA 2024 [2], ASE 2024 [3], ICSE 2024 [4],
+and ICSE 2025 [6]. Additionally, as the AE results for FSE 2024 were undisclosed at the time of data
+collection, FSE 2023 [1] was included to guarantee comprehensive coverage across all four major
+venues. From these conferences, we identified all papers awarded either the Artifacts Functional or
+Artifacts Reusable badge. From the above pool, we employed simple random sampling to select 100
+candidate papers. This sample size was determined to balance statistical representativeness with
+the feasibility of rigorous manual verification. At the same time, random sampling allows us to
+maintain an unbiased selection and ensures that each artifact receives an in-depth human review.
+   We applied exclusion criteria to isolate intrinsic reproducibility challenges from issues of external
+accessibility. Artifacts requiring commercial software (30), private datasets (9), specialized hardware
+(7), or excessive disk space exceeding 10 GB (6) were excluded, with some artifacts meeting multiple
+criteria, resulting in 48 retained artifacts. To verify the exclusion decisions, two authors jointly
+spent approximately 60 hours reviewing the 100 candidates, reflecting the substantial manual
+effort required and justifying the necessity of our sampling strategy. We further categorized
+the retained artifacts by environment management, identifying 25 artifacts using Docker-based
+containerization and 23 relying on non-containerized setups (e.g., Conda).
+   During dataset construction, we observed substantial heterogeneity in artifact evaluation criteria
+across venues and years (e.g., ICSE 2024 [23] omitted the Artifacts Functional badge, whereas ICSE
+2025 [5] included it). To ensure a unified evaluation standard aligned with ACM guidelines [9], we
+normalize all evaluation outcomes to the Artifacts Functional level. As the Artifacts Reusable badge
+is awarded only when the functional criteria are satisfied and relies on subjective assessments
+of documentation quality, it is excluded from metric computation; artifacts awarded the Artifacts
+Reusable badge are thus treated as functionally positive.
+   To operationalize functional correctness, we construct a Golden Command Set (GCS) for each
+artifact by manually extracting all essential execution commands from the official README files.
+Each README is independently reviewed by two annotators, with disagreements resolved by a
+third researcher, yielding a validated command set that serves as the ground-truth specification for
+functional execution.
+   Together, these design choices normalize the dataset to a unified functional evaluation space, in
+which each artifact is associated with (i) a binary functional label derived from official evaluation
+results and (ii) a corresponding GCS defining its expected execution behavior. This normalization
+provides a consistent foundation for the metric definitions in § 5.1
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                             5
+
+
+3     Understanding Automation Barriers: A Preliminary Study
+Before conducting the study, we defined the scope of end-to-end artifact evaluation as spanning from
+the completion of repository download to the completion of the artifact badge evaluation process;
+link acquisition and repository download are excluded as preparatory steps. The path to automation
+requires understanding what humans actually do during evaluation and why these actions resist
+mechanization. We conduct a preliminary study to answer the following two questions:
+• RQ1: What operations require human intervention during artifact evaluation, and how frequently
+  do they occur?
+• RQ2: What technical obstacles hinder automated artifact evaluation, and where do they originate?
+We partitioned the artifacts into an exploration set (12 artifacts) and a validation set (36 artifacts)
+using stratified random sampling by execution environment type. The exploration set was used
+to inform empirical analysis and system design decisions, whereas the validation set was held
+out until final evaluation. The exploration set supports qualitative analysis rather than statistical
+generalization. To mitigate individual cognitive bias, two authors with over three years of software
+engineering experience independently executed each exploration artifact while adhering strictly to
+the README instructions.
+   During execution, we recorded all steps at which the workflow would become blocked and
+unable to proceed without human input or modification, which we define as human intervention
+steps. We were permitted only minimal adjustments, including correcting evident typographical
+errors, installing undocumented dependencies, or resolving version conflicts. When Docker usage
+was specified, we directly pulled the provided image or built the environment from the supplied
+Dockerfile; otherwise, we executed the artifact using a Dockerfile configured with an Ubuntu 22.04
+LTS base image. All artifacts were executed on a uniform server configuration (Ubuntu 22.04 LTS,
+NVIDIA RTX 4090, Docker 24.0.1) to minimize environmental variability.
+
+3.1    RQ1: Intervention Frequency and Distribution
+Manual evaluation of the exploration set yielded 237 intervention steps. Step identification was
+performed collaboratively by two authors to ensure consistency, while subsequent classification
+followed open coding [19] with independent labeling, achieving Cohen’s 𝜅 = 0.85 across three
+categories, as demonstrated in Table 2, which represents high consistency. Figure 3 illustrates some
+cases arising during manual artifact evaluation that need human intervention.
+                  Table 2. Distribution of intervention scenarios during artifact evaluation.
+
+                                  Scenario                             Count
+                                  Command execution              126 (53.16%)
+                                  Error handling                  94 (39.66%)
+                                  Dynamic configuration            17 (7.17%)
+                                  Total                                     237
+
+  Command execution (126 steps, 53.16%) consists of instructions that reviewers must manually
+enter based on the documentation, such as environment setup (pip install), compilation (make),
+and experiment execution (python run.py). This category predominates because most artifacts lack
+automation scripts, requiring reviewers to identify and sequentially execute commands dispersed
+across READMEs or other appendices. Although such steps are technically straightforward to
+automate, as they primarily involve linear execution of documented commands, their prevalence
+reveals a critical limitation: current artifacts implicitly rely on human-mediated execution.
+
+                                                            , Vol. 1, No. 1, Article . Publication date: February 2018.
+6                                              Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+   Error handling and repair (94 steps, 39.66%) encompasses interventions triggered by execution
+failures. These 94 steps correspond to 47 distinct errors, each typically requiring two actions:
+diagnosing the underlying cause and applying a corrective fix, followed by re-execution of the
+failed command. The high incidence of such steps indicates substantial workflow fragility and
+underscores the need for automated tools with robust failure detection and recovery capabilities,
+consistent with prior findings [28].
+   Dynamic configuration (17 steps, 7.17%) involves resolving command placeholders (e.g., sub-
+stituting <your_path> with concrete artifact locations) and responding to interactive prompts
+(e.g., license agreements or [Y/N] confirmations). Although least frequent, these steps require
+context-specific information unavailable within the artifact, such as local paths or user preferences.
+Without explicit support, automated execution would be blocked, rendering this category a critical
+obstacle to fully autonomous workflows.
+
+
+      Summary for RQ1: Manual interventions during artifact evaluation are dominated by
+      command execution (53.16%) and error handling (39.66%). These interventions frequently re-
+      quire reviewers to interpret underspecified documentation, maintain awareness of execution
+      state, and adapt to execution failures.
+
+
+3.2    RQ2: Structural Barriers to Automation
+RQ1 quantifies human effort by identifying where and how often human intervention occurs
+during artifact evaluation. RQ2 builds directly on these observations by analyzing the underlying
+technical and structural reasons that give rise to the intervention scenarios identified in RQ1.
+Beyond observable interventions lies a subtler question: what implicit knowledge enables humans
+to navigate evaluation successfully, and why is this knowledge difficult to automate? We identified
+two structural barriers that demand such tacit understanding.
+   Implicit task state maintenance. Human reviewers maintain a holistic mental model of the
+evaluation process, including execution history, current state, and intended goals. Our analysis
+corroborates this requirement: across all 12 artifacts, reviewers repeatedly backtracked to verify
+progress, and in 10 cases consulted files beyond the README to resolve state ambiguities. This global
+awareness allows reviewers to interpret underspecified instructions, assess the impact of errors,
+and adjust execution paths accordingly. By contrast, documentation encodes task dependencies
+implicitly in natural language, interleaving commands with prose; tools that treat READMEs as
+linear command sequences therefore lack explicit task structure and cannot maintain a coherent
+execution context. This barrier explains a substantial portion of the command execution and error
+handling interventions observed in RQ1, where reviewers must decide not only which command to
+execute next, but whether prior steps need to be revised or repeated after failures.
+   Execution environment switching. Beyond cognitive challenges, artifacts introduce sub-
+stantial technical complexity that further impedes automation. Half of the artifacts (6 of 12) rely
+on interactive Docker containers invoked via docker run -it, which fundamentally shift the
+execution context from the host to the container, altering filesystem roots, environment variables,
+and available tooling. Such context boundaries are rarely made explicit in documentation, as hu-
+man reviewers are expected to recognize and adapt to them implicitly. While humans naturally
+accommodate this transition, automated tools that execute commands sequentially may operate
+in an incorrect namespace or block indefinitely, awaiting container termination, which is largely
+invisible in intervention frequency statistics (RQ1).
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                                             7
+
+
+                                 Failure examples and manual intervention cases
+                       Script and code defects                                      Environment configuration error
+                                                                            # Part of readme note:
+       # Part of readme note:
+                                                                            Then, build the Docker image:
+       ```shell
+                                                                            ```bash
+       python libvdiff.py -o freetype --cvf --apf -e co
+                                                                            docker build -t pyinder:1.0 .
+
+
+                   Failure: Code’s errors causes failure                            Failure: Package version does not exist
+       ~/LibvDiff# python libvdiff.py -o freetype --cvf --apf -e co
+                                                                            ~/PyinderArtifact$ docker build -t pyinder:1.0 .
+       ImportError: cannot import name 'read_json' from
+                                                                            [ERROR] Package dune has no version 2.9.1.
+       'utils.tool_function'
+
+
+
+
+               Dynamic configuration of placeholder                                            Host to Docker
+      commands need to be configured                                      a Docker run command
+    docker run -it -v YOUR_LOCAL_PATH:/root/Morph --gpus all morph_env   docker run -it --name libvdiff libvdiff:1.0 /bin/bash
+                       YOUR_LOCAL_PATH -> /home/repo                             user@ubuntu:                (base)root@docker_id:
+    python3 scripts/phosphorInstallFromLocal.py install <phosphorDir>            ~/LibvDiff-public   ➡       ~/LibvDiff#
+                 <phosphorDir> -> /phospohr
+
+                 Placeholders need to be filled in properly .                  Docker startup switches the execution environment.
+
+
+
+
+Fig. 3. Representative examples of automation failures and manual intervention during artifact evaluation.
+
+
+      Summary for RQ2: Two structural barriers impede automation. The first, implicit task state
+      maintenance, directly underlies many of the intervention scenarios quantified in RQ1. The
+      second, execution environment’s switch, emerges from qualitative analysis of evaluation
+      workflows and reflects latent execution assumptions that humans resolve implicitly, but
+      automated tools struggle to handle.
+
+3.3      Implications for Design
+The empirical findings crystallize three challenges for end-to-end automation, and these challenges
+directly inform the design of ArtifactCopilot, as detailed in the next section.
+Challenge 1 (C1): perceiving execution states. As revealed by RQ2, human success depends on
+maintaining a global task context that remains implicit in artifact documentation. Automated tools,
+therefore, require explicit representations encoding execution phases, inter-command dependencies,
+and artifact relationships to enable context-aware reasoning and error impact analysis.
+Challenge 2 (C2): maintaining stable execution environments. Also identified in RQ2, inter-
+active containers and heterogeneous specifications create invisible context boundaries. Tools must
+detect environment transitions, manage container lifecycles, and normalize diverse configurations
+into executable environments.
+Challenge 3 (C3): automating execution and recovering from execution errors. Grounded in
+RQ1, command execution and error handling together account for nearly 93% of interventions. An
+automated system must parse documentation, extract commands, detect failures, and attempt repairs
+without human involvement. Additionally, it must resolve placeholders and handle interactive
+prompts to prevent execution from stalling.
+
+4     Approach
+This section presents ArtifactCopilot, which addresses the three core challenges identified in
+§ 3.3. Our key insight is to treat artifact evaluation as a structured workflow problem, in which
+execution states and dependencies are made explicit and systematically represented rather than
+embedded in linear scripts. Based on this formulation, ArtifactCopilot integrates graph-based
+task modeling with a hierarchical agent pipeline, where a Planning Agent materializes execution
+
+                                                                            , Vol. 1, No. 1, Article . Publication date: February 2018.
+8                                                             Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+      § 4.2 Structured Modeling of the AE Task
+                                          Paper Summary                                                      Artifact Download
+
+                             Artifact Link: https://zenodo.org/records/<id>                                                   Not Available
+                             Artifact Badge：Available/Aunctional/Reusable                               Validation
+                             Paper Evaluation Data：precise/recall/...                                   Check                 Download Repo
+       Paper.pdf                                                                                                                                        Paper Artifact
+                                                                         Scan and Collect
+                                                                                                                                        Docker Type          Local Type
+                                                                                     Start Node           AE Graph
+                                                                                     Artifact Node
+                                                                                     Command Node                       Task Choose
+                                                                                     Sequential execution
+                         LLM Analyze                                                 Artifact Output
+         README.md                                                                   Artifact Input
+    INSTALL.md/Other files                                                                                                                              AE Task Plan
+
+
+    § 4.3 Environment Preparation and Normalization                                                      § 4.4 Command Execution and Artifact Evaluation
+                                                                              Build Results
+      Planning Agent                                                                                     Evaluation Agent
+                                                        LLM                                                                                                       LLM
+                    +                                                     AE Graph     AE Instruction
+
+
+
+                                                                              Docker Information
+
+
+
+         Decison                 Environment Build                             AE Results                     Decison                 Artifact Evaluation
+                                                                                                                                              Failed
+                                                                                                             Thinking：
+        Thinking：
+                         ①                                 ②                                               <I have done...I
+      <I have done...I
+      need to do...>                                                                                       need to do...>                   Retry
+                             Dependency      Docker Build and                                                                    Command
+                                                                                                                                                  Error Handle
+                               Analyze         Run by -dit                      AE Report                   Tool Call：            Execute
+       Tool Call：                                                                                                                     Succeed
+      <Use which tool>                                                                                     <Use which tool>
+                         ③                                 ④
+        Tool Args :                                                                                          Tool Args :
+                                                                                                           <Content of Tool                   Finish
+      <Content of Tool   AE Graph Update Execute Environment
+                                                                          Commands Executed                Call>               Node Update             Artifact Evaluation
+      Call>                                 Normalization
+                                                                             In AE Graph
+
+
+
+
+Fig. 4. ArtifactCopilot workflow: from paper PDF to badge determination through structured modeling
+and hierarchical execution.
+
+
+
+environments and resolves environment-level decisions in advance, and an Evaluation Agent
+carries out commands, detects failures, and performs automated recovery during artifact evaluation.
+
+4.1      Overview and Architecture
+ArtifactCopilot accepts two input modes: papers in PDF format or pre-downloaded repositories
+with confirmed availability. In both cases, the system produces structured evaluation reports with
+badge recommendations. Figure 4 illustrates the end-to-end workflow for the PDF-based setting,
+organized into three stages.
+Stage 1: Repository acquisition and task modeling primarily addresses C1 by identifying
+artifact links in papers, retrieving corresponding repositories, and constructing the AE Graph, a
+structured representation that translates README instructions into an explicit, dependency-aware
+workflow. This stage makes execution states and task relationships explicit, forming the basis for
+downstream reasoning.
+Stage 2: Environment preparation mainly targets C2. It employs a Planning Agent to analyze
+dependencies, construct containerized execution environments, and unify the execution environ-
+ment to host from the command level. Ultimately, it outputs a set of meta-task specifications that
+constrain subsequent execution.
+Stage 3: Execution and evaluation focuses on C3, while also handling residual issues from
+earlier stages. An Evaluation Agent executes commands following the AE Graph topology,
+detects and recovers from runtime errors, and generates structured evaluation reports with badge
+recommendations, enabling robust and resilient artifact evaluation.
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                                 9
+
+
+       Table 3. AE Graph definition: Nodes represent execution units; Edges encode dependencies.
+
+                    Category    Element           Description and Attributes
+                                Start             Entry point; use_docker flag
+                    Node (𝑉 )   Command           Executable instruction; env, status
+                                Artifact          File consumed or produced; path, type
+                                Sequential        Execution order; src, dst are command nodes
+                    Edge (𝐸)    Artifact Input    Data dependency; src: artifact, dst: command
+                                Artifact Output   Production relation; src: command, dst: artifact
+
+
+
+
+  The hierarchical architecture separates planning from execution: the Planning Agent resolves
+environment complexity and global decisions, while the Evaluation Agent focuses on controlled
+command execution and recovery.
+
+4.2   Explicit Task Modeling via AE Graphs
+4.2.1 Paper Parsing and Repository Acquisition. ACM Artifact Available badges require artifacts
+to be publicly accessible and verifiably associated with the paper [23]. To establish a reliable
+foundation for subsequent task modeling, ArtifactCopilot automates repository acquisition in
+three steps. (1) Link extraction: an LLM analyzes the paper PDF, focusing on experimental and
+data availability sections, to identify repository URLs via keyword-guided parsing, and produces a
+concise summary of the evaluation setup for later correspondence checking. (2) Repository download:
+ArtifactCopilot normalizes extracted URLs, resolves redirections across hosting platforms (e.g.,
+GitHub [17], Zenodo [15]), and retrieves the referenced repositories. (3) Correspondence verification:
+semantic similarity between the paper-derived summary and the repository README is used to
+confirm that the artifact corresponds to the paper. If any step fails, the system reports diagnostic
+information and halts automated evaluation, and the artifact is treated as unavailable.
+
+4.2.2 From Documentation to AE Graph. As discussed in § 3.2, humans implicitly maintain struc-
+tured task representations capturing execution phases, dependencies, and artifact relationships.
+Providing raw README files to agents, however, leads to two limitations: execution context grows
+as commands accumulate, and non-sequential dependencies remain implicit, hindering failure
+analysis and recovery. Inspired by control-flow and data-flow graphs in program analysis [28, 36],
+we observe that artifact evaluation is driven not by variable states but by command execution states.
+Task progress depends on which commands succeed and how commands and artifacts depend on
+one another. We therefore introduce the AE Graph, a directed graph 𝐺 = (𝑉 , 𝐸) in which nodes
+represent commands and artifacts, and edges encode execution and artifact dependencies. Table 3
+summarizes the formal definition.
+   AE Graph construction proceeds in two phases. First, ArtifactCopilot aggregates evaluation-
+relevant documentation, including README, REQUIREMENTS, and SETUP files. Second, an LLM
+parses these guidelines into an initial AE Graph using prompt engineering with Chain-of-Thought
+reasoning [34]. The resulting graph enables agents to (i) query global task state at any execution
+point by tracing dependencies, allowing rapid identification of affected downstream steps when
+failures occur, and (ii) maintain a compact execution context by storing state in node attributes
+rather than verbose logs. Prior work shows that such structured representations improve LLM
+reasoning over unstructured text [14]. Figure 5 illustrates an example transformation from README
+to AE Graph. The initial graph is subsequently validated and incrementally refined in later stages.
+
+                                                                , Vol. 1, No. 1, Article . Publication date: February 2018.
+10                                                                Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+                              Part of an artifact README.md                                                     Initial AE Graph
+     ### Prerequisites                                                                                      Start node; non-docker
+                                                                                                        s
+     * Python 3.10                                                                              s                                              Command Nodes
+     * Poetry 1.5.1                                                                                     1   cd typeconfusion_study     2   poetry install
+     * CodeQL CLI 2.16.2
+                                                                                                1           poetry run python3 typeconfusion_study/main.py --help
+     The CLI tool gives access to each phase of our approach via individual commands.                   3
+     A list of commands for the CLI and documentation ...                                                   poetry run python3 typeconfusion_study/main.py sample -
+     poetry run python3 typeconfusion_study/main.py --help                                      2       4   s javascript -n 10000 -r
+     Further documentation about each command and its arguments can be accessed via:                        poetry run python3 typeconfusion_study/main.py analyze -s
+                                                                                                        5
+     poetry run python3 typeconfusion_study/main.py [COMMAND] -h                                3           javascript -o results/javascript_05_06_24.csv -v
+     More verbose output for all commands is available by setting the `-d` flag:            1           6
+                                                                                                            poetry run python3 typeconfusion_study/main.py evaluate
+     poetry run python3 typeconfusion_study/main.py -d [COMMAND]                                4
+                                                                                                            results/javascript_05_06_24.csv results/typescript_03_06_24.csv
+                                                                                                            results/python_31_05_24.csv
+     ### Sampling                                                                                                                                Artifact Nodes
+     We provide the samples we use for our study in the data/ directory. To use different   2   5   3
+                                                                                                        1 data/js_packages.json      2 results/javascript_05_06_24.csv
+     sample, replace these samples ...
+                                                                                                        3 typeconfusion_study/main.py
+     The following command automatically clones the NUMBER first repositories in the        4   6   5
+     SAMPLE sample (javascript/typescript/python) and generates their codeql databases:                 4 results/typescript_03_06_24.csv
+     poetry run python3 typeconfusion_study/main.py sample -s SAMPLE -n NUMBER                  6
+     ...                                                                                                5 results/python_31_05_24.csv
+
+
+
+
+                        Fig. 5. Example transformation from README documentation to an AE Graph.
+
+
+
+4.3        Planning Agent: Environment Normalization and Planning
+4.3.1 Design Rationale. Before command execution, preparing an isolated environment is a primary
+prerequisite. As shown in § 3.2, artifacts exhibit substantial heterogeneity not only in dependencies
+but also in execution context specification: some provide Dockerfiles, others rely on ad-hoc runtime
+instructions, while many implicitly assume system-level configurations. Human reviewers naturally
+interpret these context switches; automated evaluation requires making them explicit. We therefore
+introduce a dedicated Planning Agent to normalize execution semantics before evaluation. Given
+artifact-specific environment specifications, the Planning Agent constructs a corresponding
+Docker environment and externalizes the execution context to the host. All commands are issued
+from the host and redirected to the target container through a fixed execution interface. This
+design eliminates implicit host–container transitions and allows the Evaluation Agent to execute
+workflows directly from the host without entering containers.
+
+4.3.2 Adaptive Container Construction. The Planning Agent first validates artifact nodes by
+traversing the AE Graph and verifying file paths against the repository structure. Path mismatches
+trigger name-based search and substitution, while genuinely missing artifacts are recorded for
+downstream handling. To enable uniform host-driven execution, the Planning Agent constructs a
+container substrate using three adaptive strategies based on artifact-provided configurations:
+Strategy 1: Dockerfile reuse. When artifacts provide Dockerfiles or pre-built images, the agent
+extracts the base image and entrypoint definitions, and builds or pulls the corresponding container.
+Strategy 2: Automatic Dockerfile synthesis. When artifacts provide only dependency mani-
+fests (e.g., requirements.txt), the agent infers system and runtime dependencies, synthesizes a
+Dockerfile, and builds the container image.
+Strategy 3: Template fallback. When dependencies are incomplete or image construction fails
+after 𝑘=3 attempts, Planning Agent falls back to a predefined Ubuntu 22.04 base template.
+   This adaptive construction step prepares a controllable container substrate for subsequent
+execution context normalization, while accommodating the configuration heterogeneity observed
+in § 3.2. Figure 6 illustrates an example Dockerfile automatically generated by the Planning Agent.
+
+4.3.3 Execution Environment Normalization. The observation in § 3.2, a number of artifacts rely on
+interactive container commands (e.g., docker run -it), introducing implicit execution context
+switches between host and container. While human evaluators naturally track these transitions,
+automated tools executing commands may apply subsequent instructions in incorrect namespaces.
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                                                                           11
+
+
+                          Dockerfile made by Planning Agent                                  Meta-Task instruction generated by Planning Agent
+ # Basic image                                                                  Repo introduction: This is a type confusion study repository that analyzes
+ FROM python:3.10-slim                                                          JavaScript, TypeScript, and Python packages for type confusion vulnerabilities.
+ ENV DEBIAN_FRONTEND=noninteractive # avoid interact                            It uses Poetry for dependency management (Python 3.10.5) and requires
+ ENV TZ=Etc/UTC
+ # System dependencies                                                          system libraries like graphviz. Key characteristics include: data files in data/
+ RUN apt-get update -y && apt-get install -y --no-install-recommends \          (js_packages.json, ts_packages.json, python_packages.json) are pre-existing;
+   build-essential \                                                            results are generated as CSV files and evaluation.json through sequential
+   git curl wget ca-certificates unzip \                                        commands (sample, analyze, evaluate).
+   graphviz \                                                                   Role: You are an agent used to complete Artifact Evaluation (AE) tasks for this
+   && rm -rf /var/lib/apt/lists/*
+ WORKDIR /workspace                                                             repository. You have capabilities to execute Docker commands, run non-
+ # Python package source configuration                                          interactive shell commands, and verify file outputs. Your goal is to analyze the
+ ARG PIP_INDEX_URL=https://pypi.org/simple                                      non-interactively commands from ae_graph.json and execute them step-by-
+ ENV PIP_INDEX_URL=${PIP_INDEX_URL}                                             step according to the instructions to achieve the goal of artifact evaluation.
+ RUN pip install --no-cache-dir poetry==1.5.1                                   Tasks:
+ RUN apt-get update -y && apt-get install -y --no-install-recommends codeql \
+   || echo "CodeQL CLI not available via apt, may need manual installation"     Stage 1 (Check): Verify that the Docker container...
+ # Default entrypoint                                                           Stage 2 (Run): Start with poetry installation, then ...
+ SHELL ["/bin/sh", "-c"]                                                        Stage 3 (Verify): check the existence...
+ ENTRYPOINT ["/bin/sh"]                                                         Stage 4 (Evaluation): Assess the completeness of command execution...
+
+
+
+                                     Fig. 6. Intermediate artifacts produced by the Planning Agent.
+
+
+
+   The Planning Agent enforces a host-centric unified scheduling model in which all commands are
+issued from the host and explicitly mapped to target containers through a fixed execution interface.
+The system leverages container execution APIs for host-driven command injection. Containers
+with customized entrypoints, however, exhibit execution behaviors that are incompatible with a
+single mechanism. Accordingly, a dual strategy is employed. Containers with standard entrypoints
+accept commands injected directly through container execution interfaces with container-aware
+path mappings. Containers with custom entrypoints are initialized with a detached shell session, in
+which the original entrypoint is replayed as the first instruction, followed by sequential command
+injection. This design ensures that command execution consistently remains on the host, without
+requiring entry into the Docker container.
+
+4.3.4 Meta-Task Specification. The final output of the Planning Agent is a structured meta-task
+specification that formalizes the evaluation procedure for each artifact. The specification includes
+repository context, agent role, and an ordered task decomposition into four semantic stages: Check
+(artifact completeness validation), Run (command sequence execution), Verify (output compari-
+son against paper claims), and Evaluate (badge eligibility determination). Each specification is
+instantiated per artifact and encoded in a machine-readable format for the Evaluation Agent. An
+example meta-task specification is shown in Figure 6.
+   In addition to the meta-task specification, the Planning Agent outputs: (1) an updated AE Graph
+with validated artifacts, container-adapted paths, and execution annotations; and (2) a container
+environment description with identifiers, execution modes, and path mappings. Together, these
+artifacts constitute the Evaluation Agent’s initial execution context, enabling direct workflow
+execution under normalized execution semantics without re-parsing documentation.
+
+4.4      Evaluation Agent: Execution and Badge Determination
+4.4.1 Design Rationale. The Evaluation Agent operates exclusively on structured inputs pro-
+duced by the Planning Agent, including the AE Graph, Docker information, and meta-task
+specifications. Its responsibility is limited to execution and result assessment under normalized
+execution semantics. The evaluation workflow consists of three stages: graph-guided command
+execution, failure recovery, and badge determination. By design, environment construction and
+execution context normalization are excluded from this agent, allowing it to focus on execution
+logic and outcome analysis.
+
+                                                                                    , Vol. 1, No. 1, Article . Publication date: February 2018.
+12                                             Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+4.4.2 Graph-Guided Execution with Recovery. The Evaluation Agent executes commands by
+traversing the AE Graph in topological order while maintaining execution states at the node
+level. Compared to linear execution, this structure provides two advantages. First, upon failure,
+dependency relations encoded in the graph allow selective continuation by isolating affected
+downstream nodes rather than terminating the entire workflow. Second, node-level status tracking
+serves as compact execution checkpoints, reducing reliance on verbose execution logs.
+   For recovery, the Evaluation Agent analyzes failure traces using an LLM-based diagnostic
+module and generates targeted repair actions. Each command is retried up to five times before
+being marked as failed, after which downstream tasks continue independently. Beyond explicit
+failures, the agent detects implicit blocking through lightweight resource monitoring. Sustained
+low CPU utilization across intervals is interpreted as stalled execution, triggering log analysis and
+recovery. This mechanism addresses dynamic interactive execution behaviors identified in § 3.2.
+4.4.3 Badge Determination and Reporting. Upon completion of graph execution, the Evaluation
+Agent produces two outputs. The first consists of detailed execution logs recording command
+statuses, outputs, and errors for auditability. The second is an evaluation report summarizing
+execution outcomes, error analyses, and comparisons between observed results and expected
+claims extracted from the abstract of the paper.
+   Badge determination follows ACM artifact evaluation criteria [9]. The Artifact Functional badge
+requires successful execution of all graph nodes with expected outputs. Assessment of the Artifact
+Reusable badge is derived from evidence collected during execution and reported in a standardized
+format for reviewer inspection.
+
+4.5    Implementation Details
+Both agents follow the ReAct paradigm [38], in which the LLM processes static prompts together
+with accumulated execution history and produces structured (Thought, Tool Call, Arguments) ac-
+tions at each step. The agents share a common toolset consisting of five primitives: read_file for file
+inspection and content extraction, write_file for persisting generated content, command_execute
+for host-level shell execution, docker_check for retrieving container metadata, and task_finish
+for terminating the ArtifactCopilot workflow.
+   Context management is handled through a hierarchical strategy that preserves critical execution
+states under constrained context windows. At the step level, verbose build logs and program
+outputs are filtered using salience-aware truncation. Empirically, essential signals such as command
+invocations and failure indicators concentrate near the beginning and end of outputs; accordingly,
+head–tail truncation is applied when outputs exceed a fixed threshold. At the session level, long-
+running evaluations are managed through semantic compression. When the accumulated context
+approaches the model limit (e.g., 100k tokens), historical execution traces are summarized into a
+compact state description that replaces raw logs as the new context baseline.
+   System stability and efficiency are further controlled through execution safeguards and prompt
+layout optimization. A strict upper bound on interaction turns prevents unbounded feedback loops.
+In addition, the prompt template is organized to exploit context caching mechanisms provided
+by modern LLM APIs: static instructions and task descriptions precede dynamically appended
+execution history, improving cache reuse across successive calls. An example of the resulting
+prompt structure is shown in Figure 7. Complete prompts and configuration details are included in
+the replication artifact (see the Data Availability section).
+
+5     Evaluation
+Our evaluation addresses the following research questions:
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                                                                                            13
+
+ System Prompt
+  Planning Agent                                                                         Evaluation Agent
+ Role: You are an Environment Architecture Expert...<Role of AE Task>                    Role: You are an agent used to complete...<Content from Meta-task specification>
+  Thought Rules:
+  1. Mission Alignment & Status Check:
+  - Restate Global Goal: Explicitly state the ultimate objective of the entire session—what are we trying to build or solve?
+  - Mark Progress: List completed sub-tasks and pinpoint exactly where we are in the overall roadmap (e.g., "Step 2 of 5 completed")
+  2. Contextual Anchoring & Feedback Loop:
+  - Analyze Failures: If the previous step failed, perform a Root Cause Analysis instead of simply retrying.
+  - Verify Success: If the previous step succeeded, verify if the output matches expectations and confirms your hypothesis.
+  3. Information Synthesis
+  - List Facts: Summarize what is known for sure based on previous outputs.
+  - State Hypotheses: List what is suspected based on context.
+  - Identify Unknowns: Point out blind spots that require exploration.
+  4. Strategic Simulation & Decision Justification
+  - Mental Sandbox: Draft "Plan A," critique its risks (e.g., output size, irreversibility), and refine it (e.g., using head instead of cat).
+  - Justify Decision: Explain why the chosen tool/command is the optimal choice right now and how it specifically bridges the gap between the current status and the global goal.
+
+  User Prompt
+  Planning Agent                                                                   Evaluation Agent
+  Task List: Repository Artifact Integrity Analysis ...<Content of AE Task>       Task List: Repository This is a Python-based artifact...<Content of AE Task>
+  AE Graph: Nodes and Edges...<Content of AE Graph>                               Evaluation Rules: <Error Handle Rules>, <Command Excute Rules>, <Artifact Evaluation Rules>
+                                                                                  AE New Graph: Nodes and Edges...<Content of AE New Graph>
+
+  Tool Maps : Tool list (Read/Write File, Command Execute and Task Done)
+  History Steps: <Step id> <Thought> <Tool Call> <Tool Arg> <Result Content>...<Step id> <Thought> <Tool Call> <Tool Arg> <Result Content>
+
+  An Example of Agent’s output
+  Thought:The current goal is to complete the AE workflow for the type confusion project by executing the commands in graph, verifying outputs, and generating evaluation reports.
+  Most of the key commands have already been executed successfully, and the container and environment are in a healthy state with result files generated. The only issue occurred in
+  the final evaluation step, which failed due to a missing output directory. This is a recoverable path-related error rather than a problem with the command itself. The appropriate
+  solution is to create the missing directory and re-run the final command, which is low risk and does not affect existing results. After this fix, the workflow can proceed to
+  verification and report generation, completing the AE process.
+  Tool call: command_execute
+  Tool arg: docker exec typeconfusion-container sh -c 'mkdir -p /workspace/results/figures/final'
+
+
+
+Fig. 7. Prompt structure for the Planning Agent and Evaluation Agent, with static components placed
+before dynamic execution history to support cache reuse.
+
+
+• RQ3: How effectively does ArtifactCopilot automate artifact evaluation compared to repre-
+  sentative baselines?
+• RQ4: Which system components contribute most to ArtifactCopilot’s performance?
+5.1 Experimental Setup
+Datasets and Baselines. We evaluate all 48 artifacts described in § 2, including 12 artifacts used
+during the exploratory study and 36 held out for validation. The exploration set informed system
+design decisions but involved no parameter tuning; results are therefore reported jointly to improve
+statistical robustness. For all methods, commands are executed strictly according to the original
+guidelines without manual preprocessing. As no prior work directly targets end-to-end artifact
+evaluation automation, we select two baselines representing distinct automation paradigms.
+LLM+Scripts adopts a static generation approach without feedback loops: an LLM synthesizes a
+single execution script from the evaluation guidelines, which is then executed sequentially without
+revision. This setting reflects direct automation strategies similar in spirit to non-interactive
+execution methods explored in prior work [13].
+Claude Code [8] represents state-of-the-art interactive code agents capable of iterative execution
+and self-correction, and has demonstrated strong performance on software engineering bench-
+marks such as SWE-bench [24]. For comparability, Claude Code is prompted to follow the artifact
+README strictly under the same execution conditions as ArtifactCopilot. During evaluation,
+all decisions made by Claude Code—including command selection, configuration choices, and
+execution order—are directly executed without human modification or filtering, thereby preserving
+its end-to-end automated execution process.
+   We exclude environment construction agents such as ExecuteAgent [13] and Repo2Run [22],
+as they are designed for unit test execution rather than the end-to-end evaluation and badge
+
+                                                                                                   , Vol. 1, No. 1, Article . Publication date: February 2018.
+14                                             Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+Table 4. RQ3: ArtifactCopilot outperforms baselines across all workflow stages while requiring minimal
+human intervention.
+
+
+            Method                         LCR RASR           BCR   Intervention Count Cost ($)
+            ArtifactCopilot                100% 100% 85.42%                  0.11              0.091
+            Claude Code                      –    –  33.33%                  5.32              0.078
+            LLM+Scripts                      –    –  20.83%                    0               0.002
+
+verification. Moreover, these agents typically initialize isolated containers at startup, which would
+introduce Docker-in-Docker execution and conflict with the containerized artifacts in our dataset.
+Evaluation Metrics. Metrics are defined to reflect the staged workflow introduced in Figure 4, using
+ground truth derived from manually validated artifact links and README annotations. The primary
+outcome metric is the Badge Consistency Rate (BCR), defined as the proportion of artifacts for
+which both (1) all guideline-specified commands in the GCS are executed successfully, and (2) the
+resulting evaluation outcome is consistent with the functional-level badge outcome recorded in the
+official conference artifact evaluation results. Consistent with the functional-level normalization
+established during dataset construction, we do not distinguish between Functional and Reusable
+accuracy; instead, the system reports structured evidence and badge-aligned recommendations for
+reviewer inspection. Link Consistency Rate (LCR) and Repository Acquisition Success Rate
+(RASR) measure success in repository identification and retrieval. These metrics are not primary
+evaluation targets, as artifact evaluation typically provides accessible links to reviewers. They are
+just used to validate the effectiveness of ArtifactCopilot in the initial preprocessing stage.
+   Human effort is quantified using the Intervention Count, which records the number of manual
+actions required during evaluation; a fully automated system achieves a count of zero. Execution
+time is not reported, as it is dominated by artifact-specific workloads and hardware characteristics
+rather than the automation capability under study.
+Experiment Environment. All experiments are conducted on Ubuntu 22.04 with an NVIDIA
+RTX 4090 GPU. We use DeepSeek-V3.2 [25] for ArtifactCopilot and all baselines to ensure
+comparable performance–cost trade-offs.
+
+5.2 RQ3: Effectiveness of ArtifactCopilot
+As shown in Table 4, ArtifactCopilot achieves a BCR of 85.42%, substantially outperforming
+LLM+Scripts (20.83%) and Claude Code (33.33%). This margin indicates that ArtifactCopilot is
+more effective at automating end-to-end artifact evaluation than the selected baselines.
+Evaluation results by capability. ArtifactCopilot achieves 100% in both LCR and RASR,
+successfully extracting URLs and downloading repositories for all papers. Under our definition of
+artifact availability, this corresponds to 100% accuracy in availability identification. In terms of BCR,
+ArtifactCopilot attains 83.33% (10/12) on the exploration set and 86.11% (31/36) on the validation
+set; the close performance across datasets suggests stable behavior across different artifacts. A
+qualitative analysis of representative failure cases is discussed in § 6.
+Failure analysis of baselines. LLM+Scripts achieves a BCR of 20.83% due to the absence of
+execution feedback and limited support for dynamic interaction. As a result, generated scripts
+cannot recover from runtime errors, and failures in containerized artifacts are rarely resolved.
+Claude Code improves to 33.33% but faces two practical limitations. First, multi-stage AE workflows
+accumulate substantial context, frequently exceeding window limits. Second, Claude Code requests
+human confirmation for sensitive operations, averaging 5.32 interventions per artifact and reducing
+automation effectiveness. In contrast, ArtifactCopilot requires only 0.11 interventions on average;
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                          15
+
+
+45 of 48 artifacts complete with zero intervention. The three cases requiring input all involve
+sudo permission requests, reflecting system security policies rather than agent failures.
+Cost analysis. ArtifactCopilot incurs an average cost of $0.091, slightly above Claude Code’s
+$0.078. This difference arises from reinitializing the context queue from the beginning, which
+incurs additional LLM calls. However, given ArtifactCopilot’s higher BCR, the effective cost per
+successful evaluation is lower. LLM+Scripts incurs the lowest cost ($0.002), but its low success rate
+limits practical applicability.
+
+      Summary for RQ3: ArtifactCopilot achieves a high evaluation accuracy with an 85.42%
+      BCR while requiring minimal human involvement (0.11 interventions), substantially out-
+      performing general-purpose baselines in end-to-end artifact evaluation.
+
+
+5.3    RQ4: Ablation Study
+To assess the contribution of each component, we evaluate three ablations: (1) w/o AE Graph
+removes the graph construction phase, transitioning directly to the Planning Agent after the
+availability check; (2) w/o Environment Normalization disables unification, relying on default
+behaviors for environment-switching commands; (3) Single Agent eliminates the hierarchical
+architecture, employing a single agent for the entire workflow. To ensure a fair comparison, we
+apply only minimal prompt modifications to each variant. Table 5 summarizes the results.
+
+        Table 5. RQ4: Ablation study reveals each component’s critical contribution to performance.
+
+                      Ablation Setting                   BCR                  Cost ($)
+                      ArtifactCopilot (Full)            85.42%                  0.091
+                      w/o AE Graph                      41.67%                  0.081
+                      w/o Env Normalization             56.25%                  0.097
+                      Single Agent                      62.50%                  0.098
+
+
+AE Graph impact. Removing the AE Graph reduces BCR from 85.42% to 41.67%, a drop of 43.75%.
+Without explicit dependency modeling, the system frequently fails to preserve correct execution
+order or omits prerequisite steps, leading to incomplete or invalid evaluations. This observation
+highlights the importance of making execution dependencies explicit in artifact evaluation.
+Environment normalization impact. Removing environment normalization reduces BCR to
+56.25%, a decrease of 29.17%. Failures commonly arise when artifacts assume interactive execution
+modes or non-standard container entrypoints, which cause executions to terminate prematurely
+or behave inconsistently. Without normalized execution semantics, agents resort to repeated
+trial-and-error, often exhausting interaction budgets before converging on valid executions.
+Hierarchical architecture impact. Using a single-agent architecture reduces BCR to 62.50%, a
+decrease of 22.92 percentage points. When heterogeneous tasks such as environment setup, execu-
+tion, and verification are handled within a single context, intermediate information accumulates
+and dilutes task-relevant signals. In long-horizon workflows, this leads to degraded execution
+consistency and premature termination due to step or context limits.
+Cost analysis. The full system costs $0.091 per artifact. Removing dependency modeling slightly
+reduces cost ($0.081) but leads to a substantial drop in BCR, while removing environment normaliza-
+tion or hierarchical architecture increases cost ($0.097 and $0.098) due to additional trial-and-error
+or longer contexts. Overall, higher evaluation reliability does not come at increased cost.
+
+                                                          , Vol. 1, No. 1, Article . Publication date: February 2018.
+16                                             Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+
+      Summary for RQ4: Ablation results show that removing any major component substan-
+      tially degrades BCR, confirming the importance of explicit dependency handling, normalized
+      execution behavior, and task decomposition for artifact evaluation. While different ablations
+      fail for different reasons, the full system achieves the best balance between evaluation
+      accuracy and execution cost.
+
+
+6     Discussion
+6.1     Failure Analysis and Limitations
+A root-cause analysis was conducted on the seven cases that failed to complete the full AE workflow
+to characterize the capability boundaries of ArtifactCopilot. The failure categories and their
+distributions are summarized in Table 6.
+Environment and dependency issues (4 cases, 57.1%) represent the dominant failure source and
+primarily arise during environment construction. These failures are typically caused by implicit
+system-level dependencies, such as undocumented Python library incompatibilities or unavailable
+toolchains in containerized settings. While the Planning Agent employs dependency-driven
+synthesis and fallback strategies, it relies on declared configurations and lacks the ability to infer
+implicit dependencies from source code. As a result, repeated failures exceed the retry threshold.
+Data dependency issues (2 cases, 28.6%) occur during instruction execution and manifest as
+missing or empty intermediate data artifacts. Although documentation specifies data acquisition
+
+
+                                   Table 6. Root-cause analysis for failed AE cases.
+
+                  Failure Category                            # Cases Ratio        Cause
+                  Environment / Dependency Issues               4     57.1% Implicit dependencies
+                  Data Dependency Issues                        2     28.6% Missing or empty data
+                  Configuration Mismatch                        1     14.3%   Inconsistent paths
+                  Total                                         7     100%             –
+
+
+steps, the Execute Agent lacks an external context for validating data completeness or correctness.
+This limitation reveals that the current AE Graph captures artifact existence but does not model
+data content validity, which prevents early detection of corrupted or incomplete data flows.
+Configuration mismatch (1 case, 14.3%) results from implicit cross-file constraints, such as
+inconsistent path assumptions across scripts. Because the AE Graph is derived from document-level
+semantics, such constraints remain unmodeled. This indicates that documentation analysis alone is
+insufficient for capturing certain execution assumptions.
+   Overall, these failures reflect the combined effects of system limitations and incomplete artifact
+specifications. When dependencies and data requirements are explicitly declared, ArtifactCopilot
+can reliably complete artifact evaluation. However, missing or implicit assumptions substantially
+reduce the effectiveness of automated recovery. The current evaluation scope of ArtifactCopilot
+is limited to artifacts that meet predefined resource and accessibility constraints. Artifacts that
+require specialized hardware, private datasets, or large-scale computational resources remain
+outside the supported scope. Addressing these limitations will require tighter integration of code-
+level dependency analysis, stronger data flow validation, and finer-grained constraint modeling
+within the AE Graph.
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                      17
+
+
+6.2   Implications
+Based on both the empirical analysis of real-world artifact evaluation outcomes and hands-on
+experience gained during the design and implementation of ArtifactCopilot, we distill the fol-
+lowing insights. These implications are grounded in observed failure patterns, human intervention
+behaviors, and ablation results, and aim to inform future standardization efforts, author practices,
+and the design of automated Artifact Evaluation systems.
+Implications for standardizing the AE process. The analysis in § 3.1 reveals substantial het-
+erogeneity in artifact configurations and documentation quality. These observations suggest that
+the artifact evaluation process benefits from being structured into clearly verifiable stages with
+explicit input-output specifications. The stages include artifact integrity checking, environment
+configuration and build, instruction execution and error recovery, and badge level assessment. For
+artifacts that depend on non-standard resources, such as specialized hardware or private datasets,
+explicit and structured declarations of such constraints are necessary in order to avoid implicit
+assumptions during evaluation.
+Recommendations for artifact authors. As 53.16% of manual interventions involve basic com-
+mand execution according to § 3.1, many artifacts lack automated validation entry points. Several
+practices can substantially reduce evaluation friction. These include providing one-click validation
+scripts preferably via containerized setups, separating lightweight validation workflows from full
+reproduction pipelines, and externalizing configuration parameters such as API keys and dataset
+paths rather than hard-coding them. The failure analysis in § 6.1 indicates that failures stem from
+undocumented assumptions, including undeclared dependencies and inconsistent configurations.
+Implications for automated tool design. The ablation study in § 5.3 indicates that structured
+task modeling plays a central role in automated artifact evaluation. Removing the AE Graph leads
+to substantial performance degradation. These findings reinforce the importance of representing
+evaluation workflows using explicit dependency structures rather than linear instruction sequences.
+They also highlight the need to decouple environment construction from execution and verification.
+Explicit modeling of execution boundaries in containerized settings is necessary to mitigate failures
+caused by implicit context switching.
+
+6.3   Threats to Validity
+Internal validity. Threats to internal validity mainly arise from three factors. First, LLM outputs
+are inherently stochastic, and identical inputs may yield different execution paths. This effect was
+mitigated by setting the model temperature to zero and enforcing structured output constraints at
+key decision points. Second, the retry threshold of the error recovery mechanism (𝑘 = 3) and the
+blocking detection interval of three minutes were selected based on pilot experiments. Alternative
+parameter settings may alter the trade-off between success rate and resource consumption. Third,
+the classification of human intervention scenarios in § 3.1 was conducted using an open coding ap-
+proach and involved approximately ten person-hours of manual analysis. Although inter-annotator
+agreement was high with a Cohen’s 𝜅 value of 0.85, some subjectivity may remain.
+External validity. Threats to external validity primarily concern dataset representativeness. The
+evaluation dataset was collected from artifacts published at four top-tier software engineering
+conferences, namely ICSE, FSE, ASE, and ISSTA. Artifacts that require specialized hardware, private
+datasets, or large-scale computational resources were excluded. Consequently, the findings may not
+directly generalize to other research domains or resource-intensive artifacts. Nevertheless, software
+engineering artifacts exhibit substantial diversity and complexity. The core observations regarding
+human intervention patterns and automation bottlenecks are therefore expected to provide useful
+insights for artifact evaluation practices beyond the evaluated scope.
+
+                                                      , Vol. 1, No. 1, Article . Publication date: February 2018.
+18                                             Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+7    Related Work
+Artifact Evaluation. With the increasing emphasis on open science and research reproducibility,
+artifact evaluation has been widely adopted by top-tier conferences in software engineering,
+computer systems, and artificial intelligence as a mechanism for encouraging the release of research
+artifacts. A growing body of work has examined the effectiveness and limitations of AE from
+multiple perspectives.
+   At the macro level, empirical studies by Liu et al. [26] and Childers and Chrysanthis [16] report
+substantial growth in artifact availability and show that papers passing AE often exhibit advantages
+in citation impact. However, these studies also identify persistent challenges, including insufficient
+artifact maintenance and highly variable documentation quality. From the perspective of repro-
+ducibility quality, large-scale investigations by Muttakin et al. [27] and Siddiq et al. [32] highlight
+a pronounced gap between artifact availability, executability, and reproducibility. Their findings
+indicate that practical obstacles such as dependency management, environment configuration, and
+access restrictions remain widespread, even among artifacts that have received AE badges.
+   At the methodological and practice-oriented level, Gundersen and Kjensmo [18] and Semmelrock
+et al. [31] introduce multi-level reproducibility frameworks and barrier-focused analyses that
+provide conceptual foundations for understanding AE outcomes. Complementing these efforts,
+Saucez et al. [30], Beyer and Winter [11], and Runeson et al. [29] summarize AE organization
+processes, evaluation experiences, and community-specific best practices. While these studies have
+significantly advanced institutional design, evaluation criteria, and empirical understanding of AE,
+artifact evaluation is generally treated as a predominantly manual activity.
+   Systematic investigations of automated support for Artifact Evaluation remain limited. In particu-
+lar, existing work has not yet examined how automation can be used to support artifact acquisition,
+environment construction, instruction execution, and result verification in an integrated manner.
+Reducing evaluation costs while improving consistency and scalability. therefore remains an open
+challenge. Unlike prior AE studies that focus on policy, process, or empirical outcomes, this work
+studies artifact evaluation as an end-to-end automation problem.
+LLM-based Agents. Recent advances in large language models have given rise to agent-based
+approaches with strong automation capabilities in software engineering. Prior work has applied
+LLM agents to diverse tasks, including code generation and translation, build configuration, test
+execution, and automated program repair.
+   For code understanding and transformation, TRANSAGENT by Yuan et al. [40] adopts a multi-
+agent collaboration paradigm that combines control-flow–driven code alignment with execution-
+level semantic alignment, enabling fine-grained localization and repair in cross-language code
+translation. CODEAGENT by Zhang et al. [41] integrates external programming tools with multi-
+strategy agents to support information retrieval, code navigation, and execution verification in real
+repositories, improving the reliability of repository-level code generation.
+   Several studies further demonstrate the effectiveness of LLM agents in software building, execu-
+tion, and repair. CXXCrafter by Yu et al. [39] analyzes dependencies and build configurations and
+performs iterative repairs from error feedback to improve build success for complex C/C++ projects.
+Repo2Run by Hu et al. [22] addresses environment configuration using a dual-environment design
+with atomic configuration synthesis to improve the runnability of Python repositories. ExecutionA-
+gent [13] and RepairAgent [12] by Bouzenia and Pradel target build/test execution and automated
+program repair, simulating human debugging via meta-prompting, tool use, and explicit state
+modeling. At the system level, SWE-agent [37] introduces an Agent Computer Interface (ACI)
+for interacting with real development environments and outperforms prior methods on multiple
+
+
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+Agent-Based Software Artifact Evaluation                                                                                     19
+
+
+benchmarks. OpenHands [33] presents an open multi-agent platform for general software tasks,
+demonstrating the scalability of LLM-based agents in software engineering automation.
+
+8   Conclusion
+This paper presents ArtifactCopilot, the first end-to-end agent-based framework for automat-
+ing software artifact evaluation. Based on an empirical study of real-world artifacts, we identify
+three key challenges: perceiving execution states from unstructured documentation, handling
+implicit execution environment switches, and recovering from pervasive execution failures. Ar-
+tifactCopilot addresses these challenges by formulating artifact evaluation as a state-aware
+workflow problem, using the AE Graph to model commands, artifacts, and dependencies, and a
+hierarchical architecture that separates environment planning from execution and verification
+under normalized, host-centric execution semantics. Evaluated on 48 artifacts from top-tier soft-
+ware engineering conferences, ArtifactCopilot achieves an 85.42% BCR with near-zero human
+intervention, substantially outperforming representative LLM-based baselines.
+
+References
+ [1] 2023. Proceedings of ESEC/FSE 2023. Association for Computing Machinery, New York, NY, USA. https://dl.acm.org/
+     doi/proceedings/10.1145/3611643
+ [2] 2024. Proceedings of the 33rd ACM SIGSOFT International Symposium on Software Testing and Analysis. Association for
+     Computing Machinery, New York, NY, USA. doi:10.1145/3650212
+ [3] 2024. Proceedings of the 39th IEEE/ACM International Conference on Automated Software Engineering. Association for
+     Computing Machinery, New York, NY, USA. doi:10.1145/3691620
+ [4] 2024. Proceedings of the 46th International Conference on Software Engineering. Association for Computing Machinery,
+     New York, NY, USA. doi:10.1145/3597503
+ [5] 2025. ICSE 2025 - Artifact Evaluation. https://conf.researchr.org/track/icse-2025/icse-2025-artifact-evaluation
+     Accessed: 2026-01-28.
+ [6] 2025. Proceedings of the 47th International Conference on Software Engineering. Association for Computing Machinery,
+     New York, NY, USA. doi:10.5555/3767285
+ [7] Florian Angermeir, Maximilian Amougou, Mark Kreitz, Andreas Bauer, Matthias Linhuber, Davide Fucci, Daniel
+     Mendez, Tony Gorschek, et al. 2025. Reflections on the Reproducibility of Commercial LLM Performance in Empirical
+     Software Engineering Studies. arXiv preprint arXiv:2510.25506 (2025).
+ [8] Anthropic. 2025. Claude Code: AI coding agent for terminal & IDE. https://claude.com/product/claude-code. Accessed:
+     2025-01-23.
+ [9] Association for Computing Machinery. 2020. Artifact Review and Badging. https://www.acm.org/publications/policies/
+     artifact-review-and-badging-current. Accessed: 2026-01-23.
+[10] Association for Computing Machinery. 2026. ACM Digital Library. https://dl.acm.org/. Accessed: 2026-01-27.
+[11] Dirk Beyer and Stefan Winter. 2025. Artifact Evaluations for Stronger Research Results. In Proceedings of the 33rd ACM
+     International Conference on the Foundations of Software Engineering. 1234–1237.
+[12] Islem Bouzenia, Premkumar Devanbu, and Michael Pradel. 2024. Repairagent: An autonomous, llm-based agent for
+     program repair. arXiv preprint arXiv:2403.17134 (2024).
+[13] Islem Bouzenia and Michael Pradel. 2025. You name it, I run it: An LLM agent to execute tests of arbitrary projects.
+     Proceedings of the ACM on Software Engineering 2, ISSTA (2025), 1054–1076.
+[14] Christian Braun, Alexander Lilienbeck, and Daniel Mentjukov. 2025. The Hidden Structure – Improving Legal Document
+     Understanding Through Explicit Text Formatting. arXiv:2505.12837 [cs.CL] https://arxiv.org/abs/2505.12837
+[15] CERN and OpenAIRE. 2026. Zenodo. https://zenodo.org/. Accessed: 2026-01-29.
+[16] Bruce R Childers and Panos K Chrysanthis. 2017. Artifact evaluation: Is it a real incentive?. In 2017 IEEE 13th
+     international conference on e-science (e-Science). IEEE, 488–489.
+[17] GitHub, Inc. 2026. GitHub. https://github.com/. Accessed: 2026-01-29.
+[18] Odd Erik Gundersen and Sigbjørn Kjensmo. 2018. State of the art: Reproducibility in artificial intelligence. In Proceedings
+     of the AAAI conference on artificial intelligence, Vol. 32.
+[19] Sean N Halpin. 2024. Inter-coder agreement in qualitative coding: Considerations for its use. American Journal of
+     Qualitative Research 8, 3 (2024), 23–43.
+[20] Junda He, Christoph Treude, and David Lo. 2025. LLM-Based Multi-Agent Systems for Software Engineering: Literature
+     Review, Vision, and the Road Ahead. ACM Transactions on Software Engineering and Methodology 34, 5 (2025), 1–30.
+
+
+                                                                     , Vol. 1, No. 1, Article . Publication date: February 2018.
+20                                             Zhaonan Wu, Yanjie Zhao, Zhenpeng Chen, Zheng Wang, and Haoyu Wang
+
+
+[21] Ben Hermann, Stefan Winter, and Janet Siegmund. 2020. Community expectations for research artifacts and evaluation
+     processes. In Proceedings of the 28th ACM joint meeting on european software engineering conference and symposium on
+     the foundations of software engineering. 469–480.
+[22] Ruida Hu, Chao Peng, Xinchen Wang, Junjielong Xu, and Cuiyun Gao. 2025. Repo2Run: Automated Building Executable
+     Environment for Code Repository at Scale. arXiv preprint arXiv:2502.13681 (2025).
+[23] ICSE 2024. 2024. ICSE 2024 - Artifact Evaluation. https://conf.researchr.org/track/icse-2024/icse-2024-artifact-
+     evaluation. Accessed: 2024-04-21.
+[24] Carlos E Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir Press, and Karthik Narasimhan. 2023.
+     Swe-bench: Can language models resolve real-world github issues? arXiv preprint arXiv:2310.06770 (2023).
+[25] Aixin Liu, Aoxue Mei, Bangcai Lin, Bing Xue, Bingxuan Wang, Bingzheng Xu, Bochao Wu, Bowei Zhang, Chaofan
+     Lin, Chen Dong, et al. 2025. Deepseek-v3. 2: Pushing the frontier of open large language models. arXiv preprint
+     arXiv:2512.02556 (2025).
+[26] Mugeng Liu, Xiaolong Huang, Wei He, Yibing Xie, Jie M Zhang, Xiang Jing, Zhenpeng Chen, and Yun Ma. 2024.
+     Research artifacts in software engineering publications: Status and trends. Journal of Systems and Software 213 (2024),
+     112032.
+[27] Al Muttakin, Saikat Mondal, and Chanchal Roy. 2026. The State of Open Science in Software Engineering Research: A
+     Case Study of ICSE Artifacts. arXiv preprint arXiv:2601.02066 (2026).
+[28] Animesh Nandi, Atri Mandal, Shubham Atreja, Gargi B Dasgupta, and Subhrajit Bhattacharya. 2016. Anomaly detection
+     using program control flow graph mining from execution logs. In Proceedings of the 22nd ACM SIGKDD international
+     conference on knowledge discovery and data mining. 215–224.
+[29] Per Runeson, Emma Soderberg, and Martin Host. 2024. A conceptual framework and recommendations for open
+     data and artifacts in empirical software engineering. In Proceedings of the 1st IEEE/ACM International Workshop on
+     Methodological Issues with Empirical Studies in Software Engineering. 68–75.
+[30] Damien Saucez, Luigi Iannone, and Olivier Bonaventure. 2019. Evaluating the artifacts of SIGCOMM papers. ACM
+     SIGCOMM Computer Communication Review 49, 2 (2019), 44–47.
+[31] Harald Semmelrock, Tony Ross-Hellauer, Simone Kopeinik, Dieter Theiler, Armin Haberl, Stefan Thalmann, and
+     Dominik Kowald. 2025. Reproducibility in machine-learning-based research: Overview, barriers, and drivers. AI
+     Magazine 46, 2 (2025), e70002.
+[32] Mohammed Latif Siddiq, Arvin Islam-Gomes, Natalie Sekerak, and Joanna Santos. 2025. Large Language Models for
+     Software Engineering: A Reproducibility Crisis. arXiv preprint arXiv:2512.00651 (2025).
+[33] Xingyao Wang, Boxuan Li, Yufan Song, Frank F Xu, Xiangru Tang, Mingchen Zhuge, Jiayi Pan, Yueqi Song, Bowen
+     Li, Jaskirat Singh, et al. 2024. Openhands: An open platform for ai software developers as generalist agents. arXiv
+     preprint arXiv:2407.16741 (2024).
+[34] Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le, Denny Zhou, et al. 2022.
+     Chain-of-thought prompting elicits reasoning in large language models. Advances in neural information processing
+     systems 35 (2022), 24824–24837.
+[35] Stefan Winter, Christopher S Timperley, Ben Hermann, Jürgen Cito, Jonathan Bell, Michael Hilton, and Dirk Beyer.
+     2022. A retrospective study of one decade of artifact evaluations. In Proceedings of the 30th ACM joint European software
+     engineering conference and symposium on the foundations of software engineering. 145–156.
+[36] Zhiqiang Xie, Minjie Wang, Zihao Ye, Zheng Zhang, and Rui Fan. 2022. Graphiler: Optimizing graph neural networks
+     with message passing data flow graph. Proceedings of Machine Learning and Systems 4 (2022), 515–528.
+[37] John Yang, Carlos E Jimenez, Alexander Wettig, Kilian Lieret, Shunyu Yao, Karthik Narasimhan, and Ofir Press. 2024.
+     Swe-agent: Agent-computer interfaces enable automated software engineering. Advances in Neural Information
+     Processing Systems 37 (2024), 50528–50652.
+[38] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik R Narasimhan, and Yuan Cao. 2022. React: Syner-
+     gizing reasoning and acting in language models. In The eleventh international conference on learning representations.
+[39] Zhengmin Yu, Yuan Zhang, Ming Wen, Yinan Nie, Wenhui Zhang, and Min Yang. 2025. CXXCrafter: An LLM-Based
+     Agent for Automated C/C++ Open Source Software Building. Proceedings of the ACM on Software Engineering 2, FSE
+     (2025), 2618–2640.
+[40] Zhiqiang Yuan, Weitong Chen, Hanlin Wang, Kai Yu, Xin Peng, and Yiling Lou. 2024. Transagent: An llm-based
+     multi-agent system for code translation. arXiv preprint arXiv:2409.19894 (2024).
+[41] Kechi Zhang, Jia Li, Ge Li, Xianjie Shi, and Zhi Jin. 2024. Codeagent: Enhancing code generation with tool-integrated
+     agent systems for real-world repo-level coding challenges. arXiv preprint arXiv:2401.07339 (2024).
+[42] Yuntong Zhang, Haifeng Ruan, Zhiyu Fan, and Abhik Roychoudhury. 2024. Autocoderover: Autonomous program
+     improvement. In Proceedings of the 33rd ACM SIGSOFT International Symposium on Software Testing and Analysis.
+     1592–1604.
+[43] Noa Zilberman and Andrew W Moore. 2020. Thoughts about artifact badging. 60–63 pages.
+
+
+, Vol. 1, No. 1, Article . Publication date: February 2018.
+
