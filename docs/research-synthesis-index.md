@@ -888,6 +888,7 @@ revision before adding another lifecycle schema.
 |---|---:|---|
 | [STRACE](../papers/agent-benchmarks/2026-07-09-strace.md) | B | Introduces dependency-aware causal slicing and the distinction between surface failure and upstream root cause |
 | [Who&When Pro](../papers/agent-benchmarks/2026-07-15-whowhen-pro-failure-attribution-validity.md) | B | Makes the injected actor/action/step known under attempted exact-prefix replay, while showing that intervention identity, first divergence, propagated symptom, but-for effect, earliest sufficient cause, natural multi-cause root, and repair utility are distinct claims; its unreleased corpus/code prevents construction and result audit |
+| [The Saturation Trap](../papers/agent-benchmarks/2026-07-15-intervention-timing-construct-reliability.md) | B | Separates exact-index, event-window, intervention-type, detector, utility, and decision-validity targets; its one-trajectory labels and post-v1 `Δt=0` audit show target/instrument fragility rather than general timing unreliability |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Adds error → verifier feedback → repair → verification as a measurable recovery chain |
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Prevents launcher, permission, tool, and sandbox faults from being mislabeled as capability failures |
 | [Amazon production-agent evaluation](concepts/amazon-production-agent-evaluation.md) | B | Adds production-oriented decomposition of tool, memory, reasoning, and end-to-end operational failures |
@@ -898,6 +899,36 @@ revision before adding another lifecycle schema.
 **Repository consequence:** Root/surface attribution, causal trace slices, recovery records, invalid-trial handling, and task-health lifecycle records. Apparent requests should also admit a counterfactual action contract: observable disqualifying evidence, authority and threshold, legitimate alternatives, required state and communication consequences, abstention/escalation, and collateral harm. Decision, rationale, artifact preservation, communication, cost, and harm remain separate observations. Matched persist/stop and comply/dissent forms are required to distinguish calibrated judgment from generic quitting or contrarianism; substantive action must be tested independently of lexical realization, with paraphrase contrasts and retained semantic adjudication. AARRI's inspectable authored suite motivates this design but its missing sampling frame, contributor accounting, human baseline/agreement, repeats/uncertainty, verifier-wide audit, complete configuration, contamination-safe split, environment evidence, and paper-pinned release prevent researcher-quality or cross-domain capability claims.
 
 Controlled injection adds an **attribution claim ladder**: `declared injected delta → first observed divergence → propagated surface failure → but-for effect under paired replay → earliest sufficient cause → natural multi-cause root → diagnosis-guided repair utility`. No rung inherits the next. A successful seed plus a failed newly sampled continuation identifies the construction treatment, but without repeated paired suffixes, sham/alternative corrections, full state attestation, all-attempt denominators, and recovery tests it does not prove that correcting the injected action would rescue that branch or that the same label transfers to natural failures. Who&When Pro's reported 12,326 retained traces, 100-row label-visible human check, and protocol comparisons make this boundary concrete; success-conditioned seeds, endpoint-failure selection, incomplete replay equivalence, single-mode labels, absent clustered uncertainty, and unreleased data/code restrict it to synthetic intervention-recognition evidence. Existing trace, root/surface, recovery, invalid-trial, task-health, evidence-view, metric, and validity records already host the repair; no injection-specific schema follows.
+
+Intervention timing adds an upstream **policy-target chain**: `frozen decision time
+and admissible prefix → candidate opportunity → acceptable event window and
+consequence-equivalent action set → reviewer authority/view and repeated judgment
+→ configured detector and threshold/capacity policy → executed intervention and
+uptake → state/artifact consequence → burden and stakeholder loss`. Exact-index,
+window, and type agreement; detector performance; execution; utility; and decision
+validity are different estimands. A grader cannot use the current action's resulting
+observation to score a pre-action decision, and agreement to one unexplained reviewer
+cannot substitute for authority, policy equivalence, or consequence evidence.
+
+The Saturation Trap reproduces sparse-label disagreement on one 56-action successful
+coding trace, but three under-specified annotators, a discarded/rebriefed pass, no
+rationales or repeat labels, ambiguous pre/post-action indexing, no executed
+intervention, and no outcome/loss prevent a general reliability claim. Its pinned
+post-v1 release is valuable adverse audit evidence: the v1 replay hard-coded
+`Δt=0`, so the reported state persistence is a zero-decay level-trigger result, not
+evidence that a wall-clock-calibrated affect monitor structurally saturates. Existing
+configured-system, trace/intervention, participation, task-health, metric, and
+validity records host the repair; no timing or affect subsystem follows.
+
+The internal [intervention-attribution replay](../pilots/intervention-attribution-rungs-v1/README.md)
+crosses two builder-authored work shapes, six conditions, two equivalent forms, and
+three frozen observer views in 24 retained attempts. It keeps one replay-diverged
+cell invalid, preserves recovered and dual-fault cases, and deterministically shows
+eight answer-bearing surface collapses where the full answer-withheld rule retains
+upstream localization. This is local contract evidence only: complete valid cells
+support paired-repair semantics, while earliest sufficient cause remains unsupported
+and natural-failure root prohibited. It supplies no expert/professional validity,
+auditor generalization, agent capability, safety, production, or readiness evidence.
 
 The combined evidence adds two non-substitutable boundaries. First, private intent,
 public authorization, resolvable uncertainty, legitimate terminal action, attempted

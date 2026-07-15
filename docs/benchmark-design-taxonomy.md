@@ -1599,6 +1599,92 @@ professional, safety, or readiness success [LWT]. Existing artifact-admissibilit
 evidence-view, trace, task-health, root/surface, and validity records carry this
 crosswalk; no masking-specific score or schema follows.
 
+### 3.4 Intervention opportunities and causal attributions are different targets
+
+A runtime signal, a proposed supervision action, and a retrospective causal label
+answer different questions. Preserve one typed chain instead of treating an exact
+trajectory index as their shared ground truth:
+
+```text
+candidate signal or opportunity at a frozen evidence time
+  → acceptable event window and consequence-equivalent action/policy set
+    → reviewer role, authority, evidence view, rationale, and repeated judgment
+      → configured detector observation and threshold/capacity policy
+        → executed intervention, participant response, and agent uptake
+          → state/artifact change, delay, burden, and collateral effect
+            → counterfactual consequence, repair utility, and stakeholder loss
+```
+
+The decision-time record must name `pre_action`, `post_action_pre_next`,
+`post_artifact`, or retrospective audit; the exact trace/state prefix; latest
+admissible event; excluded future channels; proposed-versus-executed action
+visibility; latency; and expiry. A grader that sees the current action's resulting
+observation cannot score a pre-action policy. Logical action index, wall time, tool
+latency, authored schedule, decay/recovery, level-versus-edge semantics,
+hysteresis, cooldown, and reset are independently versioned instrument components
+[SAT].
+
+Before computing detector accuracy, predeclare whether the target is an exact
+mandatory gate, an earliest-warning/latest-safe window, a set of consequence-
+equivalent interventions, a risk score plus threshold/loss/capacity rule, or a
+framework-indexed distribution of legitimate reviewer policies. Keep exact-location,
+window, and intervention-type agreement separate. Preserve reviewer qualification
+and authority, evidence view, rationale, uncertainty, rubric version and
+comprehension, intrarater repeat, and disagreement crux. Consensus can change the
+target; sparse exact-index disagreement does not prove policy invalidity, while
+high agreement does not prove benefit [SAT].
+
+Detector agreement ends before intervention utility. Report candidate-opportunity
+coverage, false interruption, missed severe boundary, executed intervention,
+response and uptake, endpoint/recovery, latency, operator or participant burden,
+introduced defects, and declared stakeholder loss as separate denominators. Where
+the claim warrants it, compare no intervention, fixed checkpoints, deterministic
+window/rule, detector policy, human policy, and sham/no-op interruption under
+frozen task, system, environment, and evidence views. A level trigger over a
+zero-decay accumulator is evidence about that configured policy, not a general
+property of affect, risk, or supervision [SAT].
+
+Retrospective diagnosis then follows a separate attribution ladder:
+
+```text
+declared construction intervention → first observed divergence
+  → propagated surface failure → but-for effect under paired replay
+    → earliest sufficient cause → natural multi-cause root
+      → diagnosis-guided repair utility
+```
+
+No rung inherits the next. Preserve successful witness, full pre-state attestation,
+all injection/replay/filter dispositions, repeated paired suffixes, original,
+repaired, sham, unrelated, downstream-only, and dual-fault contrasts, dependency
+edges, unresolved alternatives, and unaffected controls. Observer views such as
+prefix-only, full trace, and answer-bearing are distinct instruments: endpoint
+access can expose a symptom while anchoring attribution away from the earliest
+supported divergence. A known injected step is a construction label; it is not
+automatically a unique causal root or evidence that the same diagnosis applies to
+natural failures [WWP].
+
+The Saturation Trap supplies a useful negative case but only one 56-action coding
+trajectory with three under-specified annotators. Its post-v1 release reproduces
+sparse-label reliability while revealing that the reported replay hard-coded
+`Δt=0`, disabling decay; it executes no intervention and measures no outcome,
+burden, or loss [SAT]. Who&When Pro reports 12,326 endpoint-failing injected traces,
+but success- and failure-conditioned selection, incomplete state equivalence,
+single-mode labels, a label-visible 100-row human check, absent clustered
+uncertainty, and an unreleased corpus/codebase bound it to synthetic
+intervention-recognition evidence [WWP].
+
+The internal 24-attempt, two-work-shape conformance replay retains one invalid
+replay-diverged cell, recovered and dual-fault cases, and three frozen observer
+views. It demonstrates only deterministic builder-authored behavior: local
+construction-delta, first-divergence, propagation, and complete-cell paired-repair
+semantics; `earliest_sufficient_cause` remains unsupported and
+`natural_failure_root` prohibited. Its answer-bearing rule collapses eight upstream
+failures onto surface checks by construction, so it calibrates observer-view and
+fail-closed contracts rather than auditor capability or natural diagnosis [IAR].
+Existing configured-system, trace, root/surface, recovery, participation,
+task-health, metric, artifact/state, and validity records are the durable homes;
+no timing-, affect-, or injection-specific schema follows.
+
 ## 4. Intervention, instrument, and system identity
 
 A benchmark trial evaluates a configured system, not an abstract model. Version
@@ -2804,6 +2890,23 @@ them:
   packages but not the paper's evolution experiments or transfer results.
 - **[ST]** `papers/agent-benchmarks/2026-07-09-strace.md`; local extracted text
   path is recorded there.
+- **[SAT]**
+  `papers/agent-benchmarks/2026-07-15-intervention-timing-construct-reliability.md`;
+  reviewed immutable v1 PDF/text and pinned post-v1 official repository paths and
+  hashes are recorded there. The release reproduces the retained 56-action label
+  statistics and exposes the `Δt=0` correction, but omits the paper-time engine,
+  raw trajectories, complete annotation instrument, and consequence evidence.
+- **[WWP]**
+  `papers/agent-benchmarks/2026-07-15-whowhen-pro-failure-attribution-validity.md`;
+  reviewed immutable v1 PDF/text plus pinned two-day-post-v1 code/project snapshots
+  are recorded there. The claimed 12,326-row corpus, generation/evaluation code,
+  human-label records, predictions, and result package were unavailable; six
+  illustrative traces do not establish paper–release correspondence.
+- **[IAR]** `pilots/intervention-attribution-rungs-v1/README.md`,
+  `protocol.json`, and `replay-report.json` (SHA-256
+  `d36e3f70404d7fa6de8555ce5f0e1433dd8a2a0d09e4298d3e7fd3679e9758fd`);
+  24 deterministic builder-authored attempts across two work shapes validate local
+  claim-rung, observer-view, and fail-closed fixture behavior only.
 - **[EB]** `papers/agent-benchmarks/2026-07-09-efficient-benchmarking-ai-agents.md`;
   local extracted text path is recorded there.
 - **[AP]** `papers/agent-benchmarks/2026-07-09-agent-psychometrics.md`; local
