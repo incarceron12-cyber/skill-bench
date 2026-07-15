@@ -90,16 +90,18 @@ Before making the site public, decide:
 
 The projection intentionally excludes credentials and local paper/source archives. Review queue rationales and next actions before publishing them on a public hostname.
 
-## Continuous deployment
+## Continuous private builds
 
-`.github/workflows/site.yml` performs a clean projection, validates canonical sources, runs Astro checks, builds the static site, and deploys it to GitHub Pages whenever relevant content reaches `main`.
+`.github/workflows/site.yml` performs a clean projection, validates canonical sources, runs Astro checks, builds the static site, and uploads a private workflow artifact whenever relevant content reaches `main`.
 
-The project-hosted URL is:
+The repository remains private. The workflow deliberately does **not** attempt GitHub Pages deployment because this account plan does not support Pages from this private repository.
 
-```text
-https://incarceron12-cyber.github.io/skill-bench/
-```
+Private hosting options are:
 
-The workflow sets Astro's base path to `/skill-bench`, cancels superseded deployments, and republishes when the site, charter, docs, papers, or work queue change. It reflects the latest **pushed commit**, not uncommitted local worker state.
+1. **Cloudflare Pages + Access:** managed builds from the private GitHub repository, protected by an identity policy. Best balance of convenience and private browser access.
+2. **Caddy + Cloudflare Tunnel/Access:** build on a private server, serve `dist/` with Caddy, and expose it without opening an inbound port.
+3. **Tailscale Serve:** serve the static site only inside the tailnet. Simplest and strongest option when access is limited to Samuel's own devices.
+4. **Private VPS + Caddy authentication:** conventional reverse-proxy hosting with explicit identity or VPN controls; more operational work.
+5. **GitHub Enterprise Cloud private Pages:** native repository-reader access control, but substantially more expensive than the other options.
 
-Caddy remains an optional replacement if a custom domain, private access, or self-hosting is selected later.
+All options reflect the latest **successfully built/published commit**, not uncommitted local worker state. The Astro configuration accepts `SITE_URL` and `SITE_BASE` so a chosen host can set its final URL without changing canonical research content.
