@@ -1526,6 +1526,63 @@ reset cadence, update budget, and which feedback may enter memory. Once one test
 item changes behavior on the next, the estimand is ordered-stream learning, not
 independent pass@1 [ACE, SE].
 
+### 4.0 Projection independence and external authority set the claim ceiling
+
+Co-derived components can agree because they share a projection, not because the
+projection is useful or true outside itself. This applies whether one source
+procedure generates the demand, task, and rubric; later behavior nominates a hidden
+requirement; or one language model authors state, emits observations and faults, and
+judges the resulting trace. Preserve a **projection-independence matrix** with
+separate identities and authority for source procedure/behavior, demand evidence,
+task author, goal oracle, state/transition/observation/fault authority, instruction
+instrument, grader, equivalent-form author, affected-party reviewer, professional
+reviewer, and release decision. For every pair, record shared text, model, human
+author, organization, examples/calibration data, and outcome visibility [ASAS, MSB,
+OB]. Literal non-overlap or separate API calls do not establish semantic
+independence.
+
+Use one ordered claim ladder and stop at the highest evidenced rung:
+
+```text
+shared-projection conformance
+  → independently grounded efficacy on fixed external demand and goal evidence
+    → equivalent-form transport across author/environment/verifier boundaries
+      → affected-party consequence under current authority and consent
+        → professional validity for a declared work population and decision
+```
+
+The first rung is legitimate and useful for calibration: it asks whether a
+configured solver follows an authored package under its own contract. The second
+requires demand and a goal oracle not supplied by the intervention. The third
+requires frozen held-out forms and materially independent projections. The fourth
+requires attributable realized outcomes plus the represented person's or legitimate
+proxy's current authority, correction, and acceptance. The fifth additionally needs
+professional source/transition authority, sampling and assembly warrants, calibrated
+decision thresholds, and transport evidence. Predictive behavior is not current
+authority; simulator/verifier agreement is not state truth; equivalent-form score
+agreement is not affected-party benefit.
+
+Agentic Skills at Scale supplies 1,110 inspectable Skill-derived packages from 608
+declared top-level Skills, rather than the paper's approximate 1,000/500, but omits
+the roughly 38,000 reported trajectories and the typed status of roughly 4,000
+nominal cells absent from the 42,180-cell frame. Its positive paired deltas therefore
+support treatment responsiveness under a shared projection, not independent Skill
+utility [ASAS]. MapSatisfyBench contributes a useful author-time firewall—future
+behavior may nominate a factor only when pre-response evidence could support it—but
+its selected private logs, hindsight-conditioned gold factors, hand-set weights,
+stochastic passive user, absent represented-user consent, and unreleased instrument
+do not validate current intent or acceptance probability [MSB]. OccuBench's 382
+released packages cover 98 administered scenario labels from a 100-row frame; its
+implicit stochastic state, prompt-requested unmatched faults, and default shared
+simulator/verifier support synthetic closed-loop conformance rather than occupational
+or real-environment validity [OB].
+
+**Invariant:** no shared-projection result may be promoted to efficacy, transport,
+affected-party consequence, or professional validity without evidence at the missing
+edge. Use existing source/projection, participation/authority, configured-system,
+artifact/state, execution, task-health, metric, trace, and validity records; this is
+a cross-record claim boundary, not a new schema or domain-specific subsystem.
+
 ### 4.0a Participation is a typed configured treatment, not a social-role label
 
 Separate a participant's assigned role from its realization: `real_human`, model
@@ -2438,6 +2495,25 @@ them:
 
 ## Provenance keys
 
+- **[ASAS]**
+  `papers/agent-benchmarks/2026-07-15-agentic-skills-at-scale-projection-validity.md`;
+  reviewed immutable v1 PDF/text and the complete pinned 1,110-task release audit are
+  recorded there. The release has 608 declared top-level Skills but no raw
+  trajectories, judge decisions, configuration manifests, result tables, or typed
+  invalid/missing-cell ledger; it supports shared-projection compliance rather than
+  independent utility or transfer.
+- **[MSB]**
+  `papers/agent-benchmarks/2026-07-15-mapsatisfybench-behavior-grounded-hidden-requirements.md`;
+  reviewed immutable v2 PDF/text are recorded there. No official task, code, grader,
+  prompt, trajectory, or result release was found; the selected private-log study
+  supports a candidate-factor/firewall method, not current consent, causal
+  satisfaction, calibrated acceptance probability, or personalization validity.
+- **[OB]**
+  `papers/agent-benchmarks/2026-07-15-occubench-language-simulator-validity.md`;
+  reviewed immutable v2 PDF/text plus complete pinned code and dataset audits are
+  recorded there. The 382 released packages cover 98 of 100 frame scenarios, and
+  implicit model state, prompt-driven unmatched faults, shared-model verification,
+  and absent result runs bound the evidence to a synthetic transition instrument.
 - **[ASTA]**
   `papers/agent-benchmarks/2026-07-14-astabench-scientific-suite-aggregation-validity.md`;
   reviewed immutable v2 PDF/text plus pinned post-v2 code and immutable dataset

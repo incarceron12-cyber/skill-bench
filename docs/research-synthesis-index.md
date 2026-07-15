@@ -59,6 +59,7 @@ Most relevant sources:
 | [OfficeEval](../papers/agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | B | Separates external requirement/weight lineage from the validity of a transformed subset, administration, aggregate, or transported decision threshold |
 | [Laboratory workflow twins](../papers/agent-benchmarks/2026-07-13-laboratory-workflow-expert-elicitation.md) | A | Adds claim-level authority gates, mandatory nulls, exact evidence→claim→projection lineage, and masking-channel diagnosis while separating graph executability from knowledge truth or operational validity |
 | [SovereignPA-Bench](../papers/agent-benchmarks/2026-07-13-sovereignpa-consent-mediation-validity.md) | B | Separates current intent, memory, third-party pressure, evidence, consent, and burden while exposing that a hidden author oracle and rubric-matched scaffold do not establish user authority, realized action, or benefit |
+| [MapSatisfyBench](../papers/agent-benchmarks/2026-07-15-mapsatisfybench-behavior-grounded-hidden-requirements.md) | A | Retains a valuable future-behavior→candidate-factor→pre-response-evidence firewall while showing that hindsight selection, historical prediction, current applicability, authority/consent, causal consequence, and affected-party acceptance are different warrants |
 | [SOP-Bench](../papers/agent-benchmarks/2026-07-14-sop-bench-procedure-task-validity.md) | A | Makes the procedure→schema→row→tool→oracle→parser chain executable, while showing that asserted expert validation and endpoint agreement do not establish procedure fidelity without item-level lineage, conformance contracts, leakage controls, typed comparators, and independent oracle derivation |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
@@ -390,6 +391,7 @@ follows.
 |---|---:|---|
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Directly motivates public-skill versus private-check boundaries and skill/rubric factorial comparisons |
 | [SkillsBench](../papers/agent-benchmarks/2026-07-10-skillsbench-paired-skill-efficacy.md) | A | Sharpens matched skill/no-skill comparisons and the need for repeated paired trials and uncertainty |
+| [Agentic Skills at Scale](../papers/agent-benchmarks/2026-07-15-agentic-skills-at-scale-projection-validity.md) | A | Scales paired Skill/no-Skill authoring to 1,110 released packages while exposing that Skill-derived demand, tasks, instruction rubrics, goal rubrics, and one shared judge identify projected-procedure compliance more directly than independent utility |
 | [AFTER](../papers/agent-benchmarks/2026-07-13-after-procedural-memory-transfer-validity.md) | A | Separates source-context gain, equivalent-form reuse, changed-context transport, and cross-model consumption while exposing complete-case selection, configured-system gaps, feedback/authoring overlap, and trace-diversity/volume confounding |
 | [SLBench](../papers/agent-benchmarks/2026-07-13-slbench-skill-relation-validity.md) | B | Makes precondition, postcondition, constraint, conjunction, fallback, exception, override, and conflict relations executable, while exposing that LLM-co-designed extraction, case generation, and evidence contracts need independent projection and grader validation |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Shows why expert-written examples and criteria can improve judge agreement while also anchoring outputs |
@@ -401,6 +403,35 @@ follows.
 | [EdgeBench](../papers/agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | A | Separates agent-visible feedback from evaluator-only snapshots and exposes adaptive-query, persistence, censoring, and best-so-far boundaries; its smooth suite fits are not task-level or universal learning laws |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
+
+Across Skill-derived tasks, behavior-derived hidden factors, and language-simulated
+environments, internal agreement supports a common **projection claim ladder**:
+`shared-projection conformance → independently grounded efficacy → equivalent-form
+transport → affected-party consequence → professional validity`. No rung inherits
+the next. Record separate identities and authority for procedure or behavior source,
+demand, task, goal oracle, environment transition/observation/fault, rubric, grader,
+equivalent-form author, affected party, and release decision; also record shared
+text, model, author, organization, examples, and outcome visibility. Generated
+packages are useful calibration instruments, but confirmation needs external demand,
+an independently grounded goal oracle, frozen equivalent forms across authoring and
+environment boundaries, authoritative consequence evidence, and claim-specific
+professional review.
+
+The evidence ceilings are concrete. Agentic Skills at Scale releases 608 declared
+top-level Skills and 1,110 tasks despite the paper's approximate 500/1,000 wording,
+but no raw trajectories, judge decisions, or typed ledger for the roughly 4,000
+nominally missing cells out of 42,180. MapSatisfyBench's restore–identify–filter
+method usefully blocks future evidence from the solver view, yet its 500 selected
+private-log items, historical-behavior hindsight, passive stochastic user simulator,
+hand-set weights, and unreleased instrument do not establish current consent,
+acceptance probability, or satisfaction. OccuBench releases 382 model-authored
+packages, but only 98 of its 100 metadata-frame scenarios appear in the administered
+table; implicit stochastic state, prompt-requested unmatched faults, and a verifier
+that defaults to the simulator model support closed-loop synthetic conformance—not
+occupational authority, real-environment robustness, or professional validity.
+Existing projection, authority/participation, configured-system, environment,
+artifact/state, task-health, metric, trace, and validity contracts are the durable
+homes; no Skill-, map-, or language-simulator subsystem follows.
 
 Framing interventions add a public-set boundary: `full public package + reviewed
 admissible framings → immutable ambiguity edit → decision-relevant unresolved
