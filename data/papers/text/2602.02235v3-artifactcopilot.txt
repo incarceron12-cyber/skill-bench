@@ -1,0 +1,836 @@
+                                                       Agent-Based Software Artifact Evaluation
+                                                            Zhaonan Wu1 , Yanjie Zhao1 ✉, Zhenpeng Chen2 , Zheng Wang3 , and Haoyu Wang1
+                                                                            1
+                                                                                Huazhong University of Science and Technology, Wuhan, China
+                                                                                       {zhaonanwu, yanjie zhao, haoyuwang}@hust.edu.cn
+                                                                                2
+                                                                                  Tsinghua University, Beijing China, zpchen@tsinghua.edu.cn
+                                                                                     3
+                                                                                       Independent Researcher, hackerzheng666@gmail.com
+
+
+
+
+                                            Abstract—Artifact Evaluation (AE) has become a standard            [43], [39], offering a promising path toward automated AE.
+                                         mechanism for linking software engineering papers to their            However, prior work has demonstrated that when LLMs or
+                                         supporting artifacts, but growing submission volume makes             agents are deployed for evaluation tasks, performance depends
+                                         purely manual AE increasingly difficult to sustain. Although
+                                         recent advances in LLM-based agents make AE automation                critically on whether the rubric is sufficiently explicit and
+                                         increasingly plausible, current descriptive badge policies define     operational [28]. Therefore, automating AE with agents first
+                                         badge semantics but provide no executable verification criteria,      requires a detailed rubric. In a similar vein, empirical findings
+                                         leaving both human reviewers and agents without a detailed            in AE corroborate this requirement for a more detailed rubric.
+                                         basis for judgment. To address this gap, we construct A R -           Hermann et al. [17] surveyed artifact evaluation committee
+                                         TIFACT G UIDE , a structured scoring rubric grounded in ACM
+                                         policy, expert-informed calibration, and artifact-based validation,   members across major conferences and found that existing
+
+
+
+
+arXiv:2602.02235v3 [cs.SE] 14 Jul 2026
+                                         and we design A RTIFACT C OPILOT, an agent collecting review          official policies fail to yield clear and consistent criteria for
+                                         evidence following a fixed sequence under A RTIFACT G UIDE and        acceptable artifacts, while community expectations remain
+                                         deriving the final badge decision from accumulated evidence.          systematically unreflected in calls for artifacts, leaving review-
+                                            We evaluate our framework on 60 real artifacts from re-            ers without adequate guidance for badge decisions.
+                                         cent software engineering conferences using human-adjudicated
+                                         badges as reference. The results show that A RTIFACT G UIDE              These observations point to a more fundamental issue: the
+                                         improves the AE performance of coding agents over official            AE community still lacks a concrete and operational rubric.
+                                         ACM badge-policy prompts, increasing three-run mean exact             As AE faces growing scalability challenges and agents are
+                                         badge agreement by 10.55 to 28.34 percentage points. Across all       increasingly considered as a possible solution [18], [9], the
+                                         evaluated systems and prompting protocols, A RTIFACT C OPILOT         need for such a rubric becomes even more pressing. We
+                                         achieves the highest badge-level agreement at 70.56% and is
+                                         the only system that completed all repeated runs successfully         therefore argue that a concrete and operational rubric is an
+                                         while producing a review report in every run. A controlled user       essential missing component of AE, for both human reviewers
+                                         study with 8 experienced researchers suggests that A RTIFACT-         and agents.
+                                         C OPILOT reports improve reviewer confidence, help reviewers             Acting on this thesis, we first design A RTIFACT G UIDE,
+                                         locate evidence, and understand evaluation scope more clearly.        an operational artifact-evaluation rubric that bridges the gap
+                                         Further analysis translates insights from automated AE into
+                                         practical guidance for designing higher-quality artifacts with        between descriptive policy and badge decisions. A RTIFACT-
+                                         clearer review routes, more explicit claim-to-output links, and       G UIDE translates badge semantics into an executable re-
+                                         more concrete reuse paths.                                            view standard through an availability gate, five assessment
+                                            Index Terms—artifact evaluation, large language models,            dimensions, and ordered intervention and evidence levels.
+                                         rubric design, LLM-based agent                                        We construct this rubric through three phases, deriving an
+                                                                                                               initial version from official ACM policy and published AE
+                                                                 I. I NTRODUCTION                              guidelines, calibrating judgment boundaries through semi-
+                                            Since artifact evaluation (AE) was first deployed at ES-           structured interviews with 20 experienced artifact evaluators,
+                                         EC/FSE in 2011 [21], it has been widely adopted across                and validating the revised rubric through manual reviews of
+                                         software engineering, programming languages, and broader              real artifacts. On top of A RTIFACT G UIDE, we then design A R -
+                                         computer science venues [40]. Nevertheless, neither its criteria      TIFACT C OPILOT, a specialized agent for rubric-guided artifact
+                                         nor its processes have kept pace with this proliferation. As sub-     review that takes the paper and its corresponding artifact as
+                                         mission and artifact volumes continue to grow, artifact review        input, uses phase-specific skills [7] to guide each review stage,
+                                         remains heavily reliant on manual effort, rendering the process       produces structured evidence records, and derives final badge
+                                         increasingly unsustainable at scale [34], [9], [6], [14]. Recent      recommendations from them.
+                                         advances in LLM-based software agents have substantially                 We then compared A RTIFACT C OPILOT against three coding
+                                         expanded the scope of automated software engineering tasks.           agents and a project-execution agent under three review pro-
+                                         Software agents can navigate repositories, execute commands,          tocols with increasing structure, including official ACM badge
+                                         configure environments, and record execution traces [44],             policy [8], A RTIFACT G UIDE, and Skills+A RTIFACT G UIDE
+                                                                                                               review. We also analyzed repeated-run stability and conducted
+                                           ✉ Corresponding author: Yanjie Zhao (yanjie zhao@hust.edu.cn).      a controlled user study with eight experienced researchers.
+The results show that A RTIFACT G UIDE improves the AE             members to sustain this practice. As submission volume grows,
+performance of coding agents over official ACM badge-policy        this labor-intensive model is becoming unsustainable [34], [9].
+prompts, increasing three-run mean exact badge agreement
+by 10.55 to 28.34 percentage points for OpenHands [39],            B. LLM-based Agents
+Cline [13], and Codex [27]. Across all evaluated systems and
+protocols, A RTIFACT C OPILOT achieves the highest three-run          The continuing improvement of LLM capabilities has driven
+mean exact badge agreement at 70.56%. It is also the only          the formation of a new automation paradigm, namely agent
+evaluated system that completed all repeated runs successfully     systems centered on LLMs [37], [41], [42]. LLM-based agents
+and produced a review report in every run. The user study          extend single-shot inference by accumulating context across
+further suggests that A RTIFACT C OPILOT reports help review-      steps, invoking external tools, and incorporating execution
+ers locate evidence more effectively and recognize evaluation      feedback into the reasoning process [37], [44], which has
+limitations more clearly.                                          been applied in SE to code repair, vulnerability detection,
+   Our further analysis shows that automated AE is useful          and test generation [10], [32], [24], consistently demonstrating
+not only for evaluating artifacts, but also for clarifying how     advantages on tasks requiring cross-step reasoning and en-
+higher-quality artifacts should be designed. Artifacts that can    vironmental feedback [43], [39]. Critically, agent execution
+be reviewed stably by an agent tend to expose clearer review       trajectories constitute traceable records of task states [29], a
+routes, more explicit claim-to-output links, and more concrete     property that recent work has begun to exploit for evaluation
+bounded reuse paths, whereas agent uncertainty often reflects      itself, replacing static assessment with executable dynamic
+underspecified artifact design.                                    processes [46], [16]. This traceability directly addresses AE’s
+   Our main contributions are as follows.                          core need for evidence-based judgment.
+   • We design A RTIFACT G UIDE , a concrete and operational
+     AE rubric that fills the gap between descriptive badging      C. Problem Formulation
+     policy and actual badge decisions.
+                                                                      These observations suggest that AE automation requires
+   • We design A RTIFACT C OPILOT , a specialized agent for
+                                                                   both explicit standards and executable enforcement. We define
+     rubric-guided AE review, and show through systematic
+                                                                   automated AE as an agent-supported, rubric-based evidence
+     evaluation on 60 real artifacts that it achieves the high-
+                                                                   review task. The rubric provides the what, decomposing badge
+     est badge-level agreement among all compared systems,
+                                                                   standards into explicit inspection items, evidence require-
+     reaching 70.56% exact badge agreement.
+                                                                   ments, and decision thresholds. The agent provides the how,
+   • We show that A RTIFACT G UIDE can be reused by coding
+                                                                   executing these items as bounded environment interactions and
+     agents as an effective external review structure, con-
+                                                                   accumulating structured evidence. Neither alone suffices. A
+     sistently improving their AE performance over official
+                                                                   rubric without execution remains static inference. An agent
+     policy alone.
+                                                                   without rubric guidance operates without evaluation criteria.
+   • We provide an in-depth analysis of failure modes in
+                                                                   Together, they shift AE from subjective badge assignment to
+     automated AE and derive practical implications for both
+                                                                   traceable, auditable evidence review.
+     reviewer-oriented AE automation and artifact design.
+             II. BACKGROUND AND M OTIVATION                                   III. T HE D ESIGN OF A RTIFACT G UIDE
+A. Artifact Evaluation
+                                                                   A. Scope and Design Principles
+   The ACM artifact badging policy defines Available, Func-
+tional, and Reusable badges as a shared institutional frame-          We design A RTIFACT G UIDE as a multi-level review frame-
+work for artifact quality [8]. Since its pilot at ESEC/FSE         work that operationalizes descriptive badge standards. By
+2011 [21], AE has become standard practice across major            specifying the concrete items to be checked, the evidence
+software engineering venues [4], [2], [3], [5]. Yet the insti-     to be recorded, and the logic by which evidence supports
+tutionalization of AE has exposed a tension between badging        conclusions, it provides a unified basis for artifact evaluation
+policy and review practice. Existing criteria remain descriptive   without redefining ACM badges or superseding venue-specific
+rather than operational, specifying what each badge represents     policies. A RTIFACT G UIDE is designed around three interlock-
+without defining how reviewers should verify it. This gap          ing principles. First, policy alignment requires that the scope
+leaves individual reviewers to reconstruct judgment standards      and criteria of A RTIFACT G UIDE remain faithful to the official
+from personal experience, which undermines consistency and         definitions of the badges. Second, analytic decomposition
+complicates scaling. Even when artifacts execute successfully,     requires that A RTIFACT G UIDE decomposes badge judgment
+reviewers face unsupported decisions about whether observed        into separately checkable intermediate dimensions. This design
+deviations still permit reasonable claim support [14]. The         draws on the established distinction in scoring rubric design
+resulting subjectivity not only threatens evaluation reliability   between analytic and holistic rubrics [19]. Third, evidence
+but also drives resource demands. Each Artifact Evaluation         grounding requires that each dimensional judgment be tied
+Committee (AEC) member is typically assigned only 1–               to concrete objective evidence, making each determination
+3 artifacts [14], and EuroSys 2025 required 98 committee           traceable.
+              Phase 1. Policy Grounding                                 Phase 2. Expert-Informed Calibration                             Phase3. Artifact-Based Calibration and Consolidation
+
+                                                               Semi-               ü Part1 : Key review dimensions                                                        ICSE 2025
+                                                             Structured            ü Part2 : Boundary rules                               Candidate       Paper           ASE 2024 Stratified
+                                                             Interview             ü Part3 : Evidence needs and score rules              Construction                     FSE 2025 sampling
+                                                                                                                                                         Metadata
+                                                                                                                                                                          ISSTA 2025          Calibration Candidate
+
+                                                                                   ü Judgment Boundaries                                                     Reviewer A
+     ACM Artifact       AE Guidelines        Public Review   Thematic
+                                                                                   ü Intervention and Evidence
+    Badging Policy                              Forms        Analysis
+                                                                                   ü Rule Ambiguities                                    Independent
+                                                                                                                                           Review
+                     Derive Initial Rubric                                          Revised Rubric                 Other Components          and
+                                                                                                                                         Adjudication
+                                                                              Availability             Claim
+                                                                                                                                                                                   Comparison
+                                                              Revised           Gates                 Support
+                      1: Availability     5: Claim Support                                                                                                   Reviewer B
+    Initial                                                    Rubric         Documentation          Workflow       Representative
+                      2: Documentation    6: Reusability
+    Rubric                                                      after            Quality             Execution     Workflow
+                      3: Environment      7: Intervention                                                                                Re-review &
+                                                             Interviews                                             Intervention Level                              Member Checking
+                      4: Execution     ...                                     Environment                          Evidence Level       Consolidation                                                 Final Rubric
+                                                                                                     Reusability                                                    and Re-review
+                                                                              Reconstruction
+
+
+
+
+                                                 Fig. 1: The Workflow of the Construction of A RTIFACT G UIDE.
+
+
+B. Construction of A RTIFACT G UIDE                                                                       dimensions based on their own experience. Then the initial
+                                                                                                          version was presented, and boundary rules were discussed,
+   Based on the established methodology for rubric con-                                                   such as the acceptable scope of reviewer interventions and the
+struction proposed by [20], [30], A RTIFACT G UIDE was con-                                               distinction between execution success and result support. After
+structed through a three-phase process. We first conducted                                                the interviews, we conducted thematic analysis [12] of the
+policy grounding to establish the rubric’s policy basis and                                               interview records. Two authors independently completed initial
+then revised the draft through expert calibration. Finally, we                                            coding and resolved coding differences through discussion.
+consolidated the rubric through manual review of real public                                              A feedback item was treated as a generalizable rule only
+artifacts. Figure 1 illustrates this construction process.                                                when it recurred across multiple participants’ descriptions,
+   Phase 1. Policy Grounding. We built the initial version                                                rather than being tied to a particular artifact or an individual
+of A RTIFACT G UIDE based on the ACM artifact badging                                                     participant’s preference. Compared with the initial version, the
+policy [8], combined with specific requirements from recent                                               revised A RTIFACT G UIDE established clearer judgment bound-
+AE guidelines of ICSE, ASE, FSE, and ISSTA. We further                                                    aries across the Availability gate and the five dimensions of
+consulted publicly available review forms and guidelines to                                               documentation quality, environment reconstruction, workflow
+capture signals that are commonly omitted in formal badge                                                 execution, claim support, and reusability. Furthermore, we
+descriptions but regularly attended to in actual review practice,                                         summarized the concepts of representative workflow, evidence
+such as whether the artifact is obtainable and has a clear                                                levels, and intervention levels.
+entry point, and whether installation and execution instructions
+are complete. Synthesizing these sources, the initial version                                                Phase 3. Artifact-Based Calibration and Consolidation.
+established the basic framework for subsequent iterations,                                                Phase 2 calibrated key judgment dimensions and evidence
+covering availability, documentation, environment, execution,                                             requirements through interviews, but the feedback remained
+claim support, reusability, and reviewers’ interventions.                                                 limited to participants’ discussions of prior experience and
+   Phase 2. Expert-Informed Calibration. While the initial                                                hypothetical scenarios. It was insufficient to demonstrate that
+version captured review objects that commonly arise in AE,                                                the revised rubric could be applied consistently in real artifacts.
+it fell short of reflecting what real reviewers actually pri-                                             We therefore further validated the revised rubric through
+oritize in practice. We therefore revised it through expert-                                              manual review of real public artifacts. We constructed a
+informed calibration, interviewing twenty participants with                                               calibration set from 642 research track papers across ICSE
+artifact-related experience. The participant pool covered three                                           2025, ASE 2024, FSE 2025, and ISSTA 2025, selecting those
+forms of experience relevant to AE: prior service on artifact                                             with publicly accessible artifacts and stratifying by official
+evaluation committees, paper submission and artifact prepa-                                               badge status. We used ASE 2024 rather than ASE 2025
+ration, and substantial hands-on experience in reproducing                                                because ASE 2025 did not include an artifact evaluation track.
+published research artifacts. These categories were not mutu-                                                We sampled 16 badged and 8 unbadged artifacts, a 2:1
+ally exclusive, and several participants had experience across                                            ratio intended to test the rubric against both categories. Two
+multiple roles. This composition allowed the calibration to                                               authors independently reviewed the 24 artifacts using the
+reflect reviewer-side judgment, author-side preparation, and                                              revised rubric, achieving 83.3% agreement on the availability
+practical reproduction work. The final five interviews yielded                                            gate, 74.2% on 120 dimension-level judgments, and 54.2% on
+no new dimensions, suggesting that the core themes had                                                    final badge types. The badge-level disagreements exposed four
+stabilized, so we concluded recruitment.                                                                  boundary ambiguities, including whether the availability gate
+   Interviews were conducted as one-on-one semi-structured                                                checks completeness or mere accessibility, whether Functional
+sessions. Participants were first asked to describe key review                                            requires full reproduction or accepts representative execution,
+TABLE I: Gate conditions and dimension-level scoring criteria of A RTIFACT G UIDE. Intervention levels (I0–I4) and
+evidence levels (E0–E3) are defined in Table II.
+
+Component            Scoring Criteria
+Availability gate    GC1: publicly accessible and downloadable; GC2: README or other entry exists; GC3: related to the paper and contains material beyond the text.
+Documentation        R: no usable entry, no environment or workflow instructions; WR: entry exists, but key information is largely missing; WA: goal, setup, workflow,
+Quality              I/O, and paper mapping documented with minor inference gaps; A: core guidance plus structure, dependencies, resources, and failure boundaries.
+Environment          R: no usable path, failed setup, or depends on I4-level intervention; WR: setup described but requires substantial repair; WA: reaches evaluable state
+Reconstruction       with I0–I2 or semantic-preserving I3; A: stable, isolated, repeatable setup with clear dependency information.
+Workflow             R: no workflow or no checkable execution state; WR: candidate fails, lacks valid output, or only runs trivial commands; WA: produces E2/E3 valid
+Executability        output without I4 intervention; A: completes stably with I0 or I1 and checkable output.
+Claim support        R: no E2/E3 evidence or no explainable paper mapping; WR: output maps weakly or peripherally to paper; WA: maps to at least one method, claim,
+                     result, table, figure, or experiment; A: supports the main result or full reproduction with a traceable path.
+Reusability          R: no functional base, or no reuse entry identifiable; WR: reuse entry exists, but transfer information is insufficient; WA: transfer validation succeeds
+                     on new input, configuration, or scenario; A: reuse path clear, low-intervention, repeatable.
+
+
+TABLE II: Representative-workflow checklist, intervention and evidence levels, and badge-derivation rules of
+A RTIFACT G UIDE.
+
+Component             Criteria
+Representative        RW1: grounded in README, docs, paper appendix, author script, or official workflow; RW2: invokes an evaluation-relevant program, script, notebook,
+workflow              service, demo, benchmark, analysis, test, or replication path; RW3: produces interpretable valid output; RW4: maps output to a paper method, result,
+                      claim, table, figure, or artifact target; RW5: states coverage limit if not full reproduction.
+Intervention level    I0: run as documented; I1: install dependencies, set environment variables, or choose compatible versions; I2: fix paths, commands, startup order, or
+                      wait time; I3: semantic-preserving configuration, wrapper, non-core script, or compatibility change; I4: semantic change to algorithm, model, metric,
+                      experiment, result generation, or core data processing.
+Evidence level        E0: no executable evidence; E1: static or precomputed materials only; E2: reviewer runs representative workflow and obtains valid output; E3: reviewer
+                      runs full or near-full main workflow and obtains paper-facing result objects.
+Badge rules           Available: GC1–GC3 pass; Functional: Available, D2–D4 ≥ WA, E2 or above, no I4; Reusable: Functional, both D1 and D5 ≥ WA, transfer
+                      validation succeeds, no I4.
+
+
+
+
+whether Reusable demands independent input construction or                            grouped by badge tier. D2 (environment), D3 (execution),
+permits provided demo scripts, and whether external depen-                            and D4 (claim support) determine whether an artifact reaches
+dencies block scoring or are recorded as limitations. A third                         the Functional threshold, while D1 (documentation) and D5
+author adjudicated these cases to resolve scores and identify                         (reusability) are additional requirements for the Reusable
+root causes. After all calibration artifacts were fully evaluated                     badge. This grouping reflects the empirical finding that an
+and adjudicated, A RTIFACT G UIDE was finalized. Revisions                            artifact must first be executable before its reusability can
+clarified the evidence-to-claim mapping, delineated the bound-                        be assessed, and that documentation quality is not necessary
+ary between workflow execution and result support, and made                           for functional correctness. To prevent any runnable command
+reviewer action recording explicit to prevent conflating original                     from being treated as valid review evidence, A RTIFACT G UIDE
+artifact quality with post-intervention success. The two review-                      also defines representative workflow conditions (RW1 to
+ers then re-reviewed all 24 calibration artifacts, eliminating                        RW5), evidence levels (E0 to E3), and intervention levels (I0 to
+residual disagreements caused by rule ambiguity and reaching                          I4). The intervention levels distinguish original artifact quality
+full agreement. The finalized version was submitted to the                            from reviewer-assisted success, ensuring that post-intervention
+interview participants, and none raised objections to the final                       execution does not inflate the badge recommendation. The
+design of A RTIFACT G UIDE.                                                           evidence levels ensure that only reviewer-executed outputs
+                                                                                      (E2 or above) count toward badge decisions, excluding static
+C. Structure of A RTIFACT G UIDE                                                      materials or precomputed results. Table I summarizes the
+   The finalized A RTIFACT G UIDE first applies an Availability                       availability gate and dimension scoring criteria, while Table II
+gate to determine whether an artifact satisfies the minimum                           presents the supporting criteria for determining evidence va-
+material conditions for substantive review. It then evaluates                         lidity and final badge assignment. Due to space constraints,
+five core dimensions, D1 through D5, covering documentation,                          the complete A RTIFACT G UIDE with illustrative examples is
+environment reconstruction, workflow execution, claim sup-                            available in our open-source artifact [1].
+port, and reusability. Each dimension follows a four-level scale
+of reject (R), weak reject (WR), weak accept (WA), and accept
+(A), adopted from traditional academic peer review [36], with
+WA serving as the minimum positive threshold for satisfying
+the corresponding badge condition. The five dimensions are
+                                                                           Phase Sequence
+                  ArtifactCopilot                      D1                             D3                      D5                          Report of ArtifactCopilot
+                                                   Documentation                   Workflow                Reusability
+                                                      Quality                      Execution
+  Paper
+                                                                       D2                          D4
+                                                                                                                                    Badge verdicts and derivation trace.
+                              Phase      Availability              Environment                    Claim                Report
+                                                                                                                                  Whether each available, functional, and
+                                            Gate                                                                     Generation
+Artifact                    Controller                            Reconstruction                 Support
+                                                                                                                                  reusable condition is satisfied.
+                 Next                                                        Agent Loop                                             Dimension scores with checklist
+                 Phase
+                                                Phase Skill                        Tool Call                                      anchoring. Score level (R/WR/WA/A) per
+                                                                                                              Intervention
+                             Review                                                Output                      Annotator
+                                                                                                                                  dimension.
+                                            Phase Objective
+                             Agent          Tool Scope                                                                              Intervention and evidence levels.
+                                            Evidence Contract                                                                     Evidence levels and intervention log.
+                   Revise                   Completion Criteria                Working                          Persistent
+                   Packet                                                      Memory                           Evidence            Confidence and cross-validation. A
+                                                                                                                                  confidence assessment and cross-
+                             Packet                                         Inspect Items                                         validation flag.
+                            Checker
+                                                    Rule-based Scripts                           Multi-turn Dialogue
+
+
+
+                                                 Fig. 2: Overview of A RTIFACT C OPILOT.
+
+
+                     IV. A RTIFACT C OPILOT                                                    Second, it invokes a bounded dialogue verifier with a maxi-
+                                                                                               mum of five turns to examine whether the stated phase conclu-
+A. System Overview
+                                                                                               sions are actually supported by the submitted logs and related
+   The A RTIFACT C OPILOT module models AE as a phased                                         documents. This second step is intentionally lightweight whose
+evidence review process. A RTIFACT C OPILOT first checks ar-                                   role is only to check evidence-conclusion consistency, not to
+tifacts in a fixed phase sequence, generating verifiable evidence                              re-review the artifact or produce new judgments. Only packets
+packages at each phase. The system only proceeds to the                                        that pass both checks are committed and allowed to advance
+next phase after the phase evidence passes the check. The                                      to the next phase. Otherwise, A RTIFACT C OPILOT returns to
+final badge is derived from persistently accumulated evidence                                  the current phase to supplement or revise the evidence.
+rather than from the agent’s immediate response. As shown                                         It is important to emphasize that the Availability gate
+in Figure 2, the input to A RTIFACT C OPILOT is the paper and                                  incorporates a unique early stopping branch. If an artifact
+its corresponding artifacts. The Phase Controller and Packet                                   fails the checks of GC1–GC3, the Phase Controller will
+Checker are responsible for the phase progression and accep-                                   automatically skip directly to the phase of report generation,
+tance. The execution of each phase is handled by the Review                                    avoiding excessive resource consumption on artifacts that do
+Agent, which invokes tools under the constraints of the current                                not meet the minimum evaluation criteria.
+phase skill, observes the output, and records the execution
+evidence and intervention actions during the process. Upon
+completion of the final phase, A RTIFACT C OPILOT outputs a                                    C. Review Agent
+structured review report.                                                                         Skill-scoped execution. The Review Agent is responsi-
+                                                                                               ble for evidence collection and integration into report gen-
+B. Phase Orchestration                                                                         eration. Each phase is governed by a phase skill, a pre-
+   The control layer of the A RTIFACT C OPILOT module is                                       written instruction artifact that specifies four elements: Phase
+responsible for transforming A RTIFACT G UIDE from static                                      Objective, Tool Scope, Evidence Contract, and Completion
+scoring criteria into an executable review process. The Phase                                  Criteria. Upon entering a new phase, the agent reads the
+Controller enforces a fixed phase sequence, starting with the                                  phase skill and invokes tools within its Tool Scope to produce
+Available Gate. Within each phase, the Review Agent can                                        evidence that satisfies the Evidence Contract and Completion
+choose specific tool calls and inspection paths based on the                                   Criteria. These skills limit the agent’s operational space. For
+specific characteristics of the current artifact; however, the                                 example, the document quality phase primarily allows reading
+phase objectives, permitted operations, evidence required for                                  and observing the document structure, while the environment
+phase completion, and completion conditions are all defined                                    reconstruction phase allows dependency probing and envi-
+by the phase skill. Therefore, A RTIFACT C OPILOT can adapt                                    ronment configuration but strictly prohibits the execution of
+to different artifacts while avoiding the invention of review                                  representative workflows. This progressive scoping prevents
+methods in each evaluation.                                                                    evidence contamination between phases.
+   The Packet Checker verifies the evidence packet before                                         Dual memory and persistent evidence. The Review Agent
+phase transition. At the end of each phase, the Review Agent                                   maintains two types of memory to prevent temporary planning
+must submit a packet containing the required evidence artifacts                                and partial observations from being conflated with auditable
+and phase conclusions. The checker applies two lightweight                                     evidence. The first is working memory, which stores the
+checks. First, it runs rule-based validation to confirm that the                               current phase’s transient state, including current tasks, recent
+required files exist and that the packet is structurally complete.                             observations, and pending execution plans. The second is
+persistent memory, which stores the phase evidence that is el-      whether a Reusable recommendation is compatible with the
+igible for submission, including phase summaries, instruction       Functional gate and D5 judgment. The report lists any resulting
+logs, and intervention records. This information is permanently     flags according to their severity.
+saved upon phase completion and serves as the direct source
+of the final report.                                                                       V. E VALUATION
+   Intervention annotation. The Review Agent records ac-
+                                                                      We organize our evaluation around four research questions.
+tions that introduce reviewer-side assistance beyond the arti-
+                                                                    • RQ1. How closely does A RTIFACT C OPILOT align with
+fact’s original instructions, such as installing missing depen-
+                                                                      human adjudication?
+dencies, modifying paths or startup order, supplying external
+                                                                    • RQ2. How does A RTIFACT C OPILOT compare with baseline
+inputs, or applying compatibility-oriented fixes. Each such
+                                                                      agents under different review guidance?
+action is checked by a script-based intervention rule and
+                                                                    • RQ3. How stable is A RTIFACT C OPILOT ’s behavior across
+logged with its purpose, intervention type, and anticipated
+                                                                      repeated runs?
+downstream impact. The resulting record becomes part of
+                                                                    • RQ4. How useful are A RTIFACT C OPILOT ’s reports in AE
+persistent evidence, preventing the agent from retrospectively
+                                                                      review?
+downplaying the impact of an intervention after observing
+successful execution.
+                                                                    A. Experimental Setup
+D. Structured Review Report                                               a) Datasets: Prior work has reported that a portion of
+   The final phase produces a structured review report in both      badged artifacts become inaccessible or non-functional over
+Markdown and JSON formats, which are structured to support          time [33], [25]. We therefore chose to re-execute the evaluation
+human audit, deriving all claims from persistent evidence.          process rather than rely solely on previously awarded badges
+   Badge verdicts and derivation trace. The first component         as ground truth. From the 642-paper pool in § III, we excluded
+details the badge verdicts and their derivation traces. For each    calibration samples and artifacts with broken links, yielding
+Available, Functional, and Reusable badge, the report explic-       369 artifacts. To cover the judgment boundaries of AE while
+itly states the deterministic rule applied and links directly to    keeping manual review costs manageable, we performed a
+the specific evidence artifacts that satisfy the gate conditions.   pre-labeling pass based on manual inspection without full
+For instance, a Functional badge decision cites the workflow        evaluation. We stratified the pool into 104 cases that likely
+execution log from dimension D3 and the claim mapping file          reach the Functional threshold, 246 boundary cases whose
+from dimension D4. All references include hyperlinks to the         status cannot be determined by initial inspection, and 19
+corresponding run directories for immediate verification.           negative cases that clearly fail the Availability gate. Then we
+   Dimension scores with checklist anchoring. The second            drew a stratified sample of 60 artifacts, 30 predicted to at
+component presents the dimension scores with checklist an-          least Functional, 20 boundary samples, and 10 predicted to
+choring. For every score from dimension D1 to D5, the report        fail Available. Two authors independently evaluated all 60
+enumerates the specific checklist items from A RTIFACT G UIDE       artifacts using the finalized A RTIFACT G UIDE and assigned
+that were satisfied or violated. Each item is directly linked to    dimension scores, gate decisions, and final badge recom-
+the corresponding command output or log excerpt. This gran-         mendations. Disagreements were then adjudicated through
+ular linkage empowers reviewers to inspect the foundational         discussion with a third author based on the recorded re-
+evidence and substitute their own judgments where necessary.        view evidence. The initial independent badge-level judgments
+   Intervention and evidence levels. The third component is         achieved a Cohen’s kappa of 0.85 [35], indicating strong
+a consolidated ledger of intervention and evidence levels. It       inter-rater agreement. The final distribution consisted of 6 no-
+records all interventions from level I0 to I4 alongside their       badge, 20 Available-only, 13 Available+Functional, and 21
+rubric justifications and assigns the appropriate evidence level    Available+Functional+Reusable. Under the Functional binary
+from E0 to E3 for each dimension. Such transparency is crucial      threshold, 34 artifacts were positive, and 26 were negative.
+for badge decisions because the rubric disqualifies level I4              b) Baselines: We compare A RTIFACT C OPILOT against
+interventions from receiving Functional or Reusable badges.         three representative coding agents and a project-execution
+   Confidence and cross-validation. The fourth component            agent. OpenHands [39] represents open-source general-
+provides reviewer-facing confidence cues and consistency            purpose software engineering agents with strong repository
+flags. These signals do not directly affect the final badge         navigation and development capabilities. Cline [13] represents
+decision, which is still derived from the deterministic rules of    interactive coding assistants optimized for file-level editing
+A RTIFACT G UIDE. Instead, they help reviewers identify cases       and terminal use. Codex [27] represents leading commercial
+that may require closer inspection. Confidence is estimated         coding agents with strong code understanding and generation
+from the completeness of supporting evidence and the inter-         capabilities. For Codex, we use a non-interactive configuration
+vention burden recorded in the run. Cross-validation applies        so that the full evaluation pipeline runs without human in-
+a small set of rule-based consistency checks, for example           tervention. ExecutionAgent [11] represents project-execution
+whether D3 ≥ WA is accompanied by E2 or above, whether              agents designed to make repositories runnable and testable.
+D4 ≥ WA is supported by a successful execution result, and          For all baselines, we keep the agent framework unchanged,
+            TABLE III: RQ1: Alignment with human adjudication across badge, gate, and dimension levels.
+
+Layer        Item          Description                                                       Acc.      Prec.      Rec.       F1
+Badge        Exact match   Four-level badge                                               70.56%     74.05%    72.05%    70.64%
+Gate         Available     GC1–GC3 pass                                                         –   98.14%     97.53%    97.82%
+             Functional    ≥Available + D2–D4≥WA                                                –   98.55%     70.59%    82.23%
+             Reusable      ≥Functional + D1,D5≥WA                                               –   87.44%     49.21%    62.83%
+Dimension    D1            Documentation quality                                          93.33%     95.30%    96.60%    95.95%
+             D2            Environment reconstruction                                     83.33%     86.43%    91.67%    88.97%
+             D3            Workflow executability                                         80.56%     86.46%    79.05%    82.59%
+             D4            Claim support                                                  80.56%     92.22%    74.77%    82.59%
+             D5            Reusability                                                    77.78%     78.26%    54.55%    64.29%
+             Mean over D1–D5                                                              83.11%     87.73%    79.33%    82.88%
+
+
+
+inject the corresponding review protocol as task guidance, and    artifact is reviewable and whether its documentation provides
+enlarge step budgets to reduce premature termination.             a sufficient basis for evaluation.
+      c) Metrics: We evaluate the system at three levels. At         Mismatch cases are concentrated more heavily on Func-
+the badge level, we report exact-match accuracy and macro-        tional and Reusable awards. In both cases, A RTIFACT C OPILOT
+averaged precision, recall, and F1 across the four badge          shows higher precision than recall, indicating a conservative
+classes. At the gate level, we treat Available, Functional,       tendency in granting stronger positive decisions. This pattern
+and Reusable as nested binary decisions and report precision,     is also reflected at the dimension level. D1 and D2 remain
+recall, and F1 for each. At the dimension level, we report        relatively stable, whereas D3, D4, and especially D5 are
+four-class accuracy on the R/WR/WA/A scale. We also report        weaker, with D5 recording the lowest four-class accuracy. The
+a binarized version of the dimension-level results, collapsing    gap between dimension-level and final badge-level agreement
+R/WR into negative and WA/A into positive, and computing          is expected because the final badge is a cumulative decision,
+the corresponding precision, recall, and F1. Finally, we use      an error on any gate-critical dimension can propagate to the
+the Functional threshold as an artifact-level binary separator,   overall badge outcome. Taken together, these results suggest
+treating artifacts that meet it as positive and those that do     that the main remaining difficulty lies not in basic repository
+not as negative, to assess whether the system can distinguish     inspection or setup recognition, but in turning execution evi-
+functionally valid artifacts from invalid ones.                   dence into stronger judgments about workflow validity, claim
+      d) Implementation Details: Due to cost considerations,      support, and especially reuse.
+we selected DeepSeek-V4 Flash as the underlying language
+                                                                  C. RQ2: Comparison with Baseline Agents
+model for all systems. For Codex, which natively operates
+through OpenAI infrastructure, we accessed DeepSeek-V4               Table IV compares A RTIFACT C OPILOT with four baseline
+Flash via CC-Switch [15] to align the model backend as            agents under three guidance conditions: ACM v1.1 badging
+closely as possible across agents. For other baselines, we        policy [8], A RTIFACT G UIDE, and Skills+A RTIFACT G UIDE.
+used their default configurations with enlarged step budgets      Here, Skills+A RTIFACT G UIDE denotes the stage-specific
+to prevent premature termination. OpenHands was configured        phase skills from A RTIFACT C OPILOT combined with A R -
+with 150 max iterations and 10 retries, Cline with 150 max        TIFACT G UIDE. This comparison is intended to test how
+requests and no timeout, and ExecutionAgent with 150 max          progressively stronger review guidance affects agent behav-
+steps and 1 retry. A RTIFACT C OPILOT was configured with         ior under our rubric-guided AE task formulation, rather
+150 max steps. Experiments were conducted on a machine            than to reproduce the original venue badge process. At
+equipped with NVIDIA A100-80G GPUs running Ubuntu                 the badge level, A RTIFACT C OPILOT achieves 70.56% exact-
+22.04. All results reported for RQ1 and RQ2 are three-run         match accuracy, exceeding the strongest baseline, Codex under
+means. RQ3 instead reports stability statistics aggregated over   Skills+A RTIFACT G UIDE, at 67.78%. At the Functional binary
+the three repeated runs.                                          level, Codex under Skills+A RTIFACT G UIDE attains higher
+                                                                  accuracy and recall, whereas A RTIFACT C OPILOT reaches a
+                                                                  precision of 98.55%, the highest among all systems. This result
+B. RQ1: Agreement with Human Adjudication
+                                                                  indicates that A RTIFACT C OPILOT is less likely to translate
+   A RTIFACT C OPILOT achieves 70.56% exact agreement with        partial execution success into unsupported Functional awards.
+human adjudication at the badge level. Agreement is strongest        The protocol effect is clearest at the badge level. For Open-
+for judgments grounded in directly observable evidence. The       Hands, Cline, and Codex, performance improves consistently
+Availability gate attains 97.53% recall, and D1 records the       as the guidance moves from ACM v1.1 to A RTIFACT G UIDE
+highest four-class accuracy at 93.33%. These results suggest      and then to Skills+A RTIFACT G UIDE. The gains are much
+that A RTIFACT C OPILOT can reliably identify whether an          larger for final badge prediction than for basic Functional
+  TABLE IV: RQ2: Comparison with baselines. Values are means across three runs; bold indicates the best result.
+
+                                                           Badge-level                                        Functional-level
+Agent           Protocol
+                                             Acc.       Prec.        Rec.          F1            Acc.        Prec.        Rec.      F1
+                ACM v1.1                   48.89%      48.18%       45.04%       43.10%         82.78%      84.56%       85.29%   84.78%
+OpenHands       A RTIFACT G UIDE           56.11%      53.88%       51.11%       49.62%         82.78%      83.24%       87.25%   85.15%
+                Skills+A RTIFACT G UIDE    59.44%      64.74%       59.32%       61.38%         81.67%      83.65%       85.29%   84.44%
+                ACM v1.1                   34.44%      37.41%       37.61%       33.91%         70.00%      76.61%       67.65%   71.84%
+Cline           A RTIFACT G UIDE           52.78%      54.92%       58.04%       52.47%         76.11%      80.49%       76.47%   78.35%
+                Skills+A RTIFACT G UIDE    59.44%      67.50%       61.45%       64.05%         80.56%      83.33%       83.33%   83.40%
+                ACM v1.1                   39.44%      41.81%       33.89%       34.76%         73.89%      71.65%       89.22%   79.44%
+Codex           A RTIFACT G UIDE           55.56%      66.65%       52.76%       57.69%         76.67%      78.85%       80.39%   79.63%
+                Skills+A RTIFACT G UIDE    67.78%      71.92%       66.72%       68.71%         86.11%      85.32%       91.18%   88.13%
+               ACM v1.1                    31.11%      37.40%       30.83%       29.72%         56.11%      68.57%       41.18%   51.27%
+ExecutionAgent A RTIFACT G UIDE            33.89%      37.93%       36.52%       32.21%         65.56%      83.62%       50.00%   62.14%
+               Skills+A RTIFACT G UIDE     32.78%      44.67%       41.71%       30.85%         58.33%      94.41%       28.43%   43.22%
+A RTIFACT C OPILOT                         70.56%      74.05%       72.05%       70.64%         82.78%      98.55%       70.59%   82.23%
+
+
+TABLE V: Stability and cost across three runs. For each baseline, we report its best-performing protocol in RQ2. Cost
+is the mean API cost per artifact run.
+
+                                                                      Badge       Badge    Functional       Failure
+                 System                   Protocol                                                                       Cost
+                                                                    consistency divergence agreement         rate
+                 OpenHands                Skills+A RTIFACT G UIDE        35/60           6/60       41/60 8.33% $0.043
+                 Cline                    Skills+A RTIFACT G UIDE        21/60           3/60       43/60 16.67% $0.068
+                 Codex                    Skills+A RTIFACT G UIDE        37/60           3/60       49/60 10.00% $0.044
+                 ExecutionAgent           A RTIFACT G UIDE               12/60          15/60       37/60 45.00% $0.093
+                 A RTIFACT C OPILOT N/A                                  32/60           1/60       45/60    0.00% $0.125
+
+
+
+discrimination, suggesting that the main value of the rubric             Skills+A RTIFACT G UIDE improve general-purpose agents sub-
+and staged skills is not merely to help agents execute artifacts,        stantially. Second, AE performance depends not only on
+but to help them organize evidence into more calibrated                  whether an agent can run artifacts, but on whether it can turn
+badge judgments. Trajectory analysis explains why Codex is               execution into a bounded, evidence-driven judgment process.
+the strongest baseline. Its largest advantage comes from D3
+recovery behavior rather than from uniformly better judgment.            D. RQ3: Stability Across Repeated Runs
+In several mismatch cases, A RTIFACT C OPILOT follows one                   We select the best-performing protocol configuration for
+documented entry point, encounters a technical failure, and              each baseline from RQ2 as the basis for stability anal-
+then commits to a lower score, whereas Codex continues                   ysis. Table V reports stability across three independent
+exploring alternative documented paths and recovers exe-                 runs under these selected configurations. Codex under
+cutable evidence, which accounts for a substantial fraction              Skills+A RTIFACT G UIDE achieves the highest exact three-run
+of the gap between the two systems. The traces also explain              badge consistency at 37/60 and the highest Functional agree-
+why A RTIFACT C OPILOT still achieves the best overall badge-            ment at 49/60, indicating the strongest outcome convergence
+level result. Its phase constraints and packet checking make             among runs that completed successfully. A RTIFACT C OPILOT
+positive decisions more conservative, especially at the Func-            is slightly lower on exact consistency at 32/60, but it is the
+tional gate. As a result, A RTIFACT C OPILOT produces fewer              only system with a zero failure rate, and it shows the fewest
+unsupported upgrades from partial execution evidence, even               cases of extreme disagreement, with only 1 artifact receiving
+though this conservatism also causes it to miss some human-              three different badge outcomes. Therefore, its advantage lies
+awarded positive cases. ExecutionAgent shows an opposite                 less in producing identical labels on every run than in avoiding
+failure mode, that despite strong execution-oriented behavior,           runtime breakdowns and large result swings.
+it does not reliably shift to evidence-centered review under                The sources of instability differ across baselines. Open-
+A RTIFACT G UIDE or Skills+A RTIFACT G UIDE, indicating that             Hands under Skills+A RTIFACT G UIDE produces more cases
+execution ability alone is insufficient for AE.                          with three different badge outcomes across runs, suggesting
+   Overall, RQ2 supports two conclusions. First, official                that different runs often follow different review paths. Cline
+badge descriptions alone do not provide enough structure                 under Skills+A RTIFACT G UIDE shows lower exact consistency
+for stable automated review. Both A RTIFACT G UIDE and                   but limited extreme divergence, indicating more frequent
+                     Report perceptions                                                                         Claim mapping   Reuse transfer        Route/resource      Run failure       Artifact content
+
+
+                                                                                          ArtifactCopilot       13                   18                       17                  5       n=53
+                                 4.50      4.62
+                5     4.44
+                                                                   4.06                     OpenHands                      27                               22                        9            5    5       n=68
+                                                       3.75
+                4
+
+
+
+
+ Rating (1-5)
+                                                                                                   Cline                  24                           21                     9                   12        2   n=68
+
+
+
+                                                                                                  Codex               23                          17                  4   4       6        n=54
+                3
+                                                                                                            0        10         20               30              40           50                  60            70
+                                                                                                                                          Number of mismatched runs
+
+                2                                                               1.56
+
+                                                                                                       Fig. 4: Distribution of mismatch categories.
+                1
+                    Evidence   Boundary   D1-D5     Uncertainty    Trust      Overclaim
+                    location    clarity   clarity     helpful   calibration     risk
+                                                                                          Latin-square design, each participant completed 4 review tasks
+                                                                                          (2 with-report and 2 no-report), with each artifact evaluated
+                     Fig. 3: Participant ratings of report qualities.
+                                                                                          under both conditions by different reviewers. All tasks used
+                                                                                          A RTIFACT G UIDE-guided AE, requiring participants to record
+movement between adjacent badge levels. Its failure traces                                review outcomes and complete scoring forms. The study
+repeatedly show context overflow, a pattern also observed in                              yielded 32 valid review records in total.
+Codex under Skills+A RTIFACT G UIDE. Codex benefits from                                     Because of the limited sample size, we treat the results
+shorter and more direct review trajectories, which helps ex-                              as descriptive comparisons. Self-reported confidence and all
+plain its stronger consistency, but its failures still reveal                             report perception items were collected on five-point Likert
+sensitivity to long accumulated context and often appear                                  scales from 1 (lowest) as the lowest rating to 5 (highest) as
+as hard interruptions once the context budget is exceeded.                                the highest [26]. Reviewers with access to the report reported
+We therefore interpret these failures not as artifact-specific                            higher confidence than those without it, with mean scores of
+difficulty, but as a context-management limitation arising from                           4.06 versus 3.63. Figure 3 summarizes participants’ assess-
+the interaction between long-horizon agent trajectories and the                           ments of the report itself. Evidence location received a mean
+underlying model context bound. ExecutionAgent under A RTI -                              score of 4.44 out of 5, boundary clarity 4.50, and dimension
+FACT G UIDE presents a different failure mode. It has the lowest
+                                                                                          clarity 4.62. Uncertainty helpfulness and trust calibration were
+exact consistency at 12/60, the highest badge divergence at                               rated 3.75 and 4.06, while overclaim risk remained low at 1.56.
+15/60, and a failure rate of 45.00%. Trace inspection shows                               These results suggest that the report was effective at helping
+that these failures are dominated by workspace initialization                             reviewers locate evidence, understand what the current review
+conflicts, artifact clone failures, broken container working                              did and did not establish, and follow the D1–D5 judgment
+directories, corrupted screen sessions, and missing parseable                             structure. In the 16 with-report reviews, participant decisions
+badge outputs rather than by artifact-specific difficulty. This                           agreed with the report in 15 cases. This suggests that the
+suggests that an agent optimized for project execution is not                             report was consistent with reviewer judgment in this controlled
+naturally suited to the long-horizon, staged, and auditable                               setting.
+evidence review process required by AE.                                                                                         VI. D ISCUSSION
+   Overall, RQ3 yields two findings. First, exact three-run
+                                                                                          A. Design Implications for Automated AE
+consistency favors agents with shorter trajectories and more
+direct decisions, which explains the strength of Codex on this                               Our mismatch analysis shows that the main barrier to
+metric. Second, for artifact evaluation, the more important                               automated artifact evaluation is no longer basic execution, but
+notion of stability is not only whether repeated runs return                              evidence interpretation. Across A RTIFACT C OPILOT, Open-
+identical badges, but whether they complete reliably and                                  Hands, Cline, and Codex, many remaining errors arise after the
+keep result variation within a limited range. In this sense,                              artifact has already reached an executable state. We exclude
+A RTIFACT C OPILOT provides a more suitable stability profile                             ExecutionAgent from this analysis because most of its failures
+for AE assistance.                                                                        are infrastructure-level breakdowns before a usable AE judg-
+                                                                                          ment is produced, rather than interpretable review-decision
+E. RQ4: Reviewer Study                                                                    mismatches. As Figure 4 shows, the dominant mismatch cat-
+  We conducted a controlled user study to examine how A R -                               egories are claim mapping and reuse transfer, which together
+TIFACT C OPILOT reports support rubric-guided artifact evalu-                             account for most disagreements. Both require evaluative judg-
+ation. We selected 8 paper-artifact pairs from prior work in                              ments: whether an observed output is sufficiently connected to
+our lab and generated A RTIFACT C OPILOT reports for each                                 a paper claim, and whether a demonstrated use case constitutes
+and then prepared a with-report version and a no-report                                   genuine reuse rather than a minor workflow variation. This
+version. We recruited 8 participants with at least 3 years                                also exposes a limitation of our current system. Although
+of software engineering research experience, none of whom                                 A RTIFACT C OPILOT improves execution control and evidence
+had participated in the rubric design interviews. Following a                             organization, it still remains sensitive to execution context
+when interpreting evidence. The same artifact may lead to                 The main external threat lies in scope. Our 60-artifact suite
+different badge outcomes depending on route choice, resource           was obtained by stratified random sampling to cover positive,
+availability, or whether a repair is treated as acceptable inter-      negative, and difficult boundary cases, rather than to favor
+vention. These errors are therefore not merely implementation          any system or estimate population frequency. The results also
+failures, but symptoms of the underlying subjectivity and              depend on the selected model backend, agent frameworks, and
+context dependence of AE itself.                                       execution budgets. We therefore present A RTIFACT C OPILOT
+   Taken together, these findings suggest that automated AE            as a controlled instantiation, and view our findings as evidence
+should not be framed as autonomous badge issuance from                 about recurring challenges in AE automation rather than as
+opaque execution outcomes. Instead, it should be designed as a         universally generalizable performance results.
+reviewer-oriented evidence assistant that makes route choices
+                                                                                           VII. R ELATED W ORK
+explicit, records intervention burden, exposes uncertainty in
+claim mapping and reuse judgments, and localizes where                 A. Artifact Evaluation Practice and Standards
+human adjudication is still needed.                                       Prior work has examined different aspects of AE. Kr-
+                                                                       ishnamurthi et al. [21] discussed the early motivation and
+B. Design Implications for Artifacts                                   review process of AE at the conference level. Hermann et
+   Our findings also suggest that A RTIFACT C OPILOT can serve         al. [17] analyzed reviewer expectations and showed that exist-
+as a detector of artifact quality, not only an evaluator. Arti-        ing guidelines do not provide sufficiently uniform criteria for
+facts that can be assessed stably by A RTIFACT C OPILOT are            artifact judgment. Saucez et al. [31] highlighted the tension
+typically those with clearer structure, more explicit evidence,        between badge assignment and deeper validation. Timper-
+and better-defined review paths. Conversely, when the agent            ley et al. [33] studied recurring obstacles to reuse, includ-
+becomes uncertain or unstable, the cause often lies not in the         ing incomplete documentation and undeclared dependencies.
+code alone, but in underspecified artifact design. In this sense,      These studies characterize AE practice, but they stop short
+evaluation difficulty is itself a useful signal of artifact quality.   of operationalizing badge policy into a usable scoring rubric.
+   This observation points to several concrete design prac-            A RTIFACT G UIDE is designed to address this gap.
+tices for artifacts. First, artifacts should expose a canonical        B. LLM Agents and Automated Evaluation
+evaluation route, including the intended entry point, required
+                                                                          LLM agents combine reasoning, tool use, and iterative
+resources, and acceptable bounded substitutes when full ex-
+                                                                       feedback [44], [37], [41]. In software engineering, they have
+ecution is too costly. Second, they should make outputs
+                                                                       been applied to repository navigation [43], [45], general-
+legible as evidence by explicitly linking scripts, logs, or tables
+                                                                       purpose code development [39], code repair [10], automated
+to the corresponding paper claims. Third, artifacts targeting
+                                                                       project execution [11], vulnerability detection [23], [22], and
+Reusable should provide at least one bounded transfer case
+                                                                       test generation [24], [38]. These systems are not targeting
+with expected output, so that reuse can be validated rather
+                                                                       evidence-based reviews. In parallel, Pathak et al. showed
+than inferred. Finally, external dependencies such as GPUs,
+                                                                       that problem-specific rubrics significantly improve LLM code
+model downloads, API keys, or large datasets should be stated
+                                                                       evaluation [28], and the agent-as-a-judge paradigm extended
+explicitly, together with a reduced validation path whenever
+                                                                       agents to executable dynamic evaluation [46], [16]. In AE,
+possible. A high-quality artifact should therefore not be treated
+                                                                       Heye et al. proposed an LLM-driven method for extracting
+as merely a public code release, but should be designed and
+                                                                       reproducibility defects in cybersecurity artifacts [18], but their
+organized according to the standards of high-quality research
+                                                                       work focuses on reproducibility signals rather than full badge-
+software. Whether or not an artifact is submitted to AE, it
+                                                                       oriented review. More recently, Baek and Pradel proposed Ar-
+should make its review path, the connection between outputs
+                                                                       tisan for agentic artifact evaluation [9], focusing on validating
+and paper claims, and its reusable validation path as explicit
+                                                                       paper-reported result objects such as tables against artifact
+as possible, because these properties improve not only the
+                                                                       outputs. Our work instead targets the complete AE workflow.
+stability of automated evaluation but also the practicality of
+                                                                       A RTIFACT G UIDE and A RTIFACT C OPILOT support this work-
+human review, reproduction, and downstream use.
+                                                                       flow by combining a systematically constructed rubric with a
+                                                                       phase-driven agent.
+C. Threats to Validity
+   The main internal threat lies in the construction of the                                 VIII. C ONCLUSION
+adjudicated badges. Artifact evaluation inevitably involves               We introduced A RTIFACT C OPILOT and A RTIFACT G UIDE,
+judgment calls, especially when deciding whether an execution          arguing that AE automation is best understood as a rubric-
+is representative, whether an output supports a paper claim,           guided evidence review task. A RTIFACT G UIDE translates
+and whether a bounded transfer case establishes reuse. Because         descriptive badge standards into operational review crite-
+both the badges and A RTIFACT C OPILOT are grounded in the             ria, while A RTIFACT C OPILOT realizes them through phase-
+finalized A RTIFACT G UIDE, some degree of rubric-alignment            specific review control. On 60 real artifacts with human-
+bias cannot be fully excluded. We mitigate this threat through         adjudicated badges, A RTIFACT G UIDE improves the AE per-
+independent review, discussion, and third-party adjudication.          formance of three coding agents over official policy prompts,
+and A RTIFACT C OPILOT achieves the highest exact badge                           [17] B. Hermann, S. Winter, and J. Siegmund, “Community expectations for
+agreement at 70.56% while completing all repeated runs with                            research artifacts and evaluation processes,” in Proceedings of the 28th
+                                                                                       ACM Joint Meeting on European Software Engineering Conference
+zero failure rate. Our analysis shows that the main remaining                          and Symposium on the Foundations of Software Engineering,
+challenge of automated AE is evidence interpretation rather                            ser. ESEC/FSE 2020. New York, NY, USA: Association for
+than execution alone. It further suggests that higher-quality                          Computing Machinery, 2020, p. 469–480. [Online]. Available: https:
+                                                                                       //doi.org/10.1145/3368089.3409767
+artifacts should make their review path, claim support, and                       [18] D. Heye, K. Kindermann, R. Decker, J. Lohmöller, A. Belova,
+reuse boundary explicit.                                                               S. Geisler, K. Wehrle, and J. Pennekamp, “Supporting artifact
+                                                                                       evaluation with llms: A study with published security research papers,”
+                                                                                       in 2025 IEEE International Conference on Big Data (BigData),
+                              R EFERENCES                                              2025, pp. 5077–5085. [Online]. Available: https://doi.org/10.1109/
+                                                                                       BigData66926.2025.11401815
+                                                                                  [19] A. Jonsson and G. Svingby, “The use of scoring rubrics: Reliability,
+ [1] “Artifactguide,” https://figshare.com/s/4a21d79f93f92d11f2a1, accessed:           validity and educational consequences,” Educational Research Review,
+     2026-07-01.                                                                       vol. 2, no. 2, pp. 130–144, 2007. [Online]. Available: https:
+ [2] “ASE 2026 artifact evaluation track,” https://conf.researchr.org/track/           //www.sciencedirect.com/science/article/pii/S1747938X07000188
+     ase-2026/ase-2026-artifact-evaluation, 2026, 41st IEEE/ACM Interna-          [20] S. Klein-Gardner, L. Abts, and G. Goldberg, “The engineering design
+     tional Conference on Automated Software Engineering, 2026.                        process portfolio scoring rubric (edppsr) – initial validity and reliability
+ [3] “FSE 2026 artifacts track,” https://conf.researchr.org/track/fse-2026/fse-        (fundamental),” in 2022 ASEE Annual Conference & Exposition,
+     2026-artifacts, 2026, the ACM International Conference on the Founda-             no. 10.18260/1-2–41236. Minneapolis, MN: ASEE Conferences,
+     tions of Software Engineering, 2026.                                              August 2022, https://peer.asee.org/41236. [Online]. Available: https:
+ [4] “ICSE 2026 artifact evaluation track,” https://conf.researchr.org/track/          //peer.asee.org/41236
+     icse-2026/icse-2026-artifact-evaluation, 2026, 48th IEEE/ACM Interna-        [21] S. Krishnamurthi, “Artifact evaluation for software conferences,”
+     tional Conference on Software Engineering, Rio de Janeiro, Brazil, April          SIGPLAN Not., vol. 48, no. 4S, p. 17–21, Jul. 2013. [Online].
+     12–18, 2026.                                                                      Available: https://doi.org/10.1145/2502508.2502518
+ [5] “ISSTA 2026 artifact evaluation track,” https://conf.researchr.org/track/    [22] F. Liu, Y. Zhang, J. Luo, J. Dai, T. Chen, L. Yuan, Z. Yu,
+     issta-2026/issta-2026-artifact-evaluation, 2026, 35th ACM SIGSOFT                 Y. Shi, K. Li, C. Zhou, H. Chen, and M. Yang, “Make agent
+     International Symposium on Software Testing and Analysis, 2026.                   defeat agent: Automatic detection of Taint-Style vulnerabilities in
+ [6] ACM SIGMOBILE, “ACM SIGMOBILE Research Papers Artifact                            LLM-based agents,” in 34th USENIX Security Symposium (USENIX
+     Evaluation Guidelines,” https://www.sigmobile.org/grav/about/artifact-            Security 25). Seattle, WA: USENIX Association, Aug. 2025, pp.
+     guidelines, n.d., prepared by the Research Artifact Evaluation Advisory           3767–3786. [Online]. Available: https://www.usenix.org/conference/
+     Committee. Accessed: June 17, 2026.                                               usenixsecurity25/presentation/liu-fengyu
+ [7] Anthropic, “Agent skills,” Anthropic Platform Documentation, 2026,           [23] J. Liu, W. Hao, K. Cheng, and D. Jin, “Large language model-based
+     accessed: 2026-06-29. [Online]. Available: https://platform.claude.com/           planning agent with generative memory strengthens performance in
+     docs/en/agents-and-tools/agent-skills/overview                                    textualized world,” Eng. Appl. Artif. Intell., vol. 148, p. 110319,
+                                                                                       2025. [Online]. Available: https://api.semanticscholar.org/CorpusID:
+ [8] Association for Computing Machinery, “Artifact review and badging –
+                                                                                       276859598
+     current,” https://www.acm.org/publications/policies/artifact-review-and-
+                                                                                  [24] N. Mündler, M. N. Mueller, J. He, and M. Vechev, “Code agents
+     badging-current, Aug. 2020, version 1.1, August 24, 2020. Accessed:
+                                                                                       are state of the art software testers,” in ICML 2024 Workshop
+     June 17, 2026.
+                                                                                       on Foundation Models in the Wild, 2024. [Online]. Available:
+ [9] D. Baek and M. Pradel, “Artisan: Agentic artifact evaluation,”
+                                                                                       https://openreview.net/forum?id=LfyYSHGQMZ
+     arXiv preprint arXiv:2602.10046, 2026. [Online]. Available: https:
+                                                                                  [25] A. Muttakin, S. Mondal, and C. K. Roy, “The state of open science
+     //arxiv.org/abs/2602.10046
+                                                                                       in software engineering research: A case study of icse artifacts,” 2026
+[10] I. Bouzenia, P. Devanbu, and M. Pradel, “Repairagent: An autonomous,              IEEE/ACM 48th International Conference on Software Engineering
+     llm-based agent for program repair,” in Proceedings of the IEEE/ACM               (ICSE), 2026. [Online]. Available: https://arxiv.org/abs/2601.02066
+     47th International Conference on Software Engineering, ser. ICSE             [26] T. Nemoto and D. Beglar, “Developing likert-scale questionnaires,”
+     ’25. IEEE Press, 2025, p. 2188–2200. [Online]. Available: https:                  in JALT2013 Conference Proceedings, N. Sonda and A. Krause,
+     //doi.org/10.1109/ICSE55347.2025.00157                                            Eds. Tokyo: JALT, 2014, pp. 1–8. [Online]. Available: https:
+[11] I. Bouzenia and M. Pradel, “You name it, i run it: An llm agent to                //jalt-publications.org/sites/default/files/pdf-article/jalt2013 001.pdf
+     execute tests of arbitrary projects,” Proc. ACM Softw. Eng., vol. 2, no.     [27] OpenAI, “Codex,” https://openai.com/codex/, 2026, accessed: 2026-06-
+     ISSTA, Jun. 2025. [Online]. Available: https://doi.org/10.1145/3728922            28.
+[12] V. Braun and V. Clarke, “Using thematic analysis in psychology,”             [28] A. Pathak, R. Gandhi, V. Uttam, A. Ramamoorthy, P. Ghosh, A. R.
+     Qualitative Research in Psychology, vol. 3, no. 2, pp. 77–101, 2006.              Jindal, S. Verma, A. Mittal, A. Ased, C. Khatri, Y. Nakka, Devansh,
+     [Online]. Available: https://doi.org/10.1191/1478088706qp063oa                    J. S. Challa, and D. Kumar, “Rubric is all you need: Improving llm-
+[13] Cline Bot, “Cline bot: Ai coding assistant,” https://cline.bot/, 2024,            based code evaluation with question-specific rubrics,” in Proceedings
+     accessed: 2026-06-23.                                                             of the 2025 ACM Conference on International Computing Education
+[14] D. C. D’Elia, T. D. Doudali, C. Giuffrida, M. Matos, M. Payer,                    Research V.1, ser. ICER ’25. New York, NY, USA: Association
+     S. Pirelli, G. Portokalidis, V. Schiavoni, S. Signorello, and A. Vahldiek-        for Computing Machinery, 2025, p. 181–195. [Online]. Available:
+     Oberwagner, “Lessons learned from five years of artifact evaluations at           https://doi.org/10.1145/3702652.3744220
+     eurosys,” in Proceedings of the 3rd ACM Conference on Reproducibility        [29] Y. Ruan, H. Dong, A. Wang, S. Pitis, Y. Zhou, J. Ba, Y. Dubois,
+     and Replicability, ser. ACM REP ’25. New York, NY, USA:                           C. Maddison, and T. Hashimoto, “Identifying the risks of lm agents with
+     Association for Computing Machinery, 2025, p. 108–120. [Online].                  an lm-emulated sandbox,” in International Conference on Learning
+     Available: https://doi.org/10.1145/3736731.3746152                                Representations, B. Kim, Y. Yue, S. Chaudhuri, K. Fragkiadaki,
+[15] Farion, “Cc-switch,” 2025, accessed 2026-06-29. [Online]. Available:              M. Khan, and Y. Sun, Eds., vol. 2024, 2024, pp. 27 031–27 098.
+     https://github.com/farion1231/cc-switch                                           [Online]. Available: https://proceedings.iclr.cc/paper files/paper/2024/
+[16] B. Gou, Z. Huang, Y. Ning, Y. Gu, M. Lin, W. Qi, A. Kopanev,                      file/7274ed909a312d4d869cc328ad1c5f04-Paper-Conference.pdf
+     B. Yu, B. J. Gutierrez, Y. Shu, C. H. Song, J. Wu, S. Chen, H. N.            [30] J. Rudolph, F. Ismail, S. Tan, and P. Seah, “Don’t believe the hype.
+     Moussa, T. ZHANG, J. Xie, Y. Li, T. Xue, Z. Liao, K. Zhang,                       ai myths and the need for a critical approach in higher education,” pp.
+     B. Zheng, Z. Cai, V. Rozgic, M. Ziyadi, H. Sun, and Y. Su,                        6–27, 2025.
+     “Mind2web 2: Evaluating agentic search with agent-as-a-judge,” in            [31] D. Saucez, L. Iannone, and O. Bonaventure, “Evaluating the
+     The Thirty-ninth Annual Conference on Neural Information Processing               artifacts of sigcomm papers,” SIGCOMM Comput. Commun. Rev.,
+     Systems Datasets and Benchmarks Track, 2026. [Online]. Available:                 vol. 49, no. 2, p. 44–47, May 2019. [Online]. Available: https:
+     https://openreview.net/forum?id=AUaW6DS9si                                        //doi.org/10.1145/3336937.3336944
+[32] G. Sherman and S. Nagy, “No harness, no problem: Oracle-
+     guided harnessing for auto-generating c api fuzzing harnesses,” in
+     Proceedings of the IEEE/ACM 47th International Conference on
+     Software Engineering, ser. ICSE ’25. IEEE Press, 2025, p. 165–177.
+     [Online]. Available: https://doi.org/10.1109/ICSE55347.2025.00239
+[33] C. S. Timperley, L. Herckis, C. Le Goues, and M. Hilton,
+     “Understanding and improving artifact sharing in software engineering
+     research,” Empirical Software Engineering, vol. 26, no. 4, p. 67, 2021.
+     [Online]. Available: https://doi.org/10.1007/s10664-021-09973-5
+[34] C. Treude, C. M. Poskitt, and R. Hoda, “Rethinking artifact
+     evaluation for software engineering in the age of generative
+     ai,” arXiv preprint arXiv:2604.16306, 2026. [Online]. Available:
+     https://arxiv.org/abs/2604.16306
+[35] S. M. Vieira, U. Kaymak, and J. M. C. Sousa, “Cohen’s kappa
+     coefficient as a performance measure for feature selection,” in
+     International Conference on Fuzzy Systems, 2010, pp. 1–8. [Online].
+     Available: https://doi.org/10.1109/FUZZY.2010.5584447
+[36] T. N. Vijaykumar, “A common standard to fix our
+     review process,” SIGARCH Blog, apr 2018. [Online]. Avail-
+     able: https://www.sigarch.org/a-common-standard-to-fix-our-review-
+     process-and-oh-i-was-wrong-about-one-thing/
+[37] L. Wang, C. Ma, X. Feng, Z. Zhang, H. ran Yang, J. Zhang, Z.-Y.
+     Chen, J. Tang, X. Chen, Y. Lin, W. X. Zhao, Z. Wei, and J. rong
+     Wen, “A survey on large language model based autonomous agents,”
+     Frontiers of Computer Science, vol. 18, 2023. [Online]. Available:
+     https://api.semanticscholar.org/CorpusID:261064713
+[38] X. Wang, P. Gao, X. Meng, C. Peng, R. Hu, Y. Lin, and C. Gao,
+     “Aegis: An agent-based framework for bug reproduction from issue
+     descriptions,” in Proceedings of the 33rd ACM International Conference
+     on the Foundations of Software Engineering, ser. FSE Companion ’25.
+     New York, NY, USA: Association for Computing Machinery, 2025, p.
+     331–342. [Online]. Available: https://doi.org/10.1145/3696630.3728557
+[39] X. Wang, B. Li, Y. Song, F. F. Xu, X. Tang, M. Zhuge, J. Pan,
+     Y. Song, B. Li, J. Singh, H. H. Tran, F. Li, R. Ma, M. Zheng, B. Qian,
+     Y. Shao, N. Muennighoff, Y. Zhang, B. Hui, J. Lin, R. Brennan,
+     H. Peng, H. Ji, and G. Neubig, “Openhands: An open platform
+     for AI software developers as generalist agents,” in The Thirteenth
+     International Conference on Learning Representations, 2025. [Online].
+     Available: https://openreview.net/forum?id=OJd3ayDDoF
+[40] S. Winter, C. S. Timperley, B. Hermann, J. Cito, J. Bell, M. Hilton,
+     and D. Beyer, “A retrospective study of one decade of artifact
+     evaluations,” in Proceedings of the 30th ACM Joint European Software
+     Engineering Conference and Symposium on the Foundations of Software
+     Engineering, ser. ESEC/FSE 2022. New York, NY, USA: Association
+     for Computing Machinery, 2022, p. 145–156. [Online]. Available:
+     https://doi.org/10.1145/3540250.3549172
+[41] Z. Xi, W. Chen, X. Guo, W. He, Y. Ding, B. Hong, M. Zhang,
+     J. Wang, S. Jin, E. Zhou et al., “The rise and potential of large
+     language model based agents: A survey,” Science China Information
+     Sciences, vol. 68, no. 2, p. 121101, 2025. [Online]. Available:
+     https://doi.org/10.1007/s11432-024-4222-0
+[42] W. Xu, C. Huang, S. Gao, and S. Shang, “LLM-Based Agents for Tool
+     Learning: A Survey,” Data Science and Engineering, pp. 1–31, 2025.
+     [Online]. Available: https://doi.org/10.1007/s41019-025-00296-9
+[43] J. Yang, C. E. Jimenez, A. Wettig, K. Lieret, S. Yao, K. Narasimhan,
+     and O. Press, “Swe-agent: agent-computer interfaces enable automated
+     software engineering,” in Proceedings of the 38th International
+     Conference on Neural Information Processing Systems, ser. NIPS
+     ’24. Red Hook, NY, USA: Curran Associates Inc., 2024. [Online].
+     Available: https://dl.acm.org/doi/10.5555/3737916.3739517
+[44] S. Yao, J. Zhao, D. Yu, N. Du, I. Shafran, K. R. Narasimhan, and Y. Cao,
+     “React: Synergizing reasoning and acting in language models,” in The
+     Eleventh International Conference on Learning Representations, 2023.
+     [Online]. Available: https://openreview.net/forum?id=WE vluYUL-X
+[45] Y. Zhang, H. Ruan, Z. Fan, and A. Roychoudhury, “AutoCodeRover:
+     Autonomous program improvement,” in Proceedings of the 33rd ACM
+     SIGSOFT International Symposium on Software Testing and Analysis,
+     ser. ISSTA 2024. New York, NY, USA: ACM, 2024, pp. 1592–1604.
+     [Online]. Available: https://doi.org/10.1145/3650212.3680384
+[46] M. Zhuge, C. Zhao, D. R. Ashley, W. Wang, D. Khizbullin, Y. Xiong,
+     Z. Liu, E. Chang, R. Krishnamoorthi, Y. Tian, Y. Shi, V. Chandra,
+     and J. Schmidhuber, “Agent-as-a-judge: Evaluate agents with agents,”
+     in Forty-second International Conference on Machine Learning, 2025.
+     [Online]. Available: https://openreview.net/forum?id=Nn9POI9Ekt
+
