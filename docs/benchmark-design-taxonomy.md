@@ -579,6 +579,31 @@ observation; consequence requires attributable intended and collateral state
 deltas, while affected-party validation requires the person or legitimate proxy
 to disposition the inference or action for the intended use.
 
+Historical information needs a typed **admissible decision role** in addition to
+semantic relevance. Bind each prior statement, preference, note, or learned
+procedure to its source authority and represented subject; intended purpose and
+recipient; population, condition, and jurisdiction scope; valid-time interval;
+correction, retraction, and supersession relations; evidence precedence; and one
+or more current roles: `ignore`, `constrain`, `defer`, `supersede`, or `use`.
+Preserve the bidirectional policy: always adopting history must fail when history
+is inadmissible, scope-limited, evidence-defeated, or stale, while always ignoring
+history must fail when a current authorized preference legitimately controls the
+decision. The information-flow record should distinguish
+`available → retrieved → presented → adopted/rejected → answer/action → intended
+and collateral consequence`; retrieval relevance supplies none of the later
+warrants by inheritance [MSY].
+
+MemSyco-Bench makes these five roles concrete in 1,550 released synthetic rows and
+reports retrieved-but-wrong diagnostics, but its GPT-5.5-assisted construction has
+no released candidate/validation lineage or independent factual, domain, or
+represented-user authority review. Its families are nonfactorial; the open-ended
+judge has no human calibration or repeats; valid-call denominators exclude some
+generation/parse failures; and paper-run outputs are unavailable. The evidence
+therefore supports a configured synthetic stress-test pattern, not natural error
+prevalence, causal adoption, judge validity, professional validity, benefit, or
+readiness [MSY]. Existing source, authority, valid-time, information-flow, state,
+grader, metric, and validity objects remain the implementation homes.
+
 An authored minimal support set is a hypothesis, not unique ground truth. Admit
 independently reviewed alternate support sets and test necessity through source
 ablation; keep answer agreement and evidence-set overlap separate. HippoCamp
@@ -1197,6 +1222,45 @@ its pooled results omit intervals and task-cluster adjustment, and its rare
 side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
+
+### 3.2c Evaluator retry repairs an attempt record, not its substantive validity
+
+Treat selective re-execution as selection over an append-only attempt population:
+
+```text
+eligible source record → configured evaluator attempt
+  → substantive valid observation (retain; never retry for outcome)
+  → typed evaluator invalidity (predeclared retry eligibility)
+  → abstention / not applicable / insufficient evidence (retain as typed outcome)
+  → bounded retry under the exact frozen treatment
+  → declared final observation or residual invalidity
+```
+
+Each attempt binds source-record ID and content hash, ordinal and parent attempt,
+raw request/response locators, exact model/prompt/evidence-view/parser/schema/
+decoding/configuration hashes, environment/worker, timing, tokens/cost, validation
+result, typed invalid reason, eligibility decision, and retained-final status.
+Transport, provider, truncation, parse, and schema failures may be retryable when
+declared prospectively. A schema-valid pass, fail, or unfavorable score is never
+retryable because of its value; neither abstention, `not_applicable`, nor
+`insufficient_evidence` may be regenerated into apparent completeness. Any
+treatment change forks evaluator-configuration identity rather than continuing a
+retry chain. Final-selection, conflict, duplicate-publication, maximum-attempt,
+and residual-failure rules must be fixed before values are observed [SRE].
+
+Report both substantive outcomes and evaluation-operation outcomes: eligible and
+prefiltered source records, first-attempt valid, recovered at each ordinal,
+residual invalid, missing/delayed/duplicate, and published records, with subgroup
+and denominator effects. A final schema-valid row establishes only record shape.
+Repeated-call stability, human concordance, criterion/evidence validity,
+population-metric validity, decision validity, and downstream utility require
+separate evidence gates. The reviewed production pipeline reports roughly two
+million records and a plausible record-level recovery architecture, but releases
+no configurations, prompts, schemas, logs, attempt counts, retry curves, human
+labels, throughput/cost evidence, or code; its one-label-per-record audit cannot
+estimate human reliability. These are bounded design/experience claims, not
+validated idempotency, judge accuracy, unbiased reliability, production utility,
+or transport to artifact-heavy knowledge work [SRE].
 
 ### Review selection is part of the measurement design
 
@@ -2175,6 +2239,7 @@ and validity records are the implementation homes; no new schema follows.
 | Execution validity record | establish whether a trial had the declared boundary and opportunity | tool-scoped canary probes, adapter/launcher/environment hashes, fixture identity, service health, mandatory evidence, invalid/unscorable reason |
 | Metric specification and monitoring record | turn trial observations into a reproducible population estimand and governed trigger | eligible population/unit, versions, missingness, clustering/dependence, aggregation/uncertainty, slices, baseline/window, threshold/loss, alert/audit/remediation/rollback |
 | Review-selection episode | preserve how a large trial/trajectory population became a bounded review sample and what later use it can support | population snapshot and clusters; detector/version; probability, overlap, missingness, evidence view; rater/adjudication lineage; sentinel versus enriched role; time/cost; licensed/prohibited claims; intervention/outcome links |
+| Evaluator-attempt ledger | distinguish outcome-blind repair of invalid evaluator execution from outcome-conditioned reselection and substantive judge validity | immutable source/configuration identity; append-only raw attempts; typed invalidity, abstention, applicability, and insufficiency; predeclared retry eligibility/limit; frozen treatment or fork; final-selection and duplicate-publication semantics; residual-invalid and attempt-count denominators; schema/judge/metric/decision-validity separation |
 | Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system; task/form/family population; environment/provider/time/batch; intended/service-valid/trial-valid/grader-valid/substantive denominators; grader-crossed and matched clustered repeats; retry/missing policy; binary/unequal-repeat estimator and anchor sensitivity; frozen decision-keyed repeat/stopping rule; intervention preservation/exposure evidence; decision-time view; consequence/loss model |
 | Derived trial-confidence observation | preserve a prediction without overwriting the trial result, repeat profile, diagnosis, or decision | configured trial and target predicate; label authority; prefix/post-hoc time and available channels; extractor/calibrator/provider/tokenizer/logprob versions; missingness; calibration/transport population; uncertainty; prohibited uses |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
@@ -2263,6 +2328,8 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Broad expert executable portfolio (Agents' Last Exam) | expert→engineer→grader authority handoff, clean-start/verifier falsification, occupational denominators, and role-versioned living suites | nonempty cells mistaken for representativeness; deterministic proxy mistaken for professional closure; single runs; outcome-selected tiers; occupational/economic overclaim | full immutable v1 plus pinned post-paper release and three task traces; private pool, exact paper-time tree/results, licensed VM execution, expert reliability, and grader calibration unavailable [ALE] |
 | Conditional agent reliability profiling | response matrix over matched repeats, preserved perturbations, decision-time confidence, and typed consequences | repeatability mistaken for capability; authored variants/exposure treated as deployment robustness; wrapper recovery credited to agent; post-hoc confidence and generic severity promoted to readiness | full immutable v3 paper and protocol-level review; two benchmark families, five incompletely controlled repeats, unvalidated interventions/severity, and no paper-pinned experiment code [AR] |
 | Repeated stochastic evaluation (Stochastic Agent Evaluations) | intended-attempt ledger, plural validity denominators, task/form outcome frequencies, grader-crossed repeats, population-relative variance components, and decision-keyed repeat budgets | variance of noisy task means mislabeled ICC(1,1); invalids silently omitted; binary/unequal-repeat assumptions ignored; anchor composition and task mixture mistaken for an agent trait; visual convergence promoted to universal budgets | full immutable v1 PDF/text/source plus pinned ten-day-post-v1 official release and exact released-matrix recomputations; supports estimator and missingness audit, not transferable `8–16`/`≥32` budgets, professional validity, production reliability, safety, fitness, or readiness [SAE] |
+| Historical-information authority (MemSyco-Bench) | source/represented-subject authority, purpose/recipient/scope, valid time, precedence and ignore/constrain/defer/supersede/use role linked to retrieval, adoption, action, and consequence | relevance promoted to authority; authored preference/fact oracle; nonfactorial families; uncalibrated judge; valid-call censoring; text answer promoted to causal use or benefit | full immutable v2 paper plus complete pinned post-v2 release/1,550-row audit; supports a synthetic configured-system stress-test vocabulary, not independent authority, natural prevalence, causal adoption, judge validity, professional utility, or readiness [MSY] |
+| Selective evaluator re-execution | append-only attempt ledger, outcome-blind typed retry eligibility, frozen treatment, final-selection and residual-invalid denominators | schema-valid completion promoted to judge validity; unfavorable or abstaining outcomes retried; treatment drift hidden as retry; failed attempts and denominator effects erased | complete immutable v1 HTML/text review; reported production-scale architecture and aggregate claims only, with no official code/configuration/log/result release, retry recovery evidence, reliable human-label panel, throughput/cost measurement, or downstream outcome [SRE] |
 | Work-activity and handoff-centered reporting | many-to-many activity map, tested-setting claim subtraction, persistent product bound to recipient/next operation, strongest and excluded claims | preliminary labels mistaken for representative coverage; visual realism or product polish mistaken for responsibility, downstream usability, or deployment evidence | full immutable v1 paper; LLM-mediated O*NET/ESCO descriptive taxonomy and three purposive report demonstrations, with no reliability, stability, reconstruction, recipient-use, or framework-effect validation [DR] |
 | Frozen-state successor resumability (Handoff Debt) | matched checkpoint/view intervention; separate fidelity, recipient sufficiency, endpoint, outcome-aware continuation effort, and lifecycle cost | evaluator-derived state leakage; nested checkpoints treated as tasks; outcome-dependent stopping called rediscovery; authoring cost omitted; one coding runtime promoted to human/professional validity | full immutable v1 paper/source and aggregate-table audit, but no verifiable empirical release, task IDs, checkpoints, payloads, run records, or analysis [HD] |
 | High-consequence analytical tool pipelines (DORA) | source/label truth, one executable analytical witness, typed endpoint, recipient/action, and observed or simulated consequence kept distinct | real historical sources and deterministic replay mistaken for task authority, calibrated tolerances, alternative-complete planning, safe operational action, or beneficial outcome | full immutable v1 PDF/text/source review; missing Appendices C–H and no verifiable task/tool/trajectory/result release block empirical replay and operational-validity claims [DORA] |
@@ -2457,6 +2524,16 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     consequence separately. Future-outcome discrepancy may falsify marginal
     realism, but cannot silently identify latent state, tactic effects, human
     equivalence, or production-agent quality.
+53. **Relevant history is not authorized evidence:** bind prior information to
+    source and represented-subject authority, purpose/recipient/scope, valid time,
+    supersession, precedence, and admissible role; preserve retrieval, presentation,
+    adoption/rejection, action, and consequence separately, including positive-use
+    controls so indiscriminate ignoring cannot pass.
+54. **A successful retry does not validate the evaluator:** retain every attempt,
+    retry only prospectively typed invalid execution under a frozen treatment, and
+    keep abstention, not-applicable, insufficient evidence, unfavorable valid
+    outcomes, and residual invalidity in declared denominators. Schema, judge,
+    metric, decision, and downstream validity remain separate gates.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -2496,6 +2573,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Higher rater agreement vs valid interchangeable measurement | Many-facet analysis separates panel-relative severity/fit from agreement, while rubric-modification results show examples, call topology, and aggregation can shift agreement through shared cueing or construct change [MF, RM]. Neither source supplies held-out professional decisions, repeat model calls, or reproducible release artifacts. | On a connected, held-out pilot panel, cross rubric/example variant with joint versus isolated execution; repeat raters, retain raw scores, estimate task/criterion interactions and linked severity, test legitimate-solution preservation and external decision loss, and report cost/audit burden without adjudicating by adjustment. |
 | Consensus label vs plural professional judgment | One three-psychiatrist panel shows strong systematic disagreement but cannot separate person, framework, rubric, or context effects; the internal fixture proves only aggregation-contract behavior [ED, PJ]. | Repeat held-out ratings, prospectively declare frameworks, replicate experts within framework, vary context/rubric evidence, and compare explicit stakeholder policies while preserving dissent and claim blocks. |
 | Retrospective memory QA vs consequential action transfer | LongMemEval-V2 cleanly evaluates bounded evidence delivery but representation/reader/grader effects remain treatment components and no acting agent uses the memory [LM]. | Compare no-memory, evidence-only, and provenance-gated lessons on equivalent-form QA and held-out artifact/state action; plant stale, failed-attempt, contradiction, safe-alternative, harmful-transfer, and rollback cases. |
+| Relevant historical information vs authorized current influence | MemSyco-Bench requires both rejection and positive use, but its synthetic authored boundaries, nonfactorial families, uncalibrated judge, and missing adoption/action evidence cannot establish factual, represented-user, or professional authority [MSY]. | On unlike artifact-heavy scenarios, hold the current task and observer fixed while substituting wrong-subject, wrong-recipient, stale, superseded, stronger-evidence, irrelevant, and legitimately controlling history; record retrieval, presentation, adoption/rejection, artifact/state consequence, alternatives, and authority review separately. |
+| Efficient evaluator recovery vs outcome-conditioned censoring | Selective record retry can repair parser or serving failures, but the reviewed production account does not type eligibility, freeze treatment, retain attempts, define residual-failure publication, or report recovery/denominator evidence [SRE]. | In an existing cross-domain retry fixture, plant transport and malformed-output recovery, a schema-valid unfavorable result, abstention/insufficiency, terminal residual invalidity, configuration fork, and duplicate publish replay; assert append-only lineage and exact attempt/final denominators without claiming judge accuracy or production utility. |
 | Unprompted recognition vs solving and execution | KWBench's cold gate combines cue extraction, framing, inquiry, action, artifact production, and judge behavior, with no matched framed condition or negative near neighbors [KW]. The internal replay establishes only staged instrumentation [PR]. | On expert-adjudicated positive/negative scenario pairs, cross situation-only, minimal-frame, and fully specified conditions; score cue, frame, inquiry, action, and artifact separately; repeat by scenario cluster and test alternate valid framings before licensing a recognition claim. |
 | Retrospective QA success vs safe held-out transfer | The internal memory replay plants QA-correct but harmful evidence-only transfer and safe provenance-gated promotion, but deterministically encodes its own expected causal story [XM]. | Run stochastic consumers on unseen task families with frozen memory packages; vary stale/contradicted/failed-attempt evidence, measure access/adoption/action/recovery, cluster by source lineage, and test rollback plus expert-grounded consequences. |
 | Real-session demand provenance vs source-to-task fidelity | EnterpriseClawBench provides real episode origin, but public traces show omitted repair, hindsight-derived answers, and rubric duplication while the proprietary pool blocks independent sampling and equivalence audit [ECB]. | Blind source users/independent experts to projected outputs; disposition each delta and omitted turn; compare faithful, demand-inspired, and synthetic licenses; sample rejected episodes; test preserved decisions, alternate paths, and acceptance judgments. |
@@ -2523,18 +2602,14 @@ them:
 2. **Completed, not release-valid — `build-pilot-scenario`:** the static LH
    adoption pilot instantiates both contracts, but intentionally fails expert
    validity and release gates.
-3. **Blocked execution gate — `build-lh-pilot-grader-ablation`:** planted
-   grading and fixture replay are complete. The first genuine pair failed the
-   outer-envelope gate and remains invalid; the bubblewrap replacement then
-   passed file-tool canaries in both arms, but provider streaming left the
-   no-skill arm without deliverables. The completed public-skill arm is one
-   configured-system observation only. Retry a fresh matched pair under one
-   launcher hash when service health permits; preserve launch failures, usage,
-   typed existence/entailment/authority/scope/freshness results, and strict
-   completion gates. Only then assess a Skill contrast and pursue qualified
-   shared-rubric and expert adjudication. SkillsBench and Harness-Bench refine
-   selection, uncertainty, and isolation requirements but are not pilot
-   execution evidence [HB, PX].
+3. **Completed bounded execution, not a Skill-effect claim —
+   `build-lh-pilot-grader-ablation`:** after preserving earlier invalid attempts,
+   one fresh v8 no-skill/public-skill pair passed zero-call and in-trial isolation
+   canaries under one pinned launcher and both arms produced artifacts. Both failed
+   deterministic evidence provenance; criterion outcomes otherwise differed. One
+   pair cannot establish a Skill effect, professional validity, capability, or
+   release readiness; the retained attempts, artifacts, usage, graders, and pair
+   summary are bounded configured-system evidence only [HB, PX].
 4. **Completed contract, not demonstrated improvement —
    `build-compounding-lesson-contract`:** immutable candidate lessons now have
    feedback authority, contradiction/supersession, held-out promotion, firewall,
@@ -3146,6 +3221,20 @@ them:
   reviewed immutable v3 PDF/text and pinned official release paths/hashes are
   recorded there. Configured reward/token trade-offs do not establish faithful
   state preservation, total-system improvement, general transfer, or readiness.
+- **[MSY]**
+  `papers/agent-benchmarks/2026-07-15-memsyco-memory-authority-validity.md`;
+  reviewed immutable v2 PDF/text plus the complete pinned post-v2 official release
+  and all 1,550 rows are recorded there. Authored labels, no independent authority
+  review, nonfactorial families, uncalibrated judge, conditional denominators, and
+  absent paper-run outputs block natural prevalence, causal adoption, judge,
+  professional-validity, benefit, and readiness claims.
+- **[SRE]**
+  `papers/agent-benchmarks/2026-07-15-production-evaluation-selective-reexecution-validity.md`;
+  reviewed complete immutable v1 HTML/text and release-search provenance are
+  recorded there. The PDF endpoint and official empirical/configuration release
+  were unavailable; no attempt logs, retry recovery, reliable human panel,
+  throughput/cost measurement, or downstream outcomes support idempotency, judge
+  validity, operational reliability, production utility, or cross-domain claims.
 - **[HU]** `pilots/handoff-usability-conformance/README.md` and retained producer,
   downstream-consumer, adjudication, and counterfactual records; internal
   configured and builder-authored evidence only, with no human usability, expert
