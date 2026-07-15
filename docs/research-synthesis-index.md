@@ -420,6 +420,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Demonstrates a bounded package effect while exposing representation semantics, authorship overlap, missing component ablations, and the need for held-out independent measurement |
 | [UniClawBench](../papers/agent-benchmarks/2026-07-13-uniclawbench-proactive-closed-loop-validity.md) | A | Makes executor, private supervisor, public simulator, released signal, and repair cycle inspectable while showing that requested-task repair is not proactivity and structural isolation is not semantic non-leakage |
 | [EdgeBench](../papers/agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | A | Separates agent-visible feedback from evaluator-only snapshots and exposes adaptive-query, persistence, censoring, and best-so-far boundaries; its smooth suite fits are not task-level or universal learning laws |
+| [AgencyBench](../papers/agent-benchmarks/2026-07-15-agencybench-feedback-artifact-validity.md) | A | Makes cumulative native-artifact repair and plural observer evidence inspectable while separating unaided first attempt, no-information retry, generic revision, consequence-only feedback, criterion-disclosed evaluator repair, and authorized ecological feedback; paper/release drift, observer disagreement, hidden aesthetics, missing human labels, single-run ambiguity, and no real users bound it to configured evaluator-assisted repair |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
 
@@ -539,6 +540,20 @@ independent treatments. UniClawBench supports role-separated synthetic repair bu
 not proactivity, natural-user fidelity, semantic non-leakage, or causal benefit;
 EdgeBench supports dual-channel day-scale measurement and concrete evaluator-
 hacking risks but not task-level/universal learning or professional readiness.
+AgencyBench adds a finer **feedback-conditioned evidence path**: `initial artifact
+evidence → observer-specific defect proposition and authority → executor receipt
+and uptake → changed artifact/state locus → criterion-local admissible
+re-observation → repair or collateral regression → endpoint, burden, and cost`.
+A score gain under criterion disclosure estimates oracle-assisted repairability,
+not self-diagnosis or realistic collaboration. The release's text/vision
+disagreement and beyond-rubric aesthetics show why adding or averaging observers
+cannot repair an inadmissible evidence view or hidden obligation. A reusable pilot
+should cross first-attempt only, no-information retry, generic revision,
+consequence-only feedback, criterion-level disclosure, and—where genuinely
+authorized—ecological feedback while holding the starting artifact, target system,
+environment, budget, and grader fixed. Existing feedback/recovery, artifact-view,
+configured-system, task-health, metric, validity, and execution records already
+host this design; no AgencyBench-specific schema follows.
 The frozen internal [24-cell report](../pilots/closed-loop-feedback-audit/report.json)
 (SHA-256 `20deddde50fd93fc32b7af5b8f7eb69b9e9ffdab71c9cc3dd1ea421a41e335be`)
 and [six-case adaptive report](../pilots/closed-loop-feedback-audit/adaptive-report.json)

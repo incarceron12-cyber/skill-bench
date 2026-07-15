@@ -1733,6 +1733,28 @@ public/environment evidence + private evaluator observation
         → current outcome + retained state + later consequence
 ```
 
+Do not collapse distinct information treatments into `with_feedback`. Preserve at
+least six estimands: **unaided first attempt**; **retry with no new information**;
+**generic revision request**; **consequence-only feedback** from an admissible
+observer; **criterion-level evaluator disclosure**; and **authorized ecological
+feedback** from a participant whose evidence, decision rights, burden, and stopping
+policy are validated. The first is bounded unaided capability; the middle four
+progressively mix additional inference with stronger benchmark information; only
+the last can support a collaboration claim, and only within its validated
+participant/channel population. A self-correction claim additionally requires the
+target to identify the defect without evaluator disclosure [AGY].
+
+For every released defect proposition, retain source and evidence locator,
+authority, public/private status, information delta and target disclosure;
+executor receipt; supported adoption or rejection; changed artifact/state loci;
+criterion-specific admissible re-observation; repair disposition; collateral
+regression; endpoint/stopping reason; added tokens, time, money, and reviewer
+burden; and invalid/service outcomes. A before/after score alone cannot show that
+the proposition was received, caused the relevant change, or repaired the
+construct rather than the judge. First, final/current, best-so-far,
+threshold-reaching, and attempt-averaged outcomes are separate aggregations, not
+interchangeable summaries [AGY].
+
 Hash executor, supervisor/evaluator, simulator or human participant, rewriter,
 observer, task, and environment independently. For every channel preserve its
 source authority; agent/evaluator visibility; exact payload fields and
@@ -1770,6 +1792,25 @@ supplies an inspectable executor–supervisor–simulator repair loop, but expli
 requests, synthetic follow-ups, no feedback ablation, partial observer views,
 single runs, unreleased result records, and unvalidated semantic non-leakage block
 proactivity, natural-user, causal-repair, root-cause, and readiness claims [UC].
+
+AgencyBench makes the proposition-to-revision path unusually inspectable across
+cumulative native artifacts, scripted interactions, text/visual evidence views,
+observer reasons, and later attempts. Its strongest bounded construct is
+**criterion-disclosed evaluator-assisted repairability**, not unaided autonomy or
+real-user collaboration. The sole January release predates immutable April v4 by
+three months and differs from it in feedback generation and score aggregation;
+main results appear single-run with ambiguous task/scenario denominators; human
+simulator and judge labels are unavailable; and no real user supplies authority,
+burden, acceptance, or stopping behavior. In the released samples, text and vision
+observers see non-equivalent views and differ by at least four points on 23/102
+pairs, while the vision prompt adds an undisclosed aesthetics obligation. These
+facts require criterion-view admissibility and public-basis checks before any
+observer score or feedback is treated as valid repair evidence [AGY]. Read this
+with UniClawBench's private-supervisor/public-simulator split, EdgeBench's visible
+versus hidden channels, DeskCraft's phased interaction ladder, HAS-Bench's typed
+participant authority, SciVisAgentBench's artifact-view admissibility, and the
+user-simulator decision-fidelity ladder; none licenses promotion from fluent
+critique to ecological feedback or consequence.
 
 The internal two-shape feedback audit exercises four feedback arms over 24
 deterministic builder-authored cells; its frozen report (SHA-256
@@ -2150,6 +2191,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Authority-gated workflow elicitation (laboratory workflow twins) | claim-level role gates and mandatory nulls; evidence→claim→projection lineage; root condition separated from a masking success channel | graph/query executability mistaken for knowledge truth, calibrated confidence, causal validity, operational benefit, or cross-domain transfer | full immutable 48-page v1 paper and deep review; four reported assay sessions in one department, proprietary substantive artifacts, and no ground-truth or operational-outcome validation [LWT] |
 | Configurable participant systems (HAS-Bench) | participant realization, participation-policy vector, authority-event lineage, and availability/exercise/uptake/effect/burden separation | simulated social roles called humans; bundled prompt/tool/information/authority/budget contrasts; event counts mistaken for benefit or human cost | full immutable v1 paper and deep review; paper-reported scenarios/results only, no verifiable official artifact, real task participants, repeated cells, or reported process-judge audit [HAS] |
 | Consequence-linked user-simulator audit | participant realization→authorized observable-state sufficiency→one-step/free-running fidelity→policy transport→real consequence ladder | human-like or assigned-goal dialogue promoted to decision fidelity; future outcome treated as simulator-visible latent truth; observational response differences promoted to causal tactic or production-agent effects | full immutable v1 paper and deep review over one private payment-linked production corpus; same-prefix one-step evidence only, with unavailable claimed release, unvalidated labels, unspecified censoring/clustering, and no free-running or policy-transport trial [USDF] |
+| Evaluator-assisted cumulative artifact repair (AgencyBench) | typed feedback proposition→receipt/uptake→changed loci→criterion-local admissible re-observation→repair/collateral regression→endpoint and cost | extra inference and criterion disclosure called self-correction; evaluator critique called user feedback; non-equivalent observers pooled; first/final/best outcomes or invalids silently merged | full immutable v4 paper plus complete sole-commit January release audit; 32 scenarios/138 cumulative subtasks and 32 heterogeneous demonstrations are inspectable, but paper/release mismatch, single-run and denominator ambiguity, unavailable human labels, hidden aesthetics, observer disagreement, and no real-user evidence bound claims to configured evaluator-assisted repair [AGY] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
@@ -2652,6 +2694,16 @@ them:
   unresolved. It supports outcome-conditioned falsification and an information-
   sufficiency boundary, not person fidelity, causal tactics, human equivalence,
   production-agent quality, professional validity, safety, or readiness.
+- **[AGY]**
+  `papers/agent-benchmarks/2026-07-15-agencybench-feedback-artifact-validity.md`;
+  reviewed immutable v4 PDF/text plus the complete sole-commit official release,
+  provenance, and machine-readable 32-scenario audit are recorded there. The
+  January release predates April v4 and differs in feedback and aggregation; the
+  paper run corpus, human labels, repeats, normalized invalid/service ledger, and
+  exact paper-time implementation are unavailable. Evidence supports a configured
+  evaluator-assisted repair instrument, not autonomous self-correction, realistic
+  user collaboration, professional utility, safety, production fitness, or
+  readiness.
 - **[CT]** `papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md`;
   reviewed immutable v3 paper and inspected release paths/hashes are recorded
   there. The release lacked the reported task and grading artifacts.
