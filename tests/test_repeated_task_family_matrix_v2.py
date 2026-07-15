@@ -76,6 +76,16 @@ class RepeatedTaskFamilyMatrixV2Tests(unittest.TestCase):
         self.assertTrue(all(item["passed"] for item in report["isolation_and_leakage"]))
         self.assertTrue(report["grader_calibration_and_mutation"]["passed"])
 
+    def test_execution_replays_with_separate_denominators_and_no_confidence_inference(self):
+        report = load(STUDY / "execution/study-report.json")
+        self.assertEqual(self.runner.build_report(self.protocol), report)
+        self.assertEqual(report["denominators"], {"intended": 8, "service_valid": 8, "environment_valid": 8, "grader_valid": 8, "substantively_graded": 8})
+        self.assertEqual(report["substantive_outcome"]["passes"], 8)
+        self.assertTrue(all(item["launcher_invocations"] == 1 for item in report["attempt_rows"]))
+        self.assertTrue(all(item["confidence_channel"]["status"] == "insufficient_evidence" for item in report["attempt_rows"]))
+        self.assertTrue(all(item["repeat_agreement"] for item in report["within_form"].values()))
+        self.assertFalse(any(report["claim_boundaries"].values()))
+
 
 if __name__ == "__main__":
     unittest.main()
