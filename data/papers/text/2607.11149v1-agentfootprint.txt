@@ -1,0 +1,1089 @@
+                                                The Hidden Footprint: Making Storage a First-Class Metric for LLM Agent
+                                                                              Evaluation
+                                                                 Chenglin Yu1 , Hongquan Gui1 , Ying Yu2 , Hongxia Yang3 , Ming Li1,4∗
+                                                             1
+                                                                 Department of Industrial and Systems Engineering, The Hong Kong Polytechnic University
+                                                                          2
+                                                                            College of Economics and Management, Zhejiang Normal University
+                                                                            3
+                                                                              Department of Computing, The Hong Kong Polytechnic University
+                                                                      4
+                                                                        Research Institute for Generative AI, The Hong Kong Polytechnic University
+                                                                                    chenglin.yu@polyu.edu.hk, ming.li@polyu.edu.hk
+
+                                                                        Abstract                               et al. (2025), inference cost. A recent survey of agent evalu-
+                                                                                                               ation catalogs more than a dozen such metrics (Mohammadi
+                                           LLM agent benchmarks measure task completion, reliability,          et al. 2025)—none of them includes the storage footprint: the
+                                           and inference cost, but not the persistent data an agent run
+                                                                                                               bytes an agent execution leaves behind on disk. This paper
+                                           leaves on disk—logs, context snapshots, checkpoints, debug
+                                           traces. These bytes are absent from the leaderboards we sur-        measures that axis.
+                                           vey, yet bear on whether an agent system can be deployed on            Unlike inference cost, which is consumed when execu-
+                                           desktops, under data-retention compliance regimes, or at fleet      tion ends, retention is a stock that persists and accumulates
+                                           scale. We introduce AgentFootprint, to our knowledge the            across runs. This persistence is simultaneously useful and
+
+
+
+
+arXiv:2607.11149v1 [cs.AI] 13 Jul 2026
+                                           first systematic cross-framework benchmark of post-run agent        costly: it is the substrate for replay debugging, recovery, and
+                                           storage footprint. Its serialization-aware metric suite—total       compliance audits, and it enlarges long-term storage, gov-
+                                           retention, channel composition, duplication, growth exponent,       ernance, and deletion obligations. The magnitudes involved
+                                           compressibility, and a conversation-history reconstructability      are easy to underestimate. In a production deployment that
+                                           score—addresses a measurement trap: naïve byte-level mea-
+                                           surement understates duplication by an order of magnitude,
+                                                                                                               we measured directly—a supply-chain quoting system (Supp.
+                                           because database paging and JSON escaping obscure repeated          App. P)—a single task retained 131 MB, including 79 MB
+                                           content. The footprint has two determinants—the logical vol-        of framework residue, compared with 2.6 MB of delivered
+                                           ume the agent’s behavior generates, and the amplification the       artifacts; per-task retention had a median of 715 KB and a
+                                           persistence layer adds when storing it—and a fixed-trace con-       90th percentile of 81 MB. The deployment as a whole has
+                                           trol isolates the second: the same trajectory replayed through      accumulated ∼56 GB over ∼103 recorded rounds (operator-
+                                           each persisting framework’s adapter yields retained sizes dif-      attested). For illustration, at the same per-round average a
+                                           fering by 6.7×. Under identical models, tools, and tasks,           fleet processing 104 rounds/day would accumulate ∼560 GB
+                                           framework configurations at identical 100% accuracy differ by       daily if nothing is deleted. Storage is to agents what memory
+                                           15.7× in retained bytes; the defaults bundle different recovery     footprint was to mobile apps—a resource that went unmea-
+                                           and audit capabilities, so the suite reports storage jointly with
+                                           accuracy and reconstructability. Three full-history configura-
+                                                                                                               sured until it constrained deployment.
+                                           tions grow superlinearly on a repeated-observation stress task,        Our goal is to make this axis measurable and compara-
+                                           and on a deliberately minimal write task framework residue          ble across agent frameworks. Doing so is challenging for
+                                           exceeds the delivered output files by orders of magnitude. Ex-      three reasons. First, attribution: an agent run scatters bytes
+                                           ported trajectories from 108 instance-normalized SWE-bench          across working directories, session databases, hidden home-
+                                           Verified submissions span three orders of magnitude in per-         directory state, and tokenizer caches; deciding which bytes
+                                           instance volume with no detectable correlation with resolve         are task-attributable requires per-run isolation, not a disk-
+                                           rate. A content-addressed store reduces retention 4.8–32.7×         usage command. Second, serialization masking: the same
+                                           while preserving all properties checked by our restoration
+                                                                                                               file content is re-stored many times inside SQLite pages
+                                           tests, including every reconstructability score: exact history
+                                           reconstruction does not require megabytes, and these storage        and JSON-escaped message arrays, where page fragmenta-
+                                           metrics can be reported alongside inference cost.                   tion and escape sequences defeat byte-level fingerprinting—
+                                                                                                               reporting D=1.01 for a store logically holding the same
+                                                                                                               content twelve times over. Third, semantics: raw byte counts
+                                                                  1   Introduction                             alone cannot distinguish an agent that retains much to sup-
+                                         LLM agents—systems that pursue multi-step tasks by inter-             port auditing from one that retains much because of avoidable
+                                         leaving model calls with tool use—are moving from demos               storage amplification; the metric suite must indicate which
+                                         into production, and the community evaluates them along an            recovery and audit capabilities the retained bytes support.
+                                         expanding set of axes: task success on GAIA (Mialon et al.               We present AgentFootprint, a benchmark and measure-
+                                         2024) and SWE-bench (Jimenez et al. 2024), reliability via            ment harness addressing all three. Each (framework, task)
+                                         pass^k on τ -bench (Yao et al. 2025), and, following Kapoor           pair runs in a fresh sandbox whose workspace and home
+                                                                                                               delta is captured and attributed (challenge one). Our me-
+                                            ∗
+                                                Corresponding author.                                          ter analyzes logical content streams—SQLite cells, JSONL
+records—rather than raw files, and injects content probes that        vives at 4.8–32.7× fewer bytes than the frameworks’ de-
+are matched under raw and JSON-escaped encodings (chal-               faults (§7).
+lenge two). On top of this substrate we define six measure-
+ments: total retention Stotal , a descriptive storage-channel                          2   Related Work
+composition, duplication factor D, growth exponent α fitted
+over controllable-horizon tasks, long-window compressibil-         AgentFootprint belongs to a line of work that expands what
+ity C, and a 0–3 history-reconstructability score R asking         agent benchmarks measure rather than how well agents score.
+whether retained bytes reconstruct the conversation history        Kapoor et al. (2025) introduced inference cost as a manda-
+behind step k (challenge three); a four-way semantic tax-          tory reporting axis and showed simple baselines dominate
+onomy aids interpretation. Throughout, storage is a system-        the cost–accuracy Pareto frontier; τ -bench added reliability
+level resource dimension, read jointly with accuracy and R,        via pass^k (Yao et al. 2025). Storage footprint is orthogonal
+never a capability by itself; its two determinants are separated   to both and differs in kind: cost is a flow that stops with
+by a fixed-trace control (§5.6).                                   the task; retention is a stock that persists, compounds, and
+   Measuring eight representative frameworks—LangGraph,            carries compliance and reproducibility obligations. Efficient
+AutoGen, CrewAI, SmolAgents, OpenAI Agents SDK, Lla-               Agents studies effectiveness against inference cost (Wang
+maIndex, Agno, and InfiAgent—under identical backends,             et al. 2025); MAFBench reports architecture-dependent la-
+tools, and tasks yields three findings. (i) Equal-accuracy dis-    tency and coordination costs (Orogat, Rostam, and Mansour
+persion: at identical 100% task accuracy, retained bytes differ    2026); neither measures persistent residue, which Agent-
+by 15.7× (LangGraph vs. CrewAI), and one framework re-             Footprint isolates.
+tains nothing at all and accordingly can recover or resume            A second line optimizes what agents keep in context or
+nothing. (ii) Growth regimes: frameworks that persist full         in memory stores. Memory systems (MemRefine (Kim et al.
+history at every step exhibit α up to 1.95—a 200-round mon-        2026)) compress memory banks for retrieval; context com-
+itoring loop over one 2 KB status file leaves 323 MB—while         paction (Slipstream (Chen et al. 2026)) shortens prompts.
+frameworks with windowed context management stay near-             Both target the model-facing representation; the persistence
+linear. (iii) Residue dominates artifacts: when agents produce     layer can still checkpoint every intermediate underneath (one
+legitimate output files, framework residue exceeds those ar-       measured framework does). We measure the system-wide
+tifacts by up to 24,033×.                                          residue, coupled to context policy through α.
+   Public agent submissions exhibit an analogous disper-              Trajectory platforms (LangSmith, Langfuse, AgentOps)
+sion in exported trajectory volume: across 108 instance-           persist agent runs as a product feature but publish no
+normalized SWE-bench Verified submissions, per-instance            efficiency measures—potential reporters of such metrics,
+volume spans 1,617× with no detectable correlation with            not sources. CLP (Rodrigues, Luo, and Yuan 2021) and
+resolve rate—in this snapshot, heavier trajectories are not        zstd (Collet and Kucherawy 2021) compress syntactically
+more successful ones. Nor is the footprint required for recon-     (zstd is our baseline C); our semantic metrics capture what
+structable history: a content-addressed store removes most         compression neither reveals nor repairs: what is duplicated,
+retained bytes with all restore checks passing and every R         how retention scales, whether bytes reconstruct history.
+score reproduced.                                                     Finally, the gap is explicit in the surveys: Mohammadi et al.
+   Our contributions are:                                          (2025)’s metric catalog spans completion, step-efficiency,
+                                                                   tool correctness, plan quality, latency, and cost—no storage
+ • A metric suite and measurement methodology for
+                                                                   dimension; GAIA, SWE-bench, and τ -bench report none.
+   agent storage footprint (Stotal , composition, D, α, C, R),
+                                                                   To our knowledge, AgentFootprint is the first systematic
+   including the finding that serialization masks duplication
+                                                                   cross-framework benchmark of post-run storage footprint for
+   from naïve measurement by up to 12× (§3).
+                                                                   LLM agents. Adjacent lines—workflow provenance (David-
+ • AgentFootprint, a reproducible harness and task                 son and Freire 2008; Herschel, Diestelkämper, and Ben Lah-
+   suite measuring eight frameworks over 1,061 sandboxed           mar 2017), LSM storage amplification (O’Neil et al. 1996)—
+   runs—a 509-run main study (three repetitions plus ab-           instrument different objects; we import their techniques as
+   lation, growth, write, exploratory, heterogeneous, and          mitigations.
+   fixed-trace suites) plus 552 replication and variant runs
+   (two further backends, growth seeds, executed history-
+   only forms, shared threads, replay-source tasks)—with
+                                                                              3    Storage Footprint Metrics
+   container-validated isolation (§4–§5; full accounting in        3.1   What Counts: Boundary and Taxonomy
+   Supp. App. C).
+                                                                   We define the storage footprint of an agent execution—post-
+ • An in-the-wild study harvesting all 134 SWE-bench Ver-          run local retention within the declared sandbox boundary—
+   ified submissions (108 instance-normalized), finding a          as all bytes present after the run, attributable to it, absent
+   1,617× volume spread with no detectable correlation             before it: files created or grown in the task workspace and
+   between exported volume and success (τb = 0.080,                every framework-side store—session/checkpoint databases,
+   p = 0.222) (§6).                                                logs, snapshots, traces—including hidden home-directory
+ • A headroom demonstration: an existence proof, not               state. Footprint and retention are used interchangeably;
+   a proposed storage system—a content-addressed com-              residue is the framework-side portion (all but agent-produced
+   pactor showing the measured reconstructability score sur-       workspace artifacts). Environment artifacts shared across
+      (a)         Inputs              (b)       Per-Run Sandbox                           (c)     Serialization-Aware Meter                  (d)          Six Metrics → Findings
+
+            Task Suites                                            container-validated                                                 Six Storage Metrics          Rankings reshuffle
+
+            file-QA ×10
+                                            workspace     home · hidden state            SQLite paging
+                                                                                                                                                 𝑆𝑡𝑜𝑡𝑎𝑙
+
+            long-horizon T=25–200
+
+                                                                                                                                                composition        equal accuracy, 15.7× bytes
+            write-task + ablation
+
+                                                                                                                                                                         In the wild
+
+            8 Frameworks                                                                                                                      D duplication
+                                                                                         JSON escaping
+
+
+                                                                                          \n \uXXXX                                             α growth
+                                      …                                                                                                                            108 systems,1617× spread
+
+
+
+                                                                                                                                             C compressibility           CAS store
+
+
+            LLM Backend                                                                  Naive: D = 1.01   logical streams: D = 12.1
+                                                                                                                                                     R
+                                               snapshot → run → diff                                                                          reconstructability
+                temp = 0, 3 repeats
+                                                                                          probes: raw / escaped / double-escaped                    0–3
+
+                                                                                                                                                                           4.8–32.7×,
+                                                                                                                                                                    verified-lossless, R kept
+                                                        200 rounds → 323 MB
+
+
+
+Figure 1: AgentFootprint pipeline: each (framework, task, repetition) runs in a fresh sandbox; the filesystem delta is analyzed
+as logical content streams rather than raw bytes, yielding the six metrics of §3 that drive §5–§7.
+
+
+tasks (model weights, tokenizer/package caches) are ex-                                         α Growth exponent from fitting log Stotal ∼ α log T at
+cluded, although their volume is reported for auditability.                                       T ∈ {25, 50, 100, 200} on the repeated-observation
+Measurement uses a per-run sandbox: a fresh workspace and                                         stress task—a descriptive statistic; per-horizon retention
+home whose file inventory is snapshotted before and diffed                                        is primary (Supp. App. G).
+after the run (§4.3); Supp. App. N audits this delta accounting                                 C Compressibility: Stotal divided by its size under zstd -19
+over all 509 main-study sandboxes.                                                                with a 128 MB long-range window over the concatenated
+   Retained bytes are not equally justified. We classify them                                     retained files (a compression bound, not an archive)—the
+as decisions (model outputs, generally not regenerable), ob-                                      syntactic “free lunch,” reported so semantic metrics are
+servations (tool and environment returns, some of which are                                       read net of it.
+likewise unrecoverable), derivations (framework-generated                                       R Conversation-history reconstructability, 0–3: given call
+intermediates: snapshots, summaries, checkpoints), and du-                                        boundaries (§5.4), can the retained bytes reconstruct the
+plicates (the second through n-th appearance of the same                                          conversation history the model received at step k? R=0:
+bytes)—separating what must be kept, what may be refer-                                           nothing retained; R=1: bytes but no per-call structure;
+enced, and what is overhead. The taxonomy is conceptual;                                          R=2: per-call structure but no complete copy of the ob-
+the benchmark reports deterministic storage-channel and du-                                       servations; R=3: at least one channel holds a complete,
+plication measurements, not automated semantic attribution                                        exact record. Automated scoring yields a candidate grade;
+of every byte.                                                                                    reported grades additionally require the adapter’s serial-
+                                                                                                  ization contract to pass the field-by-field reconstruction
+3.2    Six Metrics                                                                                of §5.4 (construct check: Supp. App. O).
+On this foundation we define six measurements per (frame-
+work, task) run:                                                                                3.3        Measurement Methodology: Serialization
+                                                                                                           Masks Duplication
+Stotal Retained bytes (apparent-length filesystem delta;
+   Supp. App. N), divided into workspace artifacts and                                          A key methodological finding is that raw-file chunking sub-
+   framework-side residue.                                                                      stantially understates duplication. Running content-defined
+                                                                                                chunking over raw retained files reports D = 1.01 for Lang-
+Store composition Stotal grouped into state/checkpoints,
+                                                                                                Graph’s checkpoint store—yet zstd compresses that store
+   debug/event logs, conversation/actions, and other chan-
+                                                                                                142×, a contradiction. Two serialization mechanisms mask
+   nels by deterministic, adapter-audited path rules.
+                                                                                                the duplication. SQLite fragments large values across 4 KB
+D Duplication factor Stotal
+                       logical
+                               /Sunique . Here, Sunique sums                                    pages interleaved with headers and pointers, so chunk bound-
+  unique content-defined chunks (FastCDC (Xia et al. 2016)                                      aries never align across copies; and JSON escaping rewrites
+  with SHA-256) over logical streams. Both live in logical                                      the bytes of embedded content (\n, \uXXXX), so trajectory
+  content bytes (SQLite headers, indexes, and free pages                                        copies no longer match the source bytes. Our meter therefore
+  enter neither); D=2 means the average content byte is                                         extracts logical streams before fingerprinting: every SQLite
+  stored twice; an exact-match lower bound under com-                                           cell and JSONL line is chunked as its own stream, while other
+  pressed or delta-encoded representations (Supp. App. K);                                      files are treated as whole streams. Under logical streams the
+  physical-layout overhead is Stotal vs. the logical total.                                     same store measures D = 12.1 (a single store; Table 1’s 30-
+run means are D 12.8, C 136)—the duplication was present           dependent repetitions. We measure the storage produced by
+but obscured by serialization, which may partly explain why        the documented default configuration; the exact adapter code
+this axis has previously gone unmeasured.                          ships in the artifact, and §8 reports a configuration-sensitivity
+   Cross-representation copies still evade chunk matching,         check (AutoGen’s save cadence).
+so we add content probes: fixed substrings and whole lines            This protocol measures the system-level default foot-
+sampled deterministically from every input file, searched in       print—what the documented configuration leaves on disk.
+all logical streams under raw and JSON-escaped encodings;          Its limit: these documented configurations support different
+doubly-nested encodings are only partially detected (Supp.         capabilities (Supp. App. R), so equal-R comparisons rank
+App. K). The mean occurrence count (echo) estimates how            what defaults retain for the same reconstructability score,
+many times the input content is stored; the same probes power      not capability-normalized efficiency (§8).
+the R score’s completeness check, and whole-line probes
+survive re-formatting such as line-numbered tool outputs.          4.3   Harness
+Supp. App. K calibrates D and echo on synthetic stores with        The harness (Figure 1) runs each (framework, task, repe-
+known duplication.                                                 tition) in a fresh sandbox: the workspace holds the task
+                                                                   corpus; HOME/XDG paths are redirected into the sand-
+       4    The AgentFootprint Benchmark                           box (hidden state captured); the adapter runs the frame-
+4.1   Task Suites                                                  work’s quickstart-style agent; the meter diffs both invento-
+                                                                   ries. Re-running LangGraph (three tasks) in per-run Docker
+AgentFootprint uses six task families, each isolating one          containers changed measurements by 0–8.5%, below the
+storage behavior, plus a control. The file-QA suite (10 tasks)     11% repetition-level standard deviation. Harness, genera-
+gives the agent ten ∼60 KB documents (600 KB total) and            tors, adapters, and per-run records ship in the artifact; Supp.
+five sequential questions whose answers are unique registry        App. C enumerates all 1,061 runs and states the statistical
+codes embedded in the files; questions revisit files in an         units and aggregation conventions.
+A,B,A,C,A pattern with instructed re-reading (read amplifi-
+cation). Grading is exact substring match—no LLM judge.                             5    Controlled Results
+The long-horizon suite fixes a 2 KB status file re-read for
+T ∈ {25, 50, 100, 200} rounds, isolating α from content            5.1   Same Accuracy, 15.7× the Bytes
+growth. The write-task suite (5 tasks) reads two documents         Table 1(a) presents the file-QA suite (eight frameworks, ten
+and produces a summary file via a write_file tool (le-             tasks, three repetitions): among the five persisting configu-
+gitimate artifacts vs. residue). The exploratory-retrieval suite   rations with 100% task accuracy, documented defaults span
+(5 tasks) removes every adversarial element (§5.5). Two het-       15.7× in retained bytes (bootstrap 95% CI [15.0, 16.3]; Supp.
+erogeneous families (five tasks each)—edit and data analy-         App. C). Across the six R=3 systems, minimal history-
+sis—are read–transform–write tasks graded jointly: correct         retaining forms span 3.9×—three executed variants, two
+answer and artifact delivered in the shared workspace (§5.5).      native forms, and one disclosed post-hoc split (§5.4; Supp.
+Finally, ablation runs re-execute the file-QA suite with per-      App. Q). Across the full roster, Agno answers 99.3% and
+sistence disabled.                                                 AutoGen 86%; the other six answer every question cor-
+                                                                   rectly. Persisting frameworks retain from 0.32 MB (Cre-
+4.2   Frameworks and Fairness Protocol                             wAI) to 5.10 MB (LangGraph) per task on a 600 KB cor-
+We measure eight representative frameworks: LangGraph              pus, and SmolAgents retains exactly zero bytes. Compo-
+1.2.8 (LangChain AI 2026), AutoGen 0.7.5 (Microsoft                sition (Table 1b) shows retention concentrated in different
+2025), CrewAI 1.15.2 (CrewAI Inc. 2026), SmolA-                    channels—checkpoints (LangGraph), event logs (AutoGen),
+gents 1.26.0 (Hugging Face 2026), OpenAI Agents SDK                conversation stores and debug traces (InfiAgent; setup stag-
+0.18.0 (OpenAI 2026), LlamaIndex 0.14.23 (LlamaIndex               ing excluded—including it raises its mean to 2.72 MB, above
+Inc. 2026), Agno 2.7.1 (Agno AGI 2026), and InfiAgent              AutoGen; Supp. App. N). The duplication factor separates
+3.12.24 (Yu et al. 2026). The roster covers widely used open-      architectural families: full-history checkpoint/snapshot de-
+source agent APIs with distinct persistence mechanisms;            signs (D: LangGraph 12.8, AutoGen 8.4, LlamaIndex 4.2)
+Agno and InfiAgent provide two independent implementa-             are most redundant, while windowed or append-only designs
+tions of windowed context management (a runtime forgetting         stay below 2.6. The echo metric makes it concrete: probes
+loop; a bounded per-request window), so the growth study           from the same files, read equally often, appear 8.1× under
+(§5.2) can compare full-history and bounded-history poli-          LangGraph but only 0.5× under OpenAI Agents.
+cies.
+   Fairness comes from configuring each framework in its           5.2   Growth Regimes under Repeated
+documented durable-session configuration—the persistence                 Observations
+setup its own documentation describes, selected by a prede-        On the controlled repeated-observation stress task, the re-
+fined protocol—not from tuning any of them for storage. Ta-        tention curves fall into three regimes (Figure 2; α in Ta-
+ble 1 lists the measured mechanisms. All frameworks receive        ble 1; three seeded runs per horizon for the full-history
+identical task text, the same minimal tools (list, read, write     trio). Frameworks that persist the full message history at
+where applicable), the same backend model (DeepSeek-V4-            every step—LlamaIndex, AutoGen, LangGraph (α 1.74–
+Flash, served by one provider, temperature 0), and three in-       1.95)—grow superlinearly: monitoring one 2 KB status file
+Table 1: Main results: the eight measured configurations as one profile. (a) File-QA suite (10 tasks × 3 repetitions; Stotal
+mean±SD over 30 runs; decomposition in Supp. App. C; spreads on unrounded values). Mechanism: documented durable-
+session persistence (§4.2); α: growth exponent on the stress task (mean±SD over three seeds for the full-history trio, single
+run otherwise; §5.2, Supp. App. G); R: modal reconstructability score, reconstruction-validated (§5.4); C: zstd long-range
+compressibility; CAS: post-CAS retention (§7), first-repetition subset (factor in parentheses). (b) Channel composition of Stotal ,
+process-boundary resume, and full-roster backend replication: per-task Stotal under two further backends, rank correlation with
+the main study ρ=0.96 / 0.89 (Supp. Apps. B, F, J).
+
+Framework        Persistence mechanism                  Stotal ↓     D↓      Echo ↓                            C                   α       Acc. ↑    R↑                         CAS ↓
+LangGraph        SQLite checkpointer            5.10±0.58 MB         12.8     8.1×                         136          1.74±0.01          100%        3       0.50 MB (10.3×)
+AutoGen          per-turn state + event log     2.49±0.33 MB          8.4     4.1×                         106          1.95±0.18           86%        3       0.07 MB (32.7×)
+InfiAgent        task stores + raw traces       2.12±0.05 MB          1.8     1.7×                          43               1.15          100%        3        0.36 MB (5.8×)
+Agno             SQLite session db              1.15±0.02 MB          2.5     0.8×                          42               0.98          99.3%       3       0.06 MB (20.5×)
+LlamaIndex       serialized Context           0.93±<0.01 MB           4.2     1.3×                          40          1.88±0.10          100%        3       0.09 MB (10.3×)
+OpenAI Agents    SQLiteSession                  0.33±0.02 MB          1.6     0.5×                          14               0.73          100%        3        0.07 MB (4.8×)
+CrewAI           task-output store            0.32±<0.01 MB           1.5     0.5×                          14               1.20          100%        1        0.05 MB (6.1×)
+SmolAgents       none (in-memory)                         0B            –        –                           –                  –          100%        0                     –
+
+(b) Channel (MB/run)         LangGraph        AutoGen      InfiAgent        Agno                         LlamaIndex             OpenAI Ag.           CrewAI            SmolAgents
+State/checkpoints                    5.10        0.83              0.07     1.15                                    0.93                      0.33         0.32                     –
+Debug/event logs                        –        1.65              0.86        –                                       –                         –            –                     –
+Conversation/actions                    –           –              1.20        –                                       –                         –            –                     –
+Resume in fresh process                ✓           ✓                 ✓        ✓                                         ✓                        ✓            ×                     –
+Stotal , Qwen3.6-27B (MB)            5.20        2.64              2.13     1.16                                    0.94                      0.31         0.32                     0
+Stotal , Qwen2.5-7B (MB)             2.49        1.26              2.14     0.77                                    1.20                      0.21         0.37                     0
+
+
+for 200 rounds leaves 323±26 MB under LangGraph (D                                                                          Repeated-observation stress task
+≈49), 102±21 MB under AutoGen. Frameworks with win-
+
+
+
+                                                                                  Retained bytes (MB)
+dowed context (InfiAgent’s forgetting loop) or bounded per-                                              102
+
+round stores (CrewAI, Agno) stay near-linear (α 0.98–1.20):                                              101
+at T =200 (completed by every persisting framework) they                                                                                                                 ∝T²
+                                                                                                         100
+retain 1.4–36.4 MB against LangGraph’s 323±26 MB.
+                                                                                                                                                                         ∝T
+   Accuracy stays high throughout (median 195 of 200 at                                                 10−1
+
+T =200 across persisting frameworks and seeds; minimum
+171)—growth differences are not task-failure artifacts—and                                                         25               50              100               200
+                                                                                                                                              Rounds T
+α is a workload-conditioned full-range fit: on seed 1, lo-                                                               langgraph (α=1.74±0.01)     openai_agents (α=0.73)
+
+cal slopes over T =25→100 are 1.96–1.98 for all three                                                                    autogen (α=1.95±0.18)
+                                                                                                                         infiagent (α=1.15)
+                                                                                                                                                     llamaindex (α=1.88±0.10)
+                                                                                                                                                     agno (α=0.98)
+heavy frameworks, but over 100→200 they diverge (Lla-                                                                    crewai (α=1.20)
+
+maIndex 1.92, AutoGen 1.38, LangGraph 0.96) with no
+failed rounds and token volumes far below context limits                    Figure 2: Retention growth on the repeated-observation stress
+(per-seed spreads in Supp. App. G). Checkpoint-layer con-                   task (log–log). Lines: means; bands: ±1 SD over three seeds
+solidation is the suspected cause, and the repetitions show                 (full-history trio); α: per-seed full-range fit, mean ± SD.
+that variability concentrates in absolute volume (LangGraph                 Windowed and append-only designs remain linear or sub-
+T =100: 153±10 MB) while the fitted exponent remains sta-                   linear.
+ble (1.74±0.01). Four horizons at three runs each remain
+insufficient to distinguish among candidate functional forms
+(Supp. App. G); the claim is superlinear growth over the                    whole history, so the status file’s content accumulates linearly
+measured range—every seed of every full-history frame-                      with reads (echo=120 at T =200) with no redundancy be-
+work fits α≥1.72—not a scaling law. Archival policy matters                 yond that (D=1.0). On this workload the exponent therefore
+as much as architecture: LlamaIndex’s newest-snapshot-only                  reflects context-retention policy: whether a framework win-
+form leaves 85–645 KB (α≈0.98)—superlinear growth fol-                      dows its history is observable in how its disk usage scales.
+lows from the append-all archival policy, not from durable                  We do not claim the fitted exponent transfers to arbitrary
+resumption (Supp. App. G).                                                  workloads.
+   On this fixed-content workload, read amplification and
+storage amplification are separable, and the exponent tells                 5.3                         Persistence Ablations
+them apart. OpenAI Agents is sublinear (α=0.73): its session                Retention is not required for immediate task success on this
+log appends each message once rather than re-serializing the                short retrieval suite: with persistence disabled, five frame-
+works (LangGraph, AutoGen, LlamaIndex, OpenAI Agents,            ement: five multi-document tasks, free exploration via
+Agno; five-task subset) keep their accuracy—100% for four,       list_files. Dispersion persists (23/28 pairwise order-
+AutoGen within run variance (22/25 vs. 19/25)—and retain         ings agree; persisting frameworks span 8.1×) and echo rises
+exactly zero bytes. Retention supports replay, resumption,       (LangGraph 8.1→11.8×)—amplification is not an artifact
+and recovery rather than immediate task completion, and the      of adversarial design (AutoGen 47% and SmolAgents 67%
+ablated configurations—like SmolAgents’ default—provide          differ in accuracy and are excluded from equal-accuracy com-
+none (R=0). InfiAgent exposes no debug-channel switch, so        parisons; Supp. App. E).
+we perform a post-hoc ablation by excluding its debug chan-         The two heterogeneous families (§4.1; all eight frame-
+nel, which accounts for 40% of its footprint; removal raises     works, 80 runs; Supp. App. D) grade success jointly: the an-
+D 1.75→2.1. The ablation also sharpens what the metrics          swer must be correct and the required artifact delivered in the
+measure: disabling persistence drives Stotal to zero and R to    shared workspace, validated exactly against the task specifi-
+0 together, so the metric pair distinguishes a configuration     cation. Three patterns from the controlled suites reappear.
+change from a structural property.                               Equal-success dispersion: five configurations achieve full
+                                                                 joint success on both families—LangGraph, CrewAI, Ope-
+5.4   Reconstructability                                         nAI Agents, LlamaIndex, Agno—and span 6.9× in retention
+Scoring one run per (framework, task) pair (80 runs), six        on edit tasks (24–164 KB) and 14.1× on data tasks (8.8–
+frameworks achieve R=3 at retained sizes spanning 15×;           124 KB); answer-only accuracy is broader (seven frame-
+CrewAI retains bytes without per-call structure (R=1),           works reach 100% on edit) but conflates delivered and un-
+SmolAgents nothing. InfiAgent’s raw-trace channel supplies       delivered work. The mechanism: LangGraph’s checkpointer
+what its truncated debug log lacks—multi-channel designs         echoes the input CSVs 7.8× on data tasks—observation am-
+need channel-level scoring. We validate the grade by full        plification is not a file-QA artifact. The evaluation boundary:
+conversation-history reconstruction: each R=3 framework          InfiAgent answers every question correctly yet fails joint suc-
+re-ran three tasks behind a logging proxy recording every re-    cess on all ten tasks, because it deposits the deliverable in its
+quest body (194 calls); we rebuilt the conversation from the     managed home-side store rather than the shared workspace—
+retained bytes and compared field-by-field (roles, contents,     exactly what the workspace/home split of §3 makes visible;
+tool-call ids/arguments, results, order): with call boundaries   and AutoGen’s default tool-iteration budget again fails the
+taken from the proxy log, 194/194 calls are exactly recon-       read–transform–write chain (0% on both families).
+structible as contiguous subsequences (contracts in Supp.
+App. I). System prompts are recoverable from retention in        5.6   Fixed-Trace Control: Isolating the Persistence
+Agno and InfiAgent; the rest keep them in code-side config-            Layer
+uration (LangGraph configures none). A process-boundary
+                                                                 All preceding suites entangle agent policy with storage en-
+resume probe (Supp. App. J) confirms the grades opera-
+                                                                 coding. A scripted mock endpoint (in the artifact) replays
+tionally: every R=3 store resumes in a fresh process; Cre-
+                                                                 one identical trajectory (three reads, 182.7 KB of observa-
+wAI’s (R=1) does not.
+                                                                 tions, one answer) through the seven persisting frameworks’
+   Supp. App. S plots default and post-CAS retention with
+                                                                 unmodified adapters: the content is fixed, so the framework
+R and accuracy; two observations follow. First, the same re-
+                                                                 configuration is the only variable. Identical-content amplifi-
+constructability score—R=3—is obtained at retained sizes
+                                                                 cation spans 1.03× (LlamaIndex) to 6.86× (InfiAgent) un-
+from 0.33 MB (OpenAI Agents) to 5.10 MB (LangGraph),
+                                                                 der the batched transport protocol (sequential transport raises
+and content addressing reduces all seven persisting config-
+                                                                 LangGraph to 7.40×; Supp. App. L)—a 6.7× spread with
+urations to 0.05–0.50 MB (0.06–0.50 MB among the R=3
+                                                                 no contribution from agent behavior; what remains is the
+configurations): most of the spread is removable redun-
+                                                                 configuration-level persistence mechanism—which objects
+dancy, not a requirement of the score. R scores history re-
+                                                                 are stored, how often, in what serialization. The protocol is
+construction, not every capability a store may serve (crash
+                                                                 deterministic, offline, and model-free (Supp. Apps. L–M).
+resume, workflow state, debug provenance), so the spread
+is unexplained by reconstructability alone, not established
+as pure waste (§8); the executed minimal history-retaining                       6    Storage in the Wild
+forms (§5.1) converge at 0.31–0.33 MB with accuracy and          Controlled suites could exaggerate differences that vanish
+R unchanged (Supp. App. Q). Second, accuracy alone does          on real workloads, so we compare with exported trajectories
+not expose these storage differences: six frameworks score       from SWE-bench Verified (Jimenez et al. 2024). We har-
+100%, and Agno scores 99.3%. A success-only leaderboard          vested all 134 submissions in our July-2026 snapshot; keys
+penalizes AutoGen for its lower accuracy (86%) but not for       are grouped by canonical instance ID (S3 layouts vary). Of
+its 2.49 MB footprint, and it treats LangGraph as fully suc-     115 submissions with S3 prefixes, 113 expose size listings
+cessful despite retaining 15.7× CrewAI’s bytes. Section 6        and 108 meet the 90%-coverage inclusion thresholds (in-
+examines the storage–success relationship at scale.              stances and mapped bytes); 19 lack a public prefix, seven can-
+                                                                 not be instance-normalized. Each system’s trajectory volume
+5.5   Beyond Adversarial Retrieval: Exploratory                  is a per-system lower bound on that system’s footprint—it is
+      and Heterogeneous Tasks                                    the exported artifact, not the on-disk residue. Ratios between
+The stress suites deliberately provoke re-reads, so an un-       systems inherit no such guarantee (export policies differ): the
+prompted exploratory check removes every adversarial el-         spread corroborates heterogeneity, not runtime footprints.
+                        SWE-bench Verified, n=108 normalized systems
+                                                    sonar-foundation-agent
+                                                                                                            smaller than the CAS representation (LangGraph: ≈0.04 vs.
+                   80
+                                                                                                            0.50 MB), but answers a different question: C measures an
+                                                                                                            opaque archive, unusable until fully decompressed, while the
+
+Resolve rate (%)
+                                                                                   sweagent_claude-4-sonn
+                   60                        same success band, 134× the bytes
+                                                                                                            CAS output remains a schema-preserving store—blocks stay
+                   40                                                                                       hash-addressable and can be restored on demand (consuming
+                                                                                                            references in place needs a framework-side shim we do not
+                   20
+                                                                                                            build; R is re-scored on restored stores); the two compose
+                         10−2             10−1              100                  101
+                                                                                                            (Supp. App. H). Garbage collection, deletion semantics, and
+                                Trajectory bytes per instance (MB, log)                                     cross-tenant privacy are out of scope by design.
+                                                                                                               The write-task suite quantifies how far defaults are from
+Figure 3: SWE-bench Verified, 108 instance-normalized sys-                                                  this floor: a 39-byte summary file (a deliberately small write
+tems: resolve rate vs. exported trajectory bytes per instance                                               task) leaves 128 KB–1 MB of residue, up to 24,033× the
+(log). No detectable volume–success correlation (τb =0.080,                                                 artifact (the production case of §1, with realistic outputs,
+p=0.222).                                                                                                   shows ∼30×). With the ablations, these bracket the design
+                                                                                                            space: retaining nothing yields no reconstructability, while
+                                                                                                            defaults can retain megabytes even though the same score is
+   Mean exported trajectory volume per mapped instance                                                      achievable within 50–500 KB after post-processing.
+ranges from 6.6 KB to 10.6 MB across systems—1,617×
+(Figure 3). In the direct test, resolve rate shows no detectable                                                      8    Discussion and Limitations
+correlation with bytes per instance (Kendall τb =0.080, per-
+mutation p=0.222): within this population, exporting more                                                   Isolation and backend transfer. Containerized and sandbox
+trajectory data is not associated with resolving more issues.                                               measurements differ by 0–8.5%. Full-roster replications pre-
+The 28 systems in the 65–75% band alone span 134× (IQR                                                      serve the storage ranking on Qwen3.6-27B (ρ=0.96; sizes
+139–402 KB; the spread is not driven solely by extremes). Be-                                               0.93–1.06×) and weak Qwen2.5-7B (ρ=0.89 despite accu-
+cause the 108 submissions include multiple versions per team                                                racy collapse), indicating that persistence design dominates
+or family (63 families; 25 multi-entry), we repeat the direct                                               backend choice (Table 1b; Supp. App. F).
+test under two analyses that respect family-level dependence                                                   Scope. Six audited boundaries apply: (i) controlled suites
+(latest-per-family and family means; τb ≤0.07, p≥0.40)—the                                                  cover retrieval and retention, not general reasoning; (ii) re-
+conclusion is unchanged. Detailed inspection of six sam-                                                    sults describe versioned configurations, not frameworks in
+pled submissions shows intra-trajectory duplication from 1.0                                                the abstract; (iii) wild data are exports, not runtime residue;
+(deduplicated exports) to 3.35.                                                                             (iv) R covers history only; (v) the roster is representative
+                                                                                                            and α workload-conditioned; (vi) fresh sandboxes understate
+                           7 A Reference Mitigation:                                                        shared threads (95.2 vs. 5.8 MB; Supp. App. M).
+                                                                                                               Configuration sensitivity. AutoGen’s save cadence is the
+                         Content-Addressed Trajectory Store                                                 most contestable choice; an end-of-run variant remains sim-
+Because duplication drives much of the footprint, we evaluate                                               ilar (2.1 vs. 2.49 MB) and superlinear (α 1.50).
+content addressing—store each block once, by hash—as a                                                         Stotal and R must be read jointly: either can be gamed
+feasibility reference, not a novel compression algorithm. Our                                               by retaining nothing or everything; the target is exact recon-
+implementation (about 300 lines, framework-agnostic) post-                                                  struction at minimal bytes (§7).
+processes a run’s retained stores: strings and blobs above                                                     Why bytes matter. The concern is less disk cost than reten-
+1 KB inside JSON, JSONL, log lines, and SQLite cells are                                                    tion obligations: at 104 tasks/day, measured defaults produce
+moved into a zstd-compressed content-addressed store and                                                    51 versus 3.1 GB/day for the executed history-equivalent
+each is replaced by a hash reference with preview; rehydration                                              form (Supp. App. Q), a 16× gap at equal R; deletion for-
+inverts the transform on demand. The design preserves each                                                  feits supported capabilities (§5.3).
+framework’s store schema—composing with, not replacing,                                                        Ethics. Corpora are synthetic; wild data are public; CAS
+existing persistence layers.                                                                                obligations appear in Supp. App. A.
+   Across 70 runs of the seven persisting frameworks, the
+compactor reduces retention by 4.8–32.7× (Table 1, CAS
+column), and all 310 retained files pass the restore checks                                                                      9    Conclusion
+(JSON-object equality for structured text; row-set equality                                                 Agent evaluations report task success, reliability, and infer-
+for SQLite user tables, internal/FTS shadow tables excluded                                                 ence cost, but not persistent storage. AgentFootprint makes
+as regenerable; pass-through byte-exact). Re-scoring R on                                                   this axis reportable through a serialization-aware suite,
+the CAS-restored stores reproduces every framework’s orig-                                                  controlled and in-the-wild studies, and a reconstruction-
+inal score (R=3 for all six, R=1 for CrewAI)—we verify                                                      preserving store, exposing the 15.7× equal-accuracy and
+preservation rather than assume it. The compactor achieves                                                  6.7× fixed-trace spreads alongside inference cost.
+its largest reduction on AutoGen (32.7×): its event log and
+per-turn snapshots repeat the same messages—exactly what                                                    AI-use disclosure. Claude (Anthropic) assisted with parts
+content addressing removes.                                                                                 of the experiment code and with manuscript polishing; the
+   Relation to whole-store compression. A zstd archive is                                                   authors verified and take responsibility for all content.
+                       References                                Rodrigues, K.; Luo, Y.; and Yuan, D. 2021. CLP: Efficient
+Agno AGI. 2026. Agno. https://pypi.org/project/agno/2.7.1/.      and Scalable Search on Compressed Text Logs. In 15th
+Version 2.7.1; accessed: 2026-07-13.                             USENIX Symposium on Operating Systems Design and Im-
+                                                                 plementation (OSDI 21), 183–198. USENIX Association.
+Chen, Z.; Pan, R.; Dai, Y.; and Netravali, R. 2026. Slip-
+                                                                 ISBN 978-1-939133-22-9.
+stream: Trajectory-Grounded Compaction Validation for
+Long-Horizon Agents. arXiv:2605.08580.                           Wang, N.; Hu, X.; Liu, P.; Zhu, H.; Hou, Y.; Huang, H.;
+                                                                 Zhang, S.; Yang, J.; Liu, J.; Zhang, G.; Zhang, C.; Wang, J.;
+Collet, Y.; and Kucherawy, M. 2021. Zstandard Compression
+                                                                 Jiang, Y. E.; and Zhou, W. 2025. Efficient Agents: Building
+and the ’application/zstd’ Media Type. RFC 8878, RFC
+                                                                 Effective Agents While Reducing Cost. arXiv:2508.02694.
+Editor.
+                                                                 Xia, W.; Zhou, Y.; Jiang, H.; Feng, D.; Hua, Y.; Hu, Y.;
+CrewAI Inc. 2026. CrewAI. https://pypi.org/project/crewai/
+                                                                 Zhang, Y.; and Liu, Q. 2016. FastCDC: A Fast and Effi-
+1.15.2/. Version 1.15.2; accessed: 2026-07-13.
+                                                                 cient Content-Defined Chunking Approach for Data Dedu-
+Davidson, S. B.; and Freire, J. 2008. Provenance and Sci-        plication. In 2016 USENIX Annual Technical Conference
+entific Workflows: Challenges and Opportunities. In Pro-         (USENIX ATC 16), 101–114. Denver, CO: USENIX Associ-
+ceedings of the ACM SIGMOD International Conference on           ation. ISBN 978-1-931971-30-0.
+Management of Data, 1345–1350. ACM.
+                                                                 Yao, S.; Shinn, N.; Razavi, P.; and Narasimhan, K. R. 2025.
+Herschel, M.; Diestelkämper, R.; and Ben Lahmar, H. 2017.        τ -bench: A Benchmark for Tool-Agent-User Interaction in
+A Survey on Provenance: What for? What Form? What from?          Real-World Domains. In Proceedings of the International
+The VLDB Journal, 26(6): 881–906.                                Conference on Learning Representations (ICLR).
+Hugging Face. 2026. smolagents. https://pypi.org/project/        Yu, C.; Wang, Y.; Wang, S.; Yang, H.; and Ming, L. 2026.
+smolagents/1.26.0/. Version 1.26.0; accessed: 2026-07-13.        InfiAgent: An Infinite-Horizon Framework for General-
+Jimenez, C. E.; Yang, J.; Wettig, A.; Yao, S.; Pei, K.; Press,   Purpose Autonomous Agents. In Findings of the Association
+O.; and Narasimhan, K. R. 2024. SWE-bench: Can Language          for Computational Linguistics: ACL 2026, 35884–35894.
+Models Resolve Real-World GitHub Issues? In Proceedings          San Diego, California, United States: Association for Com-
+of the International Conference on Learning Representations      putational Linguistics.
+(ICLR).
+Kapoor, S.; Stroebl, B.; Siegel, Z. S.; Nadgir, N.; and
+Narayanan, A. 2025. AI Agents That Matter. Transactions
+on Machine Learning Research.
+Kim, M.; Baek, J.; Jeong, S.; and Hwang, S. J. 2026. MemRe-
+fine: LLM-Guided Compression for Long-Term Agent Mem-
+ory. arXiv:2606.13177.
+LangChain AI. 2026. LangGraph. https://pypi.org/project/
+langgraph/1.2.8/. Version 1.2.8; accessed: 2026-07-13.
+LlamaIndex Inc. 2026. LlamaIndex. https://pypi.org/project/
+llama-index-core/0.14.23/. Core version 0.14.23; accessed:
+2026-07-13.
+Mialon, G.; Fourrier, C.; Swift, C.; Wolf, T.; LeCun, Y.;
+and Scialom, T. 2024. GAIA: A Benchmark for General AI
+Assistants. In Proceedings of the International Conference
+on Learning Representations (ICLR).
+Microsoft. 2025. AutoGen. https://pypi.org/project/autogen-
+agentchat/0.7.5/. Version 0.7.5; accessed: 2026-07-13.
+Mohammadi, M.; Li, Y.; Lo, J.; and Yip, W. 2025. Evaluation
+and Benchmarking of LLM Agents: A Survey. In Proceed-
+ings of the 31st ACM SIGKDD Conference on Knowledge
+Discovery and Data Mining V.2, 6129–6139. ACM.
+O’Neil, P.; Cheng, E.; Gawlick, D.; and O’Neil, E. 1996. The
+Log-Structured Merge-Tree (LSM-Tree). Acta Informatica,
+33(4): 351–385.
+OpenAI. 2026. OpenAI Agents SDK. https://pypi.org/
+project/openai-agents/0.18.0/. Version 0.18.0; accessed:
+2026-07-13.
+Orogat, A.; Rostam, A.; and Mansour, E. 2026. Understand-
+ing Multi-Agent LLM Frameworks: A Unified Benchmark
+and Experimental Analysis. arXiv:2602.03128.
+Supplementary Material for “The Hidden Footprint: Making Storage a First-Class
+                     Metric for LLM Agent Evaluation”
+                        Chenglin Yu1 , Hongquan Gui1 , Ying Yu2 , Hongxia Yang3 , Ming Li1,4∗
+                    1
+                        Department of Industrial and Systems Engineering, The Hong Kong Polytechnic University
+                                 2
+                                   College of Economics and Management, Zhejiang Normal University
+                                   3
+                                     Department of Computing, The Hong Kong Polytechnic University
+                             4
+                               Research Institute for Generative AI, The Hong Kong Polytechnic University
+                                           chenglin.yu@polyu.edu.hk, ming.li@polyu.edu.hk
+
+This document contains Appendices A–S accompanying the               tion (Appendix K) and the R construct check (Appendix O)
+main paper.                                                          re-execute from scratch, the main file-QA table and the
+                                                                     heterogeneous joint-success cells are regenerated from the
+        A     Availability and Artifact Contents                     archived per-run records and compared against the published
+The complete benchmark code—harness, task generators, all            values, and the fixed-trace protocol (Appendix L) runs end-
+eight framework adapters, the CAS reference implementa-              to-end against the mock endpoint—an offline conformance
+tion, and the analysis scripts—is included in the anonymized         path requiring no model access. A container image built
+code-and-data supplement accompanying this submission                from the lockfiles covers seven of the frameworks; InfiA-
+under the MIT license. A revision-matched supplementary              gent installs from PyPI, and envlocks/ records the study
+artifact accompanying this submission contains the synthetic         versions.
+task corpora, per-run meter summaries, replay/CAS outputs,           CAS deployment obligations. The reference compactor
+horizon and write-task measurements, Docker cross-check,             does not resolve the obligations a production content-
+instance-normalized Tier-B cache, inclusion diagnostics, and         addressed store inherits: unsalted content hashes can leak
+figure/statistics scripts. Material exceeding the appendix           content equality across trajectories or tenants; shared blobs
+(per-run measurement records, reconstruction evidence, and           complicate deletion requests (deletion must garbage-collect
+raw suite outputs) ships in that supplementary archive rather        unreferenced blobs, not merely drop references); and dedu-
+than in the PDF, together with a self-contained README,              plication across trust boundaries can enable existence probes
+pinned analysis dependencies, a version-alignment mani-              against low-entropy content. Deployments should scope
+fest, and one complete retained store per persisting frame-          stores per tenant, salt hashes where equality itself is sensitive,
+work (byte-exact for six; InfiAgent’s sanitized of key-material      and couple deletion with reference-counted collection.
+placeholders and operator path strings by length-preserving
+substitution, with re-measured equivalents) so that D, C,                  B     Per-Framework Composition and
+composition, and CAS restore can be re-measured inde-
+pendently. The in-the-wild data (§6 of the main paper) was                           Persistence Configuration
+collected from the SWE-bench experiments repository and              Table 1 gives the numeric decomposition behind Figure 1,
+its public submission buckets: we downloaded only submis-            together with each framework’s persistence mechanism as
+sion metadata, published results files, and object-size listings,    configured in the harness (the exact adapter code ships in the
+plus sampled trajectories for six submissions—all artifacts          artifact).
+that the leaderboard’s submission policy already requires to
+be public—and we release the instance-normalizing harvest
+script, cached size tables, inclusion diagnostics, and statis-
+tical analysis for exact reproduction. Synthetic corpora and
+generators carry the repository’s MIT license and contain
+no personal data; SWE-bench-derived size tables inherit the
+leaderboard’s public-data terms. The submitted benchmark
+artifact is revision-matched to this manuscript: framework
+adapters pin exact package versions with per-framework lock-
+files, results are grouped by benchmark and backend-model
+version, and new framework versions enter as new result rows
+rather than overwriting prior ones.
+Continuous verification. The repository runs an auto-
+mated verification suite on every commit: the meter calibra-
+   ∗
+       Corresponding author.
+                                         Storage composition (file-QA suite, mean per run)                                        executed history-only forms (Appendix Q), the continuous
+                                                                                                         State / checkpoints
+                                                                                                                                  shared-store threads (Appendix M; long-lived by design,
+
+
+
+
+ Retained bytes per task (MB)
+                                4         3.9                                                            Debug / event logs       measured cumulatively), and the two later-added proxied
+                                                                                                         Conversation / actions   tasks per R=3 framework (Appendix I; the original single-
+                                3
+                                                                                                         Other
+                                                                                                                                  task round is in the main-study row)—for a grand total of
+                                                                                                                                  1,061 sandboxes. Each fresh-sandbox run carries its own
+                                                      2.0           2.1                                                           baseline snapshot and measurement record, and all records
+                                2
+                                                                                                                                  ship in the supplementary archive.
+                                1                                               1.0        1.0                                    Computing infrastructure. All controlled runs executed
+                                                                                                      0.3        0.3
+                                                                                                                                  on one Apple M5 workstation (16 GB RAM, macOS 26.4,
+                                0
+                                                                                                                            0.0   arm64; Python 3.12), one framework process at a time; each
+                                          h           en            t          x        no             i           .        g.
+                                                                                                                                  per-run record stores the platform and Python version, and
+                                      rap                        en          de                     wa          ag      ola
+                                lan
+                                    gg        au
+                                                tog
+                                                           inf
+                                                              iag
+                                                                    lla
+                                                                        ma
+                                                                           in         ag         cre
+                                                                                                      op
+                                                                                                         en
+                                                                                                            ai-
+                                                                                                                     sm           envlocks/ pins framework and library versions. The re-
+                                                                                                                                  ported storage metrics are byte counts and do not depend on
+                                                                                                                                  hardware.
+Figure 1: Composition of retained bytes on the file-QA
+suite. Frameworks are heavy in different places: check-                                                                           Statistical units and aggregation. The framework–task
+points (LangGraph), debug/event logs (AutoGen), conver-                                                                           pair is the primary comparison unit; the three repetitions
+sation stores (InfiAgent).                                                                                                        quantify run-level variability. Recorded model calls (§5.4 of
+                                                                                                                                  the main paper) and retained files (§7 of the main paper)
+                                                                                                                                  are verification objects, not independent samples, and the
+Table 1: Retained MB per file-QA run by store category                                                                            108 in-the-wild submissions carry family-level dependence,
+(mean over 30 runs), and the persistence mechanism mea-                                                                           which §6 of the main paper’s sensitivity analyses address.
+sured.                                                                                                                            Ratio metrics (D, echo, C) are computed per run and then
+                                                                                                                                  averaged—mean of per-run ratios, not ratio of pooled sums—
+                                                                                                                                  so table entries are per-run expectations. Decomposing main-
+Framework                                             State Dbg/log Conv. Mechanism
+                                                                                                                                  paper Table 1’s dispersion, between-task SD of task means
+LangGraph                                              5.10                  –           –        SQLite checkpointer             versus mean within-task repetition SD is, in MB: LangGraph
+AutoGen                                                0.83               1.65           –        per-turn state, event log       0.27/0.36, AutoGen 0.16/0.25, InfiAgent 0.03/0.02, Agno
+InfiAgent                                              0.07               0.86        1.20        task stores, raw traces         0.01/0.01, LlamaIndex 0.00/0.00, OpenAI Agents 0.01/0.01,
+Agno                                                   1.15                  –           –        SQLite session db               CrewAI 0.00/0.00—repetition variability dominates for the
+LlamaIndex                                             0.93                  –           –        serialized Context
+                                                                                                                                  two heaviest frameworks; task-content variability is second-
+OpenAI Agents                                          0.33                  –           –        SQLiteSession
+CrewAI                                                 0.32                  –           –        task-output store               order elsewhere. The in-the-wild study adds no sandboxed
+SmolAgents                                                –                  –           –        none (in-memory)                runs; it harvests public metadata for 134 submissions, of
+                                                                                                                                  which 108 pass instance normalization. SmolAgents retains
+                                                                                                                                  zero bytes at every measured horizon; its T =200 point was
+Channel asymmetries. AutoGen’s documented durable-                                                                                not run. A nonparametric bootstrap (20,000 resamples of run
+session recipe pairs per-turn save_state with the tuto-                                                                           means within each framework) puts a 95% CI of [15.0, 16.3]
+rial’s event logger; the channels are separable above: with-                                                                      on the headline 15.7× file-QA spread. The executed history-
+out the event log its file-QA retention is 0.83 MB (below                                                                         only 3.9× is a ratio of 10-task means (per-configuration SDs
+Agno), and the growth class is unchanged—both channels                                                                            in Appendix Q); the fixed-trace 6.7× comes from a deter-
+are superlinear on the stress task (event log α=1.70, snap-                                                                       ministic single-trajectory protocol and is reported as a point
+shot series α=1.86; the log records each turn’s full request).                                                                    estimate.
+OpenAI Agents’ hosted tracing is disabled because it is re-
+mote retention—outside the local boundary of §3.1 of the
+main paper by definition—and would upload task content to
+a third-party service.
+Write-task residue by framework. Mean residue over the
+five write tasks: LangGraph 920 KB, InfiAgent 1,022 KB,
+AutoGen 374 KB, Agno 285 KB, OpenAI Agents 149 KB,
+CrewAI 136 KB, LlamaIndex 128 KB, SmolAgents 0 B; per-
+run records ship in the artifact.
+
+                                                           C Run Accounting
+Table 2 enumerates every sandboxed run behind the reported
+numbers: a 509-run main study plus 552 replication and
+variant runs—the two full-roster backend replications (Ap-
+pendix F), the growth repetition seeds (Appendix G), the
+Table 2: Complete run accounting. No run is shared between          Table 3: Edit family (normalize ledger dates, deliver cor-
+rows.                                                               rected copy). a InfiAgent’s artifacts are all content-correct
+                                                                    but deposited in its managed home-side store rather than
+Experiment                   Runs Composition                       the workspace. b AutoGen exhausts its default tool-iteration
+                                                                    budget before the write step.
+File-QA main study            240 8 fw × 10 tasks × 3 reps
+Persistence ablations          35 6 fw × 5; InfiAgent 2 variants
+AutoGen end-of-run save         8 5 file-QA + 3 horizon points      Framework          Acc Stotal (KB)   D Echo Artifact Joint
+Second backend (4o-mini)       18 3 fw × 5 QA + 3 at T =50          LangGraph         100%        164    1.6   4.8×         5/5     5/5
+Replay-verification source      6 1 proxied task per R=3 fw         AutoGenb            0%         6.1   1.0   0.0×         0/5     0/5
+Long-horizon                   31 7 fw × 4 T + SmolAgents × 3       InfiAgenta        100%        287    1.2   2.9×         0/5     0/5
+Write tasks                    40 8 fw × 5 tasks                    CrewAI            100%          41   1.0   1.2×         5/5     5/5
+Exploratory retrieval          40 8 fw × 5 tasks                    SmolAgents        100%         2.9   1.0   0.2×         4/5     4/5
+Edit family                    40 8 fw × 5 tasks                    OpenAI Agents     100%          44   1.0   0.8×         5/5     5/5
+Data-analysis family           40 8 fw × 5 tasks                    LlamaIndex        100%          24   1.0   0.9×         5/5     5/5
+Docker cross-check              3 LangGraph × 3 tasks               Agno              100%          66   1.0   1.4×         5/5     5/5
+Fixed-trace (batched)           7 7 fw × 1 scripted trace
+Fixed-trace (sequential)        1 LangGraph transport variant
+Main-study subtotal           509
+                                                                    Table 4: Data-analysis family (aggregate two sales CSVs,
+Backend: Qwen3.6-27B          240 8 fw × 10 tasks × 3 reps          deliver summary.csv). Footnotes as in Table 3.
+Backend: Qwen2.5-7B           240 8 fw × 10 tasks × 3 reps
+Growth repetition seeds        24 3 fw × 4 T × 2 seeds
+Executed history-only          30 3 configurations × 10 tasks       Framework          Acc Stotal (KB)   D Echo Artifact Joint
+Continuous shared threads       6 6 fw × ten-task thread            LangGraph         100%        124    1.4   7.8×         5/5     5/5
+Replay-source additions        12 2 further proxied tasks × 6 fw    AutoGenb            0%         6.4   1.0   0.0×         0/5     0/5
+Grand total                  1,061                                  InfiAgenta        100%        284    1.2   0.0×         0/5     0/5
+                                                                    CrewAI            100%          16   1.0   1.0×         5/5     5/5
+                                                                    SmolAgents         60%         0.1   1.0   0.0×         1/5     1/5
+D     Heterogeneous Task Families: Per-Family                       OpenAI Agents     100%          33   1.0   1.1×         5/5     5/5
+                                                                    LlamaIndex        100%         8.8   1.0   0.0×         5/5     5/5
+                     Results                                        Agno              100%          47   1.0   0.0×         5/5     5/5
+Tables 3 and 4 give the per-framework results behind §5.5 of
+the main paper (one run per task, five tasks per family; results
+are descriptive and no repetition variance is reported; Stotal is            E      Exploratory-Retrieval Suite:
+the mean over the five tasks and includes the delivered artifact                      Per-Framework Results
+itself, under 1 KB in every case). “Acc” is answer accuracy;        Table 5 gives the per-framework results behind §5.5 of the
+“Artifact” counts tasks whose required artifact passes a spec-      main paper (five multi-document tasks, one run each).
+exact validator in the shared workspace (edit: every DATE
+line ISO and set-equal to the source ledger; data: exact header,    Table 5: Unprompted exploratory retrieval: per-framework
+all product totals correct, descending order); “Joint” counts       means over the five tasks.
+tasks where both hold—the task-success criterion of §5.5
+of the main paper. An earlier presence-based checker over-
+credited SmolAgents’ data artifacts (3/5); spec-exact grading       Framework             Acc     Stotal (MB)         D           Echo
+yields 1/5, and no other cell changes. InfiAgent’s home-side        LangGraph           100%              3.01        7.8         11.8×
+artifacts pass the spec-exact check as well.                        AutoGen              47%              0.62        3.2          2.5×
+                                                                    InfiAgent           100%              3.00        1.7          6.7×
+                                                                    CrewAI              100%              0.68        2.2          2.8×
+                                                                    SmolAgents           67%              0.00          –          0.0×
+                                                                    OpenAI Agents       100%              0.37        1.4          1.4×
+                                                                    LlamaIndex          100%              0.93        3.1          3.1×
+                                                                    Agno                100%              1.17        1.8          2.0×
+
+
+                                                                                  F     Backend Replications
+                                                                    Full-roster replications (Qwen3.6-27B and Qwen2.5-7B).
+                                                                    All eight frameworks re-ran the complete file-QA suite (10
+                                                                    tasks × 3 repetitions per backend; 480 fresh sandboxes) on
+                                                                    two further backends served through the same provider chan-
+                                                                    nel as the main study. Under Qwen3.6-27B, per-framework
+                                                                    Stotal lands within 0.93–1.06× of the main study, accu-
+                                                                    racy is 98–100% throughout, and the persisting-framework
+ranking is preserved at Spearman ρ=0.964 (spread 16.9×                GPT-4o-mini subset (earlier protocol).
+vs. 15.7×). Under the deliberately weak Qwen2.5-7B, task
+accuracy collapses for four frameworks (35–39%), and the                      G    Growth Repetitions and Model
+per-answer records identify the mechanism: 80–94 of each                                   Comparison
+collapsed framework’s 150 answers are HTTP-400 errors
+from full-history prompts exceeding the endpoint’s 32,768-            Repetition protocol. Every horizon of the three full-
+token window as the 60 KB source files accumulate—context             history frameworks (LangGraph, AutoGen, LlamaIndex) was
+overflow, not answer quality. InfiAgent (windowed context)            rerun under two additional independent seeds (24 added runs;
+never hits the ceiling and holds 100%; LlamaIndex, whose              identical harness, backend, and judging), giving three runs
+default chat memory bounds the prompt while its store ap-             per point; the remaining frameworks keep single runs. Ta-
+pends everything, holds 92%. Yet the storage ranking persists         ble 8 reports per-horizon means. Two repetition cells failed
+at ρ=0.893 (spread 12.0×): the retention signature is visi-           the validity screen applied to every run (return code, accuracy
+ble even when the model fails the task, which is precisely            band, store size within the sibling family) and were rerun; the
+why storage must be read jointly with accuracy rather than            failures coincided with an upstream serving-pool incident on
+alone—and the same design choice, whether history is win-             the shared backend model (one harness-level timeout, runs
+dowed before reaching the prompt, drives both the storage             with 20–34% of turns receiving HTTP-200 responses with
+class and the small-window robustness.                                empty content, one stalled connection). The final rerun en-
+                                                                      abled an environment-gated transport guard (90 s per-request
+Table 6: Full-roster backend replications (mean per-task val-         timeout with client-side retries; re-issue of a request whose
+ues; 30 runs per cell).                                               response arrives empty). The guard is inactive by default, was
+                                                                      off for all other accepted runs, and does not alter persistence
+                                                                      behavior—the session history stores only the final response
+                     Qwen3.6-27B                  Qwen2.5-7B
+                                                                      of each call. The rejected attempts are preserved in the release
+Framework       Stotal     D Echo Acc. Stotal D Echo Acc.             archive (longhorizon_runs/_anomalies/): a man-
+LangGraph        5.20 13.2 8.2× 100%           2.49 9.1 3.9× 35%      ifest of all five attempts plus each attempt’s measurement,
+AutoGen          2.64 8.5 4.3× 98%             1.26 6.3 2.1× 39%      answer, and adapter-log records where the failure mode pro-
+InfiAgent        2.13 1.8 1.7× 100%            2.14 1.8 1.7× 100%     duced them.
+Agno             1.16 2.5 0.8× 100%            0.77 2.0 0.6× 39%         Between repetitions, scatter concentrates in absolute vol-
+LlamaIndex       0.94 4.2 1.3× 100%            1.20 5.5 1.7× 92%      ume while the exponent is stable (per-seed fits in Table 8):
+OpenAI Agents    0.31 1.5 0.5× 100%            0.21 1.4 0.3× 35%      LangGraph’s T =100 point varies by ±10 MB yet its α moves
+CrewAI           0.32 1.5 0.5× 100%            0.37 1.7 0.6× 81%      by ±0.01—consistent with checkpoint-layer consolidation
+SmolAgents          0    –    – 99%               0 –      – 60%
+                                                                      shifting when compaction lands rather than how volume
+                                                                      scales.
+Serving-channel note. One cell required a serving sub-
+stitution: the sole API provider offering tool support for            Table 8: Per-horizon retention, mean ± SD over three
+Qwen2.5-7B could not parse SmolAgents’ zero-argument                  seeded runs (MB); means and SDs are computed on un-
+tool schema (the router returned “no endpoints found that             rounded per-seed fits. Per-seed full-range α fits: LangGraph
+support tool use” once that provider was excluded), so the            {1.72, 1.75, 1.74}, AutoGen {1.76, 1.97, 2.12}, LlamaIndex
+SmolAgents×7B cell was served from the same weights on                {1.95, 1.77, 1.93}.
+a self-hosted vLLM instance; all other cells used the shared
+API channel. Ten Qwen3.6-27B SmolAgents runs that hit the             Framework        T =25      T =50        T =100        T =200
+harness wall-clock limit during a provider-congestion win-            LangGraph     10.1±0.0   29.6±6.3    152.6±10.3    323.2±25.6
+dow were treated as invalid and re-executed in fresh sand-            AutoGen        1.7±0.4    9.8±0.2      34.9±3.7    101.7±20.8
+boxes under an extended limit, per the benchmark’s task-              LlamaIndex     1.1±0.0    3.7±0.8      14.7±3.2     56.3±11.5
+identity rule.
+                                                                      Model comparison. Table 9 compares power-law, lin-
+Table 7: GPT-4o-mini subset (earlier three-framework, five-           ear, and quadratic fits over the four measured horizons.
+task protocol, superseded by the full-roster replications             With four points and up to three parameters these com-
+above; both columns use that protocol, so the DS value 5.27           parisons are descriptive—the quadratic is near-saturated by
+is not comparable to main Table 1’s ten-task 5.10). Rankings          construction—and the functional form is not identified at this
+and D transfer; absolute bytes shift with model verbosity.            n even with three runs per point; that is precisely why the
+                                                                      main text claims superlinear growth over the measured range
+                         File-QA Stotal (MB)               D          (via local slopes) rather than a validated scaling law. Archival
+                                                                      policy is part of the configuration: LlamaIndex’s latest-only
+Framework           GPT                   DS        GPT         DS    footprint (newest snapshot per horizon) is 85, 163, 336, and
+LangGraph           5.35                 5.27       13.6       13.4   645 KB at T ∈ {25, 50, 100, 200}, fitting α=0.98 against
+AutoGen             2.33                 2.50        7.9        8.3   1.88±0.10 for the append-all series it ships by recipe—the
+OpenAI Agents       0.33                 0.33        1.6        1.6   growth class belongs to the archival configuration, not the
+                                                                      framework in the abstract.
+Table 9: Model comparison for retention growth. R2 of            in total, with per-task totals of 65, 64, and 65 across the
+power-law (log Stotal ∼ α log T ), linear (Stotal ∼ a+bT ),      six frameworks). A per-framework extractor then rebuilds
+and quadratic fits. α: mean ± SD of per-seed fits where          the conversation from retained bytes alone: LangGraph from
+three seeds exist, single-seed fit otherwise; R2 columns are     checkpoint snapshots; AutoGen from saved per-turn state
+evaluated on the seed-1 series.                                  (normalizing its thought-field encoding); OpenAI Agents
+                                                                 from session rows (merging text and function-call items be-
+Framework                 α R2 (power) R2 (linear) R2 (quadr.)   longing to one assistant turn); LlamaIndex from the serial-
+LangGraph     1.74±0.01           0.976      0.984      0.987
+                                                                 ized context; Agno from its session-run rows; InfiAgent from
+AutoGen       1.95±0.18           0.988      0.996      1.000    its raw trace channel. The scoring contract is contiguous-
+InfiAgent          1.15           0.999      0.996      1.000    subsequence matching: every recorded request’s message
+Agno               0.98           1.000      1.000      1.000    list must appear, field-by-field (role, content, tool-call identi-
+LlamaIndex    1.88±0.10           1.000      0.967      1.000    fiers, arguments, tool results, order), as a contiguous subse-
+OpenAI Agents      0.73           0.970      0.909      0.995    quence of the history rebuilt from retention. This contract is
+CrewAI             1.20           0.996      0.992      1.000    what makes windowed senders comparable: Agno transmits
+                                                                 a bounded window of past runs per request, and the window it
+                                                                 sent is exactly what must match. All 194 recorded calls satisfy
+  H     Whole-Store Compression vs. Content                      the contract (per-call archives for all 18 runs ship in the ar-
+                    Addressing                                   tifact). System-prompt retention is reported separately in the
+Table 10 makes the comparison of §7 of the main paper            main text because three frameworks keep the system prompt
+explicit. “zstd archive” is the opaque whole-store archive im-   in code-side configuration rather than in any store. Scope: R
+plied by main-paper Table 1 (Stotal divided by C); “CAS          measures exact reconstructability of the ordered conversation
+store” is the schema-preserving compacted representation         content associated with each call, not byte-identical recon-
+(main-paper Table 1, CAS column), which frameworks do            struction of the complete provider request; call boundaries
+not consume in place without a shim (§7 of the main pa-          during verification come from the recorded requests, and the
+per); “CAS+zstd” archives the CAS output with the same           resume probe (Appendix J) shows the stores support contin-
+zstd settings (measured on the same first-repetition runs).      uation, not that call boundaries are self-describing. Per-call
+The opaque archive is always smallest, but nothing in it is      reconstruction diffs ship in the supplementary archive.
+usable without full decompression. Where redundancy is ex-
+act repetition (AutoGen’s event log, Agno’s session rows),             J     Process-Boundary Resume Probe
+archiving the CAS output matches the opaque archive within       The reconstructability grade asks whether retained bytes can
+measurement noise. Where redundancy is near-duplicate—           reconstruct history; this probe asks whether they can continue
+LangGraph’s evolving checkpoints differ slightly at each         it. Phase A runs each framework’s unmodified benchmark
+turn—exact-match content addressing keeps the variants as        adapter in its documented durable-session configuration: the
+distinct blobs and the cold archive pays up to 10× over whole-   agent is told a nonce registry code, acknowledges it, and the
+store zstd; closing that gap needs delta encoding, which we      process exits (the crash point is between turns). Phase B starts
+leave to future work.                                            a fresh process on the same sandbox home, reattaches to the
+                                                                 same documented session identity, and asks for the code;
+Table 10: Per-task retained MB under four representations        workspace files do not contain it, so only the retained store
+(file-QA suite). “zstd archive” is derived from main-paper       can supply it. Because the AutoGen and LlamaIndex adapters
+Table 1’s C (stream-concatenated compression bound, not a        persist state without ever reloading it, their phase B exer-
+restorable archive); “CAS+zstd” is measured on a real tar        cises the frameworks’ official restore APIs (load_state,
+stream.                                                          Context.from_dict) in the fresh process.
+
+Framework       Default zstd archive CAS store CAS+zstd          Table 11: Process-boundary resume: can a fresh process con-
+LangGraph          5.10          0.038       0.50       0.389    tinue the session from retained bytes alone?
+AutoGen            2.49          0.023       0.07       0.025
+InfiAgent          2.12          0.049       0.36       0.177    Framework       R Resumed Phase-B mechanism
+Agno               1.15          0.027       0.06       0.027
+LlamaIndex         0.93          0.023       0.09       0.054    LangGraph     3 yes          thread_id + SQLite checkpointer
+OpenAI Agents      0.33          0.024       0.07       0.039    AutoGen       3 yes          load_state of saved state
+CrewAI             0.32          0.023       0.05       0.044    OpenAI Agents 3 yes          SQLiteSession
+                                                                 LlamaIndex    3 yes          Context.from_dict
+                                                                 Agno          3 yes          session_id + session db
+                                                                 InfiAgent     3 yes          task identity + task store
+   I   Conversation-Reconstruction Protocol                      CrewAI        1 no           task-output store; no session API
+The R=3 validation of §5.4 of the main paper uses an             SmolAgents    0 –            nothing retained
+HTTP logging proxy interposed between each adapter and
+the model provider; it records every request body verbatim
+and is the ground truth. Each of the six R=3 frameworks             All six R=3 frameworks return the exact code from re-
+ran three proxied tasks (18 proxied runs; 194 recorded calls     tention alone; CrewAI answers that it has no record of the
+Table 12: Meter calibration. Five copies per block except                       Table 13: Fixed-trace results (batched transport). “×/obs”
+small-lines (eight). “part”: under ≥doubly-nested encoding                      = retained bytes per observation byte. a CrewAI executes the
+only probes free of escapable characters match, so echo is a                    full trace but paraphrases the scripted final answer, failing ex-
+lower bound there.                                                              act match; retention covers the completed trace. SmolAgents
+                                                                                retains nothing and is out of scope.
+Scenario       Encoding                      Dtrue   D naive D echoexp echo
+
+single-esc     JSONL, json.dumps               5.0   5.0    2.1     5.0   5.0
+                                                                                Framework          Trace     Answer      Stotal (KB)     ×/obs
+sqlite-exact   SQLite text cells               5.0   5.0    1.6     5.0   5.0   InfiAgent            ✓          ✓              1,254       6.86
+double-esc     JSON inside JSON                5.0   5.0    2.4    part   1.7   CrewAIa              ✓          –                624       3.42
+triple-esc     three nesting levels            5.0   5.0    2.1    part   1.7   LangGraph            ✓          ✓                592       3.24
+near-dup       1% byte edits per copy          ≈1    1.0    1.0       –   2.0   AutoGen              ✓          ✓                555       3.04
+zlib-prefix    compressed growing prefixes     ≈1    1.1    1.0       0   0.0   Agno                 ✓          ✓                404       2.21
+small-lines    400-char lines ×8               8.0   8.0    1.0       –   8.0   OpenAI Agents        ✓          ✓                212       1.16
+                                                                                LlamaIndex           ✓          ✓                188       1.03
+
+code; SmolAgents has nothing to resume by construction.
+The grade therefore stratifies process-boundary session re-                     latest-only analysis of Appendix G) to 6.86× (InfiAgent’s
+sumability exactly on this roster. Scope: the probe crashes                     multi-channel stores)—a 6.7× spread carrying no agent-
+between turns and resumes conversation state; recovery of                       policy contribution. Second, transport shape itself matters
+mid-turn tool state or workflow-graph position is a stronger                    for per-step checkpointers: under a sequential-transport vari-
+capability we do not test.                                                      ant (one tool call per model turn), LangGraph rises from
+                                                                                3.24× to 7.40×—one checkpoint per superstep (variant run
+K       Meter Calibration on Known-Duplication                                  archived in the artifact)—so the protocol pins the batched
+                         Stores                                                 transport and discloses the variant.
+We calibrate the meter on synthetic stores whose duplication                         M      Continuous Shared-Store Protocol
+is known by construction (generator script and stores ship
+in the artifact). A 40 KB source file—the probe source—is                       Fresh sandboxes maximize attribution but leave open
+cut into ten 4 KB blocks; each scenario persists those blocks                   whether a long-lived shared backend amortizes per-task cost.
+with a known copy count under a different encoding. “Naive                      This protocol runs ten identical fixed-trace tasks against one
+D” runs the same content-defined chunking over raw file                         sandbox and one documented session identity per framework,
+bytes instead of logical streams—the measurement §3.3 of                        measuring cumulative retention after each task; marginal cost
+the main paper argues against.                                                  is ∆S(k) = S(k) − S(k−1).
+   Three observations. (i) D is exact on every exact-
+duplication scenario, including duplicates below the chun-                      Table 14: Ten identical tasks on one shared store (mock
+ker’s minimum size (whole-stream hashing), while naive                          endpoint; all answers correct for every included framework).
+raw-byte chunking underreports the same stores at 1.6–
+2.4×—the serialization-masking effect of §3.3 of the main                       Framework         S(1)     S(10) ∆S(1) ∆S(10) Shape
+paper reproduced on known ground truth. (ii) Echo is exact                      LangGraph     592 KB 95.2 MB 592 KB 18.5 MB rising
+through single JSON escaping, the encoding real frameworks                      Agno          404 KB 7.0 MB 404 KB 748 KB mildly rising
+apply to message content, and degrades to a lower bound                         AutoGen       555 KB 3.8 MB 555 KB 371 KB flat
+under doubly-nested encodings, where only probes with-                          OpenAI Agents 212 KB 1.8 MB 212 KB 184 KB flat
+out escapable characters keep matching. (iii) The designed                      LlamaIndex    188 KB 188 KB 188 KB        0 constant
+boundaries hold: near-duplicate copies and compression-
+wrapped redundancy are invisible to exact-match analysis
+(D≈1) while C still flags the former (17.7×)—the same sig-                         The amortization hypothesis inverts for full-history check-
+nature that separates LangGraph’s evolving checkpoints in                       pointers: on one shared thread, LangGraph’s ten identical
+Appendix H.                                                                     tasks retain 95.2 MB versus 5.8 MB as ten fresh sandboxes—
+                                                                                the fresh-sandbox protocol understates long-lived deploy-
+                                                                                ment cost for such designs rather than overstating it, because
+  L        Fixed-Trace Protocol: First Instantiation                            every new task re-checkpoints the whole accumulated his-
+Per-framework results behind §5.6 of the main paper.                            tory. Overwrite and append-once designs amortize as ex-
+The mock endpoint adapts tool schemas and termina-                              pected (LlamaIndex’s per-task snapshot is overwritten; Au-
+tion contracts per framework (InfiAgent terminates via its                      toGen’s snapshots overwrite while its event log appends).
+final_output contract); every framework persists the                            InfiAgent is excluded by its own documented contract: task
+same logical content—three reads, 182.7 KB of observations,                     identities must not be reused across invocations—the rule
+one answer.                                                                     our harness enforces (§4.3 of the main paper)—and driving
+   Two observations. First, identical-content encoding am-                      ten tasks through one identity reproduces exactly the con-
+plification spans 1.03× (LlamaIndex: this single-question                       tamination its documentation warns about (runaway rounds
+trace serializes one context snapshot, consistent with the                      to its 60-round cap).
+      N    Meter Implementation Audit and                          Table 15: Construct check of the automated R scorer on
+                                                                   synthetic stores built from a real task corpus. “3*”: content-
+                Threshold Sensitivity                              complete per-call stores with order or argument defects re-
+Delta accounting. The runs in this paper were captured             ceive an automated 3 by design; those properties are verified
+with a size-inventory baseline: a pre-existing file was treated    by reconstruction, which compares roles, contents, tool-call
+as unchanged when its size was unchanged, and a changed            ids, arguments, and order field-by-field.
+file was counted at its full post-run size. Both approxima-
+tions were audited over all 509 sandboxes against the def-         Constructed store                  Intended Auto R     Verdict
+inition of §3.1 of the main paper. (i) Pre-existing bytes
+inside changed baseline files total 31,952 B against an ag-        True per-call record               3          3        correct
+gregate Stotal of 1,404.7 MB—0.0022%, worst single run             Aggregate blob, spoofed name       1          1        correct
+0.056%—so full-size versus increment attribution does not          Aggregate blob, neutral name       1          1        correct
+                                                                   Per-call, shuffled order           3*         3      insensitive*
+move any reported number. (ii) Same-size in-place rewrites:        Per-call, missing tool args        3*         3      insensitive*
+every baseline workspace file was byte-compared against            Per-call, truncated observations   2          2        correct
+its pristine task corpus source; zero modifications across         Per-call, summaries only           2          2        correct
+all 509 runs. (iii) Only InfiAgent populates the home di-
+rectory before the run (its setup scaffolding); its same-size
+baseline files were verified separately—300 corpus copies          the main paper and the resume probe of Appendix J—not
+byte-identical to their pristine sources and 150 configura-        by the automated score. To make the division of labor ex-
+tion files byte-identical across repetition seeds—leaving no       plicit we scored seven constructed stores with known defects
+evidence of any undetected rewrite. The released meter ad-         (Table 15).
+ditionally hashes every baseline file (SHA-256) and reports           An earlier version of the scorer accepted the spoofed-name
+an increment-based S_total_delta alongside the pub-                aggregate blob (filename signature alone); the released ver-
+lished accounting, closing this gap by construction.               sion adds the JSON-record gate, which corrects that case
+Stream-length threshold. Streams shorter than 64 B                 and leaves every published framework grade unchanged.
+(SQLite cells, JSONL lines) are excluded from both the nu-         Framework-level grades thus rest on the validated adapter
+merator and denominator of D; numeric and NULL cells are           contract plus one stated assumption: serialization semantics
+never content bytes and are excluded at any threshold. Re-         are invariant across tasks at a fixed framework version and
+computing D on the file-QA first-repetition subset at thresh-      configuration. For third-party submissions this generalizes
+olds of 0, 16, 32, 64, and 128 B changes no framework’s value      cleanly: extractors need not be trusted, because the logging
+by more than 0.1 (LangGraph 13.3–13.4; all others flat to one      proxy is the trust anchor—a submitted (or even machine-
+decimal), so the threshold does not drive any conclusion.          generated) extractor is verified mechanically, field-by-field,
+                                                                   against recorded requests on hidden-seed tasks, so parsing is
+Setup staging and boundary. The baseline snapshot is               crowdsourced while verification stays sound.
+taken after framework-side setup, so bytes a framework stages
+before execution are excluded from Stotal . Only InfiAgent            P    Production Deployment Measurement
+stages: its setup copies the task corpus into its managed
+task directory (0.60 MB mean on file-QA). Under a total-           With the operator’s authorization we measured a produc-
+operational view (staging + retained), its file-QA mean rises      tion InfiAgent deployment (supply-chain quoting). Collec-
+from 2.12 to 2.72 MB—moving it above AutoGen (2.49 MB)             tion was whitelist-based and irreversibly de-identified at
+in absolute terms—while the 15.7× LangGraph/CrewAI                 the source: only byte counts, file counts, channel cate-
+headline is unchanged. We keep staged copies of immutable          gories, coarsened months, and tool-name frequencies were
+task inputs out of Stotal because they duplicate provided in-      exported—no message content, file names, user identifiers,
+puts rather than execution history; both accountings ship in       or business data left the environment (the collector ships in
+the artifact. Sizes are apparent file lengths (st_size), not       the artifact; tool names are pseudonymized in the released
+allocated blocks; sparse-file and copy-on-write divergence is      aggregates).
+second-order at these scales. The redirected boundary does         Deployment root. Eight tasks, 442 MB. Channel composi-
+not cover system temp directories or remote telemetry; a full-     tion: raw traces 148.0 MB, service logs 98.5 MB, task stores
+filesystem container audit is the extension path for adversarial   71.6 MB, other 69.4 MB, debug logs 44.1 MB, conversation
+submissions.                                                       stores 4.8 MB, configuration 0.3 MB; the residual ∼5.3 MB
+                                                                   (1.2%) is files outside the collector’s channel taxonomy.
+       O    Automated R Scorer: Construct                          Trace, log, and debug channels hold 290.6 of the root’s
+                     Validation                                    442 MB (66%) while conversation stores hold 1%, ampli-
+                                                                   fying the controlled composition finding (Appendix B) at
+The automated R rubric is a screening instrument: per-call
+                                                                   production scale. Per-task retention: median 715 KB, P90
+structure is identified from per-framework channel signatures
+                                                                   81.4 MB—a heavy tail two orders of magnitude above the
+(audited once per adapter), .jsonl channels must addition-
+                                                                   median.
+ally parse as JSON-object records, and completeness uses
+whole-line probes. Order, role, argument, and boundary fi-         Deployment-wide scale. As of July 2026 the operator re-
+delity are established by the reconstruction study of §5.4 of      ports ∼56 GB of accumulated retained data across ∼1,000
+recorded agent rounds for this deployment—an operator-             Table 16: History-only forms on file-QA (mean over 10 exe-
+attested aggregate over the full store, of which the eight-task,   cuted tasks where re-run). Source: executed (re-run end-to-
+442 MB root above is the collector-audited subset. “Round”         end, accuracy and R verified), native (default already history-
+is the deployment’s unit of work and is not calibrated to          only; main-study runs), split (post-hoc channel exclusion;
+our task definition, so we derive no per-task mean from it;        channels not switchable).
+the figure establishes practical scale in one deployment, not
+population prevalence.                                             Configuration                               MB        Source
+Single-task decomposition. One complete quoting task               LlamaIndex (latest-only archival)     0.31±0.00       executed
+retains 131 MB: a staged input workbook (42.4 MB, in the           LangGraph (newest checkpoint)         0.31±0.03       executed
+framework’s hidden upload area), framework residue of              OpenAI Agents (session)               0.33±0.00       native
+                                                                   AutoGen (state, events off)           0.90±0.00       executed
+79.2 MB (raw trace 47.7, runtime logs 29.7, action log 1.5,        Agno (session db)                     1.15±0.00       native
+history database 0.3), staged reference material (6.8 MB),         InfiAgent (conversation channel)           1.20       split
+and 2.6 MB of delivered artifacts. Residue outweighs deliv-
+erables ∼30× with real work products—the absolute-scale
+counterpart of the write-suite ratios (§7 of the main paper)—         The decomposition brackets the headline: the default
+and input staging (49.2 MB) mirrors the boundary of Ap-            spread is 15.7×; restricted to history retention it is 3.9×,
+pendix N.                                                          with three unrelated codebases converging within 7% (0.31–
+                                                                   0.33 MB)—storing the same conversation costs nearly the
+Workload profile. The task issued 184 model calls; tool-           same bytes once the capability bundle is stripped. The resid-
+name frequencies are dominated by profile updates (219),           ual 3.9× is history-encoding overhead, consistent in mag-
+program steps (62), resource lookups (50), and structured          nitude with the fixed-trace encoding spread (§5.6 of the
+reads (32), with file writes rare—direct measured evidence         main paper). Most of the default-configuration dispersion is
+for the read-dominant premise of boundary (i) in §8 of the         therefore what defaults choose to keep, not irreducible stor-
+main paper. The de-identified aggregates ship in the supple-       age inefficiency—which is exactly what a default-experience
+mentary archive.                                                   benchmark should surface.
+Q    History-Retention Channel Decomposition                       Table 17: Persisted objects and recovery capabilities. Re-
+                    (Executed)                                     sume is measured here (Appendix J); Wf. (workflow-state
+The system track measures documented configurations that           recovery) and Ev. (event/debug provenance) are vendor-
+support different capabilities (§4.2 of the main paper). This      documentation claims, untested.
+decomposition measures how much of the default spread
+is associated with channels beyond conversation-history re-        Framework         Persisted objects       Resume    Wf.      Ev.
+tention, by executing each configuration’s minimal history-        LangGraph         graph checkpoints        yes      yes       –
+retaining form on the full file-QA suite (10 tasks, single rep-    AutoGen           state snaps + events     yes     partial   yes
+etition, main-study backend). Three forms required a change        OpenAI Agents     message session          yes       –        –
+and were re-run end-to-end: LlamaIndex latest-only archival        LlamaIndex        serialized context       yes     partial    –
+(delete the previous snapshot after each write), AutoGen           Agno              session runs (window)    yes       –        –
+events-off (the documented switch: no event logger, state          InfiAgent         task store + traces      yes      yes      yes
+channel kept), and LangGraph newest-checkpoint pruning             CrewAI            task outputs             no        –        –
+                                                                   SmolAgents        none                     no        –        –
+(an adapter-level wrapper deleting superseded checkpoint
+rows, then VACUUM). Functional equality is verified on all
+30 runs: accuracy is unchanged (150/150 questions correct)         R    Capability Matrix (Documentation-Based)
+and every retained store still scores R=3. OpenAI Agents
+and Agno are natively history-only (their main-study runs          Table 17 summarizes what each documented durable-session
+are the executed evidence); InfiAgent’s channels expose no         configuration persists and which recovery capabilities it of-
+switch, so it remains a disclosed post-hoc split. This re-         fers, per vendor documentation; “resume” is the process-
+mains a decomposition of the default spread, not a capability-     boundary probe of Appendix J (measured), the other columns
+normalized efficiency ranking: the executed forms match on         are documentation claims we did not independently test. This
+history reconstruction, not on every capability a default bun-     is the boundary behind §4.2 of the main paper: equal-R
+dle serves.                                                        frameworks are comparable on history reconstruction, not
+                                                                   on every column below.
+
+                                                                       S    Reconstructability–Retention Figure
+                                                                   Figure 2 plots each framework’s default retention against
+                                                                   its post-CAS retention, annotated with R and accuracy; the
+                                                                   reading is discussed in §5.4 of the main paper.
+                                    Default retention (filled) vs. after CAS store (hollow)
+                             langgraph                                                          R=3 80%
+
+                              infiagent                                                         R=3 100%
+
+                               autogen                                                          R=3 77%
+
+                                  agno                                                          R=3 80%
+
+                            llamaindex                                                          R=3 98%
+
+                                crewai                                                          R=1 94%
+
+                         openai-agents                                                          R=3 79%
+
+                            smolagents           0B                                             R=0 85%
+
+                                          10−2              10−1            100           101
+                                                      Retained bytes per task (MB, log)
+
+
+Figure 2: Reconstructability versus retention (discussed in §5.4 of the main paper). Filled: default retention per task; hollow:
+the same runs after the content-addressed store; right margin: R and accuracy. R=3 is obtained at 0.33–5.10 MB under defaults
+and 0.06–0.50 MB after content addressing (the 0.05 MB post-CAS point is CrewAI, R=1).
+
