@@ -1,0 +1,68 @@
+name: Build research website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'scripts/build_site_content.py'
+      - 'PROJECT_CHARTER.md'
+      - 'docs/**'
+      - 'papers/**'
+      - 'data/work_queue.json'
+      - '.github/workflows/site.yml'
+  pull_request:
+    paths:
+      - 'site/**'
+      - 'scripts/build_site_content.py'
+      - 'PROJECT_CHARTER.md'
+      - 'docs/**'
+      - 'papers/**'
+      - 'data/work_queue.json'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Validate canonical sources
+        run: |
+          python -m py_compile scripts/*.py
+          python scripts/check_review_quality.py papers --allow-empty
+          python scripts/queue.py validate
+
+      - name: Install website dependencies
+        working-directory: site
+        run: npm ci
+
+      - name: Build static website
+        working-directory: site
+        run: npm run build
+
+      - name: Upload website artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-bench-research-site
+          path: site/dist
+          if-no-files-found: error
+          retention-days: 14
