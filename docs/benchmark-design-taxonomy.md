@@ -2291,6 +2291,53 @@ reset cadence, update budget, and which feedback may enter memory. Once one test
 item changes behavior on the next, the estimand is ordered-stream learning, not
 independent pass@1 [ACE, SE].
 
+#### Skill and memory value is a resource-allocation claim, not a score delta
+
+Keep four non-inheriting estimands separate: **configured-package frontier**
+compares complete systems over realized resource vectors; **equal-envelope
+allocation effect** reallocates the same enforced admissible envelope between
+direct observe/act and augmentation; **module mediation** follows candidate
+generation → evidence-sufficient verification → promotion → retrieval/presentation
+→ invocation/adoption → local and downstream effect; and **amortized portfolio
+value** charges discovery, serving, maintenance, repair, expiry, transport, and
+parallelism over future eligible use. A package can lie on an observed frontier
+without identifying an allocation effect, and an online cost comparison cannot
+settle offline amortized value [OSM].
+
+Every comparison needs two typed denominators. The **opportunity denominator** is
+the task/form × environment/interface/version population on which the intervention
+could validly apply. The **complete-resource denominator** charges prompt,
+completion, cache and reasoning tokens; injected context; direct and auxiliary
+calls; tool use; wall time/latency and parallel occupancy; compute/price/energy;
+storage; retries, verification and repair; maintenance; and human review under a
+declared basis. Preserve phase-resolved observations rather than dividing an
+aggregate usage total. Pin task/block order, initial and final shared-state hashes,
+configured-system and component hashes, budget-enforcement rule, and every intended,
+invalid, missing, retried, or replacement row.
+
+Retry is itself a treatment when a stateful online method can learn from the
+replayed episode. Predeclare retry-in-place, null transition, or checkpoint replay;
+record when the retry enters the stream and the resulting state hash. Likewise,
+finite three-run `Any-of-3` and `All-of-3` are optimistic union and stringent
+intersection repeat profiles under one order/environment policy—not latent-
+capability bounds. The reviewed web study supports only a reported sparse
+configured-package success–token frontier: budgets were approximately rather than
+exactly matched, its stronger vanilla arm bundled extra steps with observation
+pruning, methods differed beyond module type, order was undisclosed, only three
+runs were used, and no code, task order, states, trajectories, or analysis release
+exists. It does not establish fixed-budget allocation dominance, general Skill or
+memory value, amortized value, web-to-knowledge-work transport, or readiness [OSM].
+
+The internal allocation-parity audit retains and hash-checks all 14 intended rows
+from two prior Skill studies, including four service-invalid cells, but finds zero
+admissible exact contrasts because component allocation, state hashes, and exact
+order matches are absent [SAPA]. Its prospective telemetry slice validates a
+fail-closed capture envelope and AB/BA schedule without provider calls; aggregate
+Hermes usage lacks per-call phase attribution, so readiness remains false rather
+than fabricating allocation evidence [PAT]. These are validation artifacts for the
+existing configured-system, procedural-skill, longitudinal, lesson-promotion,
+trace/recovery, metric, and validity records—not a new Skill-value schema.
+
 ### 4.0 Projection independence and external authority set the claim ceiling
 
 Co-derived components can agree because they share a projection, not because the
@@ -3056,6 +3103,7 @@ and validity records are the implementation homes; no new schema follows.
 | Evaluator-attempt ledger | distinguish outcome-blind repair of invalid evaluator execution from outcome-conditioned reselection and substantive judge validity | immutable source/configuration identity; append-only raw attempts; typed invalidity, abstention, applicability, and insufficiency; predeclared retry eligibility/limit; frozen treatment or fork; final-selection and duplicate-publication semantics; residual-invalid and attempt-count denominators; schema/judge/metric/decision-validity separation |
 | Criterion-to-outcome validation episode | prevent a same-episode association from being promoted to prediction, causal intervention, decision utility, or stakeholder benefit | criterion/observer/evidence-view identity and reliability; score time; eligible population/base rate/clusters; outcome authority/window/join/missingness/reversals; association and incremental baselines; frozen confirmation/intervention; threshold/loss; joint intended/adverse consequences; licensed claim rung |
 | Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system; task/form/family population; environment/provider/time/batch; intended/service-valid/trial-valid/grader-valid/substantive denominators; grader-crossed and matched clustered repeats; retry/missing policy; binary/unequal-repeat estimator and anchor sensitivity; frozen decision-keyed repeat/stopping rule; intervention preservation/exposure evidence; decision-time view; consequence/loss model |
+| Resource-allocation episode | distinguish complete-package frontier, exact equal-envelope allocation, module mediation, and amortized portfolio value | opportunity population; complete phase-resolved resource vector and basis; direct-action counterfactual; task/block order and state hashes; candidate/promotion/retrieval/adoption/effect flow; every invalid/retry transition; amortization horizon, expiry, transport, maintenance, and bounded claim |
 | Derived trial-confidence observation | preserve a prediction without overwriting the trial result, repeat profile, diagnosis, or decision | configured trial and target predicate; label authority; prefix/post-hoc time and available channels; extractor/calibrator/provider/tokenizer/logprob versions; missingness; calibration/transport population; uncertainty; prohibited uses |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
 | Longitudinal stream | measure an update policy rather than independent pass@1 | frozen benchmark version, order/seed, clusters, persistence/reset policy, budgets, feedback firewall, equivalent-form probes |
@@ -3109,6 +3157,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Stateful professional workflow (SaaS-Bench, Workflow-GYM, OdysseyBench) | pinned initial state, sparse consequential stage transitions, alternative paths, final-state and artifact checks | residual/pre-satisfied state, stage bypass, canonical-path bias, environment/harness defects, and final consequence mistaken for complete workflow evidence | Workflow-GYM full immutable v3 paper plus post-v3 official showcase/trajectory inspection, with full dataset/VMs/graders/results unavailable [WG]; SaaS-Bench has a separate full review; OdysseyBench remains landscape-level |
 | Adversarial authority and action safety (ClawSafety) | source-authority matrix, exposure/adoption/action-state ledger, containment, recovery, and benign utility | source placement or token match mistaken for adoption/realized harm; refusal or tool failure counted as safety; mutable/live side effects | full immutable v2 paper plus complete post-v2 partial-release audit [CS]; internal inert conformance fixture/preflight validates contract behavior only [AC] |
 | Skill-grounded long-horizon evaluation (LH-Bench) | expert procedure → observable boundary → artifact/check crosswalk | intervention/instrument contamination; agreement mistaken for validity | full immutable v2 PDF/text and deep review [LH] |
+| Budget-constrained online Skill/memory packages | configured-package frontier, exact allocation episode, module-flow mediation, and amortized portfolio ledger | approximate budgets and compound controls promoted to allocation effects; presentation promoted to adoption; three-run unions/intersections promoted to capability bounds; retries and order-dependent shared state omitted | full immutable v1 paper/project-page review with no study release [OSM]; internal 14-row parity audit admits zero exact contrasts [SAPA], and the zero-call prospective capture envelope remains blocked on per-call telemetry [PAT] |
 | Human-rated configured Skill package (medical Skill study) | mounted/surfaced/opened/invoked/adopted/artifact-change chain; model/task/rater estimand and criterion-specific reliability | available package mistaken for exposure; platform/package bundle called a Skill effect; shared structure and noisy Likert ratings promoted to expertise, correctness, or transfer | full immutable v1 paper/supplement plus timing-bounded 1,715-file package audit; one selected 21-output task, unequal arm/model mixture, absent run/exposure records, and negative expert ICC support a claim ceiling rather than efficacy [MSK] |
 | Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
@@ -3383,12 +3432,20 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     aggregation before execution. Brief/rubric conflict or prose/arithmetic reversal
     is instrument invalidity; a passing judge, expert label, or clipped scalar cannot
     silently repair it or license professional validity [AVB].
+60. **Package efficacy is not allocation or portfolio value:** preserve the
+    opportunity population, complete phase-resolved resource denominator, exact
+    envelope and direct-action counterfactual, module-flow mediation, order/state
+    hashes, retry treatment, and amortization horizon. Aggregate tokens, approximate
+    budgets, presentation, or finite-repeat unions/intersections cannot silently
+    license allocation dominance, causal adoption, general Skill/memory value,
+    cross-domain transport, production fitness, or readiness [OSM, SAPA, PAT].
 
 ## 8. Unresolved tensions and required experiments
 
 | Tension | Current evidence | Resolution experiment |
 |---|---|---|
 | Public procedure improves execution vs leaks evaluator cues | LH-Bench's rubric agreement improves, but execution ablation is only seven paired runs and the skill/rubric roles are confounded [LH]. | Four-condition skill × rubric-source ablation on one pilot; compare artifact/readiness outcomes, not process score alone. |
+| Better configured-package frontier vs value of allocating resources to a Skill or memory module | The reviewed online study charges auxiliary and injected-context tokens and reports a stronger vanilla frontier, but uses approximate budgets, a compound control, undisclosed order, only three runs, and no release [OSM]. The internal parity audit finds zero admissible exact contrasts, while the prospective envelope is blocked on per-call phase telemetry [SAPA, PAT]. | On unlike non-ceiling work shapes, enforce one resource vector; hold pruning, prompts, tools, grader, and retry semantics fixed; counterbalance AB/BA order; hash state transitions; cross direct actor, offline Skill, and online evolving Skill; preserve opportunity/module flow and all attempts; then test amortization separately over eligible reuse and expiry. |
 | Automated agreement vs professional validity | LH-Bench judges agree more under expert boundaries, yet individual human/automated concordance is weak [LH]. | Two-expert readiness labels and pairwise choices on a stratified pilot subset; calibrate each automated check against both. |
 | Mid-difficulty efficiency vs rare critical coverage | Psychometric work favors informative middle checks; benchmark mission requires hard safety and expert traps [EB, AP]. | Maintain separate ranking and critical diagnostic sets; test rank fidelity and primitive coverage independently. |
 | Workflow compliance vs latent expertise | Observable transitions are more judgeable, but exact procedure following can substitute for judgment [LH]. | Include at least two expert-approved procedures and held-out consequence variants. |
@@ -3599,6 +3656,26 @@ them:
 
 ## Provenance keys
 
+- **[OSM]**
+  `papers/agent-benchmarks/2026-07-16-online-skill-memory-budget-value.md`;
+  reviewed immutable v1 PDF/text and project-page acquisition provenance are
+  recorded there. The page exposes no code, data, trajectories, task order,
+  configured-system manifest, shared states, or analysis artifacts. Evidence
+  supports a reported configured-package success–token frontier and allocation-
+  design warning—not exact fixed-budget dominance, general Skill/memory value,
+  amortized value, web-to-knowledge-work transport, production fitness, or readiness.
+- **[SAPA]** `pilots/skill-allocation-parity-audit/README.md`,
+  `pilots/skill-allocation-parity-audit/v1/manifest.json`, and
+  `pilots/skill-allocation-parity-audit/v1/audit-report.json`; hash-pinned replay of
+  14 intended prior-study rows, including four service-invalid cells. Integrity
+  passes, but zero exact allocation contrasts are admissible; this is negative
+  diagnostic evidence, not a Skill effect, memory-value, capability, or readiness
+  result.
+- **[PAT]** `pilots/prospective-allocation-telemetry/README.md`, frozen v1 manifest,
+  canary, and readiness report; deterministic zero-call capture-envelope conformance
+  only. No matched pair ran because aggregate usage cannot supply per-call phase
+  attribution; all allocation, Skill-effect, cost-value, capability, professional,
+  production, and readiness claims remain false.
 - **[NI]**
   `papers/agent-benchmarks/2026-07-16-networked-intelligence-shared-context-validity.md`;
   reviewed immutable v1 PDF/text/HTML and acquisition provenance are recorded

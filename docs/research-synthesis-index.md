@@ -494,6 +494,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 |---|---:|---|
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Directly motivates public-skill versus private-check boundaries and skill/rubric factorial comparisons |
 | [SkillsBench](../papers/agent-benchmarks/2026-07-10-skillsbench-paired-skill-efficacy.md) | A | Sharpens matched skill/no-skill comparisons and the need for repeated paired trials and uncertainty |
+| [Online skill and memory budget value](../papers/agent-benchmarks/2026-07-16-online-skill-memory-budget-value.md) | A | Separates complete configured-package frontier, exact equal-envelope allocation, candidate→promotion→retrieval→adoption mediation, and amortized portfolio value; adds opportunity and complete-resource denominators plus order/state/retry treatment semantics while preserving the paper's approximate-budget, compound-control, three-run, no-release, and web-transport limits |
 | [Medical Skill human evaluation](../papers/agent-benchmarks/2026-07-16-skill-augmented-medical-human-evaluation.md) | A | Adds the missing human-measurement warning to package efficacy: package availability, exposure, adoption, criterion conformance, substantive correctness, transfer, and readiness do not inherit one another; one selected 21-output task, bundled OpenClaw/package treatment, unequal model weighting, absent run traces, and negative expert ICC prevent an identified Skill effect |
 | [Skills Are Not Islands](../papers/agent-benchmarks/2026-07-15-skill-supply-chain-dependency-risk-validity.md) | B | Shows that a Skill treatment may be a transitive Skill/package/service graph while separating static audit reachability from installed, visible, invoked, vulnerable, and consequential runtime state |
 | [Agentic Skills at Scale](../papers/agent-benchmarks/2026-07-15-agentic-skills-at-scale-projection-validity.md) | A | Scales paired Skill/no-Skill authoring to 1,110 released packages while exposing that Skill-derived demand, tasks, instruction rubrics, goal rubrics, and one shared judge identify projected-procedure compliance more directly than independent utility |
@@ -527,6 +528,21 @@ a two-rater, one-task study cannot justify severity adjustment or task/rater
 population generalization. Existing configured-system, procedural-skill, trace,
 artifact-view, rater, metric, task-health, and validity records already host the
 chain; no medical or Skill-specific subsystem follows.
+
+Skill value adds a third, orthogonal boundary: a paired package score is not yet a
+resource-allocation or portfolio-value claim. Report complete-system frontiers,
+exact equal-envelope allocation, candidate/promotion/retrieval/adoption mediation,
+and amortized value separately. Type the eligible opportunity population and every
+resource used to induce, verify, store, retrieve, inject, interpret, execute, repair,
+maintain, and retire the package, including foregone direct action. For stateful
+online methods, preserve task/block order, initial/final state hashes, and retry as
+a treatment transition. The internal [allocation-parity audit](../pilots/skill-allocation-parity-audit/README.md)
+retains 14/14 intended prior-study rows but admits zero exact contrasts; the
+[prospective capture envelope](../pilots/prospective-allocation-telemetry/README.md)
+passes a zero-call canary yet remains blocked on native per-call phase telemetry.
+Neither artifact changes prior descriptive scores or licenses a Skill effect,
+allocation effect, cost value, capability, cross-domain, professional, production,
+or readiness claim.
 
 Targeted inquiry has its own configured-interface boundary: `available evidence →
 selected target → expressed request → parser/router interpretation → realized
