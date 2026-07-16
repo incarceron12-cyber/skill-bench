@@ -1,0 +1,928 @@
+                                                 Networked Intelligence: Active Shared Context Graphs for
+                                                                 Human-AI Team Science
+
+                                                 Sutanay Choudhury∗, Jeffrey J. Czajka, Lummy M. O. Monteiro, Erin Bredeweg,
+                                                 Jason McDermott, Katherine Wolf, Alex Beliaev, Josh Elmore, Paul Piehowski,
+                                                      Kylee Tate, Yuqian Gao, Aivett Bilbao, Kelly Stratton, Scott Baker,
+                                                   Jaydeep P. Bardhan, Kristin Burnum Johnson, Chris Oehmen, Robert Rallo
+                                                                             Pacific Northwest National Laboratory
+                                                                                      Richland, WA, USA
+
+                                                                                         July 16, 2026
+
+
+
+
+arXiv:2607.13220v1 [cs.AI] 14 Jul 2026
+                                                                                            Abstract
+                                                 Most AI-for-science systems focus on scaling a single reasoning process by using better models,
+                                                 larger context windows, long-horizon agentic execution, or digital co-scientists working with one
+                                                 principal user. However, challenging scientific problems are rarely solved by one reasoner alone.
+                                                 They are solved by teams whose members carry different priors, experimental background,
+                                                 tacit knowledge, and domain-trained intuitions. The open problem is therefore not only how
+                                                 to scale models, but how to cultivate networked intelligence, scaling the connections between
+                                                 humans and AI systems so that a result or hypothesis produced in one context reaches another
+                                                 person, agent, instrument or robot that can act on it. We introduce Mycelium, an active
+                                                 shared workspace that automatically connects researchers and AI agents akin to a multi-user
+                                                 co-scientist. As human users and agents work, the system captures important observations and
+                                                 hypotheses, tracks how they relate to the team’s evolving model, and routes them to the person
+                                                 or agent whose next decision they can inform. We evaluate Mycelium in its first empirical
+                                                 test, a biological multi-omics campaign where routed shared context turned a local analytical
+                                                 finding into a cross-expert mechanistic constraint and ultimately into experimental design. We
+                                                 also give networked intelligence a computational account as sparse conditional computation over
+                                                 distributed scientific contexts, which separates when a scaled standalone agent can match the
+                                                 network from when independent expertise and non-merge-able contexts make it irreducible.
+
+
+                                         1 Introduction
+
+                                         The next era of scientific discovery requires bridging two defining dimensions: the distributed exper-
+                                         tise of team science and the autonomous execution of AI agents operating at machine speed. Most
+                                         consequential discoveries now require expertise that exceeds what any individual can command, a
+                                         mode the National Research Council formalized as team science [1]. AI systems have already begun
+                                         to automate core scientific functions, from protein-structure prediction [2] to experimental chem-
+                                         istry planning and execution [3, 4, 5, 6]. Consequently, AI-accelerated team science is becoming
+                                         a national-scale infrastructure priority, with initiatives like the DOE’s Genesis Mission envisioning
+                                           ∗
+                                               Corresponding author: Sutanay.Choudhury@pnnl.gov
+
+
+                                                                                                1
+discovery platforms that connect these isolated tools, instruments, and high-performance computing
+resources into shared networks [7, 8, 9]. Scientific agents, tools, and instruments are arriving faster
+than the network architecture required to coordinate them.
+The limiting problem is no longer only whether an individual AI system can reason, but whether
+scientific context can move faithfully across humans, agents, and instruments while a team is still
+discovering. Existing AI co-scientists and autonomous laboratory workflows largely remain bounded
+by a single scientist’s AI session or an orchestrated agent team [10, 11], even as the overarching
+scientific mission is distributed across specialists and still advances through slow, human-mediated
+exchange [12, 13]. As agents take on longer and more autonomous investigations [14], coordination
+becomes an architectural bottleneck that model scaling alone does not remove: a model in one
+scientist’s session can summarize local work, but it has no runtime mechanism for deciding when
+a finding should change another scientist’s analysis, maintaining the team’s evolving hypotheses as
+persistent shared state, or guaranteeing that a propagated claim carries the provenance required
+for reuse. Agent-communication protocols such as the Model Context Protocol and Agent-to-Agent
+Protocol standardize how tools and agents discover or route tasks [15, 16, 17], while emerging
+memory layers persist an agent’s own state across sessions [18, 19, 20]. What remains missing is
+a runtime architecture for networked intelligence: scientific context that can move across humans,
+agents, and instruments while remaining attributable, contestable, and actionable.
+We introduce Mycelium, a runtime architecture for networked human–AI scientific discovery built
+around an active context graph (ACG). The graph represents shared scientific context as provenance-
+aware project state: typed entries record observations, interpretations, hypotheses, findings, open
+questions, recommendations, and experiment proposals together with their derivation history.
+Mycelium makes three operations explicit: cross-user state routing, in which context generated
+in one participant’s work can be surfaced to another when it is relevant; persistent hypothesis
+state, in which the team’s evolving mechanistic model survives across sessions and actors; and
+provenance-bounded propagation, in which every routed claim remains tied to the evidence and
+reasoning that produced it. Researchers and AI agents can read from and write to this shared
+graph through ordinary chat interfaces. As human and agentic users modify the graph through
+their work, Mycelium periodically discovers connections among entries, updates the network state,
+and surfaces goal-relevant context to the users or agents whose next decisions it can inform.
+We show that scaling the network, rather than just the model, alters the trajectory of an active
+scientific investigation. To isolate the value of this networked architecture, we compare Mycelium
+against an adversarial baseline: a standalone agent given identical data and prompted to reason
+across all domains with maximum resource and autonomy. We evaluate Mycelium in a multi-omics
+microbial campaign [21] in which three researchers with complementary expertise in proteomics,
+regulatory biology, and genetics worked asynchronously through their own chat interfaces alongside
+autonomous Mycelium investigations. Although the system is domain-neutral by construction, this
+campaign provides its first empirical test.
+In this paper, we first define the requirements for active shared-context networks and present
+the Mycelium architecture (Section 2). In Section 3, we detail this empirical test, demonstrat-
+ing how routed context changed scientific interpretation and experimental action compared to the
+standalone-agent baseline. Finally, we formalize networked intelligence as sparse conditional com-
+putation, clarifying the strict boundaries where independent expertise makes a network irreducible
+to a single scaled model (Section 4).
+
+
+
+
+                                                  2
+2 Methods
+
+Mycelium implements a runtime architecture for networked human-AI scientific discovery (Fig. 1).
+The architecture is built on three distinct pillars: (1) an active context graph that holds the shared
+scientific state and enforces provenance (Section 2.1); (2) a participant-facing runtime that connects
+researchers’ standard AI chatbot clients to the server-side execution environment (Section 2.2); and
+(3) a set of shared-context protocols, the agentic primitives that autonomously inject, maintain,
+and route state across the distributed team (Section 2.3).
+
+
+
+
+Figure 1: The Mycelium runtime architecture. The system coordinates distributed scientific
+workflows across four distinct domains: Source domains and actors (Left): Researchers and AI
+agents operate within shared workspaces, reading and writing typed entries to the shared graph. Ac-
+tive context graph (Center): The core routing layer managing persistent project state. It maps
+provenance-aware relations (e.g., generated_by, supports, contradicts) among datasets, autonomous
+workflow executions, and evolving hypotheses. Data and compute resources (Bottom): Con-
+nects the runtime to scientific assets (e.g., omics files, notebooks) and execution environments
+(ranging from a virtual machine in cloud to HPC clusters). Reasoning consumers (Right):
+Specialized tools and co-scientists that read the synchronized graph to drive cross-analysis reconcil-
+iation, track hypotheses, and propose experimental designs.
+
+
+2.1 Active context graph
+
+The key enabler of networked intelligence is an active context graph, representing the shared project
+state as a directed graph, G = (V, E). The nodes V represent typed scientific entries, each car-
+rying an epistemic role (e.g., evidence, reasoning, action) as defined by a closed ontology (Table
+1). The edges E map the provenance and cross-session derivations using strict semantics (e.g.,
+generated_by, derived_from, supports, as shown in Fig. 1), explicitly linking every new claim to
+the exact data, user, agent, or tool execution that produced it.
+
+                                                  3
+           Table 1: Closed entry-type vocabulary used by the active context graph.
+   Entry Type          Role              Description
+   dataset             Evidence          A registered data file or measurement table.
+   observation         Evidence          A raw or auto-captured analytical result.
+   interpretation      Reasoning         A participant’s reading of an observation.
+   hypothesis          Reasoning         A testable claim.
+   finding             Knowledge         An established result.
+   open_question       Coordination      A blocking question or knowledge gap.
+   recommendation      Action            A proposed next action.
+   experiment_proposalAction             A structured experiment with required resources.
+
+
+We term this graph active because the Mycelium runtime continuously evolves and evaluates the
+state, unlike a passive graph database. Specifically, the runtime executes three operations over
+this graph that are unavailable to standalone-agent sessions: Cross-user state routing dynamically
+moves relevant context from an originating participant or process to the participant whose analysis it
+impacts, without requiring explicit requests. Evolving hypothesis state maintains the team’s claims
+alongside supporting and contradicting evidence across independent sessions. Provenance-bounded
+propagation ensures that as claims are routed, they retain the lineage, tool chain, and attribution
+required for evaluation and reuse. Consequently, every downstream interpretation or proposed
+experiment is formally grounded in prior graph context, ensuring the entire collaborative lineage
+remains physically auditable.
+
+
+2.2 Runtime infrastructure for autonomous analytical execution
+
+Users interface with Mycelium through a standard AI chat client connected via the Model Context
+Protocol (MCP) (Fig. 2).
+
+
+
+
+Figure 2: Participant-facing runtime. Researchers interact with the Mycelium network using
+a standard, familiar AI chat interface. Rather than functioning as an isolated chatbot, the Model
+Context Protocol (MCP) connects this chat window directly to the team’s shared active context
+graph. This allows a user to query the entire project’s history, dispatch complex autonomous
+workflows, and review results, all without leaving a simple conversational interface.
+
+
+                                                  4
+However, unlike standard chat models that lose context when a window closes, this runtime binds
+the client to the active context graph through a suite of stateful agentic tools. This allows the
+user’s interface to seamlessly query the shared project state, dispatch autonomous workflows, and
+formally commit new findings.
+To execute complex analytical workflows, the server-side runtime relies predominantly on dynamic,
+on-the-fly code generation within a sandboxed Python environment (Fig. 3). The runtime integrates
+project-specific tools for standard tasks (e.g., data ingestion, PCA, differential abundance, and
+metabolic-pathway queries), preferentially leveraging validated library functions to enforce scientific
+reproducibility. It generates novel execution graphs only when a workflow demands analytical motifs
+that are unavailable. Crucially, this autonomous execution includes automated error recovery: if a
+programmatic step fails due to data inconsistencies or runtime exceptions, the system autonomously
+reads the error trace, generates a corrective script, and resumes execution. Because the system
+is strictly schema-aware, it programmatically verifies all data structures prior to interaction and
+emits a fully executable Jupyter notebook of its trace upon completion. This ensures that every
+autonomous discovery remains fully reproducible and auditable by a human expert.
+
+
+
+
+Figure 3: Autonomous workflow execution. The Mycelium runtime leverages dynamic code
+generation to construct multi-step analytical pipelines on the fly for both interactive and autonomous
+analysis. The figure above shows illustrative computational dataflow graphs. The execution engine
+supports automated fault tolerance, allowing the system to recover from runtime errors and suc-
+cessfully output formalized findings to the shared project state.
+
+
+2.3 Shared-context protocols
+
+Four operational primitives define how scientific state enters, moves through, and is reused across the
+Mycelium network. Together, these primitives make the active context graph more than a shared
+memory store: they specify how claims become auditable state, how autonomous work remains
+bounded, how relevant context reaches the right recipient, and how synthesized claims remain tied
+
+
+                                                  5
+to evidence.
+Provenance (Logging). The runtime enforces strict provenance by converting analytical execu-
+tions into persistent, queryable state nodes. When a human or agent executes a task, the system
+automatically captures the result as an immutable observation bound exactly to its parameter space,
+tool chain, and dataset references.
+Bounded autonomy (Proactive Execution). The runtime continuously monitors for emerging
+knowledge gaps and launches autonomous exploratory analyses between active user sessions (Fig. 7
+in Supplementary Methods). When a structural defect or missing link is detected in the data, the
+agent autonomously plans and executes a corrective task. The rectified result is then persisted to
+the active context graph, cleanly surfacing for the participant as an actionable finding upon their
+next session.
+State-routing (Pollination). The defining capability of the network is the asynchronous routing
+of emerging context to relevant participants (see Fig. 6 in Supplementary Methods). To achieve
+this without overwhelming users, the system evaluates new candidate linkages against localized
+belief states to score their epistemic utility—determining if a new observation supports, refines,
+or introduces tension to a specific researcher’s ongoing analysis. Algorithmically, this scoring-and-
+updating operation across neighboring threads acts as a message-passing step [22, 23]. However,
+unlike standard graph algorithms that average signals into a single joint distribution, this architec-
+ture deliberately preserves disagreement. Belief states remain isolated to their respective threads,
+ensuring that scientific contradictions across distinct analytical lenses remain distinct objects of
+attention rather than being silently merged.
+Grounding (Persistence). To maintain the network’s analytical precision, the runtime enforces
+strict validation at the graph-write layer for all scientific entries (e.g., hypothesis, observation,
+finding, experiment_proposal). Every entry committed to the active context graph must be
+explicitly grounded in existing graph nodes, such as registered datasets, verified tool outputs, or
+provenance-bearing parent entries. By mandating this referential grounding, the architecture en-
+sures that all synthesized claims retain their empirical lineage, directly increasing the specificity of
+generated scientific artifacts and preventing the accumulation of ungrounded, unstructured prose
+within the project state.
+
+
+3 Results
+
+We frame the test of networked intelligence as a domain-neutral coordination problem: whether
+shared context routed via an active context graph can change scientific interpretation and exper-
+imental action across distributed users. We evaluated this against specific, testable outcomes: a
+local result must not merely be stored; it must reach the specific human or agent context where it
+becomes an actionable constraint, shifts an interpretation, or alters an experimental decision.
+As a case study, we deployed Mycelium in a microbial multi-omics campaign investigating secreted
+gluconate accumulation [24] in Pseudomonas putida, an industrial bioproduction chassis [25]. The
+objective was to extract actionable insights across four data modalities to inform the next round of
+strain and medium designs for PNNL’s Anaerobic Microbial Phenotyping Platform (AMP2) [7, 6].
+In the following subsections, we first detail the distributed scientific setup (Section 3.1). Next, we
+analyze the empirical impact of active context routing on the team’s scientific findings (Section 3.2).
+Finally, we benchmark this networked execution against standalone-agent baselines to quantitatively
+and qualitatively isolate the value of network scaling over model scaling (Section 3.3).
+
+
+                                                   6
+3.1 Scientific campaign setup
+
+In this deployment, three domain experts analyzed the campaign asynchronously over one week via
+independent chat interfaces (Fig. 4). Broadly, User-L performed proteomics and systems analysis
+over a differential-abundance dataset of 4,495 proteins across 62 samples; User-E provided regula-
+tory and iron-biology reasoning; and User-J contributed phenotype interpretation and experimental
+design, including high-performance liquid chromatography (HPLC) assays, among other analyses
+detailed below. The campaign spans four data modalities across four engineered strains (Supple-
+mentary Table 4). All researchers worked through Claude Chat-based Mycelium client (as shown
+in Fig. 2). All client and server-side Mycelium operations used Claude Opus 4.8.
+
+
+
+
+Figure 4: Context routing enables emergent collaborative discovery. The campaign is
+partitioned into three expert threads (rows): regulatory reasoning (User-E), proteomic/pathway
+analysis (User-L), and phenotype-guided design (User-J). Solid arrows represent intra-thread rea-
+soning; dashed arrows represent context routed by Mycelium across participants.
+
+
+3.2 Solving team coordination challenges via shared context propagation
+
+Team science ultimately hinges on two familiar coordination challenges: reconciling distributed
+findings across isolated domains, and producing synergistic outcomes that a single researcher cannot
+achieve alone. The following results show how Mycelium addressed both.
+Reconciling multiple sources of evidence: The first routing event demonstrated how the
+network converts an isolated negative result into highly confident corroborating evidence. User-E
+(focusing on biological regulation) noted that the expected genetic pathways for processing the
+target chemical (canonical gluconate-uptake and Entner-Doudoroff pathway) were not turning on
+as anticipated [24]. When routed into User-L’s thread, this regulatory anomaly recontextualized an
+independent, confusing finding: the corresponding proteins were also absent from the top proteomic
+signals. Combined via a derived_from edge, these isolated observations successfully reconciled
+
+                                                 7
+a 12-h regulatory differential with 24-h proteomics. Fig. 4 shows this interaction from User-E’s
+regulatory thread (top row) through User-L’s proteomic analysis to the emergent model (T2).
+Proving synergistic effects and team constraints: The second routing event demonstrated how
+cross-domain synergy shifts an entire analytical approach. User-J (focusing on physical outcomes)
+uploaded chemical measurements (HPLC) that clearly distinguished successful, high-producing bac-
+terial strains from low-producing ones. When this constraint was routed into User-L’s workspace,
+it reframed the proteomic analysis. It shifted User-L’s synthesis from a standard protein-ranking
+problem to an intervention problem, forcing the identification of testable molecular mechanisms
+that explained the measurable extracellular accumulation. This is shown in Fig. 4, where evidence
+from User-J’s phenotype thread (bottom row) is routed into User-L’s analysis.
+Steering the team to convergence: In the campaign, continuous routing assembled a mecha-
+nistic model held by no single participant. User-E supplied the regulatory contradiction; User-L
+provided proteomic evidence for carbon-sink rewiring; and User-J imposed the phenotype con-
+straint. The converged model established gluconate retention and re-assimilation rather than syn-
+thesis, as the core focus. Shared context also revealed a new finding: sulfonate-scavenging and
+sulfur-metabolism proteins [26] were consistently elevated in producing strains. The network also
+pruned false leads; for example, cross-checking gene identifiers against growth-state signatures led
+to redirection of a control variable to a characterization marker (Emergent mechanistic model panel,
+Fig. 4).
+Actionable recommendations grounded in distributed evidence: The shared model ma-
+terialized as an experiment plan authored by User-J, with Fig. 4 tracing the three expert threads
+through the converged model (T2) into the final proposal (T3). The proposal mapped each model
+element to an intervention: mqo-2 perturbation/CRISPRi (overflow node), kguT knockout/overex-
+pression (import/re-assimilation), PP_2256 deletion or sulfonate supplementation (stress context),
+and PP_1794 characterization. Fig. 5 visualizes the team effort as the active context graph evolves
+from isolated analyses toward integrated experimental design.
+
+
+
+
+Figure 5: Graph evolution reveals the diversity of scientific intent. Cumulative snapshots
+show isolated analyses converging into a unified model, with colors marking intents from data quality
+control (gray) and gluconate-overflow mechanisms (orange) to experiment design (yellow).
+
+
+
+
+                                                 8
+3.3 Impact of network scaling
+
+Benchmarking network scaling against model scaling: To isolate the architectural advantage
+of networked intelligence, we benchmarked the Mycelium-supported team sprint against two single
+agent autonomous baselines. The objective was to determine whether a standalone model, given
+identical data, maximum reasoning effort, and unconstrained autonomy could subsume the function
+of a distributed human-AI network. All executions used Claude Opus 4.8. Baseline B was explicitly
+prompted with the multidisciplinary team specification, and baseline C was instructed to reason
+solely based on goal and data specification, without team specification (see Box S1 in Supplementary
+Method for full prompt). The single agent baselines were configured for autonomous operation with
+maximum reasoning effort (xhigh) and adaptive thinking [27]; Mycelium was run with the default
+high setting for inference cost and consistency. Both baselines ran to natural termination without
+hitting computational limits and successfully produced mechanistically grounded findings.
+
+Table 2: Networked execution expands scientific breadth over standalone baselines. Eval-
+uation of 26 trace-neutral artifacts scored from 0 (absent) to 4 (actionable). Networked execution
+maximizes global coverage without sacrificing the specificity of successfully surfaced artifacts.
+ Metric                                     Mycelium     Standalone Agent B      Standalone Agent C
+ Artifacts surfaced (> 0)                       25                17                      18
+ Evidence-grounded or better (≥ 2)              22                14                      15
+ Experiment-ready or better (≥ 3)               17                9                       11
+ Actionable decision rule (= 4)                  4                 2                       3
+ Coverage-weighted artifact score              2.62              1.62                    1.81
+ (absences = 0)
+ Average specificity of surfaced               2.72              2.47                    2.61
+ artifacts
+
+Auditing the evidence-to-action pipeline: We evaluated these executions by extracting a
+global set of 26 unique “scientific artifacts”, defined as any traceable analytical claim, mechanistic
+hypothesis, or actionable decision rule capable of directing laboratory action. Each execution trace
+was scored from 0 (absent) to 4 (actionable, data-backed rationale) (Table 2; full matrix in Table 3).
+This rubric captures the evidence-to-action pipeline rather than final-answer similarity alone [28,
+29, 30, 31], and deliberately isolates two metrics: breadth (the fraction of the 26 artifacts explicitly
+surfaced) and specificity (the depth to which a surfaced artifact was developed). Because expert
+teams and autonomous models both possess tacit knowledge they may not explicitly articulate, this
+matrix functions strictly as an audit of explicit evidence-to-action coverage rather than a measure
+of latent capability.
+Networked execution expands discovery breadth: Networked execution increased artifact
+breadth while preserving comparable specificity among the artifacts it surfaced. Mycelium generated
+25 artifacts, including 22 evidence-grounded or better and 17 experiment-ready, compared with 17
+present and 9 experiment-ready for baseline B and 18 present and 11 experiment-ready for baseline
+C. As a coverage-weighted summary, the mean score over the full 26-artifact set, with absences
+scored as zero, was higher for Mycelium (2.62) than for baseline B (1.62) or baseline C (1.81). This
+distinction is critical: unlike convergent tasks with definitive completion states (such as software
+engineering benchmarks [32]), open-ended scientific discovery relies on systemic exploration and
+continuous feedback to expose and correct analytical blind spots.
+
+
+                                                   9
+A complementary scaling axis: Crucially, when the standalone baselines successfully surfaced
+an artifact, they developed it with a specificity entirely comparable to the networked team (average
+specificity: 2.72 for Mycelium vs. 2.47 and 2.61 for the baselines). This proves the single-context
+baselines were not superficial reasoners; their limitation was purely exploration breadth during open-
+ended discovery. Notably, baseline C (which received no team-composition framing) outperformed
+baseline B (which was explicitly instructed to integrate findings as a multidisciplinary team would)
+in both artifact breadth and specificity.
+
+Table 3: Network scaling expands discovery breadth over single-agent autonomous
+models. The detailed scores reveal two distinct trends. First, single-agent baselines are highly
+capable reasoners when localized on a specific topic. The autonomous baselines (B and C) generated
+9 and 11 highly developed artifacts (scoring ≥ 3), respectively. Notably, baseline C — which
+reasoned solely from the goal statement and data specifications without any team-composition
+framing, outperformed the baseline explicitly prompted with team knowledge (baseline B). By
+contrast, Mycelium’s defining advantage is systemic breadth. It surfaced 25 of the 26 mapped
+artifacts, with 17 scoring 3 or higher. This breadth is why networked human-AI execution is critical
+for open-ended scientific discovery. It leverages the localized reasoning power of model scaling, but
+adds a necessary, independent axis of broad problem-space exploration.
+
+ID   Scientific Artifact                                                   Technical Category       A B C
+A01 Nitrogen dominance over organic-acid and gluconate output              Bioprocess Engineering   4   4   4
+A02 Quantitative iron impact on organic-acid yield and saturation          Bioprocess Engineering   2   2   3
+A03 Iron gating mechanism of gluconate-to-organic-acid flux                Metabolic Mechanisms     3   3   4
+A04 Primary gluconate carbon routing via 2-ketogluconate branch            Metabolic Mechanisms     3   3   3
+A05 Ranked validation design for N × Fe with directional controls          Exp. Design & QC         3   4   4
+A06 Constitutive dCas12a strain for slow-uptake/succinate platform         Strain Engineering       2   3   3
+A07 Landing-pad lineage optimization for glucose-to-gluconate conversion   Strain Engineering       2   3   3
+A08 mqo-2 malate-node CRISPRi target and promoter verification             Strain Engineering       4   2   0
+A09 PtxS CRISPRi targeting for the 2-ketogluconate carbon sink             Strain Engineering       3   0   3
+A10 CRISPRi chassis and perturbation selection for validation              Strain Engineering       2   0   3
+A11 Discovery of unannotated producer-associated protein PP_1794           Strain Engineering       4   0   0
+A12 HPLC–proteomics discordance in gluconate accumulation                  Metabolic Mechanisms     4   1   1
+A13 Lack of canonical gluconate/ED operon induction at 12 hours            Metabolic Mechanisms     3   1   1
+A14 Identification of formate as a low-nitrogen metabolic byproduct        Analytical Chemistry     3   3   3
+A15 Integration of 2-ketogluconate as a targeted HPLC analyte              Analytical Chemistry     1   3   3
+A16 Anaerobic-AMP2 vs. obligate-aerobe platform compatibility risk         Bioprocess Engineering   0   3   0
+A17 Proteomics quality control, PCA packages, and imputation rules         Exp. Design & QC         3   1   1
+A18 Genome-wide differential abundance and GO-enrichment packages          Exp. Design & QC         3   2   2
+A19 GnuR regulatory identity correction and specificity checks             Exp. Design & QC         3   0   0
+A20 Sulfonate supplementation assays to modulate gluconate yields          Strain Engineering       3   0   0
+A21 Targeted kguT knockout or overexpression strategies                    Strain Engineering       3   0   0
+A22 Characterization of PP_2256/dctA-III regulatory island                 Strain Engineering       3   0   0
+A23 Inoculum nitrogen carry-over mitigation and experimental control       Exp. Design & QC         3   0   2
+A24 Baseline evaluation of headroom for future yield optimization          Bioprocess Engineering   1   2   2
+A25 Regulatory hypothesis for FnrB redox malate-node governor              Metabolic Mechanisms     2   0   0
+A26 Unit reconciliation for FeCl3 across datasets and text                 Exp. Design & QC         1   2   2
+
+
+
+
+                                                     10
+4 Discussion
+
+Networked intelligence accelerates discovery not by expanding model context, but by actively routing
+scientific state to alter experimental action. In this deployment, a shared active context graph
+enabled three domain experts to converge on a mechanistic model of carbon-overflow rewiring in P.
+putida by generating a significantly broader set of actionable scientific artifacts than autonomous
+agents operating over identical data (section 3.3). While this rapid acceleration compresses what
+is typically a four-to-six-month human-mediated iteration cycle into a single sprint, the primary
+breakthrough is architectural. Convergence emerged from a routed cross-modality link where a
+regulatory anomaly in one domain became a constraint on another (proteomic interpretation),
+which in turn formed the premise for physical experimental design.
+
+
+4.1 Calibrating agentic proactivity and claim attribution in human-AI networks
+
+Operating a distributed scientific context network introduces design parameters absent in standalone
+reasoning agents. The first is systemic proactivity, that requires calibrating the autonomous back-
+ground investigation effort against user review burden [33]. In this campaign, Mycelium operated
+primarily responsively, but a critical, sustained active fraction of self-initiated investigation drove
+discovery (Fig. 7 in Supplementary Methods). This active fraction was necessary for cross-user
+context propagation. Proactivity is therefore a central calibration problem for scientific networks:
+deficient proactivity drops critical links, while excessive proactivity overwhelms human oversight.
+The second parameter is claim attribution and epistemic weighting. Cross-actor provenance flowed
+asymmetrically among all three researchers and the system actor (Fig. 7). The current architecture
+attributes every propagated claim to its source but applies equal epistemic weight. While equal
+attribution supports strict accountability, future architectures must model differential expertise,
+preferring reliable contributors or surfacing unresolved contradictions rather than a silent merge.
+
+
+4.2 Network scaling overcomes the exploration bottlenecks of standalone agents
+
+The defining event in this deployment was a shift in the functional utility of a scientific claim:
+a local observation found the attention of the right user in the network,and altered the team’s
+trajectory. Standalone agents miss cross-domain linking opportunities due to the lack of continuous,
+asynchronous interaction of independent perspectives. We define networked intelligence as this
+specific capability: humans, agents, and instruments operating in isolated contexts, unified by a
+runtime that routes relevant state precisely when it alters downstream action. This paradigm
+complements rather than competes with model scaling. While stronger models and larger context
+windows improve localized synthesis, scale alone cannot eliminate the strict boundaries of real
+scientific workflows, namely data rights, institutional firewalls, and unique operational knowledge.
+Because these partitioned contexts frequently cannot be merged into a single window at any scale,
+networked intelligence acts as an independent scaling axis.
+In computational terms, this architecture executes sparse conditional computation [34, 35] over
+distributed contexts. Most claims lack cross-domain utility; the systemic challenge is identifying
+the rare edges that alter a receiving context’s maximum expected utility. We formalize this routing
+value in the Supplementary Note, clarifying the mathematical boundary between operations a scaled
+standalone agent can efficiently subsume and those that remain strictly irreducible due to non-
+mergeable contexts.
+
+
+                                                  11
+4.3 A standardized protocol standardizes distributed reasoning state
+
+Networked intelligence requires a standardized contract for agents, instruments, and researchers to
+exchange structured scientific state. Independent actors adhere to a shared schema, writing typed,
+provenanced entries directly into the active context graph [36, 37]. Consumers such as experimen-
+tal planners [38], safety monitors [39], literature agents [40], or human researchers can then query
+hypotheses and lineage as structured data rather than re-deriving them from free text. Any com-
+ponent honoring this data model contributes results with persistent attribution and receives routed
+context and cross-session propagation in return. This primitive enables applications inaccessible
+to standalone tools, such as routing physical experiments directly from a project’s global state,
+or cross-project fusion [41] that permission-links hypotheses across laboratories while preserving
+privacy boundaries.
+
+
+4.4 Limitations and outlook
+
+The present deployment demonstrates that active context propagation alters scientific interpretation
+and experimental action. Next priority is scaling this runtime to validate reliability across multi-
+laboratory consortiums and extended, multi-month investigations. Beyond systemic scale, resolving
+conflicting signals across routed contexts (Section 4.1) requires sophisticated handling. Finally,
+sharing context across distinct scientific disciplines introduces translation risks. While Mycelium
+tracks the exact origin of a claim, future systems must also measure the uncertainty and loss of
+specific meaning that occurs when a finding is adapted from one domain to another.
+
+
+5 Acknowledgements
+
+This work was supported by the OPAL project, supported by the U.S. Department of Energy
+(DOE), Office of Science, Office of Biological and Environmental Research (BER) and Office of
+Advanced Scientific Computing Research (ASCR). A portion of this research was performed on a
+project award at the Environmental Molecular Sciences Laboratory (EMSL), a DOE Office of Science
+User Facility sponsored by the BER program, using the Anaerobic Microbial Phenotyping Platform
+(AMP2), under Contract No. DE-AC05-76RL01830. A portion of this research was supported by the
+“Accelerating biological discovery by enabling genomic resources in Deep Phenotyping on automated
+platforms" project, funded by DOE BER and ASCR, under FWP 86450. Pacific Northwest National
+Laboratory is operated by Battelle for the U.S. DOE under Contract No. DE-AC05-76RL01830.
+
+
+6 Author Contributions
+
+S.C. conceived networked intelligence, designed and implemented the Mycelium system, and wrote
+the manuscript. J.C., L.M., and E.B. conducted the multi-omics campaign through Mycelium and
+provided scientific interpretation of the routed findings. A.Be. provided the engineered strains
+developed under his BER biodesign program and contributed to strain design. J.E. constructed the
+engineered strains. P.P. designed the proteomics experiments. K.T. prepared samples. S.B. provided
+access to and oversight of the AMP2 platform at EMSL. Y.G. and A.Bi. performed proteomics data
+analysis. K.S. performed statistical analysis. K.B.J., R.R., C.O., J.B., and K.W. contributed to
+study conceptualization and scientific framing, advised on experimental design and feasibility, and
+provided supervision and resources. All authors reviewed and approved the manuscript.
+
+
+                                                12
+Supplementary Note: Networked vs Monolithic Intelligence
+
+This subsection formulates human–AI team science as a problem of sparse conditional computation.
+Our goal is to answer three fundamental questions:
+
+Q1. When will a super-intelligent, monolithic AI model with massive context windows and full
+    access to data subsume the need for a collaborative network?
+
+Q2. When is a networked intelligence approach mathematically irreducible, meaning it guarantees
+    success where a standalone model must fail?
+
+Q3. When does a Human Expert outperform an Agent as a node in the network?
+
+We answer these questions using the running example from our empirical campaign (Section 3),
+where Mycelium steered three independent researchers toward a unified biological discovery by
+routing findings between them.
+The Architectural Premise: Networked intelligence performs sparse conditional computation
+over distributed human–AI contexts. The architecture splits the scientific workload across separate
+reasoners, people, agents, and instruments. Because only a tiny fraction of their local findings ever
+needs to travel between them, the system must spend computational and cognitive effort solely on
+that critical fraction. The active context graph G = (V, E) provides the shared state from which
+the system identifies exactly which cross-context connections are worth acting on.
+To understand the network’s value, we first make "a finding worth moving" mathematically precise.
+The system measures the value of propagating a claim to a neighboring context by its epistemic
+utility: how much it improves the receiver’s downstream experimental decisions.
+Definition [Context and Routing Value]: We define a context Ci = (Xi , Hi , Ai ) as a localized
+workspace containing local evidence Xi , an active hypothesis state Hi , and a set of actionable
+experimental interventions Ai .
+Example (The Context): To ground this, consider the domain expert User-J from the multi-omics
+campaign. User-J’s context CJ contains local high-performance liquid chromatography (HPLC)
+measurements (XJ ), an active hypothesis regarding carbon-sink rewiring (HJ ), and a set of physical
+interventions they can authorize on the laboratory platform, such as a kguT knockout or mqo-2
+perturbation (AJ ).
+The context derives its decision value under hypothesis state H from the maximum expected utility
+of an action:
+                                    Vi (H) = max Eω|H [ Ui (a, ω) ]
+                                             a∈Ai
+
+When a different context produces a new graph node v (such as an observation or finding), the
+system calculates v’s routing value to context j as:
+
+                                 ∆(v → j) = Vj (Hj ⊕ v) − Vj (Hj )
+
+where Hj ⊕ v represents the receiver’s localized belief state updated via a provenance edge (e.g.,
+derived_from). The system designates a candidate edge as a critical edge when ∆(v → j) > τ
+for a system-defined threshold τ . Under this definition, the vast majority of new findings will not
+change a neighboring scientist’s mind. The routing value (∆) remains below the threshold τ , so the
+system leaves the receiver alone.
+
+                                                    13
+Example (The Routing Value): However, consider the “critical edge” generated by User-E.
+Operating in an isolated context, User-E notes a regulatory anomaly v: canonical gluconate-uptake
+genes fail to induce as expected. Mycelium scores and routes this finding to User-L and User-
+J. Integrating this new claim fundamentally alters their working theories (HJ ⊕ v), shifting their
+synthesis from a standard pathway-induction problem to an overflow-rewiring problem. Because
+this shift successfully redirects User-J to select a more effective physical intervention from AJ , the
+routing value ∆ is exceptionally high.
+The Dilemma: With routing utility formalized, we must address the obvious architectural critique:
+Why build a distributed network to find these rare connections, rather than simply passing all the
+data into a single, massively scaled AI model?
+The answer splits into two regimes. The first regime directly answers Q1, outlining where a mono-
+lithic model subsumes the network through mere efficiency.
+Claim 1 [The Efficiency Regime]: Suppose a project generates N claims across K expert
+contexts. A naive, dense integration forces every context to evaluate every claim, requiring O(N K)
+computational interactions. If a claim is only relevant to a few (d) contexts, a routing network
+avoids this burden, exposing exactly O(N d) interactions and the overhead of recipient discovery.
+While highly efficient, this does not establish a rigorous separation between networked and mono-
+lithic intelligence. A standalone AI agent with a massive context window could theoretically ingest
+the entire proteomics table, the HPLC readings, and the transcription factor library. It could
+perform the sparse arithmetic internally, ignore the irrelevant data, and discover the exact same
+pathway overlap. Therefore, computational efficiency alone cannot justify the network.
+To answer Q2 and prove the network is strictly necessary, we must enter the second regime. This
+regime defines the exact boundaries that a single AI model cannot cross, regardless of its size or
+context length. Here, the factored network performs a fundamentally irreducible computation.
+Claim 2 [The Irreducibility Regime]: A factored network suceeds whenever either of two con-
+ditions holds: (i) Independent corroboration: Reducing error via agreement requires estimators
+with conditionally independent error profiles. A single model evaluating every domain under one
+set of weights produces correlated errors; it cannot mathematically corroborate itself at any scale.
+(ii) Non-mergeable contexts: Real-world team science frequently involves evidence that cannot phys-
+ically or organizationally be placed into a single context window.
+Condition (i) provides a formal account for why a network must preserve distinct expert models.
+A single AI model uses a single set of weights. If it encounters an edge case and makes a confident
+error early in the analysis, it will mathematically propagate that exact same error across every
+subsequent step of the workflow. An independent expert acts as an epistemic circuit breaker: their
+value is that their failure modes are entirely different from the primary AI’s failure modes.
+Condition (ii) explicitly defines why the monolithic AI system will never have full knowledge of
+the problem. A super-human AI can only be super-human if it has access to all the variables.
+In scientific research, the full state of the project is never fully digitized or perfectly observable.
+A standalone AI cannot factor in the human’s tacit knowledge about a scientific instrument, the
+proprietary regulatory policies of a partner institution, or the physical constraints of the laboratory
+floor. Because this local evidence is held in the human expert or behind a physical firewall, dense
+model integration is impossible.
+Answering Q3: When does a Human Expert outperform an Agent? Let an expert thread
+i map local evidence to an isolated distribution qi (h | Xi ) over hypotheses, and let q0 represent
+a generic standalone reasoner. The expert provides strict systemic value when, for a productive
+
+                                                  14
+mechanistic hypothesis h⋆ , qi (h⋆ ) > q0 (h⋆ ).
+In plain terms, h⋆ is the correct or most productive hypothesis (e.g., “The bug is in incorrect
+PCA computation," or “The gluconate is accumulating due to overflow rewiring"). qi (h⋆ ) is the
+probability that the expert assigns to that correct hypothesis, given the data they can see (Xi ).
+q0 (h⋆ ) is the probability that a generic, standalone AI model assigns to that correct hypothesis.
+Therefore, qi (h⋆ ) > q0 (h⋆ ) simply means the expert is sharper than the generic model. The expert
+places more probability mass on the correct answer.
+This corollary explicitly defines the mathematical threshold where an expert becomes obsolete versus
+where they remain essential. If a task is straightforward and fully observable such as generating
+standard workflow software implementations and the AI model demonstrably identifies the optimal
+solution (h⋆ ) with super-human empirical performance, adding a human expert adds no accuracy
+to the baseline prediction.
+Conclusion: As AI models conquer these fully observable tasks, the value of the Human-AI network
+shifts to incorporate higher quality contexts into AI reasoning through customization preferences,
+operational policies, and tacit knowledge. The network remains necessary not because the human
+brain possesses more expressive power than the AI models, but because the human holds exclusive
+access to critical context and provides the independent judgment required to halt correlated errors.
+
+
+
+
+                                                   15
+Supplementary Methods
+
+S1. Standalone agent baseline: harness, sweep, and prompts
+
+The team-framed prompt is reproduced in Box S1, lightly abridged to omit field-level output
+schemas. Both variants receive the same frozen problem statement, datasets, and annotation and
+pathway resources, and the same artifact contract; the unframed variant differs only in the high-
+lighted clause.
+  Box S1 | Standalone agent baseline prompt (team-framed variant)
+
+  Role and objective. You are a senior microbial systems biologist analyzing a multi-omics dataset
+  from Pseudomonas putida KT2440, working alone. Cover every relevant angle yourself and integrate
+  across them as a multidisciplinary team would. Using proteomics and HPLC data, predict molecular
+  insights into how modification of gluconate and organic-acid production, including environmental and
+  genetic factors in the culture medium, affects phenotype and the production of compounds of interest.
+  Design up to ten validation experiments to be run on the Anaerobic Microbial Phenotyping Platform
+  (AMP2).
+  {workspace_description}
+  Environment. Run any analysis you need in the provided code-execution environment, including
+  your own scripts: statistics, dimensionality reduction, differential analysis, enrichment, correlation,
+  clustering, and arbitrary Python over the provided files and annotation tables.
+  Tagging. Tag meaningful intermediate findings: #idea (a claim or hypothesis; fields: statement, tests),
+  #question (an unmet need; fields: need, success criterion), #result (a synthesized finding; fields:
+  statement, driver, computation), #note (an observation worth keeping; fields: statement, context).
+  Deliverable. Before the run ends, produce and save (1) a ranked list of up to ten validation experiments
+  over nitrogen (NH4_2SO4_g_per_L) × iron (FeCl3_ug_per_L) combinations with predicted outcomes,
+  (2) a summary of the key reasoning chain naming which data patterns drove the predictions, and (3) a
+  log of all tagged entries.
+  Execution. Work at maximum reasoning effort in a single continuous context, autonomously to com-
+  pletion. For minor choices, make a reasonable assumption and note it rather than stopping to ask.
+  Final artifact contract. End the final answer with two machine-readable fenced blocks,
+  experiment_design.csv (one ranked experiment per row) and reasoning_chain.jsonl (one tagged
+  entry per line). {column and field semantics omitted; see released harness}
+
+The highlighted clause is the swept framing. The unframed variant removes it, so the model is still told it is working
+alone but is not told to integrate as a multidisciplinary team would; every other instruction, the data, and the artifact
+contract are identical across the two.
+
+
+
+
+                                                           16
+Figure 6: Illustration of cross-context propagation and provenance tracking. This figure
+shows an trace from the multi-user study reported in the results section. A regulatory contradiction
+identified by User-E is captured as shared scientific state, automatically routed to User-L, and
+incorporated as a constraint on the downstream mechanistic model. The numbered sequence shows
+how Mycelium records, routes, surfaces, and reuses the finding while preserving its attribution and
+provenance from the original entry, E1, to the resulting interpretation, I1.
+
+
+
+
+Figure 7: Workload distribution, analytical-intent diversity, and cross-actor propagation.
+Mycelium activity was predominantly responsive to participant requests, with a smaller sustained
+fraction of active background investigation, context routing, and system-authored findings.
+
+
+
+
+                                                17
+Supplementary Dataset
+
+The experimental campaign comprises a four-modality dataset structured to address a cross-modal
+reconciliation problem. Five individual data tracks span proteomics, a curated metabolic network,
+extracellular metabolite chemistry, and media-design phenotypes (Table 4). Each dataset resolves
+a distinct facet of the system’s phenotype: identifying protein variance, mapping pathway context,
+verifying secreted chemistry, or isolating key media drivers.
+Table 4 details these datasets, their dimensions, design factors, and corresponding scientific roles.
+The underlying biological evaluation spans four distinct strains of P. putida: wild-type KT2440,
+a landing-pad (LP) lineage, and two LP-background dCas12a variants (constitutive and induced).
+This dCas12a contrast establishes the mechanistic baseline for the gluconate-retention findings de-
+tailed in the main text.
+
+Table 4: Multi-modal dataset architecture, experimental design factors, and operational
+scopes within the Mycelium-driven P. putida campaign. Rows define the structural scale,
+factor levels, and analytical objectives (Scientific role) required for cross-modal integration. Media-
+optimization mass concentrations utilize distinct scales by design: g/L for nitrogen components and
+µg/L for iron components. Quantitative combinatorial boundaries of the resulting hypothesis space
+are itemized in the design summary below.
+
+
+
+Dataset            Modality       Size              Design factors (levels)                   Scientific role
+
+Proteomics         Proteomics     4,495 proteins,   4 strains × 2 carbon × 2 timepoints (16   Which proteins
+(differential                     62 samples        conditions, up to four replicates)        change (User-L)
+abundance)
+UniProt            [42]           5,564 entries ×   KEGG, EC, GO (BP/CC/MF), path-            Functional
+annotation                        13 fields         way                                       grounding for
+                                                                                              enrichment
+Metabolic          Curated        1,170 nodes /     KEGG-reaction-labeled edges               Pathway context for
+pathway graph      network        1,007 edges                                                 proteomic signals
+                   from [43]
+HPLC               Metabolite     48                4 strains × 2 carbon × 3 timepoints (24   What the secreted
+phenotype          quantitation   measurements,     conditions)                               chemistry confirms
+                                  4 analytes                                                  (User-J)
+Media-             Design /       75 measured +     continuous (NH4 )2 SO4 × FeCl3            The actionable
+optimization       phenotype      28 proposed                                                 intervention axis on
+DoE                               runs                                                        AMP2 [6]
+TF library         Reference      392 regulators    gene-identifier keyed                     Regulatory
+                                  × 10 fields                                                 grounding (User-E)
+
+Design summary. 16 proteomic and 24 phenotype conditions admit 120 and 276 pairwise contrasts as the hypothesis
+space a mechanism must be consistent with. The validation action space is continuous, not a fixed grid: 28 distinct
+nitrogen and 28 distinct iron levels, no repeated point. Taking the 28 proposed media points as the candidate set
+gives 28 × 2 carbon × 4 strains = 224 candidate experiments, which the team must reduce to ten.
+
+
+
+
+                                                        18
+References
+
+ [1] National Research Council, Enhancing the Effectiveness of Team Science. Washington, DC:
+     The National Academies Press, 2015. N. J. Cooke and M. L. Hilton, Eds.; doi:10.17226/19007.
+
+ [2] J. Jumper, R. Evans, A. Pritzel, T. Green, M. Figurnov, O. Ronneberger, K. Tunyasuvunakool,
+     R. Bates, A. Žídek, A. Potapenko, et al., “Highly accurate protein structure prediction with
+     alphafold,” nature, vol. 596, no. 7873, pp. 583–589, 2021.
+
+ [3] D. A. Boiko, R. MacKnight, B. Kline, and G. Gomes, “Autonomous chemical research with
+     large language models,” Nature, vol. 624, pp. 570–578, 2023.
+
+ [4] H. W. Sprueill, C. Edwards, K. Agarwal, M. V. Olarte, U. Sanyal, C. Johnston, H. Liu, H. Ji,
+     and S. Choudhury, “Chemreasoner: Heuristic search over a large language model’s knowledge
+     space using quantum-chemical feedback,” in Proceedings of the 41st International Conference
+     on Machine Learning, vol. 235 of Proceedings of Machine Learning Research, pp. 46351–46374,
+     PMLR, 2024.
+
+ [5] A. M. Bran, S. Cox, O. Schilter, C. Baldassari, A. D. White, and P. Schwaller, “Augmenting
+     large language models with chemistry tools,” Nature Machine Intelligence, vol. 6, pp. 525–535,
+     2024.
+
+ [6] A. A. Smith, E. L. Wong, R. C. Donovan, B. A. Chapman, R. Harry, P. Tirandazi,
+     P. Kanigowska, E. A. Gendreau, R. H. Dahl, M. Jastrzebski, et al., “Using a gpt-5-driven
+     autonomous lab to optimize the cost and titer of cell-free protein synthesis,” bioRxiv, pp. 2026–
+     02, 2026.
+
+ [7] D. Ushizima, C. Henry, P. Balaprakash, A. Biswas, A. Hoarfrost, K. Hofmockel, N. Kumar,
+     A. Ramanathan, T. Northen, M. Lentz, et al., “Report for the doe office of science workshop
+     on envisioning frontiers in ai and computing for biological research,” tech. rep., US Department
+     of Energy (USDOE), Washington, DC (United States). Office of . . . , 2026.
+
+ [8] U.S. Department of Energy, “Energy department launches ‘Genesis Mission’ to
+     transform American science and innovation.” https://www.energy.gov/articles/
+     energy-department-launches-genesis-mission-transform-american-science-and-innovation,
+     2025.
+
+ [9] W. L. Miller, D. Bard, A. Boehnlein, K. Fagnan, C. Guok, E. Lançon, S. J. Ramprakash,
+     M. Shankar, N. Schwarz, and B. L. Brown, “Integrated research infrastructure architecture
+     blueprint activity (final report 2023),” tech. rep., US Department of Energy (USDOE), Wash-
+     ington, DC (United States). Office of . . . , 2023.
+
+[10] Q. Wu et al., “AutoGen: Enabling next-gen LLM applications via multi-agent conversation.”
+     arXiv:2308.08155, 2023.
+
+[11] K.-T. Tran et al., “Multi-agent collaboration mechanisms:               A survey of LLMs.”
+     arXiv:2501.06322, 2025.
+
+[12] K. Swanson, W. Wu, N. L. Bulaong, J. E. Pak, and J. Zou, “The virtual lab of AI agents
+     designs new SARS-CoV-2 nanobodies,” Nature, vol. 646, pp. 716–723, 2025.
+
+
+
+                                                 19
+[13] S. Gao, A. Fang, Y. Huang, et al., “Empowering biomedical discovery with AI agents,” Cell,
+     vol. 187, no. 22, pp. 6125–6151, 2024.
+
+[14] M. Gridach, J. Nanavati, K. Zine El Abidine, L. Mendes, and C. Mack, “Agentic AI for
+     scientific discovery: A survey of progress, challenges, and future directions,” arXiv preprint
+     arXiv:2503.08979, 2025.
+
+[15] Anthropic, “Model context protocol.” https://modelcontextprotocol.io, 2024. Accessed
+     2026.
+
+[16] Google, “Agent-to-agent (A2A) protocol.” https://a2aprotocol.ai, 2025. Accessed 2026.
+
+[17] A. Ehtesham, A. Singh, G. K. Gupta, and S. Kumar, “A survey of agent interoperability
+     protocols: MCP, ACP, A2A, and ANP.” arXiv:2505.02279, 2025.
+
+[18] P. Chhikara, D. Khant, S. Aryan, T. Singh, and D. Yadav, “Mem0: Building production-ready
+     AI agents with scalable long-term memory.” arXiv:2504.19413, 2025.
+
+[19] Universal Memory Protocol, “UMP: A transport-neutral memory protocol for AI agents.”
+     https://universalmemoryprotocol.io, 2026. Accessed 2026.
+
+[20] Y. Hu et al., “Memory in the age of AI agents.” arXiv:2512.13564, 2025.
+
+[21] U.S. Department of Energy, “Orchestrated Platform for Autonomous Laboratories (OPAL).”
+     https://opal-doe.org/, 2026. Accessed: 2026-06-24.
+
+[22] J. Pearl, “Fusion, propagation, and structuring in belief networks,” in Probabilistic and Causal
+     Inference: The Works of Judea Pearl, pp. 139–188, 2022.
+
+[23] J. Gilmer, S. S. Schoenholz, P. F. Riley, O. Vinyals, and G. E. Dahl, “Neural message passing for
+     quantum chemistry,” in Proceedings of the 34th International Conference on Machine Learning,
+     2017.
+
+[24] G. J. Bentley, N. Narayanan, R. K. Jha, D. Salvachúa, J. R. Elmore, G. L. Peabody, B. A.
+     Black, K. Ramirez, A. De Capite, W. E. Michener, et al., “Engineering glucose metabolism
+     for enhanced muconic acid production in pseudomonas putida kt2440,” Metabolic engineering,
+     vol. 59, pp. 64–75, 2020.
+
+[25] P. I. Nikel and V. de Lorenzo, “Pseudomonas putida as a functional chassis for industrial
+     biocatalysis: from native biochemistry to trans-metabolism,” Metabolic engineering, vol. 50,
+     pp. 142–155, 2018.
+
+[26] M. A. Kertesz, “Riding the sulfur cycle–metabolism of sulfonates and sulfate esters in gram-
+     negative bacteria,” FEMS microbiology reviews, vol. 24, no. 2, pp. 135–175, 2000.
+
+[27] Anthropic, “Prompting Claude Opus 4.8.” https://platform.claude.com/docs/en/
+     build-with-claude/prompt-engineering/prompting-claude-opus-4-8, 2026.
+
+[28] Z. Chen, S. Chen, Y. Ning, Q. Zhang, B. Wang, B. Yu, Y. Li, Z. Liao, C. Wei, Z. Lu, et al.,
+     “Scienceagentbench: Toward rigorous assessment of language agents for data-driven scientific
+     discovery,” in International Conference on Learning Representations, vol. 2025, pp. 96934–
+     96990, 2025.
+
+
+
+                                                 20
+[29] L. Mitchener, J. M. Laurent, A. Andonian, B. Tenmann, S. Narayanan, G. P. Wellawatte,
+     A. White, L. Sani, and S. G. Rodriques, “Bixbench: a comprehensive benchmark for llm-based
+     agents in computational biology,” arXiv preprint arXiv:2503.00096, 2025.
+
+[30] T. Gao, H. Li, J. Li, T. Zhao, R. Shi, W. Wang, Z. Wu, and L. Mi, “Graph of trace: Visualizing
+     execution traces of scientific agent,” arXiv preprint arXiv:2606.15116, 2026.
+
+[31] Y. Wang, J. Zhang, T. Cai, Z. Liu, Q. Sun, Z. Sun, Z. Wu, M. Zhang, and Y. Zhu, “From agent
+     traces to trust: Evidence tracing and execution provenance in llm agents,” arXiv preprint
+     arXiv:2606.04990, 2026.
+
+[32] C. E. Jimenez, J. Yang, A. Wettig, S. Yao, K. Pei, O. Press, and K. Narasimhan, “Swe-
+     bench: Can language models resolve real-world github issues?,” in International Conference on
+     Learning Representations, vol. 2024, pp. 54107–54157, 2024.
+
+[33] E. Horvitz, “Principles of mixed-initiative user interfaces,” in Proceedings of the SIGCHI con-
+     ference on Human Factors in Computing Systems, pp. 159–166, 1999.
+
+[34] R. A. Jacobs, M. I. Jordan, S. J. Nowlan, and G. E. Hinton, “Adaptive mixtures of local
+     experts,” Neural computation, vol. 3, no. 1, pp. 79–87, 1991.
+
+[35] N. Shazeer, A. Mirhoseini, K. Maziarz, A. Davis, Q. Le, G. Hinton, and J. Dean, “Outra-
+     geously large neural networks: The sparsely-gated mixture-of-experts layer,” arXiv preprint
+     arXiv:1701.06538, 2017.
+
+[36] M. D. Wilkinson et al., “The FAIR guiding principles for scientific data management and
+     stewardship,” Scientific Data, vol. 3, p. 160018, 2016. doi:10.1038/sdata.2016.18.
+
+[37] S. Soiland-Reyes et al., “Packaging research artefacts with RO-Crate,” Data Science, vol. 5,
+     no. 2, pp. 97–138, 2022. doi:10.3233/DS-210053.
+
+[38] Lawrence Livermore National Laboratory, “LLNL pushes frontier of fusion target design with
+     AI (multi-agent design assistant, NNSA ASC).” https://www.llnl.gov/article/53216, 2025.
+     Accessed 2026.
+
+[39] T. Hellert, J. Montenegro, and A. Sulc, “Osprey: Production-ready agentic AI for safety-critical
+     control systems,” APL Machine Learning, vol. 4, no. 1, p. 016103, 2026. doi:10.1063/5.0306302.
+
+[40] A. E. Ghareeb, B. Chang, L. Mitchener, A. Yiu, C. J. Szostkiewicz, D. Shved, G. J. Gyimesi,
+     J. M. Laurent, S. M. Wright, M. T. Razzak, et al., “A multi-agent system for automating
+     scientific discovery,” Nature, pp. 1–3, 2026.
+
+[41] A. Kamatar, J. G. Pauloski, Y. Babuji, R. Chard, M. Sakarvadia, K. Chard, and I. Foster,
+     “Empowering scientific workflows with federated agents (Academy).” arXiv:2505.05428, 2025.
+
+[42] “Uniprot: the universal protein knowledgebase in 2025,” Nucleic acids research, vol. 53, no. D1,
+     pp. D609–D617, 2025.
+
+[43] M. Kanehisa, M. Furumichi, Y. Sato, Y. Matsuura, and M. Ishiguro-Watanabe, “Kegg: bio-
+     logical systems database as a model of the real world,” Nucleic acids research, vol. 53, no. D1,
+     pp. D672–D677, 2025.
+
+
+
+                                                 21
+
