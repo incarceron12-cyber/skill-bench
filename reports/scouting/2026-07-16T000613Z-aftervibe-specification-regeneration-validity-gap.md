@@ -1,0 +1,36 @@
+# Scouting note — specification-regeneration and handoff validity gap
+
+**Timestamp:** 2026-07-16T00:06:13Z
+
+**Scope:** Narrow expansion against charter objectives A/B/C. Queue inspection found 299 tasks: 293 completed, four blocked, two pending, and no source/research/review backlog. The active benchmark bottleneck remains delayed-obligation result consolidation, while the human expertise-elicitation prerequisite remains pending. Recent reviews already cover handoff resumability, action-derived guides, typed collaboration, artifact admissibility, task projection, and evaluator validity. This run searched only for the narrower missing boundary between an ephemeral human-agent work conversation, a durable specification, and independent recipient reconstruction.
+
+## Substantive finding — triage only
+
+**AfterVibe: What Remains When the Conversation Ends** — Matteo Paltenghi and Satish Chandra; arXiv:2607.09900v1.
+
+- Immutable record: https://arxiv.org/abs/2607.09900v1
+- Immutable PDF: https://arxiv.org/pdf/2607.09900v1
+- Immutable HTML: https://arxiv.org/html/2607.09900v1
+- The arXiv API identifies immutable v1 as submitted 10 July 2026 in `cs.SE`; its metadata summary contains no withdrawal or retraction notice. The versioned abstract, PDF, and HTML endpoints returned HTTP 200.
+- The abstract introduces a pipeline that derives a natural-language specification from a completed “vibe coding” trajectory plus its code artifact, gives that specification alone to a nominally blind second agent, and grades the regenerated implementation against the original through a multi-tier verifier. It reports 72 private company projects, multiple independent regenerations, a mean 5.06/6 regeneration score, iterative refinement to 5.74, diversity among regenerated implementations, and stronger results than existing human-authored descriptions. These are author-reported abstract claims, not independently verified findings.
+- Structural inspection of immutable-v1 HTML—not a full reading—confirmed sections for problem formulation, specification distillation, three-tier verification, regeneration testing, iterative refinement, the private company dataset, experimental setup, regeneration fidelity, strengthening, abstraction/strength, diversity, grader validity, a human-authored-summary comparison, threats to validity, data availability, and prompt/grader appendices.
+- The immutable HTML exposed no author-owned code or data link among its outbound URLs. A targeted exact-title GitHub/web search located the arXiv paper but no official project repository. A full review must inspect the Data Availability statement and repeat the release search against author/organization surfaces rather than treating this triage search as proof that no release exists.
+- Repository-wide exact-title and arXiv-ID searches found no local review or queue task. The closest completed work is adjacent but nonduplicative: Handoff Debt freezes intermediate state and compares successor views; MAG projects executed web actions into stepwise guides; AgentCoop types transport and repair. AfterVibe instead claims to recover a durable behavioral specification from the originating conversation/artifact and validate it through a fresh implementation attempt.
+- Only arXiv metadata/abstract, endpoint status, HTML section headings/outbound-link inventory, targeted search-result metadata, and local duplicate checks were inspected. The paper body, appendices, private sessions/projects, prompts, specifications, generated code, verifier implementations, labels, results, statistics, human descriptions, costs, and data-availability details were not read or audited. No claim is made that the extracted specifications recover developer intent, blind regeneration is isolated, the verifier establishes behavioral equivalence, refinement avoids evaluator overfitting, results reproduce, or the method establishes recipient utility, professional validity, production fitness, or readiness.
+
+## Why this is distinct
+
+The reusable chain is `source work conversation and artifact → participant/intent authority → event and artifact evidence view → proposition extraction and abstraction → durable specification → independent recipient/configuration and visible inputs → regenerated artifact/state → executable and semantic comparison → omitted/extra behavior and preservation checks → recipient correction burden → downstream use and lifecycle cost`. A second agent can reproduce behavior accepted by a verifier while both specification and verifier inherit omissions from the same originating artifact. Conversely, implementation diversity can indicate abstraction without showing that the specification captures the human’s intended boundaries, nonfunctional requirements, latent constraints, or future maintenance needs. Iterative refinement against the same evaluator is an adaptive measurement intervention, not independent evidence of specification quality.
+
+A full audit should separate conversational evidence from inferred intent; original-code behavior from legitimate requirements; extraction, regeneration, and verifier model identities; project/session selection and clustering; test/evidence coverage; score construction; blind-agent leakage; multiple-regeneration dependence; refinement search and stopping; grader calibration; abstraction versus omission; behavioral equivalence versus implementation similarity; recipient success, correction burden, and total lifecycle cost; and private-frame versus cross-domain transport. Existing proposition provenance, expertise/task projection, handoff usability, artifact-view, configured-system, trace, metric, task-health, and validity machinery should host reusable lessons unless an exercised nonduplicate contract gap is proven.
+
+## Charter decision filter and queue action
+
+- **Objectives advanced:** A (handoff, artifact, and evaluator frontier), B (transforming tacit conversational intent into a durable evidence-bearing specification), and C (recipient regeneration and plural verification instrumentation).
+- **Concrete evidence/artifact:** immutable-v1 full-paper review with exact dataset, regeneration, refinement, verifier, grader-validation, comparator, cost, and release-status evidence.
+- **Uncertainty clarified:** whether blind regeneration establishes intent-preserving specification sufficiency or mainly closed-loop equivalence among a source artifact, co-derived specification, configured recipient, and verifier.
+- **Mode:** narrow expansion feeding later consolidation/validation; coding is a method test bed, not a coding-only scope commitment.
+- **Duplication/scope:** no exact local duplicate; mandatory comparison with Handoff Debt, MAG, AgentCoop, projection, artifact-admissibility, and task-health machinery prevents a parallel handoff ontology.
+- **Useful completion:** a claim ladder separating source-intent recovery, behavioral sufficiency, implementation equivalence, independent recipient usability, rework/lifecycle cost, professional validity, production fitness, and readiness, with exact evidence and missing-artifact boundaries.
+
+Added one low-priority task: `review-aftervibe-specification-regeneration-validity` (priority 5). The delayed-obligation consolidation and consented expert micro-pilot remain substantially higher priority.
