@@ -39,6 +39,7 @@ Version 0.2 also recomputes each local procedural skill's SHA-256 when
 | Recovery is an explicit error → verifier feedback → repair → verification chain | Error count is uninterpretable without feedback specificity and verified recovery. | LH-Bench review §§ Unique insight, Transferable design patterns 5 |
 | Artifact views and transforms are typed separately from artifacts | A screenshot, structured state, executable source, and export establish different predicates; derived views require pinned transformations. | `papers/agent-benchmarks/2026-07-10-scivisagentbench-multimodal-artifact-evaluation.md` §§ Unique insight, Transferable design patterns 1–3 |
 | Checks can fail closed through an admissibility envelope | Missing views, invalid exports, control/renderer mismatches, and inapplicable criteria are not ordinary zero scores. | SciVisAgentBench review, Sections 5.2–5.5 (pp. 5–6) and Concrete changes 1, 5 |
+| Optional signed criteria bind public semantics to score arithmetic | Rich observers cannot repair a criterion whose proposition, desirable/violation polarity, inversion, dependency, or clipping rule contradicts its public basis. | `papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md` §§ Unique insight, Transfer to skill-bench; release audit `data/sources/releases/2605.27705v1-agenticvbench/release-audit.json` |
 | Persistent workspace identity, placement, dependency hypotheses, process observations, mutations, and cleanup are separate | File existence, authored relevance, observed access/write, and causal use are different claims; a correct deliverable can coexist with destructive workspace state. | `papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md` §§ Representative task trace, Unique insight, Transferable benchmark design lessons 1–8 |
 | Source authority, exposure, adoption, attempted action, intercepted/realized state, recovery, and utility are separate | Source placement is not exposure; exposure is not adoption; a tool call is not a realized consequence; and refusal is not secure useful completion. | `papers/agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md` §§ Unique insight, Transferable benchmark-design lessons 1–5 |
 | Context compression is a versioned, trace-linked state transformation with immutable raw evidence | Terminal reward or token savings cannot establish fidelity, alternate-future sufficiency, or auditability; reset and reformatting are confounds rather than compression effects. | `papers/agent-benchmarks/2026-07-13-acon-context-compression-validity.md` §§ The paper's own examples falsify a strong fidelity claim, Transfer to skill-bench |
@@ -106,6 +107,29 @@ checker predicate; test stale digests and checker-only obligations; accept one
 declared equivalent wording; and assert that unrelated projection digests stay
 stable. These tests establish internal contract behavior only—no expert,
 professional, capability, or release-readiness claim.
+
+## Signed criterion conformance
+
+Optional `check.signed_criterion` and `rubric.aggregation_policies` records add a
+backward-compatible authoring preflight. Each opted-in check pins one proposition
+and canonical hash; desirable-state or violation-state polarity; typed public
+basis with exact, held-out-consequence, or provenance-backed reviewed-equivalence
+semantics; pass/fail mapping; score role, direction, magnitude, inversion, and
+signed pass/fail contributions; dependencies; aggregation identity; and a bounded
+licensed interpretation. The validator rejects stale proposition hashes,
+1280×720/1920×1080 exact-basis contradictions, polarity/mapping disagreement,
+missing desirable-state penalty inversion, inconsistent score arithmetic,
+dangling/self/cyclic prerequisite links, unreviewed equivalence, non-reciprocal
+aggregation identity, and clipping policies that may mask required failures.
+
+`BenchmarkBundleValidationTests.signed_criterion_bundle` supplies four
+builder-authored controls: required positive scoring, an explicitly inverted
+desirable-state penalty, diagnostic-only violation detection, and a
+provenance-carrying reviewed representation equivalence. Mutation tests implement
+the AgenticVBench release-audit defect classes and aggregation/dependency failure
+cases before execution. These are internal contract-conformance controls, not
+observer-accuracy, expert-validity, capability, creative/professional-quality,
+safety, production, or readiness evidence.
 
 ## Persistent-workspace conformance
 

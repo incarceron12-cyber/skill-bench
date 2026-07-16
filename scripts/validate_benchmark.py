@@ -643,6 +643,99 @@ def semantic_errors(bundle: dict[str, Any]) -> list[str]:
     grader_ids = {item["grader_id"] for item in graders}
     check_by_id = {item["check_id"]: item for item in checks}
 
+    # This optional authoring preflight closes the criterion prose-to-arithmetic
+    # chain. Existing bundles remain valid until they opt into signed criteria.
+    signed_ids = {item["check_id"] for item in checks if "signed_criterion" in item}
+    aggregation_by_id: dict[str, tuple[dict[str, Any], str]] = {}
+    for rubric in rubrics:
+        policies = rubric.get("aggregation_policies", [])
+        _check_unique(policies, "aggregation_id", f"rubric {rubric['rubric_id']}.aggregation_policies", errors)
+        for policy in policies:
+            aggregation_id = policy["aggregation_id"]
+            if aggregation_id in aggregation_by_id:
+                errors.append(f"rubrics: duplicate aggregation_id {aggregation_id!r}")
+            aggregation_by_id[aggregation_id] = (policy, rubric["rubric_id"])
+            unknown = set(policy["check_ids"]) - check_ids
+            if unknown:
+                errors.append(f"aggregation {aggregation_id}: unknown check_ids {sorted(unknown)}")
+            if policy["clipping"]["lower"] >= policy["clipping"]["upper"]:
+                errors.append(f"aggregation {aggregation_id}: clipping lower must be less than upper")
+            required = {
+                check_id for check_id in policy["check_ids"]
+                if check_by_id.get(check_id, {}).get("signed_criterion", {}).get("score", {}).get("role")
+                in {"hard_gate", "required_scored"}
+            }
+            if policy["clipping"]["enabled"] and required and policy["required_failure_policy"] == "may_mask":
+                errors.append(f"aggregation {aggregation_id}: clipping may mask required failures {sorted(required)}")
+
+    prerequisite_graph: dict[str, set[str]] = {check_id: set() for check_id in signed_ids}
+    for check in checks:
+        criterion = check.get("signed_criterion")
+        if not criterion:
+            continue
+        check_id = check["check_id"]
+        if criterion["proposition_sha256"] != canonical_sha256(criterion["proposition"]):
+            errors.append(f"check {check_id}: stale signed criterion proposition_sha256")
+        mapping = criterion["pass_mapping"]
+        expected_true = "pass" if criterion["polarity"] == "desirable_state" else "fail"
+        if mapping["proposition_true"] != expected_true or mapping["proposition_false"] == expected_true:
+            errors.append(f"check {check_id}: pass/fail mapping conflicts with criterion polarity")
+        basis_requirement_ids = {item["requirement_id"] for item in criterion["public_basis"]}
+        if basis_requirement_ids != set(check["public_basis_requirement_ids"]):
+            errors.append(f"check {check_id}: signed criterion public basis does not match check requirement basis")
+        for basis in criterion["public_basis"]:
+            if basis["relation"] == "exact" and canonical_sha256(basis["semantic_value"]) != canonical_sha256(criterion["semantic_value"]):
+                errors.append(f"check {check_id}: exact public basis contradicts criterion semantic value")
+            if basis["relation"] == "reviewed_equivalent" and (basis["review_status"] != "reviewed" or not basis.get("review_provenance")):
+                errors.append(f"check {check_id}: reviewed equivalence lacks review provenance")
+            if basis["relation"] != "reviewed_equivalent" and basis["review_status"] != "not_required":
+                errors.append(f"check {check_id}: non-equivalence basis has inconsistent review status")
+        score = criterion["score"]
+        aggregation = aggregation_by_id.get(score["aggregation_id"])
+        if not aggregation or aggregation[1] != check["rubric_id"] or check_id not in aggregation[0]["check_ids"]:
+            errors.append(f"check {check_id}: signed score has missing or non-reciprocal aggregation identity")
+        expected_scores = {"reward": (score["magnitude"], 0), "penalty": (0, -score["magnitude"]), "none": (0, 0)}[score["direction"]]
+        if (score["on_pass"], score["on_fail"]) != expected_scores:
+            errors.append(f"check {check_id}: signed contributions conflict with direction/magnitude")
+        role_directions = {
+            "hard_gate": {"none"}, "required_scored": {"reward"}, "optional_preference": {"reward"},
+            "penalty": {"penalty"}, "diagnostic_only": {"none"},
+        }
+        if score["direction"] not in role_directions[score["role"]]:
+            errors.append(f"check {check_id}: score role conflicts with direction")
+        if score["role"] in {"hard_gate", "diagnostic_only"} and score["magnitude"] != 0:
+            errors.append(f"check {check_id}: gate/diagnostic magnitude must be zero")
+        if score["role"] == "penalty" and criterion["polarity"] == "desirable_state" and not score["inversion"]:
+            errors.append(f"check {check_id}: desirable-state penalty requires explicit inversion")
+        if score["role"] != "penalty" and score["inversion"]:
+            errors.append(f"check {check_id}: inversion is only defined for an explicit penalty")
+        for dependency in criterion["dependencies"]:
+            target = dependency["check_id"]
+            if target not in signed_ids:
+                errors.append(f"check {check_id}: dangling signed criterion dependency {target!r}")
+            if target == check_id:
+                errors.append(f"check {check_id}: signed criterion cannot depend on itself")
+            if dependency["relation"] == "prerequisite" and target in signed_ids:
+                prerequisite_graph[check_id].add(target)
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit_signed(check_id: str) -> None:
+        if check_id in visiting:
+            errors.append(f"signed criteria: cyclic prerequisite dependency at {check_id!r}")
+            return
+        if check_id in visited:
+            return
+        visiting.add(check_id)
+        for target in prerequisite_graph[check_id]:
+            visit_signed(target)
+        visiting.remove(check_id)
+        visited.add(check_id)
+
+    for signed_id in sorted(signed_ids):
+        visit_signed(signed_id)
+
     projection_manifest = task.get("projection_manifest")
     if projection_manifest:
         _validate_projection_manifest(projection_manifest, source_ids, errors)

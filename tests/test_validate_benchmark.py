@@ -90,6 +90,109 @@ class BenchmarkBundleValidationTests(unittest.TestCase):
             handle.flush()
             validate_file(Path(handle.name), DEFAULT_SCHEMA)
 
+    def signed_criterion_bundle(self):
+        """Build four provenance-carrying authoring controls; this is not trial evidence."""
+        bundle = copy.deepcopy(self.valid)
+        bundle["trials"] = []
+        requirement = bundle["procedural_skills"][0]["requirements"][0]
+        base = bundle["task"]["checks"][0]
+        ids = ["required-resolution", "central-turn-penalty", "artifact-diagnostic", "reviewed-resolution-equivalence"]
+        requirement["check_ids"] = ids
+        bundle["task"]["domain_primitives"][0]["check_ids"] = ids
+        bundle["rubrics"][0]["check_ids"] = ids
+        provenance = copy.deepcopy(base["provenance"])
+        review_provenance = [{
+            "source_type": "benchmark_review",
+            "locator": "papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md#unique-insight-observer-richness-cannot-rescue-an-incoherent-criterion-contract",
+            "local_path": "papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md",
+            "description": "Builder-authored conformance control grounded in the audited signed-criterion defect classes; not expert validation."
+        }]
+
+        def criterion(proposition, polarity, value, role, direction, magnitude, inversion=False, relation="exact", basis_value=None):
+            basis = {
+                "requirement_id": "retain-evidence-chain", "semantic_value": value if basis_value is None else basis_value,
+                "relation": relation, "review_status": "reviewed" if relation == "reviewed_equivalent" else "not_required",
+            }
+            if relation == "reviewed_equivalent":
+                basis["review_provenance"] = copy.deepcopy(review_provenance)
+            return {
+                "proposition": proposition, "proposition_sha256": canonical_sha256(proposition), "polarity": polarity,
+                "semantic_value": value, "public_basis": [basis],
+                "pass_mapping": {"proposition_true": "pass" if polarity == "desirable_state" else "fail", "proposition_false": "fail" if polarity == "desirable_state" else "pass"},
+                "score": {"role": role, "direction": direction, "magnitude": magnitude, "inversion": inversion,
+                          "on_pass": magnitude if direction == "reward" else 0,
+                          "on_fail": -magnitude if direction == "penalty" else 0,
+                          "aggregation_id": "signed-main"},
+                "dependencies": [], "licensed_interpretation": "Internal criterion-contract conformance only; no capability or professional-validity inference."
+            }
+
+        specs = [
+            (ids[0], criterion("The required export is 1280 by 720 pixels.", "desirable_state", {"width": 1280, "height": 720}, "required_scored", "reward", 1)),
+            (ids[1], criterion("The central narrative turn is present.", "desirable_state", {"central_turn": "present"}, "penalty", "penalty", 45, True)),
+            (ids[2], criterion("The artifact omits its evidence locator.", "violation_state", {"evidence_locator": "missing"}, "diagnostic_only", "none", 0)),
+            (ids[3], criterion("The export is HD 720p.", "desirable_state", {"standard": "HD_720p"}, "optional_preference", "reward", 0.25, relation="reviewed_equivalent", basis_value={"width": 1280, "height": 720})),
+        ]
+        checks = []
+        for check_id, signed in specs:
+            item = copy.deepcopy(base)
+            item.update({"check_id": check_id, "description": signed["proposition"], "signed_criterion": signed, "provenance": copy.deepcopy(provenance)})
+            checks.append(item)
+        checks[1]["signed_criterion"]["dependencies"] = [{"check_id": ids[0], "relation": "prerequisite"}]
+        checks[2]["signed_criterion"]["dependencies"] = [{"check_id": ids[0], "relation": "shared_evidence"}]
+        bundle["task"]["checks"] = checks
+        bundle["rubrics"][0]["aggregation_policies"] = [{
+            "aggregation_id": "signed-main", "method": "gate_then_signed_sum", "check_ids": ids,
+            "required_failure_policy": "preserve_failure", "clipping": {"enabled": True, "lower": 0, "upper": 1},
+            "provenance": copy.deepcopy(review_provenance),
+        }]
+        return bundle
+
+    def test_signed_criterion_controls_are_schema_and_semantically_valid(self) -> None:
+        bundle = self.signed_criterion_bundle()
+        self.assertEqual([], semantic_errors(bundle))
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(bundle, handle)
+            handle.flush()
+            validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_signed_criterion_rejects_public_private_resolution_conflict(self) -> None:
+        bundle = self.signed_criterion_bundle()
+        bundle["task"]["checks"][0]["signed_criterion"]["semantic_value"] = {"width": 1920, "height": 1080}
+        self.assertTrue(any("exact public basis contradicts" in error for error in semantic_errors(bundle)))
+
+    def test_signed_criterion_rejects_missing_desirable_penalty_inversion(self) -> None:
+        bundle = self.signed_criterion_bundle()
+        bundle["task"]["checks"][1]["signed_criterion"]["score"]["inversion"] = False
+        self.assertTrue(any("desirable-state penalty requires explicit inversion" in error for error in semantic_errors(bundle)))
+
+    def test_signed_criterion_rejects_dangling_and_cyclic_dependencies(self) -> None:
+        dangling = self.signed_criterion_bundle()
+        dangling["task"]["checks"][1]["signed_criterion"]["dependencies"][0]["check_id"] = "absent-check"
+        self.assertTrue(any("dangling signed criterion dependency" in error for error in semantic_errors(dangling)))
+        cyclic = self.signed_criterion_bundle()
+        cyclic["task"]["checks"][0]["signed_criterion"]["dependencies"] = [{"check_id": "central-turn-penalty", "relation": "prerequisite"}]
+        self.assertTrue(any("cyclic prerequisite dependency" in error for error in semantic_errors(cyclic)))
+
+    def test_signed_criterion_rejects_clipping_that_may_mask_required_failure(self) -> None:
+        bundle = self.signed_criterion_bundle()
+        bundle["rubrics"][0]["aggregation_policies"][0]["required_failure_policy"] = "may_mask"
+        self.assertTrue(any("clipping may mask required failures" in error for error in semantic_errors(bundle)))
+
+    def test_signed_criterion_rejects_stale_proposition_and_score_arithmetic(self) -> None:
+        stale = self.signed_criterion_bundle()
+        stale["task"]["checks"][0]["signed_criterion"]["proposition"] += " Changed."
+        self.assertTrue(any("stale signed criterion" in error for error in semantic_errors(stale)))
+        arithmetic = self.signed_criterion_bundle()
+        arithmetic["task"]["checks"][1]["signed_criterion"]["score"]["on_fail"] = 45
+        self.assertTrue(any("signed contributions conflict" in error for error in semantic_errors(arithmetic)))
+
+    def test_signed_criterion_rejects_unreviewed_equivalence(self) -> None:
+        bundle = self.signed_criterion_bundle()
+        basis = bundle["task"]["checks"][3]["signed_criterion"]["public_basis"][0]
+        basis.pop("review_provenance")
+        basis["review_status"] = "not_required"
+        self.assertTrue(any("reviewed equivalence lacks review provenance" in error for error in semantic_errors(bundle)))
+
     def test_valid_complete_bundle_and_provenance_paths(self) -> None:
         validate_file(FIXTURE, DEFAULT_SCHEMA, check_paths=True)
 
