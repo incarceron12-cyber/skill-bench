@@ -1,6 +1,7 @@
 from __future__ import annotations
 import hashlib,importlib.util,json,unittest
 from pathlib import Path
+from scripts.validate_provenance_boundary import validate_frozen_component_set
 ROOT=Path(__file__).resolve().parents[1];P=ROOT/"pilots/delayed-obligation-heldout-v2"
 def load_module():
  spec=importlib.util.spec_from_file_location("delayed_v2",P/"run_study.py")
@@ -25,7 +26,9 @@ class DelayedObligationHeldoutV2Tests(unittest.TestCase):
   self.assertNotIn(s["obligation"]["updated_id"],self.m.treatment("neutral_interrupt",3,s));self.assertNotIn(s["obligation"]["updated_id"],self.m.treatment("channel_hint",3,s));self.assertIn(s["obligation"]["updated_id"],self.m.treatment("oracle_reminder",3,s))
  def test_claim_ceiling_and_preflight(self):
   p=self.m.load(self.m.PROTOCOL);self.assertTrue(all(v is False for v in p["claim_boundaries"].values()));self.assertTrue(p["reporting"]["no_shape_pooling"]);self.assertTrue(p["reporting"]["no_condition_pooling"])
-  self.assertTrue(self.m.calibration()["passed"]);self.assertTrue(all(x["passed"] for x in self.m.isolation()));self.assertTrue(self.m.verify_protocol(False)["passed"])
+  self.assertTrue(self.m.calibration()["passed"]);self.assertTrue(all(x["passed"] for x in self.m.isolation()))
+  report=validate_frozen_component_set(self.m.PROTOCOL,P/"provenance-boundary.json",expected_path="docs/benchmark-design-taxonomy.md",expected_role="delayed_obligation_design_basis")
+  self.assertTrue(report["valid"],report["errors"])
  def test_retained_matrix_replays_and_validity_hashes_bind(self):
   r=self.m.replay();self.assertEqual({"intended":12,"retained":12,"service_valid":12,"environment_valid":12,"artifact_valid":12},r["denominators"]);self.assertFalse(r["encoding_and_adoption_observed"])
   v=json.loads((P/"validity-record.json").read_text())

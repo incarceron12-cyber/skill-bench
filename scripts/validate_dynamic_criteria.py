@@ -10,9 +10,17 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.validate_provenance_boundary import load_and_validate
+except ModuleNotFoundError:  # Direct ``python scripts/...`` execution.
+    from validate_provenance_boundary import load_and_validate
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FIXTURE = ROOT / "pilots/dynamic-criterion-conformance/cases.json"
 DEFAULT_INSTANCE_FIXTURE = ROOT / "pilots/dynamic-criterion-conformance/instance-conformance.json"
+DYNAMIC_BOUNDARY = ROOT / "pilots/dynamic-criterion-conformance/provenance-boundary.json"
+DYNAMIC_CANONICAL_PATH = "docs/benchmark-design-taxonomy.md"
+DYNAMIC_CANONICAL_ROLE = "dynamic_criterion_design_basis"
 OUTCOMES = {"supported", "contradicted", "insufficient_evidence", "not_applicable"}
 REQUIRED_LIMITS = {"agent capability", "expert validity", "professional readiness", "cross-domain generalization"}
 COMPONENT_ROLES = {"task", "source", "reference", "rubric"}
@@ -186,6 +194,16 @@ def validate(path: Path = DEFAULT_FIXTURE, check_paths: bool = False) -> dict[st
 
     if check_paths:
         for item in package.get("provenance", []):
+            if item["path"] == DYNAMIC_CANONICAL_PATH:
+                boundary = load_and_validate(
+                    DYNAMIC_BOUNDARY,
+                    expected_path=DYNAMIC_CANONICAL_PATH,
+                    expected_role=DYNAMIC_CANONICAL_ROLE,
+                )
+                errors.extend(boundary["errors"])
+                if item.get("sha256") != boundary.get("historical_sha256"):
+                    errors.append("dynamic criterion historical hash differs from boundary")
+                continue
             candidate = ROOT / item["path"]
             if not candidate.is_file():
                 errors.append(f"missing provenance path: {item['path']}")
