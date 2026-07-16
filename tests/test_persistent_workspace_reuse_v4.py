@@ -6,7 +6,7 @@ def module(path,name):
  spec=importlib.util.spec_from_file_location(name,path);assert spec and spec.loader;m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
 class PersistentWorkspaceReuseV4Tests(unittest.TestCase):
  @classmethod
- def setUpClass(cls):cls.r=module(V4/"run_study.py","workspace_v4");cls.p=load(V4/"protocol.json")
+ def setUpClass(cls):cls.r=module(V4/"run_study.py","workspace_v4");cls.e=module(V4/"execute_study.py","workspace_v4_execution");cls.p=load(V4/"protocol.json")
  def test_frozen_unseen_matrix_and_prior_preservation(self):
   v=self.r.verify(False);self.assertTrue(v["passed"],v["errors"]);self.assertEqual(24,len(self.p["cells"]));self.assertEqual(24,self.p["strict_denominator"]["intended"])
   self.assertEqual({"structured_change_record":2,"structured_budget_ledger":2},{s:sum(f["shape"]==s for f in self.p["forms"].values()) for s in ("structured_change_record","structured_budget_ledger")})
@@ -27,4 +27,13 @@ class PersistentWorkspaceReuseV4Tests(unittest.TestCase):
   path=V4/"preflight/gate-report.json"
   if path.exists():
    r=load(path);self.assertTrue(r["passed"],r);self.assertEqual(0,r["model_calls"]);self.assertTrue(all(x["passed"] for x in r["isolation"]))
+ def test_report_builder_preserves_strict_denominator(self):
+  attempts=[]
+  for cell in sorted(self.p["cells"],key=lambda c:c["order"]):
+   observed=self.r.grader.canonical_output(cell)
+   attempts.append({"cell_id":cell["cell_id"],"shape":cell["shape"],"form_id":cell["form_id"],"condition":cell["condition"],"service_valid":True,"environment_valid":True,"substantively_graded":True,"grade":self.r.grader.grade_value(observed,cell["private_contract"]),"observed_state_delta":{"initial_state":cell["visible"]["current_state"],"reported_final_state":observed["state"],"reported_decision":observed["decision"]},"usage":{"api_calls":1,"total_tokens":10,"estimated_cost_usd":0}})
+  report=self.e.build_report(self.p,attempts);self.assertEqual(24,report["strict_denominators"]["attempted_once"]);self.assertEqual({"pass":24,"fail":0,"invalid":0},report["classification_counts"]);self.assertFalse(any(report["claim_boundaries"].values()))
+ def test_execution_replays_when_present(self):
+  report=V4/"execution/study-report.json"
+  if report.exists():self.assertEqual(load(report),self.e.replay())
 if __name__=="__main__":unittest.main()
