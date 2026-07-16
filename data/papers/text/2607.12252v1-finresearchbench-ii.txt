@@ -1,0 +1,625 @@
+                                                   FinResearchBench II: A Deep Research Benchmark with
+                                              Consensus-Derived Gold Rubrics for Distinguishing Financial Report
+                                                                          Quality
+
+                                                                    Beidi Luan1 , Rui Sun1 , Sinuo Wang1,3 * , Yan Gu2 ,
+                                                                   Chao Li2 , Zhenliang Xiong1,4 * , Jing Li1 , Zuo Bai1, 2†
+                                                    1
+                                                        StepFun, 2 FinStep, 3 University of Adelaide, 4 Shanghai Jiao Tong University,
+
+
+                                                                Abstract                                    report-style outputs (Lewis et al., 2020; Yao et al.,
+                                                                                                            2023; Schmidgall et al., 2025). Recent surveys
+                                         Deep research agents are increasingly used to produce
+                                                                                                            and benchmarks document rapid progress across
+                                         long-form financial reports, yet large-scale evaluation
+                                         remains bottlenecked by the need for human experts to              web research, expert report generation, scientific
+                                         define and execute high-quality rubrics. We address this           rediscovery, data-centric analysis, and structured-
+                                         problem by proposing a scalable pipeline for generating            knowledge reasoning (Xu and Peng, 2025; Zheng
+                                         high-quality rubrics without human experts in the final            et al., 2025; Du et al., 2025; Han et al., 2025; Wang
+                                         loop. We build a financial deep research benchmark                 et al., 2026; Liu et al., 2026a,b). What now limits
+
+
+
+
+arXiv:2607.12252v1 [cs.CL] 14 Jul 2026
+                                         from 104 real-world user queries and automatically syn-            progress is not report generation alone, but scalable
+                                         thesize 14,450 query-specific candidate rubrics from
+                                                                                                            evaluation that is both discriminative and opera-
+                                         model-generated reports. To justify removing human
+                                         experts from rubric execution, we compare rubric judg-
+                                                                                                            tionally feasible.
+                                         ments from three human experts with those from a three-                This problem is especially acute in finance,
+                                         LLM judge panel on a sampled subset, and show that                 where reports are long, data-dense, and highly
+                                         LLM-based evaluation is sufficiently consistent with               heterogeneous across queries. Generic long-form
+                                         human evaluation to replace it for large-scale rubric              metrics fail to capture planning quality, source-
+                                         screening, including 98.67% label-level agreement on               grounded reliability, and analytical coverage (Que
+                                         jointly unanimous items. We then derive consensus-                 et al., 2024; Wu et al., 2025; Tuohetiyaer et al.,
+                                         derived gold rubrics through two filters: a strict consis-
+                                                                                                            2026). Rubric- or criteria-based evaluation is there-
+                                         tency filter, which keeps a rubric only if the three LLM
+                                         judges unanimously agree on every report under the                 fore increasingly preferred (Zheng et al., 2023;
+                                         same query, and a distinguishability filter, which keeps           Zhang et al., 2026a; Lv et al., 2026), but most high-
+                                         a rubric only if it assigns at least one majority-yes and at       quality pipelines still rely on human experts for
+                                         least one majority-no label across the evaluated systems.          rubric design, preference annotation, guidance, ver-
+                                         This process retains 3,687 consistency-passed rubrics,             ification, or execution (Han et al., 2025; Lv et al.,
+                                         of which 2,600 remain distinguishable and form the fi-             2026). That dependence is the core scalability bot-
+                                         nal set of consensus-derived gold rubrics. Using this
+                                                                                                            tleneck.
+                                         final rubric set, we obtain clearly differentiated rankings
+                                         across 10 deep research systems, with item-level pass
+                                                                                                                We argue that high-quality rubrics need not be
+                                         rates ranging from 58.58% to 22.23%. More broadly,                 produced through a human-expert loop. Starting
+                                         because the pipeline removes human-expert execution                from 104 real-world financial queries, we collect
+                                         from rubric generation and evaluation, it is naturally             1,040 reports, synthesize 14,450 query-specific can-
+                                         scalable for benchmark evaluation, automatic system                didate rubrics, and first validate a three-LLM judge
+                                         comparison, and future studies of evaluation-driven sys-           panel against three human experts on a sampled
+                                         tem improvement.                                                   subset. We then screen the full pool with two
+                                         1     Introduction                                                 filters: a strict consistency filter, which requires
+                                                                                                            unanimous judgments across all 10 reports under a
+                                         Deep research agents are rapidly becoming prac-                    query, and a distinguishability filter, which retains
+                                         tical tools for complex financial analysis. Mod-                   only rubrics assigning both positive and negative
+                                         ern systems increasingly combine retrieval aug-                    majority labels across products. This process yields
+                                         mentation, tool use, iterative planning, and long-                 3,687 consistency-passed rubrics and 2,600 final
+                                         context synthesis to gather evidence and compose                   consensus-derived gold rubrics.
+                                         * Work done during internship at Stepfun.                              The resulting rubric set supports direct product
+                                         2
+                                             Corresponding author: baizuo@stepfun.com.                      comparison: pass-rate gaps exceed 36 percentage
+
+                                                                                                        1
+points across 10 systems. More broadly, remov-              trieval and broader task coverage (Zeng et al., 2025;
+ing human experts from the critical execution path          Hu et al., 2025; Xie et al., 2024), and real-world
+makes rubric-based evaluation substantially easier          scenario evaluation with rubric-based open-ended
+to scale for benchmarking, system comparison, and           cases (Zhang et al., 2026b). Similar specializa-
+future evaluation-driven system improvement.                tion appears in legal and medical agents (Li et al.,
+   Our main contributions are:                              2025b; Tan and Tian, 2026). These results reinforce
+1. A deep research benchmark grounded in real               that financial report evaluation cannot be reduced
+   financial use cases. We build a benchmark                to generic open-domain metrics.
+   from 104 real-world financial queries and 1,040          2.3    Rubric-Based Evaluation for Long-Form
+   product reports.                                                Generation
+2. A scalable, expert-free pipeline for deriving            Long-form research evaluation increasingly relies
+   high-quality rubrics. From 14,450 candidates,            on fine-grained criteria rather than BLEU/ROUGE
+   we validate a three-LLM judge panel against hu-          or monolithic LLM judgments. Prior work docu-
+   man experts and then apply consistency and dis-          ments judge biases and the weakness of surface-
+   tinguishability filters to derive 2,600 consensus-       level proxies (Zheng et al., 2023; Li et al., 2025a;
+   derived gold rubrics without humans in the final         You et al., 2026; Que et al., 2024; Wu et al., 2025;
+   execution loop.                                          Bai et al., 2024). Other work uses rubrics directly
+3. A validated and discriminative evaluation                (Zhang et al., 2026a). Deep-Research Eval ad-
+   signal. We show that human–LLM consistency               vocates finer evaluation units and explicit source
+   is strong enough to support large-scale LLM-             checks, while query-specific rubric learning uses
+   based rubric screening, and that the resulting           human preferences to generate task-adaptive super-
+   consensus-derived gold rubrics produce stable            vision (Tuohetiyaer et al., 2026; Lv et al., 2026).
+   separation across 10 products.                           Our work asks a complementary question: how to
+  Figure 1 summarizes the full pipeline for gen-            derive high-quality rubrics at scale without human
+erating consensus-derived gold rubrics and using            experts in the final execution loop.
+them for system ranking.
+                                                            3     Data Construction
+2     Related Work                                          The construction of a high-quality evaluation
+                                                            benchmark requires data that authentically reflects
+2.1    Benchmarks for Deep Research Agents
+                                                            real-world user needs. Unlike synthetically gen-
+Benchmarking has evolved from multi-hop QA                  erated queries or expert-curated hypothetical sce-
+(Yang et al., 2018; Trivedi et al., 2022; Ho et al.,        narios, our benchmark is grounded in actual user
+2020) to action-based agent evaluation (Liu et al.,         interactions with a deployed financial deep research
+2023; Zhuang et al., 2023; Deng et al., 2023), and          service, ensuring ecological validity and practical
+more recently to deep-research settings involving           relevance.
+realistic tool use, report generation, scientific re-
+discovery, and data-centric analysis (Mialon et al.,        3.1    Data Collection Methodology
+2023; Wei et al., 2025; Du et al., 2025; Han et al.,        We collected user queries from a deployed financial
+2025; Wang et al., 2026; Zhong et al., 2026; Liu            deep research service during February to March
+et al., 2026a,b). These works collectively mark             2026, applying standard privacy protection proce-
+a shift toward agentic evaluation of long-horizon           dures including anonymization and PII removal.
+research behavior (Zhuge et al., 2024; You et al.,          Query analysis revealed seven dominant categories:
+2026). Our focus is complementary: not a new task           Stock Comparison, Stock Trend Prediction, Funda-
+family, but a scalable pipeline for constructing the        mental Consultation, Stock Trading Advice, The-
+rubric set used to evaluate report quality.                 me/Sector Analysis, Precious Metals Analysis, and
+                                                            Individual Stock Analysis. Using stratified random
+2.2    Financial Domain Benchmarks                          sampling across these categories, we constructed
+Financial evaluation likewise requires domain-              a final dataset of 104 queries balancing analytical
+specific tasks and criteria. Prior benchmarks cover         complexity, temporal diversity, and entity cover-
+financial knowledge and reasoning (Guo et al.,              age. Figure 2 shows the distribution of user queries
+2025; Lu et al., 2025; Guo et al., 2026), agentic re-       across fine-grained categories.
+
+                                                        2
+Figure 1: Pipeline for deriving consensus-derived gold rubrics from query-specific candidate rubrics and using the
+retained rubric set for final system ranking. The figure was generated with Gemini and subsequently reviewed and
+refined by the authors.
+
+
+3.2   Rubrics Construction                                        three-LLM panel using two filters: a strict con-
+                                                                  sistency filter and a cross-report distinguishabil-
+The production-grounded nature of our dataset en-
+                                                                  ity filter. The rubrics that survive both stages
+sures ecological validity, as queries reflect genuine
+                                                                  form the final set of consensus-derived gold
+user needs with real-world ambiguity and vary-
+                                                                  rubrics used for benchmark evaluation.
+ing specificity levels. Rather than hand-curating a
+small fixed rubric inventory, we construct a large          4     Evaluation Methodology
+query-specific candidate pool directly from model
+outputs. Concretely, we first collect 10 product            4.1     Expert-Free Query-Specific Rubric
+reports for each of the 104 queries, yielding 1,040                 Pipeline
+reports in total. We then prompt LLMs to synthe-            Our methodology is designed around a single objec-
+size binary, query-specific rubric items from these         tive: deriving high-quality evaluation rubrics with-
+reports, producing 14,450 candidate rubrics over-           out requiring human experts in the final execution
+all.                                                        loop. Rather than starting from a small, manually
+1. Candidate Rubric Generation: For each                    curated rubric set, we adopt a query-specific rubric
+   query, candidate rubrics are generated from the          methodology in which evaluation criteria are de-
+   corresponding multi-product report set, with             rived from the reports themselves. For each query,
+   rubric dimensions covering aspects such as com-          we collect 10 product reports and prompt LLMs
+   prehensiveness, insight, instruction following,          to synthesize binary rubric items tailored to that
+   and readability.                                         query. Aggregating over all 104 queries produces
+                                                            14,450 candidate rubrics, which are then screened
+2. Human–LLM Validation on a Sampled Sub-
+                                                            by an LLM-based pipeline to identify a smaller set
+   set: To verify that large-scale rubric screening
+                                                            of reliable and discriminative rubrics.
+   can be automated, we compare a three-LLM
+   judge panel against three human experts on a             4.1.1 Human-Validated LLM Screening
+   sampled subset of rubric items. This step is             Our goal is not to keep human experts in the large-
+   used as a validation stage rather than as the fi-        scale execution loop, but to use human judgments
+   nal large-scale execution mechanism.                     once to validate an automated rubric-screening
+3. Consensus-Derived Gold Rubrics: After vali-              mechanism. We therefore compare three human
+   dation, the full candidate pool is screened by the       experts with a three-LLM judge panel on a sampled
+
+                                                        3
+             Individual Stock                                                                                           16.0%
+                 Identification
+    Individual Stock Analysis                                                                                   14.4%
+
+              Stock Screening                                                                          12.6%
+
+      Theme/Sector Analysis                                                         8.0%
+
+        Stock Business Query                                                 7.0%
+
+      Stock Trend Prediction                                                 7.0%
+
+  Supply Chain Stock Mining                                                6.6%
+
+    Fundamental Consultation                                        5.8%
+
+     Trend & Trading Advice                                 4.4%
+
+              Trading Advice                                4.4%
+
+           Stock Comparison                            4.0%
+
+     Stock Anomaly Analysis                          3.6%
+
+    Precious Metals Analysis                     3.4%
+
+           Information Query                  2.8%
+
+                                  0%    2%       4%                6%         8%           10%   12%      14%       16%
+                                                                            Share of Queries
+
+                        Figure 2: Distribution of user queries across fine-grained categories.
+
+
+subset of rubric items. This validation stage sup-                  comparison.
+ports the operational claim needed by our pipeline:
+                                                                    4.1.4   Consensus-Derived Gold Rubrics and
+in this benchmark setting, LLM-based rubric evalu-
+                                                                            Product-Level Pass Rate
+ation is sufficiently aligned with human evaluation
+to replace expert execution for large-scale screen-                 The rubrics that survive both stages are treated as
+ing.                                                                consensus-derived gold rubrics. Here, “gold” de-
+                                                                    notes reproducibility and informativeness under the
+4.1.2 Strict Consistency Filter                                     validated consensus pipeline, rather than indepen-
+After validation, we use the same three-LLM judge                   dent proof of semantic correctness for every item.
+panel to evaluate the full candidate pool. For a fixed              In our final pipeline, 3,687 rubrics pass the strict
+rubric under a fixed query, each of the 10 product                  consistency filter and 2,600 remain distinguishable.
+reports receives three binary judgments. A rubric                   We use this final set as a scalable evaluation signal
+passes the consistency filter only if all three judges              for comparing products. For a target product m, let
+agree on every one of the 10 reports. This strict                   G denote the set of consensus-derived gold rubrics
+unanimity rule removes rubrics whose execution is                   and let ym,r ∈ {0, 1} indicate whether product m
+not sufficiently objective or reproducible.                         satisfies rubric r ∈ G. The product-level pass rate
+                                                                    is then defined as
+4.1.3 Distinguishability Filter                                                                   1 X
+Consistency alone is insufficient: a rubric may be                              PassRate(m) =            ym,r .
+                                                                                                 |G|
+                                                                                                        r∈G
+perfectly stable while still assigning the same effec-
+tive judgment to all products. We therefore apply                   This metric gives a directly comparable, rubric-
+a second filter at the cross-report level. For each                 grounded measure of report quality across prod-
+consistency-passed rubric, we compute the major-                    ucts, and more broadly illustrates how the final set
+ity label for each of the 10 product reports. A rubric              of consensus-derived gold rubrics can serve as an
+is considered distinguishable if at least one report                expert-free evaluation signal at scale.
+receives a majority-yes label and at least one re-
+                                                                    5      Experiments
+port receives a majority-no label. This removes
+one-sided rubrics such as always-yes or always-no                   We organize the experiments around four questions.
+criteria that are stable but uninformative for product              First, is batched rubric evaluation stable within a
+
+                                                               4
+single judge model when one prompt contains the
+full rubric set for a report? Second, can unanimity
+from a three-LLM judge panel serve as a reliable
+screening signal for rubric executability when com-
+pared with human experts? Third, how selective
+is the proposed two-stage filtering pipeline when
+applied to the full candidate pool? Fourth, once
+the final set of consensus-derived gold rubrics is
+derived, does it separate product quality in a stable        Figure 3: Confusion matrix between human unanimity
+                                                             and LLM unanimity on the sampled validation subset.
+and meaningful way?
+                                                             Each cell reports the raw count together with the within-
+                                                             column proportion.
+5.1   Within-Model Stability of Batched Rubric
+      Evaluation
+Our rubric executor does not score one rubric at             checks. Overall, the sampled diagnostic suggests
+a time. Instead, for a fixed query–report pair, it           that batching all rubric candidates for a report into
+places the entire query-specific rubric set into a           one prompt is practically viable.
+single prompt and asks the judge model to return a
+binary decision for every rubric in one shot. This           5.2   Human–LLM Consistency Validation
+batched design is substantially more efficient, but          Before scaling the rubric pipeline to the full
+it raises a natural concern: when a prompt contains          benchmark, we validate whether the three-LLM
+around one hundred rubric items, are the result-             judge panel can support large-scale rubric screen-
+ing labels stable across repeated runs of the same           ing. The validation set compares three human
+model?                                                       experts with the three-model panel on 4,052
+    To answer this question, we run a sampled                sampled rubric–report items covering all seven
+repeated-evaluation diagnostic. For a subset                 query categories and all four rubric dimensions.
+of query–report instances, we execute the same               The human experts are financial analysts with
+batched prompt three times and compare the re-               securities-research backgrounds and approximately
+sulting rubric labels across runs. For each rubric,          10 years of experience each. The LLM panel
+we define within-model consistency as the majority           consists of gpt-5.4, claude-opus-4-7, and
+share among valid yes/no labels across the three             gemini-3-pro-preview. Our goal is not to
+rollouts, and we define flip rate as the fraction of         argue that LLM judges universally replace experts,
+rubric evaluations in which the repeated runs con-           but to test whether LLM unanimity is a dependable
+tain at least one yes/no disagreement.                       criterion for retaining rubrics that are likely to be
+    Table 1 shows that the batched evaluation setup          executed consistently.
+is reasonably stable despite the long rubric lists.             Figure 3 shows that the three-LLM panel pro-
+The mean within-model consistency is 0.970, the              vides a useful precision-oriented screening signal.
+median is 1.0, and 90.99% of rubric evaluations are          Among the 3,436 items for which the LLM panel is
+fully consistent across all three runs. The rollout          unanimous, humans are also unanimous on 2,867
+error rate is 0.0%, indicating that instability comes        items (83.4%). These are exactly the kinds of
+from label variation rather than response-format             items that our pipeline intends to retain. Con-
+failures. Because three rollouts are used, every dis-        versely, among the 616 items for which the LLM
+agreement takes the form of a simple 2–1 split, so           panel is not unanimous, human judges are also
+the minimum observed consistency is 0.667 rather             non-unanimous on 371 items (60.2%), indicating
+than complete collapse.                                      that LLM disagreement is informative as a warning
+    The dimension breakdown is also informative.             signal as well.
+Instruction Following is the most stable category,              We also check whether the two panels assign
+with a 93.15% full-consistency rate and a 6.85%              the same label when both are unanimous. Among
+flip rate, while Insight is the least stable, with a         the 2,867 jointly unanimous items, label-level
+89.96% full-consistency rate and a 10.04% flip               agreement is 98.67% (2,829/2,867; Cohen’s κ =
+rate. This pattern is intuitively plausible: interpre-       0.9733), with only 38 opposite-label cases. Across
+tive rubrics that require deeper synthesis are more          all 4,052 validation items, majority-label agree-
+variance-sensitive than direct instruction-following         ment is 90.42% (κ = 0.8076). Pairwise agree-
+
+                                                         5
+Table 1: Within-model stability of batched rubric evaluation on a sampled subset. Full consistency denotes the
+fraction of rubric evaluations with identical labels in all three runs.
+
+               Scope                     Rubrics     Mean Cons.           Full Cons.    Flip Rate
+               Overall                     6,625             0.970         90.99%         9.01%
+               Comprehensiveness           1,671             0.971         91.38%         8.62%
+               Insight                     2,571             0.967         89.96%        10.04%
+               Instruction Following       1,124             0.977         93.15%         6.85%
+               Readability                 1,259             0.969         90.63%         9.37%
+
+
+ment further supports the same conclusion: LLM–              role of each stage. At the query level, the aver-
+human agreement (mean agreement 0.848, mean                  age rubric count drops from 138.94 in the candi-
+κ = 0.694) exceeds human–human agreement                     date pool to 35.45 after consistency filtering, and
+(mean agreement 0.811, κ = 0.569–0.678, mean                 then to 25.0 after both filters. The final retained
+κ = 0.622). Thus, LLM unanimity is not merely a              count ranges from 6 to 47 rubrics per query, indi-
+reproducibility indicator; in this validation subset,        cating that even aggressive filtering still leaves a
+it is also a strong proxy for label-level agreement          non-trivial evaluation set for every query. Among
+with expert judgments.                                       the 1,087 consistency-passed rubrics that fail dis-
+    The key pattern is that the panel behaves conser-        tinguishability, 1,056 are always-yes and only 31
+vatively rather than permissively. It does discard           are always-no. This asymmetry suggests that un-
+some items that humans judge unanimously, but                constrained rubric generation tends to overproduce
+this is acceptable for our use case because screen-          broadly affirmative checks that many reports satisfy.
+ing is designed to favor precision over recall. In           As a result, distinguishability is not a minor cleanup
+other words, we prefer to keep a smaller set of              step; it is essential for turning an executable rubric
+rubrics whose execution appears objectively repro-           pool into a benchmark that can actually separate
+ducible, rather than retain a larger but noisier pool.       products.
+The confusion matrix therefore supports the spe-                This comparison also functions as a filter-stage
+cific operational claim needed for this paper: LLM           ablation. If we remove the distinguishability filter
+unanimity is a credible basis for conservative rubric        and use all 3,687 consistency-passed rubrics, the
+retention at benchmark scale.                                product ranking is preserved relative to the final
+                                                             consensus-derived set (Spearman ρ = 1.0), but the
+5.3   Filtering Statistics                                   item-level top-to-bottom pass-rate spread shrinks
+We next apply the rubric pipeline to the full candi-         from 36.35 percentage points to 25.63 percentage
+date pool of 14,450 query-specific rubrics. The two          points. In other words, consistency alone yields
+filters encode complementary requirements for a              stable but flatter scores, whereas distinguishability
+benchmark rubric: it should be stable under judge            removes mostly always-yes criteria and increases
+execution and informative for product comparison.            the discriminative range of the benchmark.
+    Table 2 shows that the strict consis-
+tency filter is highly selective: only 3,687                 5.4     Consensus-Derived Gold Rubrics
+rubrics (25.52%) survive the requirement                             Evaluation
+that gpt-5.4, claude-opus-4-7, and                           We evaluate 10 commercial deep research products
+gemini-3-pro-preview agree on all 10                         in total using both the 3,687 consistency-passed
+reports under the same query. This large reduction           rubrics and the final set of 2,600 consensus-derived
+confirms that raw rubric generation produces                 gold rubrics obtained after distinguishability filter-
+many items that are plausible on the surface but             ing. Table 3 reports the nine published products,
+not sufficiently reproducible in execution. The              while one held-out Internal System is described
+second-stage distinguishability filter retains 2,600         separately in the text. For each rubric set, we re-
+of these 3,687 rubrics (70.52%), yielding a final            port two complementary metrics: Item-level Pass
+overall retention rate of 17.99% from the original           Rate, defined as the proportion of rubrics on which
+candidate pool.                                              the product receives a positive label; and Query-
+    The retained-rubric statistics further clarify the       level Macro Pass Rate, defined by first comput-
+
+                                                         6
+                        Table 2: Rubric filtering statistics under the three-LLM pipeline.
+
+                   Stage                             Count         Stage Rate    Overall Rate
+                   Candidate rubrics                 14,450           —             100.00
+                   Pass consistency filter            3,687          25.52           25.52
+                   Pass distinguishability filter     2,600          70.52           17.99
+
+
+ing the pass rate within each query and then av-             than as a claim of statistically meaningful separa-
+eraging across the 104 queries with equal weight.            tion between every adjacent pair. Inter-tier gaps
+The former reflects aggregate performance over the           are large, while some within-tier differences are
+retained rubric pool, while the latter controls for          negligible: Doubao and Gemini differ by only 0.19
+query-level imbalance in rubric counts.                      percentage points in item-level pass rate, and Chat-
+   Table 3 reveals two complementary patterns.               GPT and Qwen are near-tied. We therefore empha-
+First, pass rates on the 3,687 consistency-passed            size robust tier-level separation rather than over-
+rubrics are uniformly higher than those on the final         interpreting tiny within-tier rank differences.
+2,600 consensus-derived gold rubrics. This is ex-
+pected: distinguishability filtering removes many            5.5    Sensitivity Analyses
+one-sided rubrics, especially always-yes items,
+                                                             We run two additional diagnostics to test whether
+thereby making the retained set more demanding.
+                                                             the ranking is an artifact of the judge panel
+For reference, the held-out Internal System obtains
+                                                             or the distinguishability filter.            First, we
+64.36/65.36 on the consistency-passed rubric set
+                                                             conduct a leave-one-judge-out analysis by re-
+and 50.65/50.52 on the consensus-derived rubric
+                                                             moving gpt-5.4, claude-opus-4-7, or
+set (item-level/query-level macro), placing it be-
+                                                             gemini-3-pro-preview individually and re-
+hind the near-tied Doubao–Gemini tier and ahead
+                                                             computing the retained rubric set and product rank-
+of ChatGPT and Qwen. Second, despite this stricter
+                                                             ing under two-judge unanimity. In all three config-
+selection, the product ordering among the nine pub-
+                                                             urations, the Spearman rank correlation with the
+lished products remains highly stable. Kimi ranks
+                                                             full-panel baseline is ρ = 0.988. The only po-
+first under both rubric sets, followed by a near-tied
+                                                             sitional change is a tie-break-level swap between
+Doubao–Gemini second tier. ChatGPT and Qwen
+                                                             ChatGPT and Qwen, two systems whose baseline
+form a middle tier, while Metasota, AutoGLM,
+                                                             scores are effectively tied. For the self-preference
+Minimax, and Perplexity remain clearly below.
+                                                             concern specifically, removing the Gemini judge
+   Three conclusions follow from these results.              leaves the Gemini product unchanged at rank 3;
+First, the final set of consensus-derived gold rubrics       removing the GPT judge causes ChatGPT to drop
+is genuinely more discriminative than the broader            by one position only because it loses the near-tie
+consistency-passed set: Kimi’s item-level pass rate          with Qwen. These patterns are not consistent with
+drops from 69.95% to 58.58%, and Perplexity’s                systematic self-preference inflation.
+drops from 44.32% to 22.23%, showing that the                    Second, we test whether the distinguishability
+second filter removes many easy positives and                filter overfits to the evaluated products. For each of
+sharpens product separation. Second, the bench-              the 10
+                                                                      
+                                                                        =  120  splits, we select rubrics using only
+                                                                    3
+mark remains challenging even for the best prod-             seven systems and then apply the selected rubrics
+uct. A 58.58% item-level pass rate means that                to rank all 10 systems, including the three held-out
+the leading system still fails more than two-fifths          systems. Across the 120 splits, the full-ranking
+of the final set of consensus-derived gold rubrics,          Spearman correlation with the baseline averages
+leaving substantial room for future improvement.             0.978, with a minimum of 0.891 and 93.3% of
+Third, the query-level macro rankings are nearly             splits at or above 0.95. For the held-out triples
+unchanged from the item-level rankings under both            alone, 112 of 120 splits preserve perfectly consis-
+rubric sets, which suggests that the observed order-         tent relative ordering. This indicates that distin-
+ing is not driven by a small number of rubric-dense          guishability acts primarily as a non-triviality filter
+queries but is broadly stable across the benchmark.          rather than as an optimization procedure that over-
+  The ranking should be interpreted as tiered rather         fits to a fixed set of products.
+
+                                                         7
+Table 3: Product-level pass rates on the nine published deep research products under the consistency-passed rubric
+set and the final consensus-derived rubric set. Query-level Macro Pass Rate first computes a pass rate within each
+query and then averages over the 104 queries.
+
+Product                           Consistency-Passed                                       Consensus Gold
+                        Item Pass               Query Macro                    Item Pass               Query Macro
+Kimi                      69.95                        71.08                     58.58                      59.48
+Doubao                    66.37                        67.21                     53.50                      53.38
+Gemini                    66.23                        67.08                     53.31                      52.48
+ChatGPT                   61.57                        62.46                     46.69                      46.82
+Qwen                      61.54                        62.42                     46.65                      46.72
+Metasota                  57.26                        58.31                     40.58                      40.09
+AutoGLM                   52.48                        53.18                     33.81                      32.87
+Minimax                   47.30                        48.08                     26.46                      25.72
+Perplexity                44.32                        45.06                     22.23                      23.11
+
+
+
+6   Conclusion                                                 product-version drift. Future work includes extend-
+                                                               ing the same rubric-generation pipeline to other
+This paper presents a scalable, expert-free pipeline           professional domains and studying how consensus-
+for generating high-quality rubrics for deep re-               derived gold rubrics transfer across time and evalu-
+search evaluation. Rather than relying on human                ation settings.
+experts to define and execute consensus-derived
+gold rubrics at benchmark scale, we begin with                 Acknowledgments
+104 real-world financial queries, construct a large
+pool of query-specific rubric candidates, and use              This work utilized generative AI tools for drafting
+LLM-based evaluation plus consensus-driven filter-             visualizations. Specifically, Fig. 1 was generated
+ing to derive a final set of consensus-derived gold            with generative AI assistance and subsequently re-
+rubrics. A key step in this design is the validation           viewed and refined by the authors.
+of LLM evaluation against human evaluation on                     This paper was supported by “2025 Special Pro-
+a sampled subset, which shows that LLM judges                  gram for Supporting Innovative Development in
+are sufficiently consistent with human experts to              Leading Industries (AI Track) under the High-
+replace them for large-scale rubric screening in our           Quality Industrial Development Initiative” (Project
+setting.                                                       Name: Finstep Finsmart Intelligent Service Plat-
+   Using the retained rubrics, we obtain clearly dif-          form; Project ID: 2025-GZL-RGZN-01024) from
+ferentiated rankings across 10 commercial deep                 Shanghai Municipal Commission of Economy and
+research systems, with substantial separation in               Informatization, Shanghai, China.
+pass rates between the strongest and weakest prod-
+ucts. This shows that the resulting rubric set is not          Disclosure of Interests
+only executable, but also genuinely discriminative
+for report-quality comparison.                                 The authors have no competing interests to declare
+   More broadly, our results suggest that rubric-              that are relevant to the content of this article.
+based evaluation for deep research can move be-
+yond small, manually curated expert pipelines to-
+                                                               References
+ward a scalable alternative: generate a large can-
+didate pool, validate LLM evaluation against hu-               Y. Bai, J. Zhang, X. Lv, et al. 2024. Longwriter: Un-
+man judgments, and derive high-quality rubrics                    leashing 10,000+ word generation from long context
+                                                                  LLMs. arXiv preprint arXiv:2408.07055.
+through consistency and distinguishability filtering.
+Because this framework removes human-expert                    X. Deng, Y. Gu, B. Zheng, et al. 2023. Mind2web:
+execution from the critical path, it is naturally                Towards a generalist agent for the web. Advances in
+suited to benchmark evaluation, automatic system                 Neural Information Processing Systems, 36:28091–
+comparison, and future work on evaluation-driven                 28114.
+improvement of deep research systems. Impor-                   M. Du, B. Xu, C. Zhu, et al. 2025. Deepresearch
+tant limitations remain, including temporal sen-                 bench: A comprehensive benchmark for deep re-
+sitivity of financial data, domain specificity, and              search agents. arXiv preprint arXiv:2506.11763.
+
+
+                                                          8
+X. Guo, H. Xia, Z. Liu, et al. 2025. Fineval: A chi-          G. Mialon, C. Fourrier, T. Wolf, et al. 2023. Gaia: a
+  nese financial domain knowledge evaluation bench-             benchmark for general AI assistants. In The Twelfth
+  mark for large language models. In Proceedings of             International Conference on Learning Representa-
+  the 2025 Conference of the Nations of the Americas            tions.
+  Chapter of the Association for Computational Lin-
+  guistics: Human Language Technologies (Volume 1:            H. Que, F. Duan, L. He, et al. 2024. Hellobench: Eval-
+  Long Papers), pages 6258–6292.                                uating long text generation capabilities of large lan-
+                                                                guage models. arXiv preprint arXiv:2409.16191.
+X. Guo, R. Zhang, G. Lu, et al. 2026. BizFinBench v2:
+  A unified dual-mode bilingual benchmark for expert-         S. Schmidgall, Y. Su, Z. Wang, et al. 2025. Agent
+   level financial capability alignment. arXiv preprint          laboratory: Using LLM agents as research assistants.
+   arXiv:2601.06401.                                             In Findings of the Association for Computational
+                                                                 Linguistics: EMNLP 2025, pages 5977–6043.
+J. Han, H. Kim, C. Lee, et al. 2025. Deer: A comprehen-
+   sive and reliable benchmark for deep-research expert       S. Tan and Z. Tian. 2026. MedResearchBench: A
+   reports. arXiv e-prints, page arXiv:2512.17776.               multi-domain benchmark for evaluating AI research
+                                                                 agents on clinical medical research. medRxiv, page
+X. Ho, A. K. D. Nguyen, S. Sugawara, et al. 2020. Con-
+                                                                 2026.03.30.26349749.
+   structing a multi-hop QA dataset for comprehensive
+   evaluation of reasoning steps. In Proceedings of the
+                                                              H. Trivedi, N. Balasubramanian, T. Khot, et al. 2022.
+  28th International Conference on Computational Lin-
+                                                                MuSiQue: Multihop questions via single-hop ques-
+   guistics, pages 6609–6625.
+                                                                tion composition. Transactions of the Association
+L. Hu, J. Jiao, J. Liu, et al. 2025. Finsearch-                 for Computational Linguistics, 10:539–554.
+  comp: Towards a realistic, expert-level evaluation
+  of financial search and reasoning. arXiv preprint           Y. Tuohetiyaer, Y. Zhu, Y. Hu, et al. 2026. Deep-
+  arXiv:2509.13160.                                              Research Eval: An automated framework for assess-
+                                                                 ing quality and reliability in long-form reports. Ap-
+P. Lewis, E. Perez, A. Piktus, et al. 2020. Retrieval-           plied Sciences, 16(5):2546.
+   augmented generation for knowledge-intensive NLP
+   tasks. Advances in Neural Information Processing           Z. Wang, F. Bai, Z. Luo, et al. 2026. FIRE-Bench:
+   Systems, 33:9459–9474.                                        Evaluating agents on the rediscovery of scientific
+                                                                 insights. arXiv preprint arXiv:2602.02905.
+D. Li, B. Jiang, L. Huang, et al. 2025a. From gener-
+  ation to judgment: Opportunities and challenges of          J. Wei, Z. Sun, S. Papay, et al. 2025. Browsecomp:
+  LLM-as-a-judge. In Proceedings of the 2025 Con-                A simple yet challenging benchmark for browsing
+  ference on Empirical Methods in Natural Language               agents. arXiv preprint arXiv:2504.12516.
+  Processing, pages 2757–2791.
+                                                              S. Wu, Y. Li, X. Qu, et al. 2025.        Longeval:
+H. Li, J. Chen, J. Yang, et al. 2025b. Legalagentbench:         A comprehensive analysis of long-text generation
+  Evaluating LLM agents in legal domain. In Proceed-            through a plan-based paradigm. arXiv preprint
+  ings of the 63rd Annual Meeting of the Association            arXiv:2502.19103.
+  for Computational Linguistics (Volume 1: Long Pa-
+  pers), pages 2322–2344.                                     Q. Xie, W. Han, Z. Chen, et al. 2024. Finben: A holis-
+                                                                tic financial benchmark for large language models.
+S. Liu, Y. Jiang, S. Farook, et al. 2026a. DataSTORM:           Advances in Neural Information Processing Systems,
+   Deep research on large-scale databases using ex-             37:95716–95743.
+   ploratory data analysis and data storytelling. arXiv
+   preprint arXiv:2604.06474.                                 R. Xu and J. Peng. 2025. A comprehensive survey of
+                                                                 deep research: Systems, methodologies, and applica-
+W. Liu, Z. Li, B. Long, et al. 2026b. Towards knowl-
+                                                                 tions. arXiv preprint arXiv:2506.12594.
+  edgeable deep research: Framework and benchmark.
+  arXiv preprint arXiv:2604.07720.
+                                                              Z. Yang, P. Qi, S. Zhang, et al. 2018. HotpotQA: A
+X. Liu, H. Yu, H. Zhang, et al. 2023. Agent-                     dataset for diverse, explainable multi-hop question
+  bench: Evaluating LLMs as agents. arXiv preprint               answering. In Proceedings of the 2018 Conference
+  arXiv:2308.03688.                                              on Empirical Methods in Natural Language Process-
+                                                                 ing, pages 2369–2380.
+G. Lu, X. Guo, R. Zhang, et al. 2025. Bizfinbench: A
+  business-driven real-world financial benchmark for          S. Yao, J. Zhao, D. Yu, et al. 2023. ReAct: Synergizing
+  evaluating LLMs. arXiv preprint arXiv:2505.19457.              reasoning and acting in language models. In Inter-
+                                                                 national Conference on Learning Representations
+C. Lv, J. Zhou, W. Zhao, et al. 2026. Learning                   (ICLR).
+  query-specific rubrics from human preferences for
+  DeepResearch report generation. arXiv preprint              R. You, H. Cai, C. Zhang, et al. 2026. Agent-as-a-Judge.
+  arXiv:2602.03619.                                              arXiv preprint arXiv:2601.05111.
+
+
+                                                          9
+L. Zeng, F. Lou, Z. Wang, et al. 2025. FinGAIA: A chi-
+   nese benchmark for AI agents in real-world financial
+   domain. arXiv preprint arXiv:2507.17186.
+Q. Zhang, J. Zhou, Y. Wang, et al. 2026a. RubricBench:
+  Aligning model-generated rubrics with human stan-
+   dards. arXiv preprint arXiv:2603.01562.
+X. Zhang, H. Wu, J. Guo, et al. 2026b. FIRE: A compre-
+   hensive benchmark for financial intelligence and rea-
+   soning evaluation. arXiv preprint arXiv:2602.22273.
+
+L. Zheng, W. L. Chiang, Y. Sheng, et al. 2023. Judging
+   LLM-as-a-judge with MT-Bench and chatbot arena.
+   Advances in Neural Information Processing Systems,
+   36:46595–46623.
+
+Y. Zheng, D. Fu, X. Hu, et al. 2025. Deepresearcher:
+   Scaling deep research via reinforcement learning in
+   real-world environments. In Proceedings of the 2025
+   Conference on Empirical Methods in Natural Lan-
+   guage Processing, pages 414–431.
+J. Zhong, H. Zhang, C. Southern, et al. 2026. DRACO:
+   a cross-domain benchmark for deep research accu-
+   racy, completeness, and objectivity. arXiv preprint
+   arXiv:2602.11685.
+Y. Zhuang, Y. Yu, K. Wang, et al. 2023. Toolqa: A
+   dataset for LLM question answering with external
+   tools. Advances in Neural Information Processing
+   Systems, 36:50117–50143.
+M. Zhuge, C. Zhao, D. Ashley, et al. 2024. Agent-as-a-
+  judge: Evaluate agents with agents. arXiv preprint
+  arXiv:2410.10934.
+
+
+
+
+                                                           10
+A     Rubrics Evaluation Prompt                        B     Query Examples
+The following prompt template is used for LLM-         Table 4 lists translated examples from each cate-
+based report evaluation against binary rubrics:        gory; the original user queries in the dataset are in
+                                                       Chinese.
+    Rubrics Evaluation Prompt
+ You are a professional financial
+                                                           Table 4: Translated Query Examples by Category
+ research report reviewer. Please
+ evaluate whether the given research                       Category            Example Query
+ report satisfies the specified
+ scoring criterion.                                        Stock Trend Pre- What is the latest analysis on the rise
+ ## User Query                                             diction          or fall of Haixia Innovation stock
+ {query}                                                                    tomorrow?
+ ## Research Report                                        Fundamental Con- What are the reasons for the decline
+ {report}                                                  sultation        in Longbai Group’s net profit?
+ ## Scoring Criterion
+ {rubric}                                                  Stock Trading Ad- Does Aluminum Corporation of
+ ## Scoring Requirements                                   vice              China have long-term investment
+ Please carefully read the research                                          value?
+ report and determine whether                              Theme/Sector        A comprehensive review of AI ap-
+ it satisfies the above scoring                            Analysis            plication sub-sectors.
+ criterion.
+                                                           Stock Comparison Which is more suitable for invest-
+      • If the report satisfies the                                         ment, Huitai Medical or Xinmai
+        criterion, answer “Yes”                                             Medical?
+
+      • If the report does not satisfy                     Precious   Metals When is the right time for gold price
+        the criterion, answer “No”                         Analysis          correction?
+                                                           Individual Stock Conduct an in-depth analysis of
+    Please only answer “Yes” or “No”, no                   Analysis         Luxshare Precision, examining
+    explanation needed.                                                     whether its recent investment logic
+    ## Your Answer:                                                         can become a market hotspot, and
+                                                                            provide investment recommenda-
+                                                                            tions with target price.
+
+
+
+
+                                                  11
+
