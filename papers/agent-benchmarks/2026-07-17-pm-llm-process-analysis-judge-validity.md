@@ -8,7 +8,7 @@ The implemented 2024 instrument does not test that cycle. It presents one static
 
 The strongest paper-era claim is therefore narrow: **under one-shot prompting and one GPT-4o judge prompt, 28 configured 2024 model packages received different scalar ratings on a purposive set of 52 short process-mining-themed prompts**. The study does not establish process-analysis correctness, expert equivalence, reliable hypothesis generation, causal diagnosis, fairness competence, operational usefulness, or production readiness. Its five-by-five cross-judge table is a useful sensitivity probe, but means and standard deviations across heterogeneous tasks are not judge accuracy, human agreement, repeated-call reliability, or score uncertainty.
 
-The official repository has evolved substantially. The audited 10 July 2026 snapshot is much more inspectable: it contains 8,646 answers and 8,646 GPT-5.4 evaluations for 158 model prefixes. But it is a replacement instrument, not a comparable update: only 2 of the 52 paper-era task stems survive among 57 current tasks. The current scorer also applies an undocumented nonlinear per-item transform, a name-dependent reasoning-model adjustment, unequal category weights, and a sum-divided-by-10 aggregate whose maximum changes with task count. It includes 2,514 answer files containing `<think>` tags and conditionally instructs the judge to ignore early “flow of thought.” Those choices make the leaderboard a property of a versioned answer-exposure, judge-prompt, model-classification, parsing, transformation, and aggregation package—not a stable process-mining capability scale.
+The official repository has evolved substantially. The audited 10 July 2026 snapshot is much more inspectable: it contains 8,646 aligned benchmark answer/GPT-5.4-evaluation pairs for 158 model prefixes, plus 24 auxiliary JudgeBench answer samples without matching evaluations. But it is a replacement instrument, not a comparable update: only 2 of the 52 paper-era task stems survive among 57 current tasks. The current scorer also applies an undocumented nonlinear per-item transform, a name-dependent reasoning-model adjustment, unequal category weights, and a sum-divided-by-10 aggregate whose maximum changes with task count. It includes 2,514 answer files containing `<think>` tags and conditionally instructs the judge to ignore early “flow of thought.” Those choices make the leaderboard a property of a versioned answer-exposure, judge-prompt, model-classification, parsing, transformation, and aggregation package—not a stable process-mining capability scale.
 
 ## Source and reading record
 
@@ -38,7 +38,7 @@ The audit inspected every paper-era prompt, the paper-era answering/evaluation/s
 
 This review advances charter objectives A and B through expansion and validation of a domain-analysis benchmark family. It does not narrow `skill-bench` to process mining. The general hypothesis is that a domain benchmark can reveal a reusable **analytical inquiry ladder**—artifact comprehension, candidate interpretation, discriminating test, evidence acquisition, update, decision, and consequence—but cannot collapse those stages into one prose-quality grade.
 
-The concrete evidence is an immutable full paper, two commit-pinned official snapshots, all paper-era prompts and score rows, 17,292 current answer/evaluation artifacts, and executable scorer logic. The uncertainty clarified is what one-shot judge scores can support when purported process-analysis tasks stop before verification. This is expansion plus validation. Useful completion is a claim-bounded account of task authority, process/domain knowledge, stage coverage, judge validity, score semantics, release drift, and cross-domain design actions—not a process-mining-specific benchmark proposal.
+The concrete evidence is an immutable full paper, two commit-pinned official snapshots, all paper-era prompts and score rows, 17,292 aligned current answer/evaluation artifacts plus 24 auxiliary answer samples, and executable scorer logic. The uncertainty clarified is what one-shot judge scores can support when purported process-analysis tasks stop before verification. This is expansion plus validation. Useful completion is a claim-bounded account of task authority, process/domain knowledge, stage coverage, judge validity, score semantics, release drift, and cross-domain design actions—not a process-mining-specific benchmark proposal.
 
 ## One-sentence contribution
 
@@ -170,9 +170,9 @@ The visual treatment asks “Can you describe the provided visualization?” Thi
 The current audited snapshot is operationally richer:
 
 - 51 text prompts plus six images across eight categories;
-- 8,646 answers and 8,646 GPT-5.4 evaluation files;
+- 8,646 aligned benchmark answer/GPT-5.4-evaluation pairs, plus 24 auxiliary JudgeBench answer samples without evaluation counterparts;
 - 158 model prefixes, of which 98 have all 57 items and 60 have the 51 text items;
-- exact one-to-one answer/evaluation filename alignment;
+- exact filename alignment within the 8,646-record main evaluation matrix;
 - judge rationales and leaderboard-generation code; and
 - later hallucination and judge-analysis utilities.
 
@@ -198,7 +198,7 @@ Accordingly, the current leaderboard is highly inspectable as a **configured rel
 
 **Paper-era release inspectability: weak for results, good for prompts.** All prompts and per-item scalar rows are present, and scripts are readable. Raw answers and judge outputs are absent. Nine displayed totals do not follow ordinary one-decimal reconstruction from released rows. The exact paper snapshot is inferred from history rather than declared.
 
-**Current release inspectability: strong for stored endpoint records.** All 8,646 answer files align with 8,646 judge files; prompts, scorer, judge rationales, and leaderboard artifacts are available. This permits score-path and failure audits without paid calls.
+**Current release inspectability: strong for stored endpoint records.** The main matrix has 8,646 filename-aligned answer/judge pairs; 24 additional JudgeBench answer samples are explicitly outside that matrix and have no evaluation counterparts. Prompts, scorer, judge rationales, and leaderboard artifacts are available. This permits score-path and failure audits without paid calls.
 
 **Exact regeneration: weak.** Both eras depend on mutable commercial/provider endpoints. The paper-era scripts hard-code minimal configuration and have no package lock, request/response metadata ledger, seed, retries manifest, cost, or endpoint snapshot. The current code has much more provider logic but still cannot freeze hosted weights or behavior. One-shot stochastic outputs are not reproducible in the experimental sense.
 
