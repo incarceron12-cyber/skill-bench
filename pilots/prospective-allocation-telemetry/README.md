@@ -1,21 +1,27 @@
-# Prospective allocation telemetry v1
+# Prospective allocation telemetry
 
-This bounded slice advances charter objectives B and C by turning the allocation audit's seven missing field families into a fail-closed executable trial envelope. It reuses the non-ceiling LH evidence-reconciliation task as an experimental substrate; it does not narrow `skill-bench` to this domain.
+## v1
 
-`manifest.json` freezes the task, configured system, sources, public Skill, exact AB/BA block identities, no-replacement policy, and claim ceiling. `scripts/validate_allocation_telemetry.py` validates per-call phase labels and five token coordinates; direct tool calls and wall time; all six phase totals; Skill bytes/tokens/hash; initial/final state hashes; retry and validity states; and separate presentation, invocation, adoption, and outcome-effect evidence.
+`v1/` froze the allocation envelope and proved a zero-call ledger, then failed closed because Hermes `--usage-file` exposed only aggregate session usage. No provider call or matched condition was executed.
 
-The deterministic canary makes zero model calls and proves that a complete zero-resource ledger replays. Mutation tests reject omitted phases, duplicate events, misphasing, stale hashes, reordered attempts, retries/replacements, and presentation-as-adoption.
+## v2 repository-owned provider-call adapter
 
-The retained readiness report is intentionally fail-closed. The configured Hermes one-shot `--usage-file` currently records aggregate session totals only. It does not expose native per-call records or reliable call-to-phase attribution, so wrapping the subprocess timer or dividing aggregate tokens would fabricate the required evidence. No fresh provider call or matched pair was executed. The exact blocker is a launcher/runtime telemetry hook that emits one record per provider call before aggregation.
+`v2/` adds `scripts/provider_call_telemetry.py`, a launcher adapter that wraps Hermes' `AIAgent._interruptible_api_call` boundary without modifying the installed Hermes package. The launcher declares the call-site phase before execution. On every return or error, the adapter fsync-appends a self-hashed JSONL event before Hermes can aggregate usage. Events preserve attempt/call identity, sequence, call-site phase and declaration hash, provider/model/configuration hashes, five provider-native token coordinates and support flags, wall time, tool/auxiliary linkage, and typed error/invalidity.
 
-## Replay
+`validate_native_events` rejects omitted, duplicated, or reordered calls; phase spoofing; aggregate mismatch; unsupported coordinates; retry substitution; changed configured-system identity; and stale event hashes. The zero-call and deterministic one-call canaries pass, and the stub event exactly reconciles to its retained aggregate.
+
+The retained `v2/readiness-report.json` remains fail-closed. Deterministic conformance is not configured-provider evidence. The exact frozen isolated trial command does not yet mount and invoke the adapter, so no native provider ledger exists to reconcile before authorizing the matched AB pair. Consequently no fresh provider call or pair was run.
+
+### Replay
 
 ```bash
 python scripts/validate_allocation_telemetry.py \
-  pilots/prospective-allocation-telemetry/v1/manifest.json \
-  --record pilots/prospective-allocation-telemetry/v1/canary-telemetry.json \
+  pilots/prospective-allocation-telemetry/v2/manifest.json \
+  --native-events pilots/prospective-allocation-telemetry/v2/stub-native-events.jsonl \
+  --attempt-id alloc-v2-ab-no-skill \
+  --aggregate-usage pilots/prospective-allocation-telemetry/v2/stub-aggregate-usage.json \
   --check-paths
 python -m unittest tests.test_allocation_telemetry -v
 ```
 
-This slice establishes capture-envelope conformance only. It makes no allocation-effect, Skill-effect, capability, professional-validity, cost-value, production-fitness, or readiness claim.
+This slice reports Skill presentation, invocation, adoption, artifact outcome, and resource allocation separately. It licenses no allocation/Skill effect, capability, cross-domain, expert/professional validity, safety, economic-value, production, or readiness claim.

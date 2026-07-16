@@ -47,6 +47,74 @@ def canonical_hash(value: Any) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def load_jsonl(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def validate_native_events(
+    events: list[dict[str, Any]], manifest: dict[str, Any], *,
+    attempt_id: str, aggregate_usage: dict[str, Any] | None = None,
+) -> list[str]:
+    """Validate pre-aggregation provider events and optional session reconciliation."""
+    errors: list[str] = []
+    expected_config = manifest.get("configured_system_sha256")
+    seen: set[str] = set()
+    expected_sequence = 1
+    totals = {key: 0 for key in TOKEN_KEYS}
+    for event in events:
+        call_id = event.get("call_id")
+        if call_id in seen:
+            errors.append("duplicated native provider-call identity")
+        seen.add(call_id)
+        if event.get("attempt_id") != attempt_id:
+            errors.append("retry substitution or attempt mismatch")
+        if event.get("sequence") != expected_sequence:
+            errors.append("omitted or reordered native provider call")
+        expected_sequence += 1
+        if event.get("phase") not in PHASES or event.get("phase_source") != "launcher_declared_call_site":
+            errors.append("phase spoofing or undeclared call site")
+        expected_declaration = canonical_hash({
+            "attempt_id": attempt_id, "phase": event.get("phase"),
+            "call_site": event.get("call_site"),
+        })
+        if event.get("phase_declaration_sha256") != expected_declaration:
+            errors.append("phase declaration hash mismatch")
+        if event.get("configured_system_sha256") != expected_config:
+            errors.append("changed configured-system identity")
+        if not valid_hash(event.get("provider_sha256")) or not valid_hash(event.get("model_sha256")):
+            errors.append("unhashed provider/model identity")
+        linkage = event.get("tool_linkage", {})
+        if not isinstance(linkage.get("preceding_tool_event_ids"), list) or not isinstance(linkage.get("auxiliary_call"), bool):
+            errors.append("missing tool or auxiliary-call linkage")
+        supported = event.get("token_coordinates_supported", {})
+        tokens = event.get("tokens", {})
+        if set(supported) != set(TOKEN_KEYS) or set(tokens) != set(TOKEN_KEYS):
+            errors.append("unsupported token coordinate declaration")
+            continue
+        for key in TOKEN_KEYS:
+            if supported[key] is not True or not isinstance(tokens[key], int) or tokens[key] < 0:
+                errors.append(f"unsupported token coordinate: {key}")
+            else:
+                totals[key] += tokens[key]
+        if not isinstance(event.get("wall_time_ms"), int) or event["wall_time_ms"] < 0:
+            errors.append("missing native call wall time")
+        digest = event.get("event_sha256")
+        payload = {key: value for key, value in event.items() if key != "event_sha256"}
+        if digest != canonical_hash(payload):
+            errors.append("stale native provider-call event hash")
+    if aggregate_usage is not None:
+        expected = {
+            "api_calls": len(events), "input_tokens": totals["prompt_tokens"],
+            "output_tokens": totals["completion_tokens"],
+            "cache_read_tokens": totals["cache_read_tokens"],
+            "cache_write_tokens": totals["cache_write_tokens"],
+            "reasoning_tokens": totals["reasoning_tokens"],
+        }
+        if any(aggregate_usage.get(key) != value for key, value in expected.items()):
+            errors.append("native call ledger does not reconcile to retained aggregate usage")
+    return errors
+
+
 def validate_manifest(doc: dict[str, Any], *, check_paths: bool = False) -> list[str]:
     errors: list[str] = []
     if doc.get("schema_version") != "0.1.0":
@@ -227,6 +295,9 @@ def main() -> int:
     parser.add_argument("--record", type=Path)
     parser.add_argument("--write-canary", type=Path)
     parser.add_argument("--write-readiness", type=Path)
+    parser.add_argument("--native-events", type=Path)
+    parser.add_argument("--attempt-id")
+    parser.add_argument("--aggregate-usage", type=Path)
     parser.add_argument("--check-paths", action="store_true")
     args = parser.parse_args()
     manifest = load(args.manifest)
@@ -239,6 +310,15 @@ def main() -> int:
         errors.extend(validate_record(load(args.record), manifest))
     if args.write_readiness:
         dump(args.write_readiness, assess_launcher_readiness(manifest))
+    if args.native_events:
+        if not args.attempt_id:
+            errors.append("--attempt-id is required with --native-events")
+        else:
+            aggregate = load(args.aggregate_usage) if args.aggregate_usage else None
+            errors.extend(validate_native_events(
+                load_jsonl(args.native_events), manifest,
+                attempt_id=args.attempt_id, aggregate_usage=aggregate,
+            ))
     print(json.dumps({"passed": not errors, "errors": errors}, indent=2))
     return 0 if not errors else 1
 

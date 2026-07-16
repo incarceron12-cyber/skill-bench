@@ -1,16 +1,22 @@
 import copy
 import importlib.util
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/validate_allocation_telemetry.py"
+HOOK = ROOT / "scripts/provider_call_telemetry.py"
 MANIFEST = ROOT / "pilots/prospective-allocation-telemetry/v1/manifest.json"
 spec = importlib.util.spec_from_file_location("allocation_telemetry", SCRIPT)
 assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+hook_spec = importlib.util.spec_from_file_location("provider_call_telemetry", HOOK)
+assert hook_spec and hook_spec.loader
+hook = importlib.util.module_from_spec(hook_spec)
+hook_spec.loader.exec_module(hook)
 
 
 class AllocationTelemetryTests(unittest.TestCase):
@@ -82,6 +88,47 @@ class AllocationTelemetryTests(unittest.TestCase):
         self.assertEqual(report["fresh_model_calls"], 0)
         self.assertIn("aggregate totals only", report["blockers"][0])
         self.assertEqual(report["decision"], "fail_closed_without_provider_calls")
+
+    def native_fixture(self):
+        tmp = tempfile.TemporaryDirectory()
+        path = Path(tmp.name) / "events.jsonl"
+        hook.deterministic_stub(path)
+        event = module.load_jsonl(path)[0]
+        attempt_id = self.manifest["attempt_schedule"][0]["attempt_id"]
+        event["attempt_id"] = attempt_id
+        event["call_id"] = attempt_id + ":call:0001"
+        event["configured_system_sha256"] = self.manifest["configured_system_sha256"]
+        event["phase_declaration_sha256"] = module.canonical_hash({
+            "attempt_id": attempt_id, "phase": event["phase"], "call_site": event["call_site"],
+        })
+        event["event_sha256"] = module.canonical_hash({k: v for k, v in event.items() if k != "event_sha256"})
+        aggregate = {"api_calls": 1, "input_tokens": 100, "output_tokens": 21, "cache_read_tokens": 30, "cache_write_tokens": 0, "reasoning_tokens": 5}
+        return tmp, event, aggregate
+
+    def test_deterministic_native_stub_reconciles(self):
+        tmp, event, aggregate = self.native_fixture()
+        self.addCleanup(tmp.cleanup)
+        self.assertEqual(module.validate_native_events([event], self.manifest, attempt_id=event["attempt_id"], aggregate_usage=aggregate), [])
+
+    def test_native_mutations_fail_closed(self):
+        tmp, base, aggregate = self.native_fixture()
+        self.addCleanup(tmp.cleanup)
+        duplicate = [copy.deepcopy(base), copy.deepcopy(base)]
+        reordered = copy.deepcopy(base); reordered["sequence"] = 2
+        spoofed = copy.deepcopy(base); spoofed["phase_source"] = "outcome_text"
+        unsupported = copy.deepcopy(base); unsupported["token_coordinates_supported"]["reasoning_tokens"] = False
+        retry = copy.deepcopy(base); retry["attempt_id"] = "replacement-attempt"
+        changed = copy.deepcopy(base); changed["configured_system_sha256"] = "f" * 64
+        mismatch = dict(aggregate); mismatch["input_tokens"] += 1
+        mutations = [
+            (duplicate, aggregate, "duplicated"), ([reordered], aggregate, "reordered"),
+            ([spoofed], aggregate, "phase spoofing"), ([unsupported], aggregate, "unsupported token"),
+            ([retry], aggregate, "retry substitution"), ([changed], aggregate, "changed configured-system"),
+            ([copy.deepcopy(base)], mismatch, "does not reconcile"),
+        ]
+        for events, usage, fragment in mutations:
+            errors = module.validate_native_events(events, self.manifest, attempt_id=base["attempt_id"], aggregate_usage=usage)
+            self.assertTrue(any(fragment in error for error in errors), (fragment, errors))
 
 
 if __name__ == "__main__":
