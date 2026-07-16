@@ -1,0 +1,822 @@
+                                                 Auditing and Controlling AI Agent Actions in Spreadsheets
+                                                      Sadra Sabouri                              Zeinabsadat Saghi                             Run Huang                         Sujay Maladi
+                                                  sabourih@usc.edu                                  saghi@usc.edu                          runhuang@usc.edu                     maladi@usc.edu
+                                                 University of Southern                          University of Southern                   University of Southern             University of Southern
+                                                       California                                      California                               California                         California
+                                                   Los Angeles, USA                                Los Angeles, USA                         Los Angeles, USA                   Los Angeles, USA
+
+                                                                        Esmeralda Eufracio                                  Sumit Gulwani                 Souti Chattopadhyay
+                                                                          eeufracio@cpp.edu                             sumitg@microsoft.com                 schattop@usc.edu
+                                                                            California State                                  Microsoft                    University of Southern
+                                                                         Polytechnic University                            Redmond, USA                          California
+
+
+
+
+arXiv:2604.20070v1 [cs.HC] 22 Apr 2026
+                                                                             Pomona, USA                                                                     Los Angeles, USA
+
+
+
+
+                                         Figure 1: Pista is an AI agent for spreadsheets that decomposes its execution into traceable, steerable steps, illustrated here on a
+                                         tax return preparation task. At each step, Pista provides an In-Situ Explanations of the action and surfaces the underlying
+                                         formula and data range so users can verify correctness without inspecting individual cells. Users can probe the agent’s reasoning
+                                         through follow-up questions and issue targeted corrections scoped to the current step via Localized Editing. When an edit alters
+                                         computational logic that downstream steps depend on, Pista branches the execution path and regenerates subsequent steps
+                                         from the edited state, preserving the original sequence so users can compare outcomes by switching between versions. This
+                                         allows them to confidently explore alternative solutions.
+                                         Abstract                                                                                        finish, yet this process remains effectively inaccessible during exe-
+                                         Advances in AI agent capabilities have outpaced users’ ability to                               cution, often buried within large volumes of intermediate reasoning
+                                         meaningfully oversee their execution. AI agents can perform so-                                 and outputs: by the time users receive the output, all underlying
+                                         phisticated, multi-step knowledge work autonomously from start to                               decisions have already been made without their involvement. This
+                                                                                                                                         lack of transparency leaves users unable to examine the agent’s
+                                         Permission to make digital or hard copies of all or part of this work for personal or           assumptions, identify errors before they propagate, or redirect exe-
+                                         classroom use is granted without fee provided that copies are not made or distributed
+                                         for profit or commercial advantage and that copies bear this notice and the full citation       cution when it deviates from their intent. The stakes are particularly
+                                         on the first page. Copyrights for components of this work owned by others than the              high in spreadsheet environments, where process and artifact are
+                                         author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or          inseparable. Each decision the agent makes is recorded directly in
+                                         republish, to post on servers or to redistribute to lists, requires prior specific permission
+                                         and/or a fee. Request permissions from permissions@acm.org.                                     cells that belong to and reflect on the user. We introduce Pista,
+                                         Conference acronym ’XX, Woodstock, NY                                                           a spreadsheet AI agent that decomposes execution into auditable,
+                                         © 2018 Copyright held by the owner/author(s). Publication rights licensed to ACM.               controllable actions, providing users with visibility into the agent’s
+                                         ACM ISBN 978-x-xxxx-xxxx-x/YYYY/MM
+                                         https://doi.org/XXXXXXX.XXXXXXX                                                                 decision-making process and the capacity to intervene at each step.
+Conference acronym ’XX, June 03–05, 2018, Woodstock, NY                                                                                     Sabouri et al.
+
+
+A formative study (𝑁 = 8) and a within-subjects summative evalu-                 artifact and the computation are the same object. In code agents,
+ation (𝑁 = 16) comparing Pista to a baseline agent demonstrated                  the running application is distinct from the code that produced it.
+that active participation in execution influenced not only task out-             In spreadsheets, there is no such separation: agent decisions are
+comes but also users’ comprehension of the task, their perception of             not stored elsewhere; they are the values and dependencies that
+the agent, and their sense of role within the workflow. Users identi-            constitute the artifact the user owns and is accountable for.
+fied their own intent reflected in the agent’s actions, detected errors              Prior work has addressed pieces of this problem. Gu et al. [16]
+that post-hoc review would have failed to surface, and reported a                studied how analysts verify AI-generated data analyses, identifying
+sense of co-ownership over the resulting output. These findings                  procedural and data-oriented verification strategies and the cogni-
+indicate that meaningful human oversight of AI agents in knowl-                  tive burden verification places on users. Kazemitabaar et al. [21]
+edge work requires not improved post-hoc review mechanisms, but                  showed that decomposing tasks into editable assumptions and steps
+active participation in decisions as they are made.                              improves steering and perceived control in data analysis notebooks.
+                                                                                 WaitGPT [48] visualized streaming code as an interactive diagram,
+Keywords                                                                         helping users monitor and steer conversational data analysis agents
+mixed-initiative systems, verification, agent, end-user, spreadsheet             in real time. Each of these contributions meaningfully reduces the
+                                                                                 gap between agent and user. Yet they share a common assumption:
+ACM Reference Format:                                                            the user’s role begins after the agent acts. The human remains a
+Sadra Sabouri, Zeinabsadat Saghi, Run Huang, Sujay Maladi, Esmeralda             reviewer of outputs, not a participant in their construction.
+Eufracio, Sumit Gulwani, and Souti Chattopadhyay. 2018. Auditing and                 Reviewing a finished output, however, places the entire burden
+Controlling AI Agent Actions in Spreadsheets. In Proceedings of Make
+                                                                                 of oversight on a single moment of inspection [2, 16, 34]. By that
+sure to enter the correct conference title from your rights confirmation email
+(Conference acronym ’XX). ACM, New York, NY, USA, 12 pages. https:
+                                                                                 point, the agent’s intermediate decisions have been compounded
+//doi.org/XXXXXXX.XXXXXXX                                                        into a result whose surface gives little indication of the reasoning
+                                                                                 behind it. Errors legible at the step where they occurred become
+                                                                                 invisible in the aggregate. More fundamentally, the user’s mental
+1    Introduction                                                                model of how the task should unfold no longer maps onto what the
+Artificial Intelligence (AI) agents are increasingly taking on com-              agent produces: rather than comparing their expectations against
+plex, multi-step tasks across different knowledge work: analyzing                the agent’s decisions as they develop, users must reconstruct the
+datasets [19], writing code [10], managing documents [9], and                    agent’s logic from its outcomes. The question is not how to better
+automating workflows that once required sustained human ef-                      present what an agent has already done, but how to involve the user
+fort [1, 11, 31, 33]. As their capabilities expand, so does the scope of         in what the agent is doing, step by step, as it happens.
+what they do on behalf of users, and the question of how humans                      To investigate this, we built Pista, from the Italian and Spanish
+and agents should share that work becomes more consequential.                    for path or trail, and also clue. The name captures the interaction
+Yet in most current systems, agents work alone: they receive a goal,             model: rather than executing a task in a single pass and returning
+traverse a sequence of decisions, and return a result. The user is               a finished result, Pista leaves a trail, decomposing agent execution
+not present for any.                                                             into a sequence of traceable, steerable steps (Figure 1). At each step,
+   This absence may be workable when tasks are simple and errors                 users see what the agent did and why, can probe its reasoning on
+are easy to spot. But as agents take on longer, more interdependent              demand, issue localized corrections, and branch into alternative
+task sequences, writing formulas that drive downstream calcula-                  execution paths, all before the next step proceeds. We instantiate
+tions, restructuring data in ways that break existing dependencies,              this model as a Microsoft Excel add-in, a domain where the stakes
+and making assumptions that compound across steps, the gap be-                   of agent absence are especially high: every agent decision lands
+tween what the agent did and what the user can evaluate grows                    directly in the cells the user owns, is responsible for, and must stand
+wider. The user receives a destination without having shared the                 behind. We first conducted a formative study (𝑁 = 8) to identify
+journey. They must assess an artifact they did not witness being                 challenges with baseline spreadsheet agents, which surfaced five
+built, stand behind decisions they did not make, and detect errors               recurring challenges organized around the gulfs of evaluation, exe-
+in reasoning that were hidden from them.                                         cution, and envisioning. Informed by these findings, we designed
+   This challenge is especially acute in structured knowledge work               Pista around three design goals and seven features, then evaluated
+environments, such as spreadsheets. Spreadsheets are among the                   it in a within-subjects summative study (𝑁 = 16) comparing Pista
+most widely used analytical tools across business, science, and gov-             to a baseline agent of equivalent capability.
+ernment [20], yet their computational logic is hidden behind a grid                  Our findings show that being present during execution shapes
+of values [38]: formulas encode assumptions about data sources,                  not only what users can do but also how they understand the
+transformation rules, and dependencies that are invisible in the                 task, the agent, and their own role in the process. Users found the
+cells displaying their results. AI agents for spreadsheets, such as              outcomes more comprehensible through interaction itself rather
+SheetCopilot [25], SheetMind [51], and TableTalk [26], can auto-                 than in finished outputs, recognizing their own reasoning in the
+mate complex multi-step tasks from natural language instructions,                agent’s steps. They caught errors they wouldn’t have found in
+but currently achieve only 44–70% success on real-world bench-                   post-hoc review and felt co-authorship over the results they had
+marks [29] and offer users little means to understand what the agent             helped construct. Taken together, these findings suggest that Pista
+decided, why, or whether the result is correct. What makes spread-               is not just a transparent spreadsheet agent but an instance of a
+sheets a particularly sharp instantiation of this problem is that the            broader argument: that meaningful human oversight of AI agents
+Auditing and Controlling AI Agent Actions in Spreadsheets                                      Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+
+in knowledge work requires participation in execution rather than          by plausible-sounding but flawed plans, highlighting the need for
+taking on the role of a reviewer.                                          verification affordances at each execution step.
+                                                                              In data analysis specifically, Kazemitabaar et al. [21] showed that
+                                                                           stepwise decomposition interfaces significantly improve perceived
+                                                                           control over global re-prompting. SQLucid [43] demonstrated that
+2    Related Work                                                          letting users edit natural language explanations of SQL queries
+AI agents for spreadsheets such as SheetCopilot [25], SheetMind [51],      improved task accuracy for non-experts. Data Formulator [46] in-
+and TableTalk [26] turn user instructions into sequences of spread-        troduced branching history for exploring alternative analytical
+sheet actions, yet offer little transparency into their decisions, leav-   directions without losing prior work. Dango [5] combined proac-
+ing users with limited means to verify outputs, understand agent           tive clarification with editable step-by-step explanations for data
+reasoning, or steer toward desired outcomes. These risks grow as           wrangling. Prior work on steerability and verification has largely
+automation increasingly displaces human agency in knowledge                focused on code as the medium [21, 30], exposing generated code
+work [13, 33]. We situate our work at the intersection of two lines        as an editable intermediate artifact through which users can inspect
+of research: how interfaces can support users to (1) interpret and         and redirect agent behavior. We extend this to the spreadsheet set-
+verify AI agent outputs, and (2) steer agent execution meaningfully.       ting, where there is no such intermediate layer: agent decisions
+    Tracing and Verifying AI Agent Outputs. Users of data anal-            land directly in the artifact the user owns, making the question of
+ysis tools face high cognitive load when reviewing AI-generated            when and how to intervene more imminent and consequential.
+responses [22, 49], often feeling overwhelmed [21] and struggling
+to detect misalignment between their intent and the agent’s out-           3     Formative Study
+put [16, 21]. These challenges compound in multi-step pipelines            To better understand how users collaborate with spreadsheet agents
+where intermediate states are hidden: users overlook critical er-          and to motivate our design decisions, we conducted a formative
+rors even when the final outputs appear stable [20], and up to 27%         study with eight participants (𝑁 = 8).
+of agent failures involve silent state integrity violations despite
+correct-looking results [37]. Recent tools address this by progres-
+                                                                           3.1    Technology Probe
+sively disclosing agent state [39]: WaitGPT transforms streaming
+code into stepwise visual data operations with before/after table          Traditional agents deliver complete answers in a single turn, hiding
+states [49], ColDeco [15] decomposes LLM-generated formulas                how they arrived at those answers. Similar agents in spreadsheets
+into intermediate helper columns that surface edge cases, and BIS-         prevent users from seeing which columns the agent used, which
+CUIT [6] generates ephemeral UI scaffolds in notebooks so users            rows it filtered, or why it made certain choices, leaving them unable
+can explore alternatives before code is finalized. These approaches        to assess whether results match their intent, guide the agent when
+share a common theme: making agent reasoning legible enough for            outputs diverge from their goals, or develop grounded expectations
+users to form accurate mental models of what changed and why.              about what the agent will do next. To surface these challenges in a
+    However, making reasoning visible does not automatically lead          realistic context, we built a technology probe as a Microsoft Excel
+to appropriate reliance. Buçinca et al. [3] showed that cognitive          add-in with two core features.
+forcing interventions reduce overreliance, but users preferred the            S1. Decomposing Agent Execution. Rather than executing a
+less demanding systems they performed worse with. Vasconcelos              task in a single pass, the probe decomposes the agent’s plan into
+et al. [44] formalized this through a cost-benefit framework: over-        incremental steps. The agent first generates a complete plan of
+reliance drops when explanations make verification cognitively             intended actions, then pauses at each step and advances only when
+tractable, but when the cost of engaging exceeds the perceived ben-        the user clicks forward. Each step includes a plain-language de-
+efit, users default to accepting AI output. These findings suggest         scription of what it does (e.g., “Insert IFERROR month-over-month
+that post-hoc review of finished output is insufficient for calibrated     profit growth formula...”) and highlights all affected cells.
+trust, and motivate an alternative: embedding verification within             S2. Localized Editing. Users can intervene at any individual
+the execution process itself. This is the approach Pista takes.            step without restarting the task. An Edit button opens a localized
+    Steering AI Agent Execution. The rapid expansion of AI                 input field where users can provide natural-language corrections
+capabilities has exacerbated concerns about the loss of human              (e.g., “use 3 decimal places for growth percentages”). The agent
+agency [13] and diminishing user engagement [49] in automated              recalculates the affected step and propagates changes to subsequent
+workflows. A prerequisite for effective steering is the ability to spec-   steps, allowing incremental steering rather than full re-prompting.
+ify intent, yet this remains a persistent bottleneck. Subramonyam
+et al. [41] coined the term “gulf of envisioning" to describe the          3.2    Setup
+cognitive gap between users’ goals and their ability to formulate          3.2.1 Protocol. Sessions were conducted remotely via Zoom. Par-
+effective LLM prompts.                                                     ticipants watched a 1-minute overview video and installed the
+    Recent work has converged on design patterns that make agent           probe beforehand. At the start, we clarified that we were evaluating
+plans visible and editable. Cocoa exposes an interactive plan as a         the tool, not participant performance. Each session included a 15-
+list of steps users can reorder, rewrite, or delete [14]. Magentic-UI      minute food warehouse restocking task, calculating order costs to
+provides a natural-language plan that users can review and modify          sustain inventory given current stock and sales rates, with bonuses
+before and during execution [31]. However, plan visibility alone           to engage early finishers. Task correctness and appropriateness
+is not enough: He et al. [18] found that users can be easily misled        were confirmed by a financial analyst. All participants completed
+Conference acronym ’XX, June 03–05, 2018, Woodstock, NY                                                                            Sabouri et al.
+
+
+the main task and at least one bonus. Sessions concluded with a          could audit not just what changed, but how values were computed
+15-minute semi-structured interview, which was audio- and video-         and how changes propagated.
+recorded with consent. The study was IRB-approved.                       B. Gulf of Execution
+                                                                         [C3] Low confidence in editing and exploring alternatives. The tech-
+3.2.2 Participants. We recruited participants via institutional mail-    nology probe allowed participants to issue corrections scoped to a
+ing lists, university bulletin boards, and snowball sampling. Partic-    single step, which all participants found useful. However, five par-
+ipants spanned multiple disciplines, including Computer Science          ticipants (FP1, FP2, FP6, FP7, FP8) remained hesitant to make edits
+(𝑛 = 4), Electrical Engineering (𝑛 = 2), Linguistics (𝑛 = 1), and        because they could not predict how an edit would propagate and
+Political Science (𝑛 = 1), reflecting varied technical backgrounds       what “exactly is going to change in next steps” (FP6), making even
+and spreadsheet use cases. The sample included five men and three        small changes feel risky. Additionally, participants complained that
+women aged 26 to 30 (𝑀 = 27.5, 𝑆𝐷 = 1.41). Five participants             there was no way to compare alternatives or “revert a step” (FP7),
+had more than five years of experience working with spreadsheet          so they could not confidently explore other options without risking
+environments, and six used spreadsheets daily, primarily for statis-     changes they could not reverse.
+tical analysis. All reported frequent use of large language models,      C. Gulf of Envisioning
+indicating familiarity with AI-assisted tools.                           [C4] Difficulty Specifying Tasks and Constraints Upfront. Three par-
+                                                                         ticipants (FP4, FP5, FP6) struggled to translate their goals into con-
+3.2.3 Analysis. We analyzed sessions using inductive coding. Two         crete instructions. Particularly in the initial phase, they usually
+researchers independently annotated probe interactions and in-           issued high-level prompts without specifying the assumptions, con-
+terview transcripts. After each coding session, they updated the         straints, or standards that should govern how the task is carried
+codebook through negotiated agreement, reaching strong inter-            out (FP4). Without support for articulating goals and constraints,
+rater reliability (Cohen’s 𝜅 = 0.91).                                    their instructions remained underspecified, leaving key decisions
+                                                                         to the agent that might not align with their intent.
+                                                                         [C5] Not knowing what to question and what else to try. Participants
+3.3     Findings                                                         were often unsure what aspects to scrutinize or how the result could
+Overall, participants responded positively to the core idea of decom-    be improved. All of them expressed a need for a “second pair of
+posing agent execution into steps, praising it for making verification   eyes” that offers different perspectives from which the output could
+easier. At the same time, five challenges emerged that limited par-      be verified, for instance, surfacing potential issues they had not
+ticipants’ ability to evaluate the agent’s output, act on what they      considered. Several also wanted help surfacing “unknown unknowns”
+observed, and envision what alternatives were worth pursuing. To         (FP6) and exploring other plausible approaches, such as “browsing
+structure these challenges, we draw on three gulfs of interaction        alternative options” (FP4) or asking for follow-up suggestions (FP6)
+from the literature. The gulf of evaluation [32] describes the gap in    at each step.
+understanding what a system has done, the gulf of execution [32],
+captures the difficulty of translating intent into action, and gulf of   4     Pista
+envisioning [42] reflects the challenges in forming goals and imag-      We introduce Pista, a spreadsheet agent that executes in steps for
+ining possibilities. We organize the challenges below by the gulf of     users to review, steer, and explore alternatives along the way. Pista
+interaction they primarily relate to.
+                                                                         is implemented as an extension for Microsoft Excel that works
+A. Gulf of Evaluation.
+                                                                         on both the web and desktop versions. It appears as a side panel
+[C1] Unable to probe and clarify the agent’s decisions. Participants     to the right of the normal spreadsheet workspace. Informed by
+appreciated the explanations alongside each step in execution, but       the challenges observed in our formative study, we organize the
+found them often insufficient for understanding the agent’s ratio-       design around three design goals (DG1-DG3). Figure 2 outlines the
+nale. For example, FP7 noted that the agent did not explain “why         workflow of using Pista and illustrates its core features.
+it chose that [specific] option” when “there were multiple options”.
+Without such justification, participants struggled to assess whether
+the agent’s choices were appropriate. Three participants desired
+                                                                         4.1    Making Agent Execution Traceable and
+a feature to “ask follow-up questions” (FP5) to probe the agent’s               Digestible [DG1]
+reasoning, noting that static explanations alone were not enough;        Participants in our formative study liked the idea of following the
+they needed a way to actively engage with the agent’s rationale to       agent’s execution step by step, but also raised a tension in how
+develop a deeper understanding of each step.                             granular those steps should be. Decomposing the execution into
+[C2] Lack of visibility into the underlying computation and data         too many fine-grained steps felt verbose and disrupted participants’
+propagation. The technology probe highlighted which cell values          workflow, while bundling too many operations into a single step
+changed between steps, but participants found this insufficient for      made it difficult to interpret and verify. To navigate this tradeoff,
+verification because it did not reveal the logic behind those changes.   Pista halts when the agent (a) modifies data or computational logic,
+Four participants (FP1, FP3, FP6, FP8) noted that the computation        e.g., writing formulas or adding derived columns, or (b) makes a
+logic was hidden behind computed values. While they could inspect        decision that affects subsequent steps and outcomes, e.g., restruc-
+formulas and cell references by clicking into cells, doing so across     turing data into a pivot table versus aggregating with formulas. All
+a large affected range was impractical. FP1 and FP7 suggested dis-       low-level operations needed to carry out such a change or decision
+playing formulas, references, and dependencies upfront so they           are bundled and presented as one step [F1].
+Auditing and Controlling AI Agent Actions in Spreadsheets                                                         Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+
+
+      F5       Branching Exploration
+                  7a                                                                                                                     F5   Scaffolding Q uestions
+                               7b
+                                                                                                                                              5
+
+           7                                                                                                                                  5a
+                                                                6
+
+                                                                                                    6b                                        5b
+
+
+
+                                                    F4   L ocalized Editing                        6a                                                              3b
+
+
+
+
+                                                            2               2c
+       F6       Scaffolded Task For m ulation
+                                                            2a                                      2b
+                                                1                                                        3                              Sur facing Com put ation L ogic
+                                                                                                                                   F3
+
+
+
+                                           1b                                                                                                     3a
+
+                                                                F1   D ecom posing A gent Execut ation                                            3b
+                                    1a                          F2   I n- situ Explanations                  3c            3d
+
+
+
+Figure 2: Pista decomposes AI agent execution into traceable, steerable steps. It begins by generating modifiable requirements
+ 1 , which users can refine by adding 1a or removing 1b items. Pista then situates each step 2 within the plan 2a , highlights
+the affected spreadsheet range 2b , and shows progress via a node-based view 2c (current step highlighted). At each step, it
+displays the applied formula 3a , highlights impacted data 3b , and provides Ask 3d , 5 and Edit 3c , 6 controls with scaffolded
+suggestions 5a , 6a . Edits branch execution into a new plan 7 , and users can navigate between steps and branches 7a , 7b .
+
+
+   A single step may propagate changes across many cells, and                                 the agent only revises changes introduced there while the rest of
+participants found it overwhelming when our technology probe                                  the spreadsheet remains intact [F4].
+highlighted every affected cell. Instead, they preferred to see how re-                          However, our formative study found that localized edits alone
+sults were computed directly to understand the intent behind such                             were not enough to make participants comfortable intervening, be-
+changes [C2]. Accordingly, Pista pairs each step with an explana-                             cause they could not predict how a change would propagate to later
+tion of what the agent did and why [F2], and makes the underlying                             steps [C3]. To address this, Pista supports branching [F5]. When an
+computation logic explicit by presenting formulas, dependencies,                              edit alters the computational logic or data that downstream steps
+and affected data ranges right in the UI [F3]. For example, if the                            depend on, Pista automatically creates a new branch in which all
+agent inserts a SUMIF formula, the panel shows the formula, the                               subsequent steps are regenerated from the edited state. Branches
+source range it reads from, and the output cells it writes to. This lets                      are displayed as a tree, and users can click any branch node to
+users quickly verify correctness by inspecting the computational                              switch between execution sequences and compare how different
+logic rather than spot-checking hundreds of cells. Together, these                            edits lead to different outcomes. Because the original branch is
+designs aim to make each step digestible in scope [F1], grounded in                           always preserved, users can freely create further branches to try
+a clear rationale [F2], and transparent for efficient verification [F3].                      variations and only commit to a branch when they are satisfied.
+                                                                                                 Localized editing [F4] lets users make precise changes without
+                                                                                              affecting unrelated parts of the spreadsheet. Branching [F5] further
+4.2        Enabling Granular Intervention and                                                 supports users in actively exploring alternative solutions without
+           Exploratory Refinement [DG2]                                                       worrying about losing prior work. By lowering the cognitive barrier
+                                                                                              to intervention, these features encourage users to iteratively refine
+Prior work has shown that users are more effective at refining AI-                            the agent’s output rather than passively accept it.
+generated output when they can target specific segments rather
+than re-prompting the entire task, which risks overwriting parts
+that were already correct [47]. Following this principle, Pista allows
+users to issue follow-up instructions scoped to the current step, so
+Conference acronym ’XX, June 03–05, 2018, Woodstock, NY                                                                           Sabouri et al.
+
+
+4.3     Scaffolding Task Specification and Guided                        • RQ1 (Traceability): To what extent does Pista improve users’
+        Exploration [DG3]                                                  understanding of agent actions compared to a baseline agent?
+                                                                         • RQ2 (Steerability): How does Pista affect users’ ability to detect,
+Our formative study revealed two envisioning challenges: partic-
+                                                                           correct, and steer agent behavior toward their intended outcome?
+ipants struggled to specify their preferences and requirements
+clearly, which left the agent to make implicit decisions that users
+only noticed and questioned after they were executed [C4], and           5.1    Participants
+when reviewing steps, they were often unsure what to scrutinize          We recruited 16 participants (ages 21–31, median 25.5) via mailing
+or what alternatives to consider [C5].                                   lists across university departments and regional professional net-
+   To help users communicate their intent before execution begins,       works in financial analytics, management, and computer science,
+Pista presents an overview of the actions it plans to take [F6], given   supplemented by bulletin boards and snowball sampling. Inclusion
+the initial prompt and spreadsheet context. It also infers the users’    required being over 18, English-speaking, and having prior Excel
+intent and displays an editable list of decisions that the user may      experience. Twelve were graduate students; the remainder were
+want to weigh in on, e.g., how to handle missing values. Users can       financial analytics professionals. Most had 1–5 years of spreadsheet
+reorder, add, or remove suggested specifications from this list and      experience; three had 10 or more. While 75% used LLMs often or
+revise each in natural language. To scaffold users in identifying        always, participants remained verification-oriented: 69% manually
+what to question and what alternatives are worth exploring dur-          double-check AI calculations and 75% worry about missing errors
+ing execution, Pista proactively suggests (a) follow-up questions        they would have caught manually. When asked whether they would
+beneath the explanation [F2] and (b) candidate edits within the          defer to an AI’s statistical recommendation over their own analyti-
+editing input [F4], e.g., alternatives that the user might not have      cal hunch, responses split evenly (8/16), reflecting diversity in how
+considered [F7]. Rather than requiring users to identify what to         participants weigh AI authority against their own judgment.
+inspect or change, these suggestions make concrete opportunities
+for refinement visible at each step and guide users toward deeper        5.2    Protocol
+engagement with the agent’s output.
+                                                                         Each session began with a 10-minute onboarding task (planning
+   [F6] helps users externalize their intent more clearly before exe-
+                                                                         a road trip from Los Angeles to New York) to familiarize partic-
+cution, while scaffolding suggestions [F7] within [F2] and [F4] help
+                                                                         ipants with the tool’s features. Participants then completed two
+them identify opportunities for refinement as execution unfolds.
+                                                                         counterbalanced tasks, one per condition. After each task, partic-
+                                                                         ipants completed a post-task survey and interview, probing their
+4.4     Implementation Note                                              understanding of agent actions, verification strategies, and steer-
+Pista’s front-end1 is built in JavaScript and HTML. The back-end2        ing experience. Treatment-specific questions probed feature usage.
+is a Python Flask REST API that handles logging and routes the           Sessions concluded with a comparative interview on verification
+agentic calls to the Gemini LLM API, based on Microsoft Copilot          effort, confidence, and ownership. Sessions were audio- and video-
+for Excel agentic model, with output schemas defined as DSPy pro-        recorded with consent. Participants received a $30 giftcard for the
+grams [23] to ensure structured, consistent outputs. Upon receiving      1-hour session. The study was IRB-approved.
+a user request in a spreadsheet, the agent generates a sequence of
+Office.js code snippets. Snippets are transmitted to the front-end       5.3    Financial Analytic Tasks
+and executed via the Office.js API, with sheet state cached in the
+browser at each step to support Branching Exploration.                   We selected two subtasks from SpreadsheetBench [29], a bench-
+   We used Gemini 3.0 Flash for all features requiring code gener-       mark of real-world spreadsheet questions sourced from online Excel
+ation and multi-part explanations (Decomposing Agent Execution,          forums, and extended them to ensure participants would encounter
+In-situ Explanations, Surfacing Computation Logic, Localized Edit-       both formula construction and data cleaning, the two most com-
+ing, Scaffolded Task Formulation), selected for its favorable balance    mon daily challenges identified in the recruitment survey. Task
+of response latency and task accuracy. For Scaffolding Question,         A involved automating a final price-point column using a multi-
+where faster response time was the primary constraint and task           product lookup formula, computing a cost distribution summary,
+complexity was lower, we used Gemini 3.1 Flash-Lite.                     and applying conditional color-coding. Task B required calculating
+                                                                         weighted revenue via a cross-sheet probability lookup, aggregat-
+                                                                         ing results by priority, and handling case-insensitive deduplication.
+5     Usability Study                                                    Each task was divided into five scored subtasks. A financial analyt-
+To evaluate the efficacy of Pista, we conducted a within-subject         ics expert confirmed that both tasks were unambiguous, equally
+comparative usability study with 𝑁 = 16 participants. As a baseline,     difficult, self-contained, and could be completed within 15 minutes.
+we stripped Pista of all features to simulate a typical spreadsheet
+AI agent of equivalent capability: one that applies changes directly     5.4    Measure
+to the spreadsheet and generates a summary of what was done.
+From this study, we answer the following research questions:             We measured participants’ interaction with and understanding of
+                                                                         the agent’s outputs through three proxies: (i) the depth of their
+                                                                         verbal explanations, (ii) their self-reported experience via a post-
+1 https://github.com/aceatusc/sheetcheck-ms-add-in                       study questionnaire, and (iii) their behavioral engagement captured
+2 https://github.com/aceatusc/sheetcheck-backend                         through interaction logs.
+Auditing and Controlling AI Agent Actions in Spreadsheets                                   Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+
+5.4.1 Depth of Understanding. We assessed participants’ under-          𝑀𝐵 = 1.75; Figure 4B) while sending fewer prompts (𝑀𝑃 = 3.18
+standing of AI changes by analyzing verbal explanations collected       vs. 𝑀𝐵 = 4.00; Figure 4C) that were significantly shorter (Mann–
+after each task via a think-aloud prompt (“explain what the agent       Whitney 𝑈 = 3437.5, 𝑝 < .001; 𝑀𝑃 = 12.90 vs. 𝑀𝐵 = 27.63 words;
+did and why”). Following the verbal protocol analysis methods of        Figure 4D). Post-study ratings confirmed that participants found
+Ericsson [12] and the self-explanation framework of Chi et al. [7],     Pista significantly more helpful overall (Wilcoxon𝑊 = 3.5, 𝑝 < .01;
+we developed a domain-specific codebook to analyze spreadsheet-         Figure 3). Table 1 summarizes feature usage. Branching Exploration
+based explanations. We coded each segment along four dimensions         was the most adopted feature (94% of participants, median 3 uses),
+adapted to the context of data analysis: mentioning a procedural        followed by In-situ Explanations (62%). Scaffolded Task Formulation,
+step or outcome of the agent (PROC), explaining mechanistically         Scaffolding Question, and Surfacing Computation Logic each reached
+why a change happened (MECH), mentioning a specific formula or          roughly half or fewer participants. Qualitatively, participants de-
+logic construct (FORM), expressing where the agent went wrong           scribed Pista as offering active presence and growing trust, while
+(ERR), and specifying concrete column, cell, or value (SPEC). Raters    the Baseline was repeatedly characterized as a “black box” that
+resolved disagreements through discussion; final scores represent       delivered results without explanation.
+the agreed-upon count. The count of coded segments per explana-
+tion served as a proxy for the understanding depth score.
+                                                                        Table 1: Pista feature usage statistics: average (Avg), median
+5.4.2 Post-study Questionare. After each session, participants com-     (Med), maximum (Max) time used in a session, and number
+pleted a post-study survey rating their experience with each system     and percentage of participants used (n) across 𝑁 = 16.
+on a seven-point Likert scale. Questions covered overall helpfulness,
+sense of control, mental effort, ability to guide and understand the
+                                                                          Feature                           Avg     Med      Max          n (%)
+AI, error detection and correction, and the degree to which the AI’s
+approach aligned with their own reasoning process.                        Branching Exploration             2.62       3        4     15 (94%)
+                                                                          In-situ Explanations              1.23       1        3     10 (62%)
+5.4.3 User Interaction Data. We collected participants’ activities to
+                                                                          Scaffolded Task Formulation       0.60       1        1      9 (56%)
+capture their interactions, including the number of issues detected
+                                                                          Surfacing Computation Logic       0.67       1        2      6 (38%)
+by the user or the tool, the number of fixed issues, the number of
+prompting turns, and the frequency of feature use, such as clicking
+the Edit and Ask buttons. We also measured their success rate as a
+proportion of subtasks completed.                                          We now examine these patterns through each research question.
+
+5.5     Analysis                                                        6.1    RQ1: Pista Enhances User Comprehension
+5.5.1 Quantitative. We verified normality using the Shapiro-Wilk               of Agent Changes
+test before each statistical comparison and used nonparametric          Pista’s progressive pause-and-reveal shifted participants from re-
+alternatives when normality was violated. For multiple comparisons      viewing completed spreadsheets post-hoc to tracing each formula
+on the same data, we applied the Bonferroni correction.                 as it was applied and reasoning about why it was applied. As shown
+                                                                        in Figure 3, participants using Pista reported they could better iden-
+5.5.2 Qualtiative. We analyzed interview sessions and screen record-
+                                                                        tify the agent’s changes (Q1, 𝑝 < 0.001), understand the rationale
+ings to understand how participants worked with agents. Two re-
+                                                                        behind them, and track them more easily (Q2, 𝑝 < 0.01).
+searchers coded the anonymized transcripts, starting with open
+coding and then meeting to discuss disagreements. This process              Transparency. Fourteen participants described Pista as making
+produced 42 distinct codes, which we organized through thematic         the agent’s reasoning more visible than the Baseline. The stepwise
+analysis [8] to address each research question. To measure task         execution (Decomposing Agent Execution) let participants “exactly
+performance, we tracked the number of requirements participants         see what is happening” (P11), which was especially valuable when
+completed. Each task included five requirements. We calculated          the agent’s logic involved unfamiliar concepts: P5 noted they could
+the success rate by dividing satisfied requirements by total require-   “check it in the middle” even when they did not fully understand
+ments for each session. We used screen recordings to assess whether     a step. Step-level explanations (In-situ Explanations) also helped
+Pista helped participants catch problems during collaboration. We       participants catch issues they would have otherwise overlooked. P1,
+counted the number of misalignments participants identified while       for instance, described how the walkthrough surfaced a conditional
+working with the agent. Interaction effort was measured via prompt      formatting decision they would not have thought to verify. Several
+count and prompt length (in words), two proxies for interaction         participants (P2, P7, P8, P9, P11) reported that the Scaffolded Task
+intensity and context load based on prior work [4, 36].                 Formulation feature flagged discrepancies they would have missed
+                                                                        entirely; as P2 noted, the correct output “would be zero if [they]
+6     Findings                                                          didn’t go back and see that.” Beyond catching errors, participants
+We begin by comparing how effectively participants understood           found this transparency made the process educational: P2 described
+and validated AI-generated spreadsheet solutions under Pista ver-       the tool as allowing them to “learn what [they]’re actually doing a
+sus the Baseline. Both conditions achieved comparable success rates     bit more,” in contrast to passively receiving a finished output. The
+(𝑀𝑃 = 0.53, 𝑆𝐷 𝑃 = 0.31 vs. 𝑀𝐵 = 0.50, 𝑆𝐷 𝐵 = 0.40; Figure 4A), but     Baseline, by comparison, offered no such foothold: P3 characterized
+Pista participants detected more issues per session (𝑀𝑃 = 2.12 vs.      it as “some black box model . . . doing whatever it wants.”
+Conference acronym ’XX, June 03–05, 2018, Woodstock, NY                                                                                                                                                             Sabouri et al.
+
+
+                             Baseline                                                                    When using the tool, I...                                                          Pista
+     3               3           1           5                           3                could understand why the AI produced the output it did (Q1***)                2                   9                              4
+ 1       2               4               4                       2           2         could understand and keep track of what the AI had changed (Q2**)                    3           3               6                      3
+ 1       2       1       2               6                               3           felt the AI steps resembled the steps I would have taken myself (Q3**)            1     5                              7                      2
+ 1           3               4                       5                   1 1            could easily identify the underlying formula the AI applied (Q4**)             1 1             8                               5
+   2         6                       1                       5             1                    felt in control of what the AI was producing (Q5***)                   1 2                      9                              3
+ 1 1     3       2                   3                               5                felt able to guide the system toward the outcome I had in mind (Q6*)             1     5                              7                      2
+ 1     4           3                     2                       4               1             could easily detect when the AI made a mistake (Q7*)                    1 1     4                3               4                  2
+   2     3     1                     5                           2           2         could easily fix errors that was introduced to worksheet by AI (Q8*)            1   3         3              2           4                  2
+ 1   3         3                     3                       3               2          found the tool helpful for generating new paths to explore (Q9**)              1   3       2                    6                      3
+ 1 1 2       2       2                                   6                       1                     found the system helpful overall (Q10**)                        1              10                                   4
+ 1 2       2       3                             4                       3                   put low mental effort in interacting with the agent (Q11*)                1 2       3                      6                      3
+                         Strongly Disagree                       Disagree                   Somewhat Disagree               Neutral          Somewhat Agree                     Agree       Strongly Agree
+
+Figure 3: Likert ratings box plots for Pista vs. Baseline (𝑁 = 15). Significance via two-sided Wilcoxon signed-rank test: ∗ 𝑝 < .05,
+∗∗ 𝑝 < .01, ∗∗∗ 𝑝 < .001.
+
+
+
+                                                                                                                                                         Overall                 Divided by specific code
+                                                                                                                                                    10             4                                                Baseline
+
+
+
+
+                                                                                                                           # Codes in explanation
+                                                                                                                                                                                                                    Pista
+                                                                                                                                                    8       *
+                                                                                                                                                                   3
+                                                                                                                                                    6
+                                                                                                                                                                   2
+                                                                                                                                                    4
+                                                                                                                                                    2              1
+
+                                                                                                                                                    0              0
+                                                                                                                                                                       PROC MECH FORM                       ERR        SPEC
+
+                                                                                                                               Figure 5: Number of qualitative codes in participants’ ex-
+                                                                                                                               planations. Pista explanations include significantly higher
+                                                                                                                               codes than Baseline (left; 𝑀 = 4.38, 𝑝 = 0.015), a trend reflected
+                                                                                                                               across nearly all reasoning types (right). Error bars show the
+                                                                                                                               standard error of the mean.
+
+
+                                                                                                                                Process Congruence. Participants reported that Pista’s step de-
+                                                                                                                             composition mirrored how they themselves would have approached
+                                                                                                                             the task (P4, P6, P8, P11). P6 noted: “Pista basically just gave me
+Figure 4: Per-session distributions across four measures: (A)
+                                                                                                                             all the steps that I wanted to do before applying it . . . I went ahead
+task success rate, (B) issues detected (user- vs. tool-detected),
+                                                                                                                             because it matched with what I wanted to do.” P4 described a sim-
+(C) prompt count (standard vs. Edit), and (D) prompt length.
+                                                                                                                             ilar alignment at the level of language, observing that the agent
+Stars denote Mann-Whitney significance: ∗∗∗ 𝑝 < .001. Error
+                                                                                                                             “was just exactly translating my natural language prompt to Excel
+bars show 95% CIs.
+                                                                                                                             formulas.” This congruence also aided verification: because partic-
+                                                                                                                             ipants held the same mental model as the agent’s sequence, gaps
+                                                                                                                             between their expectations and the agent’s actions were easier to
+   Comprehension. Pista’s practice of naming and describing for-
+                                                                                                                             spot mid-execution (P4, P6). Our post-study survey supports this:
+mulas at each step gave participants a semantic handle on changes:
+                                                                                                                             participants rated Pista’s steps as significantly more resembling
+not just what cells were modified, but what the modification meant
+                                                                                                                             their own approach (Q3, 𝑝 < 0.01; Figure 3).
+computationally. P6 articulated this: “you know exactly what the
+formulas are doing . . . so it’s just a matter of figuring out what the                                                           Confidence and Trust. The transparency described above trans-
+formatting issue is.” Our post-study survey (Figure 3) confirms that                                                           lated into greater trust. Participants consistently reported trusting
+participants rated identifying formula changes (Q4) significantly                                                              Pista more because the reasoning behind each step was available
+easier with Pista than in the Baseline (𝑝 < 0.01). The Scaffolding                                                             for inspection (P1, P3, P13). P3 captured this directly: “I wasn’t
+Question feature further supported comprehension by letting par-                                                               worried about the changes it’s making, because it let me verify each
+ticipants probe specific steps interactively, turning opaque outputs                                                           step.” This trust had behavioral consequences: P9 noted that trust-
+into ones they could interrogate on demand (P11).                                                                              ing Pista more meant they “didn’t feel the need to be as thorough”
+Auditing and Controlling AI Agent Actions in Spreadsheets                                          Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+
+in verification, a difference they called “a big deal in . . . a rollout       (prices are in the Price sheet). Just in each row, consider items which
+environment.” Notably, trust was earned through the interaction                are not blank! However, when P7 used Localized Editing, they sim-
+itself rather than conferred on the output. As P7 remarked, “even              ply targeted only the specific cells that needed to change and asked
+though I was checking it manually, I still trusted it more,” suggest-          Pista to: apply the final price point formula for order 1 - 7. Our
+ing that the act of verification reinforced confidence rather than             findings suggest that direct, step-level manipulation enables more
+undermining it, consistent with Srinivasan and Thomason [40].                  efficient steering without sacrificing output quality.
+   These qualitative patterns are supported by our objective mea-
+sure of understanding depth (see 5.4.1). Participants using Pista                 Structured exploration. As shown in Figure 3, participants also
+provided significantly richer explanations of the agent’s process              rated Pista as more supportive of exploring new approaches. The
+than those in the Baseline (𝑀𝑆 = 4.38 vs. 𝑀𝐵 = 2.94; 𝑝 = 0.015;                ability to pause at individual steps and redirect to a new branch
+Figure 5), covering more procedural steps, underlying mechanisms,              (Branching Exploration) lowered the cost of experimentation. As P4
+and formula logic, while Baseline participants focused primarily on            noted, the graph node navigation mechanism is valuable “when you
+identifying errors.                                                            want to do things two different ways and still compare” the outcomes.
+                                                                               This suggests that Pista’s step-level control supports iterative re-
+6.2     RQ2: Pista Supports Effective Steering and                             finement, enabling users to treat agent-assisted spreadsheet editing
+                                                                               as an exploratory process rather than a one-shot transaction.
+        Error Correction
+Beyond the scaffolded pause-and-reveal, Pista made each step steer-
+able, giving participants back agency and control. With the baseline,          7     Discussion
+many described a reluctance to re-prompt, concerned that correc-               Most AI assistance in productivity tools positions the agent as
+tive instructions would cause the agent to redo everything and                 the executor and the user as a reviewer of finished outputs. Our
+potentially break the spreadsheet. Pista’s localized edit capability           findings challenge this framing. When participants could engage
+directly resolved this, allowing participants to explore making tar-           with the agent’s reasoning incrementally, inspecting, questioning,
+geted edits at specific steps rather than re-running the full task,            and redirecting at each step, they did not merely verify better: they
+dramatically lowering the cost of intervention.                                thought differently about the task, about the agent, and about their
+                                                                               own role in the process. Pista is, in this sense, not just a more
+    Ownership and Control. As shown in Figure 3, participants re-              transparent agent but an argument for a different model of human-
+ported a greater sense of control over the AI in the Pista condition.          agent collaboration in knowledge work.
+This sense of control was closely tied to a feeling of co-authorship
+over the final output. Because participants reviewed and approved
+                                                                               7.1    Calibrated Trust Through Participation
+each step, the resulting spreadsheet felt like a collaborative product
+to them. P14 captured this well: “I need to review every action and            Conventionally, trust is a post-hoc judgment: the user receives
+put my mental model in. I need to know what’s right or wrong.” By              an agent’s output and decides whether to accept it. Our findings
+contrast, the baseline left participants feeling like passive recipients:      suggest that Pista disrupts this dynamic. Because participants re-
+P3 described it as “some black box model. I give it some context, and          viewed and engaged with each step as it unfolded, trust was not
+it’s doing whatever it wants.” Twelve of 16 participants indicated             a verdict rendered at the end, but a disposition that accumulated
+that Pista gave them a stronger sense of ownership over the output.            throughout the interaction. Participants reported trusting Pista’s
+                                                                               output more, not because it was more accurate, but because they
+   Steerability. Figure 3 shows that participants felt significantly           had been present, witnessing its construction.
+more in control of guiding the agent toward their intended out-                   This distinction matters for how we think about appropriate re-
+come with Pista. Participants noted that since each step was lo-               liance on AI [24]. The automation trust literature warns against both
+calized and inspectable, they could “pinpoint” (P8) exactly where              disuse, rejecting reliable AI output out of excessive skepticism, and
+the agent’s reasoning diverged from their intent and intervene to              misuse, accepting unreliable output without scrutiny [35]. Pista’s
+“correct [it]” (P8) or “ask to do it in a different way.” (P11). Conversely,   interaction model creates a structural condition for calibrated trust
+with the Baseline agent, participants were forced to “re-write a full          by making the agent’s process, not just its product, available for
+prompt to go through all the changes again” (P3). Pista influcend              inspection. Participants caught errors through their own domain
+participatns efficiency as well. While performing at the same level,           knowledge, and the Scaffolded Task Formulation feature surfaced is-
+participants required significantly fewer prompts with Pista than              sues they would otherwise have missed (P9). Critically, this scrutiny
+baseline ((𝑀𝑆 = 2.19 vs. 𝑀𝐵 = 4.00), 𝑡 (15) = 4.53, 𝑝 < 0.001), substi-        did not undermine trust: as our findings show that participants who
+tuting re-prompts with a single, targeted edit. Mann-Whitney test              checked more carefully trusted the output more, not less, consistent
+on the lengths of prompts (words) showed that Localized Editing                with recent work on verification-reinforced confidence [40].
+prompts were also significantly shorter than re-prompts (𝑀𝑆 = 13                  This dynamic compounds with task complexity. Multiple par-
+vs. 𝑀𝐵 = 27.6, 𝑈 = 3437.5, 𝑝 < 0.001), since with Localized Editing            ticipants noted that step-by-step control becomes more valuable
+feature, participants were able “to go back to a specific node and             as tasks grow more interdependent and error-prone, precisely the
+branch off from that” (P9) as re-prompts required restating the full           regime where automation bias [34] is hardest to resist. A system
+context. For example, during a session with the baseline agent, P7             that exposes its process at high-stakes decision points gives users
+prompted: Please change final price point (column R) with a formula            the evidence they need to trust selectively, directing their finite
+to sum all of the item counts [sic] in a row, multiply by their prices         oversight budget [2] where it matters most.
+Conference acronym ’XX, June 03–05, 2018, Woodstock, NY                                                                               Sabouri et al.
+
+
+Design Implication. Human-AI collaborative systems should aim              falls on formulating the correction, not locating where to make it.
+to accrue trust through the interaction itself, not just through out-      Morae [17] shows that proactive clarification at high-uncertainty
+come quality. This means structuring agent execution where par-            steps can surface this instruction gap before it blocks the user.
+ticipants are present in the process, with sufficient visibility to        WaitGPT [49] showed that visualizing intermediate states helps
+form evidence-based judgments at each step. Attention-directing            users decide what to change; our findings suggest the next fron-
+mechanisms that flag high-uncertainty or high-impact steps further         tier is helping users decide how to say what they want to change.
+support selective scrutiny without overwhelming the user.                  VRCopilot [27] encountered a related tension in immersive author-
+                                                                           ing, finding that scaffolded creation modes helped users articulate
+7.2     The Semantic Diff Primitive                                        the intent they could not express through unconstrained natural
+                                                                           language. While Pista addresses the envisioning gap at task initia-
+A recurring challenge in agentic systems is the mismatch between
+                                                                           tion [F6] and execution [F7], these interventions assume users know
+the unit of change and the unit of understanding. Agents typically
+                                                                           their goals. When they do not, static suggestions fall short, pointing
+surface what changed at the level of the artifact’s surface: high-
+                                                                           toward responsive envisioning support that adapts to uncertainty
+lighted cells, inserted lines of code, modified pixels. But users rea-
+                                                                           through structured examples [50], intent disambiguation [28], and
+son about the operation that produced the change, the formula, the
+                                                                           contrastive explanation [45].
+transformation rule, the generative instruction, and whether that
+                                                                           Design Implication. Agentic systems should treat envisioning
+operation matches their intent. When the surface unit and the se-
+                                                                           support not as a one-time affordance at task entry but as a persis-
+mantic unit diverge, verification becomes intractable: the user must
+                                                                           tent layer throughout execution. At each step where a user might
+mentally reconstruct the agent’s intent from its outputs, which is
+                                                                           intervene, the system should offer not just what the agent did and
+precisely the cognitive burden that transparency is supposed to
+                                                                           why, but concrete, contextual starting points for expressing a correc-
+relieve [16, 21].
+                                                                           tion, such as exemplar edits, contrastive alternatives, or interactive
+   We propose the semantic diff as a design primitive that addresses
+                                                                           disambiguation, that lower the cost of formulating intent at the
+this mismatch. Rather than enumerating every affected element, a
+                                                                           moment it is needed most.
+semantic diff surfaces the computational unit driving the change,
+                                                                              The interaction paradigm this work argues for, humans partic-
+its logic, its dependencies, and its scope, as the primary object
+                                                                           ipating in agent execution, rather than reviewing its outputs, is
+of inspection. In Pista, this means surfacing the formula applied
+                                                                           not specific to spreadsheets. It applies wherever agents produce
+to a column rather than highlighting every cell it populates: if a
+                                                                           sequential, structured artifacts and a human must remain meaning-
+VLOOKUP drives 500 changes, the user sees one formula and its
+                                                                           fully in the loop. The properties that made this model effective here,
+explanation, not 500 highlights. Our summative study confirmed
+                                                                           trust accrued through participation, semantic transparency at the
+the value: participants described formula-level visibility as what
+                                                                           level of computational intent, and persistent envisioning support,
+made verification tractable rather than exhausting. The semantic
+                                                                           generalize to any domain where the gap between what an agent
+diff generalizes across artifact-producing agents: in code agents,
+                                                                           produces and what a user can evaluate is wide enough to matter.
+the relevant unit is not the line diff but the function or architectural
+                                                                           In code agents, that gap is widening as natural language-driven
+decision being applied [50]; in document agents, it is the rhetorical
+                                                                           generation produces codebases users did not write [50]. In research
+move, not the character-level edit. Building a semantic diff layer
+                                                                           synthesis, users discover what they need during review rather than
+that understands domain-specific artifact structure could serve
+                                                                           upfront [41]. In document and design agents [27], semantic diffs
+as shared infrastructure for inspectable agentic interfaces, making
+                                                                           would surface rhetorical or spatial operations rather than character-
+agent reasoning legible not just to the immediate user but to anyone
+                                                                           level edits. Across all these domains, the central challenge is the
+reviewing the artifact afterward.
+                                                                           one Pista addresses: making agent reasoning legible enough for
+Design Implication. Agent interfaces operating on structured
+                                                                           meaningful participation, without making participation so costly
+artifacts should surface the semantic unit of each change, the for-
+                                                                           that it defeats the purpose of having an agent at all.
+mula, rule, or operation driving it, rather than enumerating every
+affected element. This shifts verification from auditing outputs to
+evaluating computational intent, and generalizes across domains
+where the meaningful unit of change differs from the visible unit.         8   Limitation
+                                                                           Our participant pool skewed toward young, highly educated, and
+7.3     Scaffolding the Envisioning Gap                                    frequent LLM users; while we recruited from both professional
+Pista directly addressed the gulf of envisioning [41], the cognitive       and academic networks, this likely limits generalizability to less
+distance between a user’s goals and their ability to formulate a           tech-savvy spreadsheet users. Similarly, our tasks were scoped to
+prompt that anticipates how an LLM will interpret and execute it,          financial analytics workflows, while the core interaction model is
+through Scaffolded Task Formulation [F6] and Scaffolding Ques-             domain-agnostic; generalizability to other spreadsheet tasks and to
+tion [F7]. Yet our findings reveal a more fundamental tension: the         longer, open-ended tasks remains an open question. Our evaluation
+envisioning gulf does not dissolve once a task begins. It recurs at        of steerability relies more on self-efficacy metrics than objective
+every step where the user must intervene.                                  performance measures, in part because no established ground-truth
+   This finding extends Kazemitabaar et al. [21]’s work in an im-          metric exists for agent steerability from the human side. Prior efforts
+portant direction: They showed that interactive task decomposition         have focused mostly on the agent underlying capabilities to be
+reduces steering effort; our results suggest the residual burden           steered, rather than interaction features for the user.
+Auditing and Controlling AI Agent Actions in Spreadsheets                                                       Conference acronym ’XX, June 03–05, 2018, Woodstock, NY
+
+
+   On the system side, step segmentation was developed around                           [7] Michelene TH Chi, Nicholas De Leeuw, Mei-Hung Chiu, and Christian LaVancher.
+two principles: operations that modify data or computational logic,                         1994. Eliciting self-explanations improves understanding. Cognitive science 18, 3
+                                                                                            (1994), 439–477.
+and decisions that affect subsequent steps and outcomes. Both stud-                     [8] Victoria Clarke and Virginia Braun. 2017. Thematic analysis. The journal of
+ies confirmed the practical validity and perceived usefulness of                            positive psychology 12, 3 (2017), 297–298.
+                                                                                        [9] Giovanna Di Marzo Serugendo, Maria Assunta Cappelli, Gilles Falquet, Claudine
+this segmentation, though formal grounding in cognitive psychol-                            Métral, Assane Wade, Sami Ghadfi, Anne-Françoise Cutting-Decelle, Ashley
+ogy theories of task decomposition remains an avenue for future                             Caselli, and Graham Cutting. 2024. Streamlining tax and administrative docu-
+work. Finally, alternative path suggestions and verification aspect                         ment management with AI-powered intelligent document management system.
+                                                                                            Information 15, 8 (2024), 461.
+scaffolding were constrained solely by system prompt instructions,                     [10] Philipp Eibl, Sadra Sabouri, and Souti Chattopadhyay. 2025. Exploring the Chal-
+a deliberate choice to explore the interaction space; future itera-                         lenges and Opportunities of AI-assisted Codebase Generation. In 2025 IEEE Sym-
+tions should introduce more robust programmatic controls to better                          posium on Visual Languages and Human-Centric Computing (VL/HCC). IEEE,
+                                                                                            241–252.
+support trust and error recovery.                                                      [11] Will Epperson, Gagan Bansal, Victor Dibia, Adam Fourney, Jack Gerrits, E. Zhu,
+                                                                                            and Saleema Amershi. 2025. Interactive Debugging and Steering of Multi-Agent
+                                                                                            AI Systems. Proceedings of the 2025 CHI Conference on Human Factors in Computing
+9    Conclusion                                                                             Systems (2025). doi:10.1145/3706598.3713581
+We presented Pista, a spreadsheet AI agent that decomposes execu-                      [12] K Anders Ericsson. 2017. Protocol analysis. A companion to cognitive science
+                                                                                            (2017), 425–432.
+tion into inspectable, steerable steps, giving users a path to follow                  [13] Rosanna Fanni, Valerie Eveline Steinkogler, Giulia Zampedri, and Jo Pierson. 2023.
+through the agent’s reasoning and a means to intervene at each                              Enhancing Human Agency Through Redress in Artificial Intelligence Systems.
+                                                                                            AI & Society 38, 2 (2023), 537–547. doi:10.1007/s00146-021-01183-x
+step. Through a formative study (𝑁 = 8) and a within-subjects                          [14] KJ Feng, Kevin Pu, Matt Latzke, Tal August, Pao Siangliulue, Jonathan Bragg,
+summative evaluation (𝑁 = 16), we found that participation in                               Daniel S Weld, Amy X Zhang, and Joseph Chee Chang. 2024. Cocoa: Co-planning
+execution shaped not just what users could do but how they under-                           and co-execution with ai agents. arXiv preprint arXiv:2412.10999 (2024).
+                                                                                       [15] Kasra Ferdowsi, Jack Williams, Ian Drosos, Andrew D. Gordon, Carina Negreanu,
+stood the task, the agent, and their own role in the process: trust                         Nadia Polikarpova, Advait Sarkar, and Benjamin Zorn. 2023. ColDeco: An End
+accumulated through the interaction rather than being conferred                             User Spreadsheet Inspection Tool for AI-Generated Code. In IEEE Symposium
+on outputs, users recognized their own reasoning in the agent’s                             on Visual Languages and Human-Centric Computing (VL/HCC ’23). IEEE, 82–91.
+                                                                                            doi:10.1109/VL-HCC57772.2023.00017
+steps, and errors were caught that post-hoc review would have                          [16] Ken Gu, Ruoxi Shang, Tim Althoff, Chenglong Wang, and S. Drucker. 2023. How
+missed. These findings suggest that the central design challenge for                        Do Analysts Understand and Verify AI-Assisted Data Analyses? Proceedings of
+                                                                                            the 2024 CHI Conference on Human Factors in Computing Systems (2023). doi:10.
+agentic systems in knowledge work is not transparency alone, but                            1145/3613904.3642497
+presence: giving users the shared journey, not just the destination.                   [17] Evans Xu Han, Alice Qian, Haiyi Zhu, Hong Shen, Paul Pu Liang, and Jane Hsieh.
+                                                                                            2025. Morae: A Mixed-Initiative UI Agent that Pauses at Decision Points for
+                                                                                            User Input. In Proceedings of the 38th Annual ACM Symposium on User Interface
+Acknowledgments                                                                             Software and Technology (UIST ’25). ACM, New York, NY, USA.
+We thank Prof. Jonathan May for helpful discussions during the                         [18] Xinyi He, Gagan Bansal, and Saleema Amershi. 2025. Plan-Then-Execute: An
+                                                                                            Empirical Study of LLM Planning with Feedback. In Proceedings of the CHI
+early stages of this project, and the USC Information Sciences In-                          Conference on Human Factors in Computing Systems (CHI ’25). ACM, New York,
+stitute (ISI) for providing the infrastructure that supported this                          NY, USA.
+                                                                                       [19] Xueyu Hu, Ziyu Zhao, Shuang Wei, Ziwei Chai, Qianli Ma, Guoyin Wang, Xuwu
+research. We are grateful to Prof. Jose Francisco Rubio, Amin Ah-                           Wang, Jing Su, Jingjing Xu, Ming Zhu, et al. 2024. Infiagent-dabench: Evaluating
+madisharaf, and Maryam Ghareh Sheikhlou for their invaluable                                agents on data analysis tasks. arXiv preprint arXiv:2401.05507 (2024).
+insights during the design and evaluation phases. Finally, we extend                   [20] J. Inala, Chenglong Wang, Steven M. Drucker, Gonzalo Ramos, Victor Dibia,
+                                                                                            Nathalie Riche, Dave Brown, Dan Marshall, and Jianfeng Gao. 2024. Data Analysis
+our sincere appreciation to the students from the Departments of                            in the Era of Generative AI. ArXiv abs/2409.18475 (2024). doi:10.48550/arxiv.2409.
+Financial Analytics, Management, and Computer Science at Cali-                              18475
+fornia State Polytechnic University, Pomona, and the University of                     [21] Majeed Kazemitabaar, Jack Williams, Ian Drosos, Tovi Grossman, Austin Z Henley,
+                                                                                            Carina Negreanu, and Advait Sarkar. 2024. Improving Steering and Verification
+Southern California, whose participation enabled the user studies.                          in AI-Assisted Data Analysis with Interactive Task Decomposition. Proceedings
+                                                                                            of the 37th Annual ACM Symposium on User Interface Software and Technology
+                                                                                            (2024). doi:10.1145/3654777.3676345
+References                                                                             [22] Syed Md Faisal Ali Khan and Y. Shehawy. 2025. Perceived AI Consumer-Driven
+ [1] Janna Anderson and Lee Rainie. 2023. The Future of Human Agency. Technical             Decision Integrity: Assessing Mediating Effect of Cognitive Load and Response
+     Report. Pew Research Center. https://www.pewresearch.org/internet/2023/02/             Bias. Technologies 13, 8 (2025). doi:10.3390/technologies13080374
+     24/the-future-of-human-agency/                                                    [23] Omar Khattab, Arnav Singhvi, Paridhi Maheshwari, Zhiyuan Zhang, Keshav
+ [2] Samuel R. Bowman, Jeeyoon Hyun, Ethan Perez, Edwin Chen, Craig Pettit,                 Santhanam, Sri Vardhamanan, Saiful Haq, Ashutosh Sharma, Thomas T Joshi,
+     Scott Heiner, Kamilė Lukošiūtė, Amanda Askell, Andy Jones, Anna Chen, et al.        Hanna Moazam, et al. 2023. Dspy: Compiling declarative language model calls
+     2022. Measuring Progress on Scalable Oversight for Large Language Models.              into self-improving pipelines. arXiv preprint arXiv:2310.03714 (2023).
+     arXiv:2211.03540 [cs.CL]                                                          [24] John D Lee and Katrina A See. 2004. Trust in automation: Designing for appro-
+ [3] Zana Buçinca, Maja Barbara Malaya, and Krzysztof Z. Gajos. 2021. To Trust              priate reliance. Human factors 46, 1 (2004), 50–80.
+     or to Think: Cognitive Forcing Functions Can Reduce Overreliance on AI in         [25] Hongxin Li, Jingran Su, Yuntao Chen, Qing Li, and Zhaoxiang Zhang. 2023.
+     AI-Assisted Decision-Making. Proceedings of the ACM on Human-Computer                  SheetCopilot: Bringing Software Productivity to the Next Level through Large
+     Interaction 5, CSCW1 (2021), 1–21. doi:10.1145/3449287                                 Language Models. In Thirty-seventh Conference on Neural Information Processing
+ [4] Aaron Chatterji, Thomas Cunningham, David J Deming, Zoe Hitzig, Christopher            Systems. https://openreview.net/forum?id=tfyr2zRVoK
+     Ong, Carl Yan Shan, and Kevin Wadman. 2025. How people use chatgpt. Technical     [26] Jenny T Liang, Aayush Kumar, Yasharth Bajpai, Sumit Gulwani, Vu Le, Chris
+     Report. National Bureau of Economic Research.                                          Parnin, Arjun Radhakrishna, Ashish Tiwari, Emerson Murphy-Hill, and Gustavo
+ [5] Kai Chen, Chenglong Wang, and Steven M. Drucker. 2025. Dango: Mixed-                   Soares. 2025. Tabletalk: Scaffolding spreadsheet development with a language
+     Initiative Data Wrangling with Proactive Clarification. In Proceedings of the          agent. ACM Transactions on Computer-Human Interaction 32, 6 (2025), 1–49.
+     CHI Conference on Human Factors in Computing Systems (CHI ’25). ACM, New          [27] Ruofei Lin, Tao Zhang, Bjoern Hartmann, Iolanda Leite, and Vinit Srinivasan.
+     York, NY, USA.                                                                         2024. VRCopilot: Authoring 3D Layouts with Generative AI Models in VR. In
+ [6] Ruijia Cheng, Titus Barik, Alan Leung, Fred Hohman, and Jeffrey Nichols. 2024.         Proceedings of the 37th Annual ACM Symposium on User Interface Software and
+     BISCUIT: Scaffolding LLM-Generated Code with Ephemeral UIs in Computa-                 Technology (UIST ’24). ACM, New York, NY, USA. doi:10.1145/3654777.3676376
+     tional Notebooks. In IEEE Symposium on Visual Languages and Human-Centric         [28] Jiaju Ma, Lei Shi, Kenneth Robertsen, and Peggy Chi. 2025. AmbigChat: Interac-
+     Computing (VL/HCC ’24). IEEE. doi:10.1109/VL/HCC60511.2024.00012                       tive Hierarchical Clarification for Ambiguous Open-Domain Question Answering.
+Conference acronym ’XX, June 03–05, 2018, Woodstock, NY                                                                                                        Sabouri et al.
+
+
+     In Proceedings of the 38th Annual ACM Symposium on User Interface Software and            119, 14 pages. doi:10.1145/3654777.3676374
+     Technology (UIST ’25). ACM, New York, NY, USA.                                       [50] Litao Yan, Jeffrey Tao, Lydia B. Chilton, and Andrew Head. 2025. Answering
+[29] Zeyao Ma, Bohan Zhang, Jing Zhang, Jifan Yu, Xiaokang Zhang, Xiaohan Zhang,               Developer Questions with Annotated Agent-Discovered Program Traces. In
+     Sijia Luo, Xi Wang, and Jie Tang. 2024. Spreadsheetbench: Towards challenging             Proceedings of the 38th Annual ACM Symposium on User Interface Software and
+     real world spreadsheet manipulation. Advances in Neural Information Processing            Technology (UIST ’25). ACM, New York, NY, USA. doi:10.1145/3746059.3747652
+     Systems 37 (2024), 94871–94908.                                                      [51] Ruiyan Zhu, Xi Cheng, Ke Liu, Brian Zhu, Daniel Jin, Neeraj Parihar, Zhoutian
+[30] Andrew M. McNutt, Chenglong Wang, Robert A. Deline, and Steven M. Drucker.                Xu, and Oliver Gao. 2025. Sheetmind: An end-to-end llm-powered multi-agent
+     2023. On the Design of AI-Powered Code Assistants for Notebooks. In Proceedings           framework for spreadsheet automation. arXiv preprint arXiv:2506.12339 (2025).
+     of the CHI Conference on Human Factors in Computing Systems (CHI ’23). ACM,
+     New York, NY, USA. doi:10.1145/3544548.3580940
+[31] Hussein Mozannar, Gagan Bansal, Cheng Tan, Adam Fourney, Victor Dibia,
+     Jingya Chen, Jack Gerrits, Tyler Payne, Matheus Kunzler Maldaner, Madeleine
+     Grunde-McLaughlin, et al. 2025. Magentic-ui: Towards human-in-the-loop agen-
+     tic systems. arXiv preprint arXiv:2507.22358 (2025).
+[32] Donald A Norman. 1988. The psychology of everyday things. Basic books.
+[33] Marine Pagliari, Valérian Chambon, and Bruno Berberian. 2022. What is new
+     with Artificial Intelligence? Human-agent interactions through the lens of social
+     agency. Frontiers in Psychology 13 (2022). doi:10.3389/fpsyg.2022.954444
+[34] Raja Parasuraman and Dietrich H. Manzey. 2010. Complacency and Bias in
+     Human Use of Automation: An Attentional Integration. Human Factors 52, 3
+     (2010), 381–410. doi:10.1177/0018720810376055
+[35] Raja Parasuraman and Victor Riley. 1997. Humans and Automation: Use,
+     Misuse, Disuse, Abuse. Human Factors 39, 2 (1997), 230–253. doi:10.1518/
+     001872097778543886
+[36] Savvas Petridis, Michael Terry, and Carrie J Cai. 2024. Promptinfuser: How tightly
+     coupling ai and ui design impacts designers’ workflows. In Proceedings of the
+     2024 ACM Designing Interactive Systems Conference. 743–756.
+[37] Mizanur Rahman, Amran Bhuiyan, Mohammed Saidul Islam, Md Tahmid Rahman
+     Laskar, Ridwan Mahbub, Ahmed Masry, Shafiq R. Joty, and Enamul Hoque. 2025.
+     LLM-Based Data Science Agents: A Survey of Capabilities, Challenges, and Future
+     Directions. ArXiv abs/2510.04023 (2025). doi:10.48550/arxiv.2510.04023
+[38] Gregg Rothermel, Lixin Li, Christopher DuPuis, and Margaret Burnett. 1998.
+     What you see is what you test: A methodology for testing form-based visual
+     programs. In icse. 198–207.
+[39] Aaron Springer and Steve Whittaker. 2019. Progressive disclosure: empirically
+     motivated approaches to designing effective transparency. In Proceedings of the
+     24th international conference on intelligent user interfaces. 107–120.
+[40] Tejas Srinivasan and Jesse Thomason. 2025. Adjust for trust: Mitigating trust-
+     induced inappropriate reliance on ai assistance. arXiv preprint arXiv:2502.13321
+     (2025).
+[41] Hariharan Subramonyam, Roy Pea, Christopher Pondoc, Maneesh Agrawala, and
+     Colleen Seifert. 2024. Bridging the Gulf of Envisioning: Cognitive Challenges
+     in Prompt Based Interactions with LLMs. In Proceedings of the CHI Conference
+     on Human Factors in Computing Systems (CHI ’24). ACM, New York, NY, USA.
+     doi:10.1145/3613904.3642754
+[42] Hari Subramonyam, Roy Pea, Christopher Pondoc, Maneesh Agrawala, and
+     Colleen Seifert. 2024. Bridging the Gulf of Envisioning: Cognitive Challenges in
+     Prompt Based Interactions with LLMs. In Proceedings of the 2024 CHI Conference on
+     Human Factors in Computing Systems (Honolulu, HI, USA) (CHI ’24). Association
+     for Computing Machinery, New York, NY, USA, Article 1039, 19 pages. doi:10.
+     1145/3613904.3642754
+[43] Yuan Tian, Jonathan K. Kummerfeld, Toby Jia-Jun Li, and Tianyi Zhang. 2024.
+     SQLucid: Grounding Natural Language Database Queries with Interactive Ex-
+     planations. In Proceedings of the 37th Annual ACM Symposium on User Interface
+     Software and Technology (UIST ’24). ACM, New York, NY, USA. doi:10.1145/
+     3654777.3676368
+[44] Helena Vasconcelos, Matthew Jörke, Madeleine Grunde-McLaughlin, Tobias
+     Gerstenberg, Michael S. Bernstein, and Ranjay Krishna. 2023. Explanations Can
+     Reduce Overreliance on AI Systems During Decision-Making. Proceedings of the
+     ACM on Human-Computer Interaction 7, CSCW1 (2023), 1–38. doi:10.1145/3579605
+[45] Sandra Wachter, Brent Mittelstadt, and Chris Russell. 2017. Counterfactual
+     explanations without opening the black box: Automated decisions and the GDPR.
+     Harv. JL & Tech. 31 (2017), 841.
+[46] Chenglong Wang, John Thompson, and Bongshin Lee. 2025. Data Formulator 2:
+     Iteratively Creating Rich Visualizations with AI. arXiv:2408.16119 [cs.HC]
+[47] Yunlong Wang, Shuyuan Shen, and Brian Y. Lim. 2023. RePrompt: Automatic
+     Prompt Editing to Refine AI-Generative Art Towards Precise Expressions. Pro-
+     ceedings of the 2023 CHI Conference on Human Factors in Computing Systems
+     (2023). doi:10.1145/3544548.3581402
+[48] Liwenhan Xie, Chengbo Zheng, Haijun Xia, Huamin Qu, and Chen Zhu-Tian. 2024.
+     Waitgpt: Monitoring and steering conversational llm agent in data analysis with
+     on-the-fly code visualization. In Proceedings of the 37th Annual ACM Symposium
+     on User Interface Software and Technology. 1–14.
+[49] Liwenhan Xie, Chengbo Zheng, Haijun Xia, Huamin Qu, and Chen Zhu-Tian.
+     2024. WaitGPT: Monitoring and Steering Conversational LLM Agent in Data
+     Analysis with On-the-Fly Code Visualization. In Proceedings of the 37th Annual
+     ACM Symposium on User Interface Software and Technology (Pittsburgh, PA, USA)
+     (UIST ’24). Association for Computing Machinery, New York, NY, USA, Article
+
