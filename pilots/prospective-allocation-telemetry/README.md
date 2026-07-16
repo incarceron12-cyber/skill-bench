@@ -28,6 +28,14 @@ Exactly one fresh no-replacement `openai-codex`/`gpt-5.6-sol` probe passed. Its 
 
 The matched pair was not run. `v4/readiness-report.json` fails closed because no frozen launcher yet binds v4 telemetry/state identities to the parent isolation and dual-rubric path, and no v4 adoption-observation rule was frozen before treatment output. Historical parent trials cannot be repurposed or replaced.
 
+## v5 bound pair launcher and retained invalid pair
+
+`v5/` preserves v1-v4 and freezes `scripts/allocation_pair_launcher_v5.py`, both parent rubrics, the v4 identities/adapter, exact AB order and attempt IDs, stateless initial/final hashes, bubblewrap input/output boundaries, artifact/trace/usage inventories, and `v5/adoption-observation-rule.json`. The rule permits presentation evidence from the mounted guide but refuses to infer invocation from incomplete stdout or adoption from presentation, guide terms, shared-rubric alignment, or artifact similarity.
+
+The zero-call preflight passed coordinate-contract, isolation, retained-service, environment, grader, order, state, adoption-observability, and included-cost gates. The launcher therefore executed each already ordered attempt exactly once and did not replay `alloc-v4-configured-provider-probe-01`.
+
+The retained pair is **not a substantive comparison**. The no-skill arm completed its artifacts and reported included USD 0.00, but its nine native transport events include three timeout/error events with unavailable coordinates while aggregate usage counts six successful API calls. The public-skill arm retained two successful and three timeout/error events, failed service completion, produced no required work artifacts, and has no cost receipt. This creates asymmetric coordinate support and invalidates the pair. No attempt may be retried or replaced. `v5/execution/posthoc-artifact-observation.json` describes the no-skill artifact under both frozen rubrics (independent `5/12`; shared `5/13`) without restoring pair validity. Public-skill presentation is observed, invocation unavailable, and adoption not observed.
+
 ### Replay
 
 ```bash
@@ -43,7 +51,9 @@ python scripts/validate_allocation_coordinates.py \
   --attempt-id alloc-v4-configured-provider-probe-01 \
   --aggregate-usage pilots/prospective-allocation-telemetry/v4/configured-provider-probe/outputs/usage.json \
   --check-paths
-python -m unittest tests.test_allocation_telemetry tests.test_allocation_coordinates -v
+python scripts/allocation_pair_launcher_v5.py validate
+python scripts/allocation_pair_launcher_v5.py replay
+python -m unittest tests.test_allocation_telemetry tests.test_allocation_coordinates tests.test_allocation_pair_launcher_v5 -v
 ```
 
 This slice reports Skill presentation, invocation, adoption, artifact outcome, and resource allocation separately. It licenses no allocation/Skill effect, capability, cross-domain, expert/professional validity, safety, economic-value, production, or readiness claim.
