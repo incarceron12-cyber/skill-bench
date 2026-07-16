@@ -460,10 +460,13 @@ ambiguity-specific schema follows.
 Rubric decomposition makes expert attention inspectable, but does not make it
 neutral or independent. Treat each criterion as a versioned evidence object:
 
-- stable ID and immutable text/hash; polarity; provenance claim and evidence
-  locators; public basis; author/reviewer authority scope;
+- stable ID and immutable text/hash; one explicit proposition; polarity as a
+  desirable state or violation state; provenance claim and evidence locators;
+  public basis; author/reviewer authority scope;
 - `hard_gate`, `required_scored`, `optional_preference`, `penalty`, or
   `diagnostic_only` semantics rather than encoding “mandatory” as a large weight;
+  separately typed pass/fail mapping, score direction and magnitude, inversion,
+  clipping/normalization, and gate behavior so prose and arithmetic cannot disagree;
 - applicability predicate and an `insufficient_evidence` outcome distinct from
   failure, including the artifact/source/trace access the grader requires;
 - one observable and decision rule, with a split review for multiple independently
@@ -483,6 +486,27 @@ the authoring pattern, not the inference that expert-written criteria are ground
 truth. Its example ablation suggests examples can improve judge agreement while
 also anchoring answers; rubric transformations therefore need before/after hashes,
 semantic review, and held-out tests of both agreement and construct breadth [RR].
+
+AgenticVBench provides direct falsification evidence for the missing signed
+semantics. Its later release is unusually inspectable, yet 13/36 Repurpose briefs
+require a different resolution from their hidden criteria, and at least five
+desirable-state criteria carry negative weight without the inversion flag required
+by the scorer. In those cases a richer multimodal observer cannot infer whether the
+brief, criterion prose, sign, flag, or aggregator is authoritative [AVB]. Require a
+machine-checked chain before any trial:
+
+```text
+public basis → criterion proposition → desirable/violation polarity
+  → applicability → authoritative evidence view and observer threshold
+    → pass/fail mapping → dependency/gate → signed score contribution
+      → aggregation policy → licensed interpretation
+```
+
+Fail the instrument—not the agent—when public and private requirements conflict,
+when criterion prose and arithmetic reward opposite states, or when a dependency,
+inversion, normalization, or clipping rule is unresolved. A positive weight alone
+cannot encode this chain. Preserve each preflight finding, repair/version event,
+and rerun decision in task health rather than rewriting historical scores.
 
 ### 2.3a Dynamic criteria are a separate contingent population
 
@@ -1299,6 +1323,23 @@ broken-editability, export mismatch, missing-view, and alternate-sequence outcom
 executable [TA]. It validates deterministic fixture behavior only—not observer
 accuracy, creative quality, expert validity, agent capability, reliability,
 professional validity, production fitness, or readiness.
+
+AgenticVBench repairs the static-inspection gap but not the claim chain. Its pinned
+post-v1 release exposes all 100 reported four-family task packages and substantive
+manifest, source-relative, temporal frame/audio, metadata, and model-judge routes;
+it also exposes the signed-criterion defects above, mutable/unhashed source assets,
+no affirmative task-level media rights, and material paper/release grader drift
+[AVB]. Paper claims about human reference and 96.4–98.2% agreement lack task IDs,
+units, rater topology, human–human reliability, calibration rows, and uncertainty;
+the release contains no paper trajectories, scores, human submissions, or result
+ledger. Its non-Repurpose audit has 4,610 rows where the nominal design implies
+3,840, while the complete campaign implies 6,000 task attempts. Therefore preserve
+expert authoring, source rights/immutability, human administration, grader
+calibration, task conformance, configured-package attempts, and professional
+acceptance as separate records. Reconcile `task × configured system × repeat` into
+intended, attempted, service-valid, execution-valid, grader-valid, retried,
+excluded, and scored rows before reporting quality, reliability, or cost. This is
+cross-domain criterion/ledger evidence, not a reason to add a video subsystem.
 
 ### 2.8 Executable composition is not a workflow-validity argument
 
@@ -3236,6 +3277,12 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     receipt/adoption, intended change, independent correction, collateral
     preservation, reliance/burden, and recipient consequence separately. Self-report,
     feature use, attempted steering, or branch creation cannot fill later links.
+59. **Observer richness cannot repair a contradictory criterion:** bind public
+    basis, one proposition, desirable/violation polarity, applicability,
+    authoritative view, decision rule, dependency/gate, signed contribution, and
+    aggregation before execution. Brief/rubric conflict or prose/arithmetic reversal
+    is instrument invalidity; a passing judge, expert label, or clipped scalar cannot
+    silently repair it or license professional validity [AVB].
 
 ## 8. Unresolved tensions and required experiments
 
@@ -3259,6 +3306,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Shared runner breadth vs measurement equivalence | BrowserGym runs heterogeneous families through one interface, but inspected adapters retain different rewards/evaluators and transform observations, trajectories, parsing, errors, retries, and resets; paper results lack native/adapted agreement and clustered repeats [BG]. | From frozen native states, run matched native/adapted cases and compare score, termination, side effects, typed evaluator evidence, invalidity, resets, and all attempts; report family scores until preservation and any common-scale validity are independently supported. |
 | Executable composition vs workflow/planning validity | WorkArena++ composes setup, oracle, and validators and increases horizon, but author-designed variants, history-dependent sequential validation, near-floor agents, a small ServiceNow-heavy human sample, and a later release do not isolate planning or occupational realism [WA]. | Across two provenance-grounded unlike workflows, compare matched atomic and composite conditions with controlled presentation/interface/information budgets; replay terminal invariants independent of polling order, test reversals and resets, and report family-clustered uncertainty plus earliest unsupported dependencies [CW]. |
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
+| Rich temporal observation vs coherent signed criterion semantics | AgenticVBench's later release supplies native/rendered/audio/metadata/model views, yet 13/36 Repurpose briefs conflict with hidden resolution criteria and at least five desirable-state negative-weight items omit the scorer's inversion flag; human/calibration/result records are absent [AVB]. | Before any rollout, mutation-test public/private contradiction, desirable-versus-violation polarity, inversion, dependency/gate, clipping, and normalization. Reject both observed defect classes, admit a reviewed equivalent representation, then calibrate each observer on blinded temporal boundary cases without promoting agreement to professional acceptance. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
 | Enriched review yield vs representative monitoring and useful intervention | Signals reports more hypothesis-generating labels in a signal-selected queue, but omits the eligible pool, detector/score policy, inclusion probabilities, overlap, labels, reviewer time, clustered inference, confirmed defects, fixes, and downstream outcomes; its later implementation promotes descriptive signals into quality scores [SIG]. | On a frozen cross-domain trajectory pool, run a probability sentinel beside a versioned enriched sampler; preserve overlap and all inclusion probabilities, duplicate plural labels, adjudicate defects, measure reviewer minutes and detector cost, replay accepted fixes on held-out task clusters, and report prevalence/drift, discovery yield, false negatives, recurrence, and downstream utility separately. |
@@ -3439,6 +3487,15 @@ them:
     records are the implementation homes [ACC]. The queue prerequisite audit found
     no admissible confidence/logprob observations and no diverse repeated outcome
     matrix, so the task remains blocked rather than pending.
+23. **Queued signed-criterion conformance, not another artifact subsystem —
+    `build-signed-criterion-conformance-slice`:** the benchmark bundle already binds
+    checks to public requirements, graders, artifacts, positive weights, and optional
+    admissibility envelopes, but it cannot represent or validate desirable/violation
+    polarity, inversion, gate/dependency behavior, or signed aggregation. Add the
+    smallest backward-compatible contract and planted preflight cases needed to reject
+    the two AgenticVBench defect classes before execution. Reuse projection,
+    artifact-view, task-health, metric, and validity machinery; do not infer observer
+    accuracy, expert validity, capability, professional quality, or readiness [AVB].
 
 ## Provenance keys
 
@@ -3491,6 +3548,16 @@ them:
   audit are recorded there. The later archive is a generic Windows runner with one
   Notepad example and placeholder evaluation, not the paper's 186 tasks, media,
   parser, milestones, environments, runs, or result evidence.
+- **[AVB]**
+  `papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md`;
+  reviewed immutable v1 PDF/text plus the complete pinned post-v1 official release
+  and `data/sources/releases/2605.27705v1-agenticvbench/release-audit.json` are
+  recorded there. The later release exposes all 100 reported four-family packages
+  and substantive graders, but not paper trajectories, scores, human submissions,
+  calibration labels, or an auditable result ledger. Material paper/release drift,
+  criterion defects, source-rights/immutability gaps, and unreconciled denominators
+  bound the evidence to later instrument inspection rather than v1 reproduction,
+  professional capability, reliability, safety, production fitness, or readiness.
 - **[PD]**
   `papers/agent-benchmarks/2026-07-15-partial-agent-benchmark-decision-validity.md`;
   reviewed immutable v1 HTML, official-repository PDF, complete pinned release, and
