@@ -2458,6 +2458,52 @@ for placement/exposure/adoption/attempt/mock realization/recovery and separate
 safety/utility counts. They do not probe a live sandbox or establish expert
 validity, capability, real-world safety, or readiness [AC].
 
+### 4.4a Delayed obligations are dual-task state transitions, not memory labels
+
+A delayed requirement is useful only if it is executed at the authorized time
+without silently degrading the work it accompanies. Preserve two outcome families
+and the links between them:
+
+```text
+instruction source/authority → encoded obligation → update/supersession
+  → cue availability → monitoring request → harness-observed access/release
+    → presented evidence → adoption/rejection → due-status and timing decision
+      → intended action → realized state/consequence
+        × primary artifact/workflow quality, preservation, collateral loss, and cost
+```
+
+Encoding/retention, cue monitoring/access, update reconciliation, due-status
+inference, timing, intended action, realized action, obsolete/lure commission, and
+primary-work preservation are non-substitutable observations. A self-reported
+obligation state is an output field, not direct evidence of internal memory. A
+neutral interrupt, channel hint, task reminder, and oracle-derived cue are distinct
+evidence treatments; privileged evaluator state must never be described as a memory
+aid. Report shapes separately and do not infer a treatment effect from unmatched or
+single-attempt cells [PMB, DOT].
+
+PM-Bench makes the obligation state machine, hidden cue channels, lures, updates,
+timing, and deterministic replay unusually inspectable, but its compulsory `A/B/C`
+advance token is ungraded. It therefore observes obligation-menu selection, not
+concurrent-work preservation or interference [PMB]. The frozen internal dual-task
+pilot adds graded primary work and retained six of six service-, environment-, and
+artifact-valid single attempts. All 18 primary-turn checks passed, creating a
+primary-work ceiling; four cells were exact successes, while the vendor neutral
+cell failed at cue monitoring/access and the vendor oracle cell failed at due
+status/timing [DOT]. Exact replay and planted branch tests validate only the frozen
+instrument and those retained observations. They do not identify internal memory,
+causal reminder effects, absence of interference on harder work, cross-domain
+generality, professional validity, safety, production fitness, or readiness.
+
+The next validation gate is a prospectively frozen **held-out, non-ceiling
+equivalent-form extension**. It must make primary-work quality discriminating,
+record channel request, access decision, released payload, and model-visible
+presentation from the harness rather than self-report, retain matched conditions
+and repeated attempts, and confirm effects on obligation and primary-work outcomes
+separately. Repeating the current ceiling forms cannot clarify construct validity.
+Existing evidence-flow, artifact/state, configured-system, trace, task-health,
+metric, and validity records are the implementation homes; no memory-specific
+schema follows.
+
 ### 4.5 Keep three change planes separate
 
 “The system improved” is ambiguous because three different systems can change.
@@ -2616,6 +2662,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
 | Procedural-memory transfer (AFTER) | typed source-context, equivalent-form, changed-context, and cross-model transfer edges with paired outcomes and harm gates | shared authoring/verifier lineage, feedback leakage, complete-case selection, diversity/volume confounding, missing configured-system identity, and macro gains hiding negative transfer | full immutable v1 paper plus pinned post-v1 release audit; 129 released test packages are inspectable, but the 382-task instrument, evolution machinery, traces, configurations, evolved procedures, and result rows are unavailable [AFTER] |
+| Delayed-obligation dual-task evaluation (PM-Bench; internal pilot) | obligation state machine linked to harness-observed cue access, timed realized action, and separately graded primary-work preservation | ungraded nominal ongoing work, privileged reminders mislabeled as memory support, self-report promoted to access/internal-memory evidence, ceiling forms, and single-attempt cells promoted to causal effects | PM-Bench full immutable v1 paper plus pinned paper-time release audit [PMB]; internal frozen six-cell pilot and exact replay support instrument behavior and exact retained observations only [DOT] |
 | Production agent evaluation (Anthropic, Amazon) | task/trial/grader/trace separation, task-health lifecycle, metric/monitoring contract, and operational failure taxonomy | engineering guidance may not establish construct validity; named metrics omit populations/estimands; synthetic and online samples drift | full official Anthropic and Amazon articles and concept reviews; experience/prescription evidence, not controlled effectiveness studies [AN, AM] |
 | Practitioner production-practice evidence (MAP) | reporting-unit/selection/denominator provenance and practice→realization→outcome bridge | selected self-report prevalence mistaken for representative practice, audited realization, causal efficacy, reliability, or successful deployment | full accepted immutable v4 paper/instrument plus v3 headline comparison; 20 confidential selected cases and 86 production/pilot main-frame records, no released row data or system/outcome audit [MAP] |
 | Trajectory confidence prediction (Agentic Confidence Calibration) | typed derived probability for one configured success predicate, followed by transport and decision-policy validation | post-outcome prediction mistaken for early warning, repeat reliability, causal diagnosis, decision utility, or provider-invariant confidence | full immutable v1 paper/source review; reported eight-sample cross-validation and transfer tables, but no released code, trajectories, labels, splits, configurations, or calibrator [ACC] |
@@ -3638,3 +3685,20 @@ them:
   configured and builder-authored evidence only, with no human usability, expert
   validity, professional capability, generalization, productivity, impact, or
   readiness claim.
+- **[PMB]**
+  `papers/agent-benchmarks/2026-07-16-pmbench-prospective-memory-validity.md`;
+  reviewed immutable v1 PDF/text plus pinned paper-time official release, complete
+  64-run log audit, canonical validation, and report regeneration are recorded
+  there. One public synthetic week and an ungraded ongoing token support obligation-
+  selection machinery, not dual-task interference, professional reliability,
+  causal failure origin, safety, or readiness.
+- **[DOT]** `pilots/delayed-obligation-dual-task/protocol.json` (SHA-256
+  `6cd27291cca984ee2ceac0e767a99a7bae116f64d041bedb45621de0684d5ebe`),
+  `pilots/delayed-obligation-dual-task/execution/study-report.json` (SHA-256
+  `9f3b3cca6496310769dee777ae35392731996f3961d3a8c03fa0b2a8fb01ea3a`),
+  `pilots/delayed-obligation-dual-task/validity-record.json`, and six retained trial
+  reports. Frozen-component hashes and exact replay passed. The two builder-authored
+  synthetic ceiling forms with one attempt per condition support exact configured
+  observations and deterministic grader behavior only—not internal memory,
+  treatment effects, interference absence, capability, cross-domain/professional
+  validity, safety, production fitness, or readiness.

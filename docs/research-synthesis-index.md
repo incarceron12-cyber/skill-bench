@@ -1135,6 +1135,30 @@ time cost, collateral effects, and stakeholder-weighted consequences. Neutral
 interrupts, channel hints, task reminders, and oracle cues are distinct evidence
 interventions; none should be silently labeled an internal memory improvement.
 
+The frozen internal [delayed-obligation dual-task pilot](../pilots/delayed-obligation-dual-task/README.md)
+implements that repair on two purposive synthetic work shapes and three evidence
+treatments. Frozen-component verification and exact replay passed; all six intended
+single attempts were retained and service-, environment-, and artifact-valid. All
+18 primary-turn checks passed, so the compact primary work is a ceiling rather than
+evidence that monitoring has no interference cost. Four cells were exact successes.
+The vendor neutral-interrupt cell encoded the original obligation but did not query
+or access its replacement update, acted prematurely, and was classified cue-
+monitoring/access failure; the vendor oracle-reminder cell received the update and
+selected the current action but executed both original and replacement actions
+prematurely, yielding a due-status/timing failure. The other cells cannot be pooled
+with these or promoted into treatment effects: there is one attempt per shape-
+condition cell, treatments change evidence availability, and the oracle reminder is
+privileged evaluator-derived evidence—not an internal-memory aid. Agent self-report
+fields also do not establish internal memory or causal adoption.
+
+The explicit next gate is a held-out non-ceiling equivalent-form extension with
+harness-observed channel requests, access decisions, releases, and model-visible
+payloads; matched repeated conditions; and separately discriminating obligation and
+primary-work outcomes. Repeating the present ceiling forms would add activity but
+not clarify construct validity. Existing contracts suffice; the pilot supports no
+general prospective-memory, causal-treatment, capability, cross-domain,
+professional-validity, safety, production-fitness, or readiness claim.
+
 ## 7. Task generation and evolution require conformance, provenance, and rollback
 
 **Central insight:** Shared generated lineage does not guarantee that instructions, environment, witnesses, and checkers remain semantically aligned. Adaptive systems also confound initial ability, feedback exposure, task order, memory changes, retention, and safety drift.
