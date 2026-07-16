@@ -740,6 +740,7 @@ cover the boundary; no feedback-specific schema follows.
 | [DORA](../papers/agent-benchmarks/2026-07-14-dora-disaster-response-consequence-validity.md) | A | Separates real-source and label truth, one executable analytical witness, endpoint agreement, professional acceptance, recipient uptake, action, and consequence; exposes uncalibrated geometry/numeric tolerances and absent operational evidence |
 | [Claw-Eval](../papers/agent-benchmarks/2026-07-15-claw-eval-multichannel-trajectory-validity.md) | A | Reframes final response, action trace, and environment state as criterion-specific evidence routes rather than interchangeable raters; its selected hybrid-only audit, manifest/grader drift, manual reruns, absent fault injector, and incomplete attempt ledger do not calibrate observer accuracy or operational reliability |
 | [CutVerse](../papers/agent-benchmarks/2026-07-15-cutverse-temporal-creative-artifact-validity.md) | A | Makes expert-demonstrated temporal work visible while showing that milestone screenshots do not establish native-project integrity, time-indexed rendered behavior, export validity, creative quality, or recipient acceptance; the post-v1 release lacks the paper tasks, evaluator, and results |
+| [AgenticVBench](../papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md) | A | Repairs CutVerse's task/grader inspectability gap with a full later four-family release and criterion-specific manifest, frame, audio, metadata, and model views; its 13 brief/rubric resolution conflicts, five reversed good-state penalties, absent human/calibration/results records, rights gaps, and unreconciled rollout denominator show that observer richness cannot rescue an incoherent criterion contract |
 
 **Repository consequence:** Score families remain separate, artifact views have admissibility contracts, and task/trial records preserve both produced artifacts and consequential workspace state. Editable artifacts need native, executable/recalculated, rendered, exported, and trace evidence plus authoritative mutation tests; inherited size and one reference witness do not establish work performed or maintainability. Each criterion routes to the authoritative object and temporal scope it actually requires: final prose, a tool request, committed service state, native structure, a rendered interval, exported bytes, or calibrated human judgment. More channels are not automatically redundant truth, and missing or stale decisive views produce `insufficient_evidence` or instrument invalidity rather than a substantive failure. Scored state checks must also distinguish environment readiness from trial-created deltas and identify shared-cause or descendant dependencies. The internal initial-state replay rejects pre-satisfied, stale, copied-witness, and omitted-transition cases, accepts a declared alternative, and abstains on invalid initialization; its seven synthetic matches validate only fixture/scorer behavior ([replay](../pilots/task-initial-state-conformance/replay-report.json)).
 
@@ -754,6 +755,16 @@ editability behind a plausible render, missing views, export mismatch, and one
 declared alternate sequence. This is deterministic builder-authored contract evidence
 only—not temporal-observer accuracy, creative quality, expert validity, model
 capability, reliability, professional validity, production fitness, or readiness.
+
+AgenticVBench adds a **signed criterion-contract requirement** above those views:
+`public basis → proposition → desirable/violation polarity → applicability →
+authoritative temporal view → observer/threshold → dependency → score contribution
+→ licensed interpretation`. Validate prose, weight sign, inversion flags, public/private
+requirements, and aggregation before execution. A multimodal judge cannot decide which
+layer is authoritative when the brief and hidden criterion conflict. Preserve a complete
+task × configured-system × repeat ledger and separate expert authoring, student-editor
+reference, model-grader calibration, artifact conformance, professional acceptance, and
+readiness rather than promoting one agreement number or macro score across them.
 
 DORA adds an **analysis-to-consequence ladder**: `source event/snapshot and valid
 time → task requirement and authority → source/label truth → one analytical witness
