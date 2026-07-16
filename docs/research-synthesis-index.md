@@ -536,6 +536,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [SLBench](../papers/agent-benchmarks/2026-07-13-slbench-skill-relation-validity.md) | B | Makes precondition, postcondition, constraint, conjunction, fallback, exception, override, and conflict relations executable, while exposing that LLM-co-designed extraction, case generation, and evidence contracts need independent projection and grader validation |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Shows why expert-written examples and criteria can improve judge agreement while also anchoring outputs |
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Makes the harness and execution boundary explicit so a skill effect is not confused with launcher, tool, or isolation differences |
+| [Harness-Induced Belief Divergence](../papers/agent-benchmarks/2026-07-17-harness-induced-belief-divergence-validity.md) | B | Makes representation, blocked-branch visibility, repair compression, verification masking, and evidence pruning explicit harness treatments, while its imagined non-executing rollouts, fabricated repair/verifier events, schema-elicited self-reports, one model, and incomplete release bound the evidence to prompt-conditioned report divergence |
 | [WildClawBench](../papers/agent-benchmarks/2026-07-17-wildclawbench-native-runtime-transport-validity.md) | A | Adds 60 cross-domain bilingual/multimodal native-CLI tasks, artifact/state/trace grading, time/cost evidence, and negative Skill interactions; its post-v1 release audit shows that privileged networked images, runtime installs, mock/live services, adapter-normalized traces, state-to-prose fallback, absent result ledgers, and corrected live-web ground truth make full task→consequence transport validity a prerequisite for harness, Skill, safety, or reproducibility claims |
 | [KWBench](../papers/agent-benchmarks/2026-07-11-kwbench-unprompted-problem-recognition.md) | A | Identifies situation framing before named-workflow execution, while showing that a cold final-artifact gate does not isolate recognition from inquiry, action, domain knowledge, or grading |
 | [Ambig-DS](../papers/agent-benchmarks/2026-07-13-ambig-ds-task-framing-validity.md) | A | Supplies paired full/ambiguous/ideal-clarification interventions and exposes valid-looking artifacts built on unsupported target or objective commitments, while bounding the result to synthetic Kaggle-derived ambiguity and an ideal oracle |
@@ -547,6 +548,27 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [Pista](../papers/agent-benchmarks/2026-07-16-pista-active-oversight-workflow-validity.md) | B | Contributes semantic diffs as operation-level decision-time review artifacts and bounded human inspectability evidence, while its bundled N=16 treatment, unmatched stochastic defects, absent correction/preservation lineage, low endpoint means, and no recipient consequence block effective-oversight, professional-utility, or readiness claims |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
+
+Harness validity adds a runtime projection boundary after source-to-task construction:
+`canonical executor/environment/verifier event → declared agent-visible projection
+or typed omission → agent response → attempted/realized action → artifact/state →
+independently graded outcome`. Harness prose is evidence delivered to the agent, not
+world truth. Every visible event needs source-event lineage; every omission needs a
+versioned policy, reason, and authority; representation change, blocked-branch
+visibility, repair collapse, verification masking, and cost pruning remain distinct.
+Invented success, repair, verifier, failure, or action-result events change the world
+rather than merely its presentation. Elicited state or “belief” reports are secondary
+diagnostics and cannot substitute for behavior, artifacts, or grounded outcomes.
+
+The internal [event-projection conformance slice](../pilots/harness-event-projection-conformance/README.md)
+passes 12 clean projections and localizes 10 planted inventions, relabelings,
+reorderings, and undeclared omissions across two builder-authored ledgers. It is a
+zero-call deterministic validator exercise: no agent acted, no professional task or
+paraphrase equivalence was validated, and no harness effect, belief validity,
+capability, artifact quality, cross-domain generalization, production fitness, or
+readiness claim follows. Existing task projection, configured-system, trace,
+execution-validity, artifact/state, metric, task-health, and validity records are the
+durable homes; no belief or parallel task-IR subsystem follows.
 
 Skill-treatment evidence now needs two independent chains. **Realization:** `package
 version/mounted subset → surfaced/opened module → invocation → semantic adoption or

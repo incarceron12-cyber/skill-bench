@@ -2770,6 +2770,53 @@ the response matrix. Attribute an adapter, provider, or environment root only
 when event evidence supports it; otherwise use `indeterminate` rather than
 turning operational missingness into an agent failure.
 
+#### Runtime event projection is not transparent harness plumbing
+
+Source-to-task projection ends when the task, source pack, environment, witness,
+and checks are constructed. Runtime projection begins when executor, environment,
+artifact-store, verifier, or outcome events are transformed into the evidence an
+agent can observe. Preserve three independently versioned layers [HIBD, HEP]:
+
+```text
+canonical world-event ledger
+  → declared agent-visible entries + typed policy-authorized omissions
+    → agent response → attempted and realized action
+      → artifact/state → independently observed outcome
+```
+
+Each canonical event needs stable identity, sequence/time, producer and authority,
+payload/hash, and links to the triggering action or prior event. Each visible entry
+must cite one canonical source event, preserve its kind and payload lineage, and pin
+the exact rendered bytes and representation policy. Each omitted event needs source
+hash, omission type, reason, policy version, and authority. Treat raw/structured
+representation, blocked-branch visibility, failure/repair compression, verifier
+masking, and cost pruning as separate configured interventions. A summary may omit
+or transform evidence only under its frozen policy; it may not invent a failure,
+repair, verifier success, action result, or world transition. Reordering authority-
+bearing events, relabeling an event kind, stale payload/render hashes, and silent
+omission are explicit projection failure signatures.
+
+Keep `agent_response`, `action`, `artifact`, `outcome`, and optional
+`elicited_state_report` endpoint families separate. A schema-constrained report can
+show prompt responsiveness, not a validated latent belief, behavioral mediation,
+calibration, task success, or harness equivalence. Grounded treatment studies must
+hold the canonical ledger and decision opportunity fixed, vary only a declared
+view policy, include no-op representation controls, and test action, artifact/state,
+and independent outcome effects before promoting report divergence [HIBD].
+
+Harness-Induced Belief Divergence motivates this boundary but does not validate it
+operationally: its imagined rollouts never execute actions; H3/H4 fabricate repair
+and verifier events; outcomes are self-reports or harness flags; one model supplies
+the main evidence; and the post-v1 archive omits tasks, raw logs, derived tables, and
+action-analysis code, causing three of seven smoke tests to fail [HIBD]. The internal
+two-shape conformance slice distinguishes 12 declared clean projections and 10
+planted inventions, relabelings, reorderings, and undeclared omissions [HEP]. That
+is zero-call deterministic detector evidence only—no semantic paraphrase validity,
+agent behavior, harness effect, artifact quality, professional validity,
+cross-domain generalization, production fitness, or readiness evidence. Export real
+benchmark-bundle trace events into the existing trace/configured-system contracts;
+do not create a parallel task IR or belief schema.
+
 #### Adapter interoperability is not measurement equivalence
 
 For benchmark-family adapters, split configured evaluation into three records:
@@ -3223,6 +3270,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
+| Harness event-view projection | canonical runtime ledger→declared visible entry/typed omission→separate response/action/artifact/outcome endpoints | harness narrative treated as world truth; invented repair/verifier/action-result events; relabeling, reordering, stale hashes, undeclared omissions; self-report promoted to belief or outcome | full immutable HIBD v1 paper plus post-v1 release audit support prompt-conditioned report divergence only [HIBD]; internal zero-call two-shape replay matches 12 clean and 10 planted cases but supplies detector, not agent or semantic-equivalence evidence [HEP] |
 | Cross-family execution substrate (BrowserGym) | canonical benchmark contract + adapter realization + trial-policy identity; differential conformance | common method signature or scalar hides heterogeneous evaluator, reset, retry, backend, observation, and error semantics | full immutable v2 paper plus inspected March 2026 official release; broad transport evidence, not exact-paper reproduction, native/adapted equivalence, common scale, safety, or professional validity [BG] |
 | Executable workflow composition (WorkArena++) | typed obligation DAG, composable setup/oracle/validator, milestone/terminal split, reversal and reset evidence | chained atomic difficulty or polling history mistaken for planning, realism, or complete consequential work | full immutable v2 paper plus inspected February 2026 official release, which postdates the paper; strong construction evidence, but floor effects, small convenience human study, single software, reset uncertainty, and no occupational, safety, or exact-reproduction validation [WA]; internal replay is synthetic conformance only [CW] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
@@ -3926,6 +3974,19 @@ them:
   reviewed immutable v1 PDF/text and inspected official post-paper release
   paths/hashes are recorded there. The release is implementation evidence, not
   the exact paper-time runner or empirical result archive.
+- **[HIBD]**
+  `papers/agent-benchmarks/2026-07-17-harness-induced-belief-divergence-validity.md`;
+  reviewed immutable v1 PDF/text and the official post-v1 archive audit are
+  recorded there. The evidence supports prompt-conditioned structured self-report
+  divergence, not grounded belief, behavior, calibration, task outcome, safety,
+  capability, harness equivalence, or readiness; empirical tasks/logs/tables and
+  action-analysis artifacts are absent, and three of seven release smoke tests fail.
+- **[HEP]** `pilots/harness-event-projection-conformance/README.md` and
+  `pilots/harness-event-projection-conformance/report.json`; local zero-call
+  deterministic evidence records two builder-authored ledgers, 12 clean views,
+  10 planted projection defects, separate endpoint families, and explicit claim
+  limits. It does not validate agent behavior, semantic paraphrases, harness
+  effects, professional tasks, generalization, production fitness, or readiness.
 - **[BG]**
   `papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md`;
   reviewed immutable v2 PDF/text and inspected official March 2026 release paths
