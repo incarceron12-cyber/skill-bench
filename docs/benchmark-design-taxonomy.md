@@ -1459,6 +1459,62 @@ upgrades require provenance-grounded unlike workflows, repeated trials, actor an
 recipient/expert validation, alternate-path and adversarial-observer tests, complete
 reset evidence, and lineage-clustered uncertainty.
 
+#### 2.9a Prior-experience consumption is opportunity-conditioned state change, not an endpoint proxy
+
+After delivery, preserve an authority-aware event chain rather than inferring
+“memory use” from changed actions or final score:
+
+```text
+versioned prior experience + authority/applicability/admissible role
+  → delivered evidence view and schedule → first proposition-specific opportunity
+    → access + interpreted recommendation → adoption/rejection/deferral + action
+      → induced state delta + reversibility → repeated re-entry/dependency propagation
+        → correction signal + repair opportunity → attempted repair
+          → accepted state transition → residual/collateral consequence
+            → final artifact/state outcome + cost + bounded claim
+```
+
+No link inherits the next. The first exposed step may precede the first decision at
+which a proposition can matter. Repeated visibility is dose, not propagation, unless
+the trace links an earlier induced delta through a dependency into later action or
+state. A later baseline-like action is neither necessary nor sufficient for repair:
+record the permissible action/state set, whether repair was attempted, whether the
+environment accepted the transition, what irreversible or collateral state remained,
+and whether terminal invariants were restored. Access, citation, action divergence,
+semantic adoption, causal use, repair, and endpoint recovery remain different
+observations [TCP].
+
+Denominators must expose the conditioning. Report a strict assignment/intention-to-
+treat package contrast over every intended eligible trial, with service, environment,
+observer, and artifact invalids retained separately. Then report descriptive
+opportunity-, access-, adoption-, divergence-, correction-, and repair-conditioned
+rates with their numerators, exclusions, and lineage clusters. A subset defined by a
+treatment action or observer judgment is post-treatment selected; its conditional
+damage may describe observed compliers but does not identify all-task mediation, a
+common principal stratum, or a causal Entry/Propagation/Recovery mechanism.
+
+The Compliance Trap makes action-and-consequence traces concrete, but v1 operationalizes
+Entry mainly as first action divergence or recommendation alignment, Propagation as a
+persistent/early endpoint-effect ratio, and Recovery as later baseline-action
+realignment. Its outcome-selected 77-task WebArena pool, co-authored synthetic tasks
+and traps, bundled identifiability/wording interventions, uncalibrated compliance and
+recovery observers, one-run cells, template clustering, unreconciled missing/retry
+denominators, and absent task/trajectory/result release support configured-package
+sensitivity to authored context only—not mechanism, memory capability, safety,
+professional validity, production fitness, or readiness [TCP].
+
+**Matched falsification experiment:** on two unlike knowledge-work actions, one with
+a reversible and one with an irreversible consequence, freeze the first actual
+proposition opportunity and compare no prior experience, authorized helpful,
+plausible conflicting, irrelevant, stale/superseded, and corrupted evidence. Only
+then cross single versus persistent delivery at matched capacity and total budget.
+Instrument access, adoption/rejection, chosen action, dependency-bearing state,
+correction availability, attempted and accepted repair, residual state, endpoint,
+invalidity, and cost with repeated configured-agent runs and lineage-clustered
+uncertainty. Existing experience-memory, evidence-flow, trace, artifact/state,
+task-health, metric, and validity records are the durable homes; do not add an E–P–R
+schema or infer a browser/memory-product scope commitment.
+
 Interdependent sessions add a dependency-bearing action shape, not automatic
 memory causality. Preserve the edge from earlier observation/artifact/state through
 write payload and feedback authority, session reset/persistent state, retrieval,
@@ -3945,6 +4001,13 @@ them:
   `pilots/experience-memory-transfer/README.md`; three builder-authored,
   deterministic synthetic conditions establish QA/action separation, harmful-
   transfer, promotion, and rollback fixture behavior only.
+- **[TCP]**
+  `papers/agent-benchmarks/2026-07-16-compliance-trap-memory-consumption-validity.md`;
+  reviewed immutable 25-page v1 PDF/text/HTML/source hashes and release-search
+  provenance are recorded there. No task, memory, trajectory, label, result, or
+  runnable analysis release was verified. Reported browser outcomes support
+  configured-package sensitivity to authored context, not an E–P–R mechanism,
+  memory capability, safety, professional validity, production fitness, or readiness.
 - **[ECB]**
   `papers/agent-benchmarks/2026-07-11-enterpriseclawbench-session-derived-validity.md`;
   reviewed immutable v1 PDF/text and pinned official post-paper release paths and

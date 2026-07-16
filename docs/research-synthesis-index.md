@@ -1335,6 +1335,7 @@ claim.
 | [LongMemEval-V2](../papers/agent-benchmarks/2026-07-11-longmemeval-v2-environment-experience-memory.md) | B | Separates trajectory-history storage from bounded evidence delivery and shows representation/reader effects; does not measure held-out action transfer or harmful stale guidance |
 | [EvoMemBench](../papers/agent-benchmarks/2026-07-15-evomembench-memory-scope-content-validity.md) | B | Adds an in-/cross-episode × knowledge/execution organizing grid and broad adapter substrate while showing that scope/content labels do not identify one construct when task lineage, current-context necessity, write correctness, retrieval, endpoint, grader, missingness, and compute change together |
 | [MemSyco-Bench](../papers/agent-benchmarks/2026-07-15-memsyco-memory-authority-validity.md) | B | Separates semantic relevance from decision authority through ignore/constrain/defer/supersede/use policies, while its synthetic labels, uncalibrated judge, missing adoption/action evidence, and nonfactorial families bound conclusions to configured answer behavior |
+| [The Compliance Trap](../papers/agent-benchmarks/2026-07-16-compliance-trap-memory-consumption-validity.md) | B | Moves post-retrieval evaluation into action and consequence traces while showing that schedule effects, treatment-selected “compliance,” and baseline-action realignment do not identify proposition entry, dependency propagation, or accepted state repair |
 
 **Repository consequence:** Projection manifests, candidate-lesson lifecycle, longitudinal stream/evolution contracts, immutable hashes, validation gates, and rollback. Experience-derived knowledge needs two linked, non-substitutable estimands: evidence-grounded retrospective retrieval and intervention benefit on held-out action. Failed attempts, realized procedures, inferred causes, environment/version scope, stale claims, safe alternatives, and harmful transfer must remain typed rather than flattened into notes.
 
@@ -1368,6 +1369,31 @@ support only a synthetic configured-system stress-test claim. Existing
 source-authority, information-flow, valid-time, experience-memory, state,
 invalid-trial, grader, and validity contracts already host the repair; no
 personal-assistant or memory-only scope commitment follows.
+
+The Compliance Trap adds the next **opportunity-to-repair chain**:
+`versioned prior experience and authority → delivered view/schedule → first actual
+proposition-specific opportunity → access and interpretation → adoption/rejection/
+deferral and action → induced state delta/reversibility → repeated re-entry or
+dependency propagation → correction and repair opportunity → attempted versus
+accepted repair → residual/collateral consequence → endpoint and cost`. No link
+inherits the next. Report strict assignment/intention-to-treat package effects over
+all intended eligible trials, retaining invalids, separately from descriptive
+opportunity-, access-, adoption-, divergence-, correction-, and repair-conditioned
+rates. A treatment-action-selected complier subset is not an all-task mediation
+effect or common principal stratum.
+
+The immutable v1 paper has no verified task, memory, trajectory, label, result, or
+runnable-analysis release. Its uncalibrated observers, outcome-selected WebArena
+pool, co-authored synthetic instrument, bundled Entry/Grounding treatments,
+template clustering, one-run cells, and missing/retry denominator gaps license only
+configured-package sensitivity to authored context—not an E–P–R mechanism, safety,
+memory capability, professional validity, production fitness, or readiness. A
+matched test should freeze the first actual opportunity on two unlike knowledge-
+work actions with reversible versus irreversible consequences, cross no/helpful/
+conflicting/irrelevant/stale/corrupted evidence before single versus persistent
+delivery, and observe adoption, state propagation, accepted repair, residual state,
+endpoint, invalidity, and cost. Existing experience-memory, evidence-flow, trace,
+state, metric, task-health, and validity machinery suffices; no new schema follows.
 
 These sources are important to the compounding system and adaptive-agent evaluation, but they must not make self-improvement the benchmark's primary objective.
 
