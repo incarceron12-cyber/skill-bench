@@ -1035,6 +1035,7 @@ revision before adding another lifecycle schema.
 |---|---:|---|
 | [STRACE](../papers/agent-benchmarks/2026-07-09-strace.md) | B | Introduces dependency-aware causal slicing and the distinction between surface failure and upstream root cause |
 | [ProcGrep](../papers/agent-benchmarks/2026-07-16-procgrep-procedural-fingerprint-validity.md) | B | Makes multi-resolution action-sequence regularities inspectable and searchable while showing that configured-system discrimination, repeated stability, matched intervention, skill transfer, monitoring utility, and readiness require separate evidence; its paper-time release omits headline row inputs and exact split lineage |
+| [Plans Don't Persist](../papers/agent-benchmarks/2026-07-16-plans-dont-persist-context-eviction-validity.md) | B | Adds forced-prefix replay and a derived-trace contamination warning while showing that broad plan-exchange removal, last-token cosine distance, free behavioral adoption, and broad-history endpoint loss are separate experiments |
 | [Who&When Pro](../papers/agent-benchmarks/2026-07-15-whowhen-pro-failure-attribution-validity.md) | B | Makes the injected actor/action/step known under attempted exact-prefix replay, while showing that intervention identity, first divergence, propagated symptom, but-for effect, earliest sufficient cause, natural multi-cause root, and repair utility are distinct claims; its unreleased corpus/code prevents construction and result audit |
 | [The Saturation Trap](../papers/agent-benchmarks/2026-07-15-intervention-timing-construct-reliability.md) | B | Separates exact-index, event-window, intervention-type, detector, utility, and decision-validity targets; its one-trajectory labels and post-v1 `Δt=0` audit show target/instrument fragility rather than general timing unreliability |
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Adds error → verifier feedback → repair → verification as a measurable recovery chain |
@@ -1134,6 +1135,26 @@ reliability jointly with primary artifact/state quality, preservation, query/tok
 time cost, collateral effects, and stakeholder-weighted consequences. Neutral
 interrupts, channel hints, task reminders, and oracle cues are distinct evidence
 interventions; none should be silently labeled an internal memory improvement.
+
+Plans Don't Persist adds a distinct **plan-text → consequence identification
+boundary**: `versioned obligation proposition → decision-time visible text and
+derived restatements → matched content/position treatment → proposition-specific
+recoverability → freely chosen action/adoption → realized artifact or state
+consequence → context-policy cost/reliability`. Forced-prefix replay is useful
+observer machinery because it holds actions and observations fixed, but for that
+same reason it cannot measure whether the stripped condition would use the plan.
+The reviewed paper's falling last-token cosine distance follows removal of the
+entire guard/plan exchange and remains confounded by length, position, discourse,
+and near-decodable step phase; its broad `keep_recent=4` stress test removes
+working observations and actions as well as the plan. Directional compatibility
+between those experiments does not supply the missing causal links. The strongest
+reusable result is the reasoning-trace contamination warning: a nominally removed
+treatment can survive in thoughts, summaries, rationales, tools, or memories.
+Audit all derived views, atomize live/completed/superseded obligations, cross
+irrelevant/corrupted/omitted/restored matched-capacity controls, and join forced
+observer replay to separate free-action twins. Existing compression, obligation,
+configured-system, trace, artifact/state, metric, task-health, and validity
+contracts already host the repair; no plan-persistence schema follows.
 
 The frozen internal [delayed-obligation dual-task pilot](../pilots/delayed-obligation-dual-task/README.md)
 implements that repair on two purposive synthetic work shapes and three evidence
