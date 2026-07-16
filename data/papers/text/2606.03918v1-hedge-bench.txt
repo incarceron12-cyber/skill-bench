@@ -1,0 +1,564 @@
+                                        Hedge-Bench: Benchmarking Agents on Hard, Realistic
+                                        Tasks Pertaining to Financial Reasoning
+                                        Eric Cho1 , Shawn Huang2 , Alice Lu1 , Andy Lyu3
+                                        1
+                                            Trata, 2 Brigham Young University, 3 Osmosis
+
+
+
+                                              AI agents can increasingly handle the mechanical tasks of financial analysis: retrieving documents,
+                                              calculating formulas, updating spreadsheets. The harder, more valuable challenge is reasoning through
+                                              the open-ended questions that define expert Analyst work. Existing benchmarks do not capture this
+                                              class of problem, and those that attempt to evaluate open-ended reasoning rely on model-judged
+                                              outputs that introduce noise and circularity. We present Hedge-Bench 1.0: a benchmark of 102 actual,
+                                              on-the-job tasks grounded in the explicit reasoning traces of professional hedge fund analysts working
+
+
+
+
+arXiv:2606.03918v1 [cs.AI] 2 Jun 2026
+                                              with relevant information sources. This approach enables deterministic grading against verified expert
+                                              steps. Frontier models and agents score below 16% on the benchmark. We publish the dataset and
+                                              evaluation harness at github.com/Trata-Inc/trata-hedge-bench.
+
+
+
+                                        Correspondence: Eric Cho at eric@trata.com
+
+
+
+                                        1      Introduction
+                                        As AI agents gain the ability to do the manual grunt work of a junior financial analyst, benchmarks must
+                                        emerge that capture the diversity and difficulty of the open-ended, reasoning work more senior professionals
+                                        do (Bigeard et al., 2025). Can agents today ask the most relevant questions when interpreting source material,
+                                        decide what analyses and experiments it should subsequently run, and provide reasoning that matches that of
+                                        human experts?
+                                        For instance: How should DraftKings account for prediction markets when forecasting revenue and weighing
+                                        capital allocation over the next 24 months? If SpaceX’s Starlink will launch 30,000+ satellites by 2030 with
+                                        superior unit economics, is it worth it for Iridium Communications as a smaller incumbent to try to compete
+                                        with a like-for-like replacement? If Chipotle is seeing behavioral shifts among customer cohorts because of
+                                        GLP-1, how might a potential acquirer adjust the valuation it should be willing to pay?
+                                        In this paper we introduce Hedge-Bench, a first-of-its-kind testing suite to evaluate agents on realistic reasoning
+                                        tasks that finance professionals are paid to do around open-ended problems. This includes reading between the
+                                        lines of what was said and explicitly not said, computing valuation multiples, assessing normalized earnings
+                                        power, identifying possible inflections, benchmarking against peers, and synthesizing opposing data points into
+                                        a coherent investment view. Each task consists of (1) a terminal environment populated with the information
+                                        sources an Analyst would actually use; (2) an open-ended topic an Analyst should reason through; and (3)
+                                        deterministic grading criteria derived from explicit reasoning traces jointly created by two hedge fund Analysts
+                                        working together on the task. We also introduce the Hedge-Bench 1.0 dataset, a set of 102 challenging tasks
+                                        requiring extensive domain knowledge, hours of directed research work and multi-step problem solving that
+                                        represent what the highest paid finance professionals actually spend time doing.
+                                        Hedge-Bench is deliberately geared towards building a preference model that reflects the actions expert
+                                        analysts actually take. Unlike naturally deterministic tasks where accuracy is self-evident, accuracy around
+                                        open-ended financial reasoning should be defined by how closely the agent’s actions match what domain experts
+                                        would do in the exact same environment. The bar is significantly higher in this domain as wrong judgement
+                                        frequently means material financial losses. For LLM adoption to inflect among industry professionals, agent
+                                        reasoning needs to be trusted. We believe the next major unlock will be when agents’ reasoning trajectories
+                                        converge with what expert human analysts themselves would do.
+
+
+
+                                                                                                1
+Figure 1 Pass@1 and mean dense score per model. Pass@1: the probability a single model attempt scores a perfect
+4.0/4.0 in a given environment (estimated by averaging 8 attempts per environment). Error bars show the 95%
+confidence interval for task-sampling uncertainty across environments. Dense mean score: the fine-grained score per
+model on a scale or [0, 4] (averaged across all environments and all attempts).
+
+
+The remainder of this paper is structured as follows. First, we assess the state of LLM capabilities in the
+finance domain. Next, we describe the process of creating Hedge-Bench 1.0. Then, we benchmark frontier
+LLMs and agents on the 102 tasks in Hedge-Bench 1.0 and find that frontier models and agents resolve less
+than 16% of tasks, with smaller models scoring less than 9% (Fig. 1). Finally, we provide a taxonomy of
+failure modes to assist future LLM and agent development.
+
+
+2    Related Works
+While LLMs have meaningfully improved in performing rote financial analysis, reasoning as a capability has
+largely gone unaddressed despite representing an order of magnitude higher economic value. Within the
+finance domain, existing data sources are insufficient to meet the training standards of frontier labs. Sellside
+research reports largely serve as marketing material rather than actual analysis; content posted on idea forums
+and social media platforms like Reddit and X does not represent the caliber of reasoning actually performed
+by professionals in the industry.
+There have been numerous efforts to benchmark LLMs on financial reasoning, spanning QA over filings:
+FinQA (Chen et al., 2021), ConvFinQA (Chen et al., 2022), TAT-QA (Zhu et al., 2021), FinanceBench (Islam
+et al., 2023), and DocFinQA (Reddy et al., 2025); broad capability suites: FinBen (Xie et al., 2024), PIXIU
+(Xie et al., 2023), and MultiFinBen (Peng et al., 2025); and more recent agentic tool-use benchmarks Finance
+Agent Benchmark (FAB) (Bigeard et al., 2025). While these efforts are extensive, none of them evaluate the
+higher level reasoning work more senior professionals are paid to do.
+The QA family – FinQA, ConvFinQA, TAT-QA, FinanceBench, DocFinQA – pairs each item with a gold span,
+number, or reasoning program, and grading reduces to matching it. Vals AI’s FAB v2 has a severity-weighted
+partial credit scoring mechanism with dealbreaker gating. This represents the strongest numerical-modeling
+rubric thus far, where frontier models still fall below 40% on perfect-answer scoring (Bigeard et al., 2025). FAB
+demonstrates that agentic, tool-using evaluation is far harder than static QA. However, like the other prior
+works, it still terminates in answer-keyed questions and grades factual correctness rather than argumentation.
+Many professional-services-focused benchmarks follow this pattern of pairing a discrete question with a
+checkable answer. As a result, evaluating models on them measures a narrower competence than the high
+leverage judgment work the most skilled experts actually perform.
+Where prior benchmarks terminate in a gradable discrete answer, we pose a higher-order primitive: given a
+
+
+                                                        2
+Figure 2 Overview of our pipeline. Top: how we collected transcripts and formulated test environments. Bottom: our
+evaluation pipeline starting from data sources to evaluation procedure.
+
+
+set of information around a company and an open-ended theme, the agent must decompose the task into
+appropriate sub-tasks and produce the argument itself, shifting evaluation from outcome to process.
+
+
+3     Hedge-Bench
+We take a distinct approach to procuring the highest-fidelity reasoning traces in this domain. Our network is
+composed of investment professionals who are employed full-time at established investment firms and who use
+our platform as part of their actual research process.
+We connect two expert Analysts over the phone to anonymously discuss a public company they both know.
+By recording and transcribing these voice conversations, we capture the end-to-end research discussions these
+Analysts have as part of their actual workflow. This format elicits both collaboration and adversarial debates,
+and captures material breadth and depth of reasoning. Importantly, participants actively discuss the diligence
+they’ve done on a certain topic and provide commentary on the questions they’re subsequently thinking about.
+Within our platform, we secure perpetual licenses on this growing corpus of IP. These are real world traces –
+not simulations – that are otherwise impossible to curate at scale. These tasks were created directly from
+our proprietary process, so no model has seen the solution during pre-training. An overview of our task
+formulation pipeline is in Fig. 2.
+
+3.1   Task Formulation
+A Hedge-Bench environment consists of an instruction, a closed set of relevant documents and materials, an
+example solution and a set of tests. The instruction describes the task that the agent must complete in the
+Docker container. To reflect industry practices, these instructions are written as open-ended requests to look
+deeper into a certain topic, rather than detailed explanations on expected output. The tests verify if the
+reasoning traces produced by the agent match the action moves done by the expert Analysts.
+Hedge-Bench tasks are interactive. Once the instructions and Docker container are provided to an agent,
+it must build context by reading through the various files given and produce relevant reasoning. Tasks are
+specified using the Harbor task format and are run using the Harbor harness. Every Hedge-Bench task is
+original: the reference solution is created from our proprietary process working with industry professionals,
+rather than copied or adapted from any existing public sources. This makes Hedge-Bench a cleaner test
+of whether an agent can solve novel and more realistic reasoning problems in this space, rather than just
+mechanical recall, retrieval or formula calculations.
+
+
+                                                         3
+        Rubric theme & required moves — Iridium: L-Band Utility in Defense and Government
+
+       THEME 1 Technical Moat of L-Band Spectrum in Austere Environments
+       Iridium Communications’s primary competitive advantage in the government sector is the physical
+       property of L-band spectrum, which ensures connectivity where higher-frequency alternatives fail.
+
+        REQUIRED MOVES (sub-themes)
+
+
+         a Identifies L-band’s specific resilience to environmental interference such as heavy cloud cover,
+        storms, and dense foliage.
+        b Contrasts Iridium’s ‘mission-critical’ reliability for voice and low-bandwidth data against the
+       vulnerability of high-frequency broadband.
+        c Recognizes the value of L-band for ‘fleets on the move’ and mobile battlefield communications
+       where line-of-sight to satellites is frequently obstructed.
+
+        Source: sec_filings/10-k/, earnings_call/
+
+
+
+Figure 3 An example theme from a Hedge-Bench rubric. A theme is a distinct line of inquiry an analyst would pursue
+(here, why L-band’s physical properties give Iridium a defensible moat in defense and government markets); each
+theme decomposes into lettered required moves, the specific claims or arguments an answer must make to demonstrate
+it reasoned through the theme. A theme counts as covered once the agent makes enough of its grounded moves
+(τ = max(1, min(n−1, 3))), and every move must be supportable from the cited source files.
+
+
+A standard Hedge-Bench task is divided into three or four themes, and each theme is further divided into four
+to five sub-themes representing action moves. This is designed to reflect the work Analysts must do when
+decomposing a broader topic into chunks of actionable reasoning. Financial analyst work is deeply curatorial:
+they ingest large swathes of information, determine the load-bearing questions, and follow that thread to
+generate appropriate reasoning while accounting for imperfect information.
+Fig. 3 shows an example theme and its analytical moves. The themes and sub-themes are both derived
+explicitly from expert Analyst actions and are manually verified to ensure this reasoning is producible from
+the information sources provided to the agent.
+
+3.2   Dataset Construction
+Hedge-Bench is meant to capture a diverse set of real tasks pertaining to financial reasoning. Over the last 9
+months, we created and categorized over 5,112 tasks (representing 20,448 sub-tasks) into recurring categories.
+Of these tasks, we selected 102 for the Hedge-Bench 1.0 dataset based on our own difficulty assessments and
+a quality assessment by two independent human reviewers. Certain tasks saw low pass rates across every
+frontier model tested, while for some tasks Claude-Sonnet-4.6, Claude-Opus-4.7 and GPT-5.5 meaningfully
+outperformed. (5.1).
+
+3.3   Composition
+Hedge-Bench tasks are focused on applying expert reasoning across several recurring topics: Valuation, Growth
+& Expansion, M&A, Competitive Positioning, Operational Execution & Strategy, and Risk (Fig. 4). Within
+each category are multiple sub-categories. Valuation for instance includes concepts like multiple compression
+and expansion, downside protection, sum-of-the-parts analyses and assessing relative risk/reward. Risk
+addresses themes like AI disintermediation, changes in the macro, and binary events like litigation outcomes.
+
+
+4     Experiment Setup
+We evaluated 8 frontier models on Hedge-Bench using Terminus 2 (Merrill et al., 2026) as a harness: Claude-
+Opus-4.8 (Anthropic, 2026b), Claude-Opus-4.7 (Anthropic, 2026a), Claude-Sonnet-4.6 (Anthropic, 2026c),
+
+
+                                                        4
+Figure 4 Number of environments per category.                Figure 5 We provide the agents with various types of
+                                                             financial information pertaining to a company.
+
+
+Claude-Haiku-4.5 (Anthropic, 2025), Gemini-3.5-Flash (Kavukcuoglu et al., 2026), Gemini-3.1-Pro (The
+Gemini Team, 2026), GPT-5.5 (OpenAI, 2026b), and GPT-5.4-Mini (OpenAI, 2026a). For each supported
+model, we run eight trials, where each trial is one agent’s attempt at solving a single task. This represents
+6,528 trials across 102 environments. Hedge-Bench tasks are larger in scope and deliberately open-ended,
+reflecting real financial analyst work. An overview of our evaluation pipeline is in Fig. 2.
+
+4.1   Instruction
+Each environment casts the agent as a financial analyst with tool access to a sandboxed corpus of primary
+documents for a company and its relevant peers, and asks it to reason through a specific task. The corpus is
+the set of source files that contains all of the supporting text and tables needed to make the reasoning moves
+the topic requires; the document types we provide are detailed in Fig. 5. Prompts are written to reflect the
+communication style of the industry rather than overly-explanatory instructions: the agent is given a topic
+and a short list of themes to address, and is expected to perform action moves to diligence each theme.
+Beyond covering the themes, every prompt instructs the agent to take a clear position rather than survey
+both sides, to engage the strongest counter-evidence in the data, to reconcile conflicting data points into a
+unified conclusion, and to note ambiguity rather than smooth over it. Critically, the agent must inline-cite the
+specific source file backing every claim; claims that cannot be grounded in a provided file (numbers, events,
+entities) are discarded by the grader and earn no credit. The agent writes its full reasoning to a single answer
+file, which is the only artifact we grade.
+
+4.2   LLM-as-a-Judge
+Because the answers are long-form prose with no single correct wording, we grade each trial with an LLM
+judge (Gemini-3.1-Pro, run at temperature 0 with a JSON-constrained output format) rather than by string
+matching. Instead of asking the grader to produce a single holistic verdict, we hand it three separate tasks so
+that factual grounding and analytical coverage are assessed independently.
+The first task is a grounding check. We reconstruct the evidence the agent actually relied on by scanning its
+answer for inline file citations and loading the contents of exactly those files, then ask the judge to extract every
+specific factual claim — numerical figures, quoted phrases, named entities, dates, and concrete comparisons —
+and flag any that cannot be verified against the cited sources. Analytical framings and inferences are not
+penalized as long as their factual building blocks are present; the bar is strictly whether the agent invented a
+fact.
+The second task is a coverage check. The judge is given the rubric and the answer (together with the claims
+flagged by the grounding check) and, for each theme, reports which lettered moves the answer hits. Crediting
+is by concept match rather than vocabulary match: any framing that conveys the same analytical point
+satisfies the move, while a generic gesture at the theme label does not. Here is where hallucinations are
+penalized through tainting. A move the judge would otherwise credit, but whose supporting evidence appears
+
+
+                                                         5
+among the flagged claims, is additionally marked as tainted. A tainted move means the agent made the right
+analytical point but rested it on a fabricated figure, a misattributed quote, or a comparison absent from the
+data. A fabricated supporting fact only forfeits the specific move it taints rather than collapsing the whole
+answer.
+The third task is a synthesis check, which determines whether the answer contains at least one explicit
+synthesis that reconciles opposing data points into a unified conclusion, as opposed to merely listing the
+considerations in parallel. The rubric reserves this for the top score. The grounding task is run first because
+its flagged claims feed the coverage task; the coverage and synthesis tasks then run in parallel.
+
+4.3   Rubric-based scoring
+The rubric for each environment is organized into themes, where a theme is a distinct line of inquiry an
+expert analyst would pursue, and each theme decomposes into lettered required moves ([a], [b], [c], . . . ) —
+the specific qualitative or quantitative claims, arguments, or data points that demonstrate the agent reasoned
+through that theme. Both themes and sub-themes/reasoning moves are derived from the actions experts
+analysts took while doing diligence on the company.
+A theme is counted as covered when the agent makes enough of its grounded (non-tainted) moves. A theme
+with n moves is covered once the number of grounded hits reaches the threshold τ = max(1, min(n − 1, 3)).
+The n − 1 form lets the agent miss a single move per theme, and the cap at 3 prevents move-rich themes from
+implicitly demanding a near-perfect hit rate. We do not penalize the agent for reasoning trajectories outside
+the rubric.
+Each trial receives a dense score s ∈ {0, 1, 2, 3, 4} derived from how many themes it covers. Let T be the
+number of themes in the environment and C the number it covers under the τ threshold. A trial earns s = 4
+when it covers every theme (C = T ) and contains the required synthesis sentence; s = 3 when it covers every
+theme but lacks the synthesis; s = 2 when C ≥ 2; s = 1 when C ≥ 1; and s = 0 otherwise. Full theme coverage
+is required for top scores, and the gap between 3 and 4 is reserved for genuine reconciliation of conflicting
+evidence. The mean dense score we report for a model is computed by macro-averaging: we first average the
+dense scores of the valid trials within each environment, then average those per-environment means across
+all 102 environments, weighting every environment equally regardless of its trial count. Environments with
+no valid trial are counted as 0; we additionally report a present-environments variant computed only over
+environments the model completed. A trial is valid if it produced a score without a harness or grader error,
+and only valid trials enter any metric.
+From the dense score we derive a sparse pass/fail signal: a trial passes only if it attains a perfect s = 4. We
+report pass@1 — the probability that a single trajectory earns a perfect rubric score — estimated as the mean
+perfect-score indicator over the (≈ 8) trials available per environment, the standard low-variance estimator of
+pass@1, then
+          √ macro-averaged across environments. We attach a 95% confidence interval whose half-width
+is 1.96 s/ n, where s is the standard deviation of the per-environment pass rates and n is the number of
+environments evaluated; this captures task-sampling uncertainty (how much the rate would move under a
+different draw of environments) rather than run-to-run trial noise.
+
+
+5     Results & Discussion
+Each trial is scored on a dense rubric scale of [0, 4] pertaining to coverage of the rubric’s themes and sub-themes.
+Trials are also tracked for trajectory length, tool usage, and hallucination rate.
+All aggregate numbers are macro-averaged (trials within an environment first, then across environments).
+The analysis is organized around four figures and one table: pass@1 by model (Fig. 1), rubric coverage (Table.
+1), dense score by topic category (Table. 2), pass@1 by topic category (Table. 3), and agent effort and
+hallucination by model (Fig. 7).
+Our headline metric, pass@1, is the probability that a single trajectory earns a perfect sparse (4.0/4.0) score,
+estimated as the mean perfect-score indicator over each environment’s 8 trials. Its 95% confidence interval
+
+
+
+                                                         6
+captures task-sampling uncertainty — how much the rate would move under a different draw of comparable
+environments — and is plotted as error bars in Fig. 1.
+
+                        Model               Themes Covered (%) ↑   Raw Moves Covered (%) ↑   Valid Moves Covered (%) ↑
+                        Claude-Sonnet-4.6          56.4                     66.8                       54.9
+                        Claude-Opus-4.7             53.6                    61.7                       53.9
+                        GPT-5.5                     48.1                    52.4                       49.7
+                        Gemini-3.5-Flash            48.0                    58.0                       49.8
+                        Claude-Opus-4.8             47.3                    60.5                       49.1
+                        Claude-Haiku-4.5            32.5                    50.9                       36.9
+                        Gemini-3.1-Pro              30.5                    40.8                       37.6
+                        GPT-5.4-Mini                19.8                    29.9                       26.1
+
+
+Table 1 Rubric coverage by model (macro-averaged over 102 environments). Theme Coverage: fraction of themes
+covered, where a theme is covered once ≥ τ = max(1, min(n−1, 3)) of its n grounded moves are hit. Move Coverage:
+mean within-theme fraction of moves hit, shown Raw (all credited moves) and Valid (after discounting tainted,
+hallucination-supported moves).
+
+
+5.1   Overall Performance
+Claude-Sonnet-4.6 leads on rubric performance (macro dense mean 1.92/4.0, the only pass@1 above 15%; Fig.
+1), ahead of Opus-4.7 (1.84); GPT-5.5 and Gemini-3.5-Flash tie for third (1.68), and GPT-5.4-Mini trails at
+0.75 (pass@1 < 1%). The 95% CIs argue for reading tiers, not a strict order: Sonnet-4.6 on top (overlapping
+Opus-4.7), a large indistinguishable middle band (Opus-4.7, GPT-5.5, Gemini-3.5-Flash, Opus-4.8), and
+a cleanly separated bottom tier (Haiku-4.5, Gemini-3.1-Pro, GPT-5.4-Mini). The benchmark is far from
+saturated: the best model captures fewer than half the available rubric points and achieves a perfect score on
+∼ 1 in 6 attempts.
+As shown in Fig. 1 and Table. 1, GPT-5.5 and Gemini-3.5-Flash tie on dense mean (1.68) on nearly identical
+theme coverage (48.1% vs 48.0%) and nearly identical grounded move coverage (49.7% vs 49.8%), with
+GPT-5.5 reaching it at half the hallucination rate. Haiku-4.5 covers as many total moves (both grounded and
+ungrounded) as GPT-5.5, but far fewer grounded ones (36.9% vs 49.7%), and scores about 0.5 lower on much
+thinner theme breadth (32.5%).
+
+5.2   Performance by topic category
+
+                                                           Growth &                Competitive   Operational
+                        Model                  Valuation                 M&A                                     Risk
+                                                           Expansion               Positioning    Strategy
+                        Claude-Opus-4.8          1.80         1.75       1.71         1.26            1.72       1.51
+                        Claude-Opus-4.7          1.96         1.91       2.00         1.74           1.84        1.58
+                        Claude-Sonnet-4.6        2.15         2.02       1.89         1.95            1.80       1.75
+                        Claude-Haiku-4.5         1.24         1.26       0.99         1.24            1.20       0.92
+                        GPT-5.5                  1.85         1.92       1.60         1.62            1.70       1.30
+                        GPT-5.4-Mini             1.01         0.81       0.68         0.80            0.68       0.53
+                        Gemini-3.5-Flash         1.82         1.75       1.71         1.65            1.75       1.31
+                        Gemini-3.1-Pro           1.18         1.23       0.98         0.97            1.24       0.95
+
+
+Table 2 Macro Dense Mean rubric score (0–4) per environment category, grouped by model family. Trials are first
+averaged within each environment, then averaged only across environments where the model has at least one valid run
+(missing environments ignored). Underlines indicate the best performer within each family, and bold highlights the
+overall benchmark leader for each category.
+
+Dense scores across the six categories (Fig. 6, Table. 2) show a clear difficulty gradient: Valuation is strongest
+(mean 1.61; Sonnet peaks at 2.15) and Risk is weakest (1.23), with Competitive Positioning (1.39) and
+M&A (1.40) close behind. The gradient tracks groundability: Valuation, Growth, and Operational topics are
+data-anchored (concrete figures the rubric rewards), whereas Risk, Competitive Positioning, and M&A are
+judgment-heavy and forward-looking. Risk is the hardest category for seven of eight models, and on M&A the
+two weakest models record 0% pass@1; the per-category pass@1 polygons (Fig. 6, Table. 3) collapse toward
+zero on the judgment-heavy axes.
+
+
+
+                                                                     7
+                                                        Growth &            Competitive   Operational
+                        Model               Valuation                M&A                                Risk
+                                                        Expansion           Positioning    Strategy
+                        Claude-Opus-4.8        9.2        15.6       8.6       2.5           9.6        5.6
+                        Claude-Opus-4.7       11.2        17.2       15.6      13.4          10.0       5.4
+                        Claude-Sonnet-4.6     15.5        20.0       15.2      19.5          11.9       12.4
+                        Claude-Haiku-4.5       1.4         3.6       1.1       10.3           2.9       0.9
+                        GPT-5.5               10.1        16.7       6.7        9.0          10.2       1.8
+                        GPT-5.4-Mini          0.7          1.5       0.0        1.4          0.4        0.0
+                        Gemini-3.5-Flash       7.5        10.1       6.7        9.0          10.3       5.7
+                        Gemini-3.1-Pro         0.6        5.7        0.0        2.1           4.1       1.7
+
+
+Table 3 Pass@1 rate (%) per environment category, grouped by model family. It is the percentage of trials within each
+category that achieved a perfect 4.0/4.0 score. Underlines indicate the best performer within each family, and bold
+highlights the overall benchmark leader for each category.
+
+
+
+
+Figure 6 Selected model performance by category. Left: Pass@1 rates. Right: Mean dense scores.
+
+
+
+5.3   Agent effort: trajectory length and tool use
+We also found nominal model scale does not predict performance: Gemini-3.5-Flash (1.68) nearly doubles
+3.1-Pro (1.12); mid-sized Claude-Sonnet-4.6 (1.92) beats both Opus generations, and Opus-4.8 regresses vs
+Opus-4.7 (1.62 vs 1.84) while failing 11 environments. Only OpenAI shows the expected ordering (GPT-5.5
+1.68 ≫ GPT-5.4-Mini 0.75). The better predictor is agentic effort (i.e. trajectory length, tool use), shown in
+Fig. 7.
+Trajectory length correlates with dense scores across models (Pearson r ≈ 0.51, n = 8). The deepest explorers
+(Gemini-3.5-Flash 60 steps, Sonnet-4.6 45 steps) top the table, while the shallowest (Gemini-3.1-Pro ∼ 12,
+Mini ∼13) sit at the bottom. That said, while models that naturally explore more deeply tend to score higher
+overall, this represents fixed characteristics of each model rather than something that can be engineered
+or induced. Within the same environment, the deeper explorer scores higher in 91% of cases (within-env
+r ≈ +0.36); when trialing an individual model, longer trajectories are mildly negatively correlated with score
+(r ≈ −0.10). In other words, a model simply takes more steps on tasks it finds harder.
+We conclude tool calls rather than step counts are the more comparable effort measure. GPT issues ∼2.2 tool
+calls/step (parallel calling) vs Flash’s ∼1.1 (Fig. 7). GPT-5.5 reaches a top three score (1.68) with only 16
+steps / ∼35 tool calls — about half of Gemini-3.5-Flash’s ∼61. Returns to additional steps are front-loaded:
+mean dense rises 1.07→1.57 from <15 to 15–25 steps, then plateaus. This suggests a ∼15–25-step regime as
+performed by GPT-5.5 captures most of the available quality gain.
+
+
+
+
+                                                                 8
+Figure 7 The trajectory length, tool-call counts, and hallucination rate for each model.
+
+
+
+5.4   Quality and reliability tradeoff
+GPT-5.5 is the standout model on the quality–reliability tradeoff (Fig. 7). Despite ranking third on pass@1
+quality (1.68), it achieves roughly 88% of Sonnet-4.6’s analytical quality with less than half the hallucination
+rate (36.6% vs. 88.7%) and at lower trajectory cost. The highest scoring models carry a steep reliability
+cost: Sonnet-4.6 and Opus-4.7 hallucinate within 88.7% and 78.3% of trials respectively, making their outputs
+difficult to deploy without heavy oversight. Haiku-4.5 sits at the opposite extreme: the weakest quality score
+combined with the highest hallucination rate (93.1%), leaving no tradeoff argument for its use. GPT-5.5 is
+therefore the most deployable model under our benchmark. The deeper finding is that quality and reliability
+presently trade off against each other. The models that reason most thoroughly also hallucinate more often.
+
+5.5   When reasoning traces exceed the rubric
+While examining individual reasoning traces, we found several instances across models where the agent went
+deeper on a theme than the rubric required. The agent generated insights that our independent human
+evaluators deemed to be net new to their research and worth considering.
+For example, a Claude Opus agent was prompted to research the segmentation of competitive threats for
+Iridium Communications. The grading rubric required that the agent “distinguish L-band spectrum as a
+‘mission critical’ niche characterized by high reliability in adverse weather/foliage conditions compared to
+high-speed broadband.” The agent chained four separate claims from one passage in a causal sequence:
+“Low-frequency signals penetrate weather”; “L-band has primary, exclusive allocation”; “Competitors are walled
+off from safety services”; “The moat holds for 10-15 years.” The model went a step deeper than the rubric
+required by linking the underlying physics to the regulatory structure: low-frequency signal propagation is
+precisely why L-band carries a primary, exclusive ITU allocation, which is in turn what walls competitors
+off from regulated safety services and locks in the moat for 10-15 years. Where a human expert established
+that L-band has reliability properties broadband lacks and that those properties define a defended niche, the
+model identified that the regulatory exclusivity and the physics are not independent facts — one causes the
+other, and together they define the durability of the moat.
+The analytical depth of these specific trajectories is invisible at the score level beyond the dense mean scores
+we provide. We believe that once frontier models are trained to match expert human reasoning, they will
+be able to flag and generate net new observations across companies, filings, and time horizons at a scale no
+individual analyst could.
+
+
+
+
+                                                          9
+6    Limitations
+Hedge-Bench evaluates alignment with the analytical moves made by a specific pair of expert analysts. We
+hypothesize that, given the open-ended nature of reasoning in this domain, output is best evaluated against
+the preferences of real industry practitioners. Pairing experts in ground truth construction provides structural
+quality checks, and manual reviews by third-party human reviewers indicate that analysts largely agreed on
+the load-bearing questions to address per environment. Most disagreements concerned expected outcomes to
+those questions, not the questions themselves. That said, a different analyst pair could produce a different
+rubric. To account for this, valid off-rubric reasoning goes unpenalized.
+The rubric in each testing environment is produced by a single language-model pass that generates themes,
+identifies analytical moves, rejects rule-violating moves, and emits metadata all at once – a design that could
+degrade ground truth quality. Critically, the verification-step prioritizes testing that a move is derivable from
+/app/data/, not that it reflects what the analyst said in the transcript. Therefore the rubric could drift from
+the underlying transcript. This could potentially harm the reliability of the ground truth. The v2 remedy is
+to decompose generation into per-step calls, add a verifier that grounds each move in a specific transcript
+span rather than only in the data folder, route every move through human validation, and adopt cross-model
+disagreement as an automatic re-review gate.
+Each environment exposes the agent to a curated pool of first-party documents: filings, relevant news articles,
+press releases, filings and news of competitors, industry-related documents, earnings transcripts, and financials
+(e.g. 10K/Q’s). Because the underlying transcripts occurred at varying points in time, we containerize each
+environment’s document pool to the date of its respective transcript. We sought to balance providing as many
+materials deemed relevant by experts against context window constraints.
+Finally, Hedge-Bench grades concept match rather than exact answers as detecting whether a move was
+made requires semantic judgement. We adopted an LLM-as-a-Judge approach combined with a rubric as the
+grading method. We also disclose a grading defect: when the judge returns something unparsable the entire
+run gets zeroed out.
+
+
+7    Conclusion
+We have introduced Hedge-Bench, a new benchmark evaluating realistic reasoning tasks around open-ended
+problems in the finance domain. Our work reveals significant limitations in current models, with the best-
+performing Claude-Sonnet achieving only a 15% success rate, emphasizing substantial room for improvement in
+these open-ended reasoning tasks. We believe Hedge-Bench and its future iterations will drive the development
+of more robust reasoning capabilities necessary for a step change in industry adoption of LLMs. We will
+continue to evaluate new models as they come out. We also plan to release new, challenging task sets to
+match the capabilities of models in the future. This is needed to meet the high standards the finance industry
+requires of AI agents beyond rote analysis.
+
+
+
+
+                                                       10
+References
+Anthropic. Introducing Claude Haiku 4.5. https://www.anthropic.com/news/claude-haiku-4-5, October
+  2025. Accessed: 2026-06-01.
+Anthropic. Introducing Claude Opus 4.7. https://www.anthropic.com/news/claude-opus-4-7, April 2026a.
+  Accessed: 2026-06-01.
+Anthropic. Introducing Claude Opus 4.8. https://www.anthropic.com/news/claude-opus-4-8, May 2026b.
+  Accessed: 2026-06-01.
+Anthropic. Introducing Claude Sonnet 4.6. https://www.anthropic.com/news/claude-sonnet-4-6, February
+  2026c. Accessed: 2026-06-01.
+Antoine Bigeard, Langston Nashold, Rayan Krishnan, and Shirley Wu. Finance agent benchmark: Benchmarking llms
+  on real-world financial research tasks, 2025. https://arxiv.org/abs/2508.00828.
+Zhiyu Chen, Wenhu Chen, Charese Smiley, Sameena Shah, Iana Borova, Dylan Langdon, Reema Moussa, Matt Beane,
+  Ting-Hao Huang, Bryan R Routledge, et al. Finqa: A dataset of numerical reasoning over financial data. In
+  Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing, pages 3697–3711, 2021.
+Zhiyu Chen, Shiyang Li, Charese Smiley, Zhiqiang Ma, Sameena Shah, and William Yang Wang. Convfinqa: Exploring
+  the chain of numerical reasoning in conversational finance question answering, 2022. https://arxiv.org/abs/
+  2210.03849.
+Pranab Islam, Anand Kannappan, Douwe Kiela, Rebecca Qian, Nino Scherrer, and Bertie Vidgen. Financebench: A
+  new benchmark for financial question answering, 2023. https://arxiv.org/abs/2311.11944.
+Koray Kavukcuoglu, Jeff Dean, Oriol Vinyals, and Noam Shazeer. Gemini 3.5: Frontier intelligence with action. https:
+  //blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-5/, May 2026.
+  Accessed: 2026-06-01.
+Mike A. Merrill, Alexander G. Shaw, Nicholas Carlini, Boxuan Li, Harsh Raj, Ivan Bercovich, Lin Shi, Jeong Yeon
+  Shin, Thomas Walshe, E. Kelly Buchanan, Junhong Shen, Guanghao Ye, Haowei Lin, Jason Poulos, Maoyu Wang,
+  Marianna Nezhurina, Jenia Jitsev, Di Lu, Orfeas Menis Mastromichalakis, Zhiwei Xu, Zizhao Chen, Yue Liu, Robert
+  Zhang, Leon Liangyu Chen, Anurag Kashyap, Jan-Lucas Uslu, Jeffrey Li, Jianbo Wu, Minghao Yan, Song Bian,
+ Vedang Sharma, Ke Sun, Steven Dillmann, Akshay Anand, Andrew Lanpouthakoun, Bardia Koopah, Changran Hu,
+  Etash Guha, Gabriel H. S. Dreiman, Jiacheng Zhu, Karl Krauth, Li Zhong, Niklas Muennighoff, Robert Amanfu,
+  Shangyin Tan, Shreyas Pimpalgaonkar, Tushar Aggarwal, Xiangning Lin, Xin Lan, Xuandong Zhao, Yiqing Liang,
+ Yuanli Wang, Zilong Wang, Changzhi Zhou, David Heineman, Hange Liu, Harsh Trivedi, John Yang, Junhong Lin,
+  Manish Shetty, Michael Yang, Nabil Omi, Negin Raoof, Shanda Li, Terry Yue Zhuo, Wuwei Lin, Yiwei Dai, Yuxin
+ Wang, Wenhao Chai, Shang Zhou, Dariush Wahdany, Ziyu She, Jiaming Hu, Zhikang Dong, Yuxuan Zhu, Sasha
+  Cui, Ahson Saiyed, Arinbjörn Kolbeinsson, Jesse Hu, Christopher Michael Rytting, Ryan Marten, Yixin Wang, Alex
+  Dimakis, Andy Konwinski, and Ludwig Schmidt. Terminal-bench: Benchmarking agents on hard, realistic tasks in
+  command line interfaces, 2026. https://arxiv.org/abs/2601.11868.
+OpenAI.       Introducing GPT-5.4   mini    and    nano.            https://openai.com/index/
+ introducing-gpt-5-4-mini-and-nano/, March 2026a. Accessed: 2026-06-01.
+OpenAI. Introducing GPT-5.5. https://openai.com/index/introducing-gpt-5-5/, April 2026b. Accessed:
+ 2026-06-01.
+Xueqing Peng, Lingfei Qian, Yan Wang, Ruoyu Xiang, Yueru He, Yang Ren, Mingyang Jiang, Vincent Jim Zhang,
+ Yuqing Guo, Jeff Zhao, Huan He, Yi Han, Yun Feng, Yuechen Jiang, Yupeng Cao, Haohang Li, Yangyang Yu, Xiaoyu
+ Wang, Penglei Gao, Shengyuan Lin, Keyi Wang, Shanshan Yang, Yilun Zhao, Zhiwei Liu, Peng Lu, Jerry Huang,
+  Suyuchen Wang, Triantafillos Papadopoulos, Polydoros Giannouris, Efstathia Soufleri, Nuo Chen, Zhiyang Deng,
+  Heming Fu, Yijia Zhao, Mingquan Lin, Meikang Qiu, Kaleb E Smith, Arman Cohan, Xiao-Yang Liu, Jimin Huang,
+  Guojun Xiong, Alejandro Lopez-Lira, Xi Chen, Junichi Tsujii, Jian-Yun Nie, Sophia Ananiadou, and Qianqian
+ Xie. Multifinben: Benchmarking large language models for multilingual and multimodal financial application, 2025.
+  https://arxiv.org/abs/2506.14028.
+Varshini Reddy, Rik Koncel-Kedziorski, Viet Dac Lai, Michael Krumdick, Charles Lovering, and Chris Tanner. Docfinqa:
+  A long-context financial reasoning dataset, 2025. https://arxiv.org/abs/2401.06915.
+
+
+
+
+                                                        11
+The Gemini Team. Gemini 3.1 Pro: A smarter model for your most complex tasks. https://blog.google/
+  innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/, February 2026. Ac-
+  cessed: 2026-06-01.
+Qianqian Xie, Weiguang Han, Xiao Zhang, Yanzhao Lai, Min Peng, Alejandro Lopez-Lira, and Jimin Huang. PIXIU:
+  A comprehensive benchmark, instruction dataset and large language model for finance. In Thirty-seventh Conference
+  on Neural Information Processing Systems Datasets and Benchmarks Track, 2023. https://openreview.net/
+  forum?id=vTrRq6vCQH.
+Qianqian Xie, Weiguang Han, Zhengyu Chen, Ruoyu Xiang, Xiao Zhang, Yueru He, Mengxi Xiao, Dong Li, Yongfu
+  Dai, Duanyu Feng, Yijing Xu, Haoqiang Kang, Ziyan Kuang, Chenhan Yuan, Kailai Yang, Zheheng Luo, Tianlin
+  Zhang, Zhiwei Liu, Guojun Xiong, Zhiyang Deng, Yuechen Jiang, Zhiyuan Yao, Haohang Li, Yangyang Yu, Gang
+  Hu, Jiajia Huang, Xiao-Yang Liu, Alejandro Lopez-Lira, Benyou Wang, Yanzhao Lai, Hao Wang, Min Peng, Sophia
+  Ananiadou, and Jimin Huang. Finben: a holistic financial benchmark for large language models. NIPS ’24, Red
+  Hook, NY, USA, 2024. Curran Associates Inc. ISBN 9798331314385.
+Fengbin Zhu, Wenqiang Lei, Youcheng Huang, Chao Wang, Shuo Zhang, Jiancheng Lv, Fuli Feng, and Tat-Seng Chua.
+  TAT-QA: A question answering benchmark on a hybrid of tabular and textual content in finance. In Proceedings
+  of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint
+  Conference on Natural Language Processing (Volume 1: Long Papers), pages 3277–3287, Online, August 2021.
+  Association for Computational Linguistics. doi: 10.18653/v1/2021.acl-long.254. https://aclanthology.org/
+  2021.acl-long.254/.
+
+
+
+
+                                                        12
+
