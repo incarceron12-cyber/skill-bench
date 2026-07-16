@@ -1,0 +1,1061 @@
+                                             Are Online Skill and Memory Modules Always
+                                             Worth Their Tokens?
+                                             A Budget-Constrained Study of Web Agents
+                                             Sina Hajimiri1,2 , Masih Aminbeidokhti1,2 , Jose Dolz2 , Ismail Ben Ayed2 ,
+                                             Issam H. Laradji1,3 , Spandana Gella1,4,∗ , Nicolas Gontier1,∗
+                                             1 ServiceNow AI Research, 2 ÉTS Montreal
+                                             3 University of British Columbia, 4 McGill University
+                                             ∗
+                                                 Equal advising
+
+
+
+
+arXiv:2606.15017v1 [cs.CL] 12 Jun 2026
+                                             Online web agents often augment a base actor with memory, workflow, or skill modules.
+                                             These modules can improve performance, but they also consume test-time tokens, a cost
+                                             rarely reported alongside the actor’s inference cost. We study online augmentation, where
+                                             this overhead is paid on every task, and re-evaluate its benefits under a fixed total inference
+                                             budget. We compare AWM, ASI, and ReasoningBank with a token-matched vanilla baseline
+                                             that uses the same budget for additional actor steps. Across three WebArena domains and
+                                             three models, Gemini 3 Flash, GPT-5.4-mini, and Qwen 3.6-27B, the vanilla baseline matches
+                                             or surpasses all three augmentation methods in aggregate success rate while often using fewer
+                                             total tokens. We observe a similar trend on WorkArena-L1 with Qwen 3.6-27B, indicating
+                                             that the effect extends to enterprise knowledge-work tasks. Our results suggest that skills and
+                                             workflow memory can be useful in specific domains, but their apparent gains often vanish
+                                             against a budget-matched actor. We further show that run-to-run variance materially affects
+                                             outcomes and should be reported as a core evaluation criterion for online web agents.
+
+                                              : https://sinahmr.github.io/budget-constrained-web-agents
+
+
+
+
+                                         1       Introduction                                       cost is rarely reported next to the actor’s, which
+                                                                                                    makes it hard to tell whether observed gains are
+                                         Web agents are evaluated on how often they solve           justified within a fixed budget. This creates a
+                                         tasks under a test-time budget. A growing line             simple allocation problem: tokens spent induc-
+                                         of work augments a base actor with modules that            ing, retrieving, verifying, or injecting reusable
+                                         induce reusable workflows, maintain memory, or             knowledge are tokens unavailable for direct task
+                                         distill skills from prior trajectories (Wang et al.,       execution, such as observing the current page,
+                                         2025a,b; Ouyang et al., 2026; Yu et al., 2026).            reasoning over its state, or taking additional ac-
+                                         Following Agent Skill Induction (Wang et al.,              tions.
+                                         2025a) and SkillWeaver (Zheng et al., 2025), we
+                                         use the term skill for executable code, typically a        Figure 1 illustrates this tradeoff. Under the
+                                         Python function, that wraps a reusable sequence            same total inference budget, an online augmented
+                                         of low-level actions.                                      agent splits its budget between direct environ-
+                                                                                                    ment interaction and auxiliary memory, workflow,
+                                         These auxiliary modules are not free. They con-            or skill machinery. A budget-matched vanilla
+                                         sume tokens, add prompts and control logic, and            actor instead redirects that budget toward ad-
+                                         in the online setting, couple performance to the           ditional observe-act steps. The bottom panel
+                                         order in which tasks are processed. Their token            previews the main empirical pattern we observe
+
+                                                                                                1
+                                           Controlled total inference budget per task
+                                                                                                           modules depends on the order in which tasks are
+                              Online augmentation                     Budget-matched actor
+                            AWM / ASI / ReasoningBank               vanilla actor + more exploration
+                                                                                                           encountered rather than the full task distribu-
+                                   actor         modules                           actor
+                                                                                                           tion, and task-level parallelism is constrained by
+                            10 actor steps + module calls                   15 actor steps
+                                  Cost paid online:                       Budget redirected:               the sequential dependence between tasks.
+                                  fewer tokens left                        more interaction
+                                   for exploration                       with the environment
+                                                                                                           To study this tradeoff, we compare three online
+                                           Performance vs budget on WebArena
+                                                                                                           augmentation methods, Agent Workflow Memory
+                            51
+                                                                                                           (AWM; Wang et al., 2025b), Agent Skill Induc-
+                                                                                                           tion (ASI; Wang et al., 2025a), and Reasoning-
+
+
+
+    Avg. success rate (%)
+                            50
+
+                            49
+                                                                                                           Bank (Ouyang et al., 2026), against a budget-
+                            48
+                                                                                                           matched vanilla actor. Unlike the augmented
+                                                                                                           methods, which use the default 10-step actor
+                            47
+                                                                                                           horizon, this baseline allocates the same inference
+                            46
+                                                                                                           budget to a longer interaction horizon; we refer
+                            45
+                                                                                                           to it as Vanilla-Increased-Budget (Vanilla-IB).
+                                           70         80         90          100           110
+                                                                                                           We do not present Vanilla-IB as a new agent
+                                                  Avg. tokens per task (K)
+                                                                                                           scaffold, but rather as a simple budget-aware
+Figure 1 Budget allocation under controlled test-                                                          control designed to test whether the overhead of
+time inference cost. (top) Online augmentation                                                             online augmentation is justified.
+spends budget on workflow, skill, or memory modules,
+while a budget-matched vanilla actor (Vanilla-IB)                                                          We evaluate this comparison on WebArena (Zhou
+spends it on additional observe-act steps. (bottom)                                                        et al., 2024) and WorkArena-L1 (Drouin et al.,
+On WebArena with Gemini 3 Flash (Google Deep-                                                              2024). WebArena provides the broadest sweep
+Mind, 2025), Vanilla-IB achieves the highest success                                                       in our study, spanning three models, four agent
+rate with fewer tokens.                                                                                    configurations, and three domains: Shopping,
+                                                                                                           Reddit, and Admin. WorkArena-L1 tests the
+                                                                                                           same budget-matching question in enterprise
+on WebArena (Zhou et al., 2024): once total
+                                                                                                           knowledge-work tasks under Qwen 3.6-27B.
+token usage is counted, a budget-matched vanilla
+agent achieves the highest average success rate                                                            Our main findings are as follows: (1) On We-
+while using fewer tokens than the online augmen-                                                           bArena, Vanilla-IB achieves the highest aggre-
+tation methods.                                                                                            gate success rate across all three models we test,
+                                                                                                           while mostly using fewer total tokens than AWM,
+Prior work on augmentation methods largely                                                                 ASI, and ReasoningBank. (2) On WorkArena-L1,
+assumed that base models lacked the capabil-                                                               Vanilla-IB remains competitive with the best-
+ity to complete tasks end-to-end (Wang et al.,                                                             performing augmented methods, indicating that
+2025b,a); more recent frontier models, however,                                                            the budget-matching question is not specific to
+may no longer face that constraint and may re-                                                             WebArena or consumer-style websites. (3) Be-
+quire less external scaffolding. We therefore ask                                                          yond these aggregate results, we show that single-
+a direct question: under a fixed inference budget,                                                         run success rate hides high task-level variance,
+is it better to allocate tokens to online memory                                                           and that reporting a method’s performance from
+and skill modules, or can a vanilla actor achieve                                                          a single run is a weak basis for comparison.
+comparable performance by spending the same
+budget on additional interaction steps? We fo-                                                             These findings suggest three evaluation princi-
+cus on the online setting, where agents update                                                             ples for online web agents. First, comparisons
+their behavior using trajectories collected during                                                         should report total token usage across all mod-
+evaluation, rather than relying on offline skill                                                           ules, not only the actor. Second, online aug-
+libraries constructed before deployment. In this                                                           mentation methods should be compared against
+setting, auxiliary costs are incurred repeatedly,                                                          baselines within the same budget. Third, eval-
+the knowledge accumulated by memory or skill                                                               uations should report multi-run variance, since
+
+                                                                                                       2
+agent evaluation introduces stochasticity that            to extract transferable heuristics, which are re-
+aggregate single-run metrics do not capture.              trieved at test time to guide execution on subse-
+                                                          quent tasks. All these methods share a common
+                                                          premise: part of the test-time budget is allocated
+2    Related Work                                         to producing and retrieving reusable knowledge,
+                                                          a cost that is rarely reported alongside the ac-
+Web-agent benchmarks. Mind2Web (Deng
+                                                          tor’s. Our work asks whether that allocation is
+et al., 2023) and WebArena (Zhou et al.,
+                                                          always the right choice.
+2024) introduced large-scale benchmarks for re-
+alistic multi-step browser interaction. Subse-
+quent work has broadened this benchmark land-             Offline reusable knowledge. A complementary
+scape to cover visual grounding in VisualWe-              line of work builds reusable knowledge before de-
+bArena (Koh et al., 2024), enterprise work-               ployment begins, through an exploration or syn-
+flows in WorkArena (Drouin et al., 2024) and              thesis phase that is separate from the evaluation
+WorkArena++ (Boisvert et al., 2024), live web-            run. SkillWeaver (Zheng et al., 2025) discovers
+sites in Online-Mind2Web (Xue et al., 2025),              and synthesizes Python API skills in an offline
+and continuously generated open-ended tasks in            phase before deployment. WALT (Prabhu et al.,
+WebArena-Infinity (Zhou, 2026). In this work,             2026) learns stable tool abstractions reverse-
+we focus on WebArena and WorkArena because                engineered from website structure prior to evalu-
+they provide interactive environments in which            ation, and WebXSkill (Wang et al., 2026) mines
+agents must act, observe the consequences of              parameterized action programs from synthetic
+their actions, and complete diverse tasks end-to-         agent trajectories. JEF-Hinter (Nekoei et al.,
+end. This makes them well suited for evaluating           2025) distills offline trajectories into compact,
+test-time compute mechanisms, where the cost of           context-aware hints, including from both success-
+additional reasoning steps, tool calls, or memory         ful and failed traces, and retrieves relevant hints
+access must be measured as part of the agent’s            for the agent’s current state at inference time.
+deployment-time behavior.                                 Offline approaches amortize discovery or distil-
+                                                          lation cost over many subsequent uses, which
+Online workflow, memory, and skill induction.             is useful when an agent is deployed repeatedly
+A growing line of work augments base actors               on the same stable environment. This tradeoff
+with modules that extract reusable knowledge              breaks down when the environment is visited
+from evaluation-time trajectories. AWM (Wang              infrequently, when its structure changes between
+et al., 2025b) induces natural-language workflows         discovery and deployment, or when the agent
+from successful trajectories and retrieves them           encounters a new domain. These limitations mo-
+for later tasks. ASI (Wang et al., 2025a) syn-            tivate the online setting that is the focus of our
+thesizes reusable Python skill functions called           work.
+as higher-level operations for subsequent tasks.
+ReasoningBank (Ouyang et al., 2026) distills rea-         LLM capability and the value of scaffold-
+soning strategies from both successes and failures        ing. Frontier language models have rapidly im-
+into a growing memory bank queried at test time.          proved in capabilities central to web agents:
+PolySkill (Yu et al., 2026) separates a skill’s ab-       multi-step reasoning, instruction following, and
+stract goal from its concrete realization for more        adaptive decision-making under uncertainty.
+general reuse, and PlugMem (Yang et al., 2026)            Recent models such as GPT-5.4 (OpenAI,
+proposes a task-agnostic memory plugin attach-            2026a), Claude Sonnet 4.6 (Anthropic, 2026),
+able to any LLM agent. ACE (Zhang et al., 2026)           and Gemini 3 (Google DeepMind, 2025) can
+treats the agent’s context itself as an evolving          solve complex long-horizon tasks with relatively
+playbook that accumulates and refines strategies          lightweight scaffolding, often matching or outper-
+through a generate-reflect-curate loop. ERL (Al-          forming more heavily engineered agent architec-
+lard et al., 2026) reflects on task trajectories          tures (Bechard et al., 2026). This rapid progress
+
+                                                      3
+has consequences for augmentation methods:               or skill reuse can pay off.
+gains that were genuine and substantial over
+                                                         The setting is sequential and online: agents at-
+weaker models may shrink or disappear as the
+                                                         tempt tasks in order, and use modules with
+base actor becomes more capable on its own.
+                                                         skill, memory, or workflow components to extract
+                                                         knowledge from earlier trajectories and apply it
+Alternative paradigms and evaluation robust-             to later ones.
+ness. Most web agents use a browser, ac-
+cessibility tree, and fixed action vocabulary.           We also evaluate on the Level-1 collection of
+A line of work explores structurally different           WorkArena (Drouin et al., 2024) tasks focused on
+paradigms: API-based agents substantially out-           common enterprise knowledge-work interactions
+perform browser agents on WebArena, with                 in the ServiceNow platform. This benchmark
+hybrid agents reaching even higher perfor-               consists of 33 tasks spanning ServiceNow opera-
+mance (Song et al., 2025), and terminal-based            tions such as dashboards, forms, knowledge-base
+agents operating through code and programmatic           search, list filtering, list sorting, menu navigation,
+interfaces can match or outperform GUI-based             and service-catalog requests. For WorkArena-
+agents on enterprise automation tasks (Bechard           L1, we conduct the same online comparison
+et al., 2026). These approaches avoid some               across all task types, using three seeds per task
+browser-skill fragilities, but depend on stable,         type for each method. This benchmark replaces
+documented APIs that may not exist. Within               consumer-style and community websites with en-
+the browser-based setting, evaluation reliability        terprise software workflows, while preserving the
+is itself a concern: timeouts, page-load failures,       browser-based interaction setting used by our
+and nondeterministic UI behavior can change              agents.
+outcomes independently of agent decisions. Intro-
+ducing realistic network failures into WebArena,         3.2    Studied Systems
+WebVoyager (He et al., 2024), and REAL (Garg             We compare four agent scaffolds in our experi-
+et al., 2025) has been shown to cause significant        ments. Three methods augment the actor with
+drops in success rates (Kara et al., 2025b). These       auxiliary modules while keeping the actor’s inter-
+issues reinforce the importance of multi-run re-         action horizon to at most 10 steps. The fourth,
+porting as a first-class evaluation criterion.           Vanilla-IB, is a vanilla actor without auxiliary
+                                                         modules but with an extended interaction bud-
+                                                         get.
+3     Experimental Settings
+                                                         AWM (Wang et al., 2025b): online workflow
+3.1   Tasks and Domains                                  memory, in which an LLM-based auxiliary mod-
+                                                         ule induces and retrieves workflows from prior
+We evaluate on WebArena (Zhou et al., 2024),
+                                                         trajectories alongside the actor.
+a benchmark of realistic multi-step web tasks
+across isolated website environments. We report          ASI (Wang et al., 2025a): online programmatic
+results on three domains. Shopping, consisting           skill induction, in which an LLM-based auxiliary
+of 187 tasks, is an e-commerce site with product         module synthesizes, verifies, and reuses Python
+search, comparison, and checkout tasks. Red-             skill functions.
+dit, with 106 tasks, is a social discussion plat-
+                                                         ReasoningBank (Ouyang et al., 2026): online
+form with navigation, posting, and search tasks.
+                                                         reasoning memory, in which an LLM-based auxil-
+Admin, which contains 182 tasks, is the admin-
+                                                         iary module accumulates and retrieves reasoning
+istrator panel of the WebArena shopping site,
+                                                         strategies from prior successes and failures.
+covering product management, order processing,
+and account administration. These domains dif-           Vanilla-IB: a vanilla actor with its interaction
+fer in how much their tasks share navigational           horizon extended to 15 steps and with rule-based
+patterns, which is relevant to whether workflow          pruning of the accessibility tree. The pruning
+
+                                                     4
+removes text duplicated between a parent node            gates all LLM calls made by the system: actor
+and its direct children, a common pattern in             and any auxiliary module calls (i.e., workflow
+accessibility trees that inflates context length         induction, skill synthesis, memory construction,
+without adding information. This pruning in-             retrieval, and verification). Token usage is aver-
+volves no LLM calls (see Appendix B). We do              aged per task in thousands of tokens (K). For
+not present these modifications as a contribu-           both WebArena and WorkArena-L1, metrics are
+tion; they are included only to give the vanilla         reported as means and standard deviations over
+actor more interaction steps under a comparable          three runs. Prior work typically reports met-
+overall budget.                                          rics on one run, and often does not report token
+                                                         usage; we treat this accounting as a first-class
+The 15-step horizon for Vanilla-IB typically does        evaluation criterion.
+not exceed the total token budget of the aug-
+mented methods, because their auxiliary mod-
+ules consume a substantial fraction of the overall       4    Main Results
+tokens. Exact budget matching is difficult in
+exploratory web-agent benchmarks such as We-             Performance and token usage. Table 1 sum-
+bArena and WorkArena. Token usage varies                 marizes WebArena success rate and total to-
+across tasks because agents choose actions dy-           ken usage across domains, methods, and models.
+namically and task complexity differs, so there          Across WebArena domains, Vanilla-IB achieves
+is no fixed per-task cost to target. Moreover,           the best average success rate for all three base
+for augmented methods, a single fixed budget             models and, for Gemini 3 Flash and Qwen 3.6-
+cannot be cleanly divided between the actor and          27B, is also the most token-efficient configura-
+its auxiliary modules. The augmented methods             tion. The augmented methods therefore do not
+in our comparison also use different aggregate           simply trade extra tokens for higher accuracy;
+budgets, so there is no single token value against       their workflow, skill, or memory modules often in-
+which to match Vanilla-IB. The most practi-              crease cost without producing proportional gains
+cal control lever is therefore the actor’s maxi-         in task success. This complicates the interpreta-
+mum step count. Setting this horizon to 15 is            tion of scaffolded-agent gains: auxiliary reasoning
+an approximation rather than an exact budget             can make a system appear stronger by giving it
+match. In many tasks, Vanilla-IB could take              more computation, but much of that advantage
+additional steps while still remaining within the        disappears when compared with a vanilla actor
+token budget of one or more augmented baselines.         that spends a similar budget on additional envi-
+In a small number of tasks, the reverse is true:         ronment interaction. The effect is strongest for
+Vanilla-IB spends slightly more tokens than one          GPT-5.4-mini, suggesting that scaffold quality is
+or more augmented methods. We acknowledge                itself model-dependent: weaker models can pro-
+this as a limitation of step-count-based budget          duce noisy workflows, skills, or reasoning mem-
+control, although such cases are uncommon in             ories that are difficult for the actor to ignore.
+our experiments.                                         For stronger models, the augmented methods
+                                                         are less prone to bad insights but still do not
+                                                         overtake Vanilla-IB, consistent with modern ac-
+3.3   Models and Budget Accounting                       tors already internalizing many of the planning
+We evaluate under three models, Gem-                     and navigation abilities that earlier scaffolds at-
+ini 3 Flash (Google DeepMind, 2025), GPT-                tempted to externalize.
+5.4-mini (OpenAI, 2026b), and Qwen 3.6-
+27B (Qwen Team, 2026), each across three inde-           Reddit step-sweep. The closest case for aug-
+pendent runs on each domain. On WorkArena-               mentation is Reddit with Gemini 3 Flash, where
+L1, we report the results under Qwen 3.6-27B.            AWM and Vanilla-IB have identical success rates.
+For every configuration, we report task success          We probe this case by extending the Vanilla-IB
+rate (SR) and total token usage, which aggre-            actor horizon further (Figure 2). As the actor
+
+                                                     5
+                        Shopping                   Reddit                  Admin                      Avg.
+ Method          SR (%) ↑     Tok (K) ↓   SR (%) ↑     Tok (K) ↓    SR (%) ↑    Tok (K) ↓    SR (%) ↑   Tok (K) ↓
+                                                   Gemini 3 Flash
+ Vanilla-IB       47.77±1.9    45.7±0.8   47.48±0.5     71.7±2.2    55.68±1.6    99.0±4.0     50.74          71.9
+ AWM              41.18±2.1    70.8±3.0   47.48±1.4     87.2±2.0    47.43±0.6   142.7±5.4     44.98          102.0
+ ASI              44.74±1.2    82.8±0.3   44.97±2.0     94.6±4.8    52.75±1.1   139.4±11.2    47.86          107.1
+ ReasoningBank    45.45±1.4    54.6±1.3   39.93±1.4     76.8±2.8    48.90±1.9   124.6±3.3     45.54           86.4
+                                                   GPT-5.4-mini
+ Vanilla-IB       38.50±0.9    54.3±0.8   34.59±4.8     96.2±6.6    35.89±1.3    124.1±8.0    36.63          90.4
+ AWM              29.95±1.9    62.0±2.0   29.56±1.1     80.4±12.6   32.24±3.2   113.4±16.8    30.74           85.8
+ ASI              33.15±0.9    73.4±9.0   28.93±2.2     87.2±4.9    32.96±3.8   138.5±10.9    32.14          101.4
+ ReasoningBank    26.38±3.9    57.9±1.6   22.01±2.9     69.2±2.9    34.25±1.8    123.1±2.3    28.42          85.4
+                                                   Qwen 3.6-27B
+ Vanilla-IB       45.99±1.4    58.8±1.5   44.34±2.5     89.7±4.3    50.73±1.4   130.3±9.5     47.44          93.1
+ AWM              41.35±1.9    71.8±4.5   43.08±3.0    103.6±13.8   46.15±3.1   178.5±12.5    43.58          119.8
+ ASI              43.67±3.5    78.8±5.5   43.08±1.4    120.5±4.7    49.08±2.3   182.2±4.2     45.61          127.7
+ ReasoningBank    39.75±0.8    65.4±0.2   41.19±1.4     99.1±5.4    47.62±1.7   156.9±8.6     43.09          108.0
+
+Table 1 Per-domain success rate (%) and total token usage per task (K) on WebArena. Domain values
+are means over three independent runs (mean ± std); per-run details are in Appendix E. Avg. is the mean
+over all tasks of Shopping, Reddit, and Admin domains.
+
+
+      Method            SR (%) ↑     Tok (K) ↓               sion. Table 2 shows that, under Qwen 3.6-27B,
+      Vanilla-IB        55.56±2.9     109.4±14.8             Vanilla-IB is effectively tied with ReasoningBank
+      AWM               53.53±3.8     102.8±2.6              for the best success rate, outperforms AWM and
+      ASI               48.49±4.3     113.8±10.2             ASI, and uses fewer tokens than ASI and Rea-
+      ReasoningBank     55.56±2.8     120.3±5.7              soningBank. Thus, Vanilla-IB remains on the
+                                                             success–cost frontier rather than being domi-
+Table 2 Success rate (%) and total token usage               nated by an augmented method.
+per task (K) on WorkArena-L1 for Qwen 3.6-27B.
+Values are means over three independent seeds per
+task type.
+                                                             Where Does the Token Budget Go? To iden-
+                                                             tify the source of the token overhead, we de-
+horizon increases, Vanilla-IB steadily improves,             compose total usage into actor tokens from en-
+matching AWM from 15 steps onward and sur-                   vironment interaction and module tokens from
+passing it at larger horizons while still using fewer        workflow induction, skill synthesis, retrieval, and
+tokens up until 25 steps. This comparison also               verification, in Table 3. The overhead has two
+clarifies the role of step count: the augmented              sources. First, augmented methods pay explicit
+methods already exceed the 15-step Vanilla-IB                module costs. Second, and less obvious, augmen-
+token budget at their standard 10-step horizon,              tation methods also inflate the actor’s prompt
+so giving them the same longer horizon would                 by injecting retrieved workflows, memories, or
+increase rather than resolve the cost imbalance.             available skill functions at each step. This im-
+The apparent benefit of workflow memory on                   plicit cost cannot be removed by making module
+Reddit is therefore at least partly explained by             calls cheaper: as long as retrieved knowledge
+budget asymmetry rather than by a robust ad-                 is inserted into the actor context, the per-step
+vantage of the auxiliary module itself.                      actor cost rises with the size of that content.
+                                                             Augmentation therefore imposes a double cost,
+WorkArena-L1. The enterprise setting is more                 combining auxiliary inference with larger actor
+balanced but supports the same basic conclu-                 prompts.
+
+                                                         6
+                                                          Shopping                                                                            Reddit                                  Admin
+                                                 Actor                     Modules                                                Actor                Modules          Actor                 Modules
+            Method                       Prompt     Compl.          Prompt           Compl.      Prompt                              Compl.       Prompt   Compl.   Prompt   Compl.      Prompt   Compl.
+            Vanilla-IB                    45.2           0.5               0           0           71.3                                   0.4       0         0     98.4        0.6         0        0
+            AWM                           64.1           0.4              6.1         0.2          82.9                                   0.4      3.7       0.2    135.0       0.5        6.9      0.3
+            ASI                           61.8           0.5             20.0         0.5          84.6                                   0.4      9.3       0.3    118.1       0.5       20.2      0.6
+            ReasoningBank                 36.6           1.1             16.5         0.4          53.3                                   1.0      22.1      0.4     96.9       1.2       26.1      0.4
+
+Table 3 Token breakdown by component under Gemini 3 Flash on WebArena, per task in thousands (K).
+Actor: tokens from LLM calls made during interaction steps. Modules: tokens from auxiliary components
+(workflow induction, skill synthesis, retrieval, verification). Both are further split into prompt and completion
+tokens. Values are means over three runs. Vanilla-IB has no module calls by construction.
+
+
+                   52.5                                                                          100
+                                                                    AWM budget                                                            its actor horizon would only widen this cost
+
+
+
+
+                                                                                                       Avg. tokens per task (K)
+                   50.0                                             Vanilla-IB
+                                                                                                                                          gap rather than close it. For any step budget
+
+
+Success rate (%)
+                                                                                                 90
+                   47.5
+
+                   45.0
+                                                                                                                                          at which augmented methods are evaluated, a
+                                                                                                 80
+                   42.5                                                                                                                   budget-matched vanilla baseline can be obtained
+                   40.0                                                                          70                                       by increasing the Vanilla-IB horizon accordingly;
+                   37.5                                                                                                                   the same token-efficiency imbalance therefore
+                                           AWM
+                   35.0                                                                          60
+                                           Vanilla-IB                                                                                     persists across operating points.
+                          5    10   15   20   25    30         5    10     15   20    25    30
+                              Number of steps                      Number of steps
+
+                                                                                                                                          5      Audit Beyond Aggregate Suc-
+Figure 2 Vanilla-IB horizon sweep on Reddit under
+Gemini 3 Flash. Success rate (left) and total tokens                                                                                             cess Rate
+per task (right) are reported as a function of interac-
+tion steps. The available budget is the token usage                                                                                       5.1      Run-to-Run Variance
+of the best-performing augmentation baseline, in this
+case AWM, shaded in orange (right). At the 10-step                                                                                        Multi-run reporting. A single-run aggregate
+mark, Vanilla-IB SR is below AWM, which in isola-                                                                                         success rate hides properties that matter for on-
+tion might seem to justify augmentation. However,                                                                                         line web agents. Even at a fixed temperature,
+the right panel shows AWM already spends roughly                                                                                          LLM outputs vary across runs due to hardware-
+twice as many tokens at that point. Extending the
+                                                                                                                                          level non-determinism in distributed inference. A
+Vanilla-IB horizon up to 25 steps closes this gap:
+Vanilla-IB surpasses AWM in SR while still using                                                                                          given task may succeed in one run and fail in an-
+fewer tokens than AWM.                                                                                                                    other for reasons unrelated to agent capability: a
+                                                                                                                                          different token sample produces a different action
+                                                                                                                                          sequence, which may or may not navigate the
+Headroom for Vanilla-IB. We set the                                                                                                       same interface in the same way. Another source
+Vanilla-IB horizon to 15 steps as a clean,                                                                                                of variance can be the web environment itself:
+domain-agnostic choice, but in most cases it is a                                                                                         BrowserGym (Le Sellier de Chezelles et al., 2025)
+conservative setting. As the Reddit sweep shows                                                                                           and Playwright (Microsoft, 2025) can encounter
+(Figure 2), token usage at 15 steps is still well                                                                                         timeouts, slow page loads, or intermittent server
+below AWM’s budget, and success rate continues                                                                                            errors, and prior work shows that injected web
+to rise before saturating around 25 steps. The                                                                                            failures can sharply reduce success rates on web
+unused headroom is even larger on Shopping,                                                                                               tasks (Kara et al., 2025a,b). As a result, two
+where the token gap to augmentation methods                                                                                               runs of the same agent on the same task set can
+is wider. Together, these results suggest that                                                                                            produce nearly identical aggregate success rates
+comparisons should be made along the axis of                                                                                              while disagreeing on a meaningful fraction of indi-
+total token cost rather than nominal step count.                                                                                          vidual tasks. This aggregate stability is reassur-
+AWM evaluated at 10 steps already spends more                                                                                             ing for reproducibility but hides large task-level
+tokens than Vanilla-IB at 15 steps, so extending                                                                                          noise that single-run evaluations do not expose.
+
+                                                                                                                                    7
+Multi-run reporting helps absorb both sources of           call inside the function at each sub-step, in which
+noise and provides a more reliable picture of what         case its efficiency justification largely disappears.
+the agent can actually do. A single reported suc-          Appendix D provides explanations of this and
+cess rate is an incomplete statistic: it conflates         related failure modes across all three augmented
+genuine agent capability with the particular set           methods, including concrete task-level examples
+of environment states encountered in that run,             where augmented agents fail and Vanilla-IB suc-
+and this conflation is especially dangerous when           ceeds.
+comparing methods that differ in the number or
+structure of their LLM calls, since some meth-             5.3    Effect of Accessibility-Tree Pruning
+ods have more opportunities to encounter a bad
+environment state. We therefore perform our                Vanilla-IB combines two changes relative to a
+experiments over three runs, and the detailed              plain 10-step agent: an extended 15-step actor
+per-run results are provided in Appendix E.                horizon and rule-based accessibility-tree pruning
+                                                           (Appendix B). Table 5 isolates their individual
+Any-of-3 and All-of-3. To expose the task-                 contributions.
+level instability, we compute two complemen-               The extended horizon is the main success-rate
+tary bounds: Any-of-3, the fraction of tasks that          improvement, while pruning is primarily a token-
+succeed in at least one of the three runs (an              reduction mechanism. Pruning consistently re-
+OR across runs); and All-of-3, the fraction that           duces token usage at both horizons and more
+succeed in all three runs (an AND across runs).            than offsets the cost of five additional interac-
+Table 4 reports both as illustrative bounds on the         tion steps, so Vanilla-IB uses fewer tokens than
+latent capability that single-run averages hide,           the plain 10-step baseline while matching or im-
+and shows that the gaps are relatively large for           proving success rate. Its effect on success rate
+all the methods. Single-run success rate is there-         is smaller and domain-dependent, which is ex-
+fore an incomplete estimate of task-level capabil-         pected: the purpose of pruning is to remove
+ity, especially for methods whose learned state            redundant accessibility-tree text, not to add new
+changes across the evaluation sequence.                    reasoning capability. When pruning helps, we
+                                                           suspect it is because removing duplicate entries
+5.2    Programmatic Skill Fragility                        makes the context more information-dense and
+                                                           shortens token distances between related ele-
+A structural limit of programmatic skill ap-               ments, such as labels and fields. These effects
+proaches such as ASI is that a synthesized skill           may make actionable content easier to track, but
+is tied to the accessibility-tree state in which it        the mixed domain results suggest that this bene-
+was created. These skills often wrap a sequence            fit is not uniform.
+of low-level actions and refer to UI elements by
+BrowserGym accessibility-tree IDs (BIDs), which
+are assigned dynamically. BIDs are not stable              6     Practical Advantages of State-
+across interactions. After the first action in a
+                                                                 less Evaluation
+skill, the page may reload or update, and later
+BIDs may then point to different elements or               Beyond success rate and token cost, two practi-
+to nothing at all. The function then either fails          cal properties differ between Vanilla-IB and the
+silently, throws an error that disrupts the agent’s        augmented methods, both stemming from the
+trajectory, or interacts with the wrong element.           absence of cross-task state.
+A vanilla agent that queries the LLM at each
+step adapts to state changes naturally, since it ob-       Parallelism. Vanilla-IB treats tasks as indepen-
+serves the current accessibility tree before choos-        dent episodes and maintains no shared cross-task
+ing each action. A function-based approach lacks           state. As a result, with N workers, tasks can be
+this adaptability unless it inserts an extra LLM           executed concurrently, reducing end-to-end wall-
+
+                                                       8
+                            Gemini 3 Flash                         GPT-5.4-mini                    Qwen 3.6-27B
+  Method            Any       ∆↑      All      ∆↓        Any       ∆↑       All    ∆↓       Any       ∆↑      All    ∆↓
+  Vanilla-IB        54.01     +6.2   42.25    −5.5   46.52         +8.0   27.81   −10.7    54.01      +8.0   38.50   −7.5
+  AWM               47.06     +5.9   35.83    −5.4   37.43         +7.5   21.39   −8.6     49.73      +8.4   33.16   −8.2
+  ASI               51.34     +6.6   37.43    −7.3   40.64         +7.5   26.74   −6.4     52.41      +8.7   36.36   −7.3
+  ReasoningBank     53.48     +8.0   38.50    −7.0   35.29         +8.9   17.64   −8.7     47.06      +7.3   34.22   −5.5
+
+Table 4 Any-of-3 and All-of-3 success rates (%) on the Shopping domain of WebArena across three
+models. Any-of-3 is the fraction of tasks succeeding in at least one run; All-of-3 is the fraction succeeding in
+all three runs. ∆↑ and ∆↓ are the gaps from the three-run mean (Table 1).
+
+                                     Shopping                           Reddit                     Admin
+           Configuration       SR (%) ↑      Tok (K) ↓     SR (%) ↑        Tok (K) ↓      SR (%) ↑     Tok (K) ↓
+           10 steps            45.81±1.5      48.0±1.1     45.28±1.0        75.2±6.4      48.72±0.3    103.5±7.7
+           10 steps, pruned    46.35±2.2      41.7±0.5     47.17±0.9        70.8±1.6      51.65±1.0     85.5±3.9
+           15 steps            47.24±2.8      54.0±1.1     47.48±2.2        77.7±6.7      57.14±0.0    119.8±16.1
+           15 steps, pruned    47.77±1.9      45.7±0.8     47.48±0.5        71.7±2.2      55.68±1.6     99.0±4.0
+
+Table 5 Effect of extending the vanilla actor horizon from 10 to 15 steps and rule-based accessibility-tree
+pruning, across all three domains of WebArena under Gemini 3 Flash. Values are means over three runs
+(mean ± std). The last row corresponds to Vanilla-IB.
+
+
+clock time by up to a factor of N . In contrast,                   a proper repair would require re-running the en-
+AWM, ASI, and ReasoningBank are inherently                         tire experiment, which can be expensive. A sin-
+sequential: each task must finish before the next                  gle transient environment failure can therefore
+begins because the memory or skill state derived                   silently degrade the reported performance of an
+from its trajectory is reused in subsequent tasks.                 online augmentation method in a way that is
+This makes parallel deployability an additional                    hard to detect. In our experiments, when we
+practical advantage of Vanilla-IB, beyond its to-                  identified a failure caused by the evaluation in-
+ken efficiency.                                                    frastructure rather than the agent’s decisions,
+                                                                   such as a network issue or browser crash, we
+                                                                   re-ran the affected task immediately so that the
+Fault tolerance. Web benchmarks are run                            augmentation methods could still potentially in-
+against live or simulated website environments                     duce knowledge from it, and so that the reported
+that are not always perfectly reliable: a server                   numbers reflect each method’s performance un-
+may become temporarily unresponsive, a page                        der its intended operating conditions.
+may time out, or a browser session may crash
+mid-task for reasons unrelated to the agent (Kara
+et al., 2025a). For Vanilla-IB, any such failure                   7      Conclusion
+is local: the affected task can simply be re-run
+in isolation and the result substituted, since no                  We re-evaluated online web-agent augmenta-
+other task depends on its outcome. For AWM,                        tion under a fixed total inference budget, ask-
+ASI, and ReasoningBank, this repair is not pos-                    ing whether test-time tokens are better spent
+sible in general. If task k fails due to an en-                    on memory, workflow, or skill modules, or di-
+vironment glitch, the knowledge state used by                      rectly on additional actor steps. Across three
+all subsequent tasks k+1, k+2, . . . was already                   WebArena domains and three models (Gem-
+formed without a potential successful trajectory                   ini 3 Flash, GPT-5.4-mini, and Qwen 3.6-27B), a
+from task k. Re-running task k in isolation does                   token-matched vanilla actor matches or surpasses
+not retroactively correct the downstream state;                    AWM, ASI, and ReasoningBank in aggregate
+
+                                                               9
+success rate while often using fewer total tokens.        References
+We observed the same trend on WorkArena-L1
+with Qwen 3.6-27B, indicating that the effect ex-         Marc-Antoine Allard, Arnaud Teinturier, Victor Xing,
+tends beyond consumer web tasks to enterprise              and Gautier Viaud. Experiential reflective learn-
+knowledge-work settings. These results do not              ing for self-improving LLM agents. In ICLR 2026
+                                                           Workshop on Memory for LLM-Based Agentic Sys-
+imply that skills or workflow memory are useless:
+                                                           tems, 2026. URL https://openreview.net/forum
+they can provide gains in domains where task               ?id=hQgSl6kj1W.
+structure supports reuse. Rather, our findings
+show that such gains are conditional and often            Anthropic. Introducing Claude Sonnet 4.6. https:
+disappear once augmentation overhead is com-                //www.anthropic.com/news/claude-sonnet-4-6,
+                                                            February 2026. Model announcement.
+pared against a budget-matched actor. We also
+show that run-to-run variance materially affects          Patrice Bechard, Orlando Marquez Ayala, Emily
+outcomes, motivating the inclusion of multi-run             Chen, Jordan Skelton, Sagar Davasam, Srini-
+experiments as a core evaluation criterion rather           vas Sunkara, Vikas Yadav, and Sai Rajeswar.
+than an optional diagnostic. Overall, our results           Terminal agents suffice for enterprise automa-
+                                                            tion. arXiv preprint arXiv:2604.00073, 2026. doi:
+argue for stronger evaluation hygiene in online
+                                                            10.48550/arXiv .2604.00073. URL https:
+web-agent research: total test-time cost should be          //arxiv.org/abs/2604.00073.
+reported transparently, augmented agents should
+be compared against budget-aware vanilla base-            Léo Boisvert, Megh Thakkar, Maxime Gasse, Mas-
+lines, and robustness analyses should accompany             simo Caccia, Thibault Le Sellier De Chezelles,
+                                                            Quentin Cappart, Nicolas Chapados, Alexandre
+aggregate success rates.
+                                                            Lacoste, and Alexandre Drouin. WorkArena++:
+                                                            Towards compositional planning and reasoning-
+                                                            based common knowledge work tasks. In Advances
+                                                            in Neural Information Processing Systems, vol-
+8    Limitations                                            ume 37, pp. 5996–6051, 2024. doi: 10.52202/07901
+                                                            7-0195. URL https://proceedings.neurips.cc
+This paper reports a focused empirical compar-              /paper_files/paper/2024/file/0b82662b6c32e
+ison on WebArena under three models (Gem-                   887bb252a74d8cb2d5e-Paper-Datasets_and_Be
+ini 3 Flash, GPT-5.4-mini, and Qwen 3.6-27B),               nchmarks_Track.pdf.
+plus WorkArena-L1 under Qwen 3.6-27B, and                 Xiang Deng, Yu Gu, Boyuan Zheng, Shijie Chen,
+several limitations follow from this scope.                 Sam Stevens, Boshi Wang, Huan Sun, and Yu Su.
+                                                            Mind2web: Towards a generalist agent for the
+Our WebArena conclusions are restricted to three            web. In Advances in Neural Information Processing
+of WebArena’s five domains (Shopping, Reddit,               Systems, volume 36, pp. 28091–28114, 2023. URL
+                                                            https://proceedings.neurips.cc/paper_files
+and Admin), and methods might behave differ-
+                                                            /paper/2023/file/5950bf290a1570ea401bf9888
+ently on the other domains. Our WorkArena-L1                2128160-Paper-Datasets_and_Benchmarks.pdf.
+results are restricted to Qwen 3.6-27B and three
+seeds per task type. More broadly, the results            Alexandre Drouin, Maxime Gasse, Massimo Caccia,
+should not be generalized to all web environ-               Issam H. Laradji, Manuel Del Verme, Tom Marty,
+                                                            David Vazquez, Nicolas Chapados, and Alexandre
+ments. Settings with more homogeneous task
+                                                            Lacoste. WorkArena: How capable are web agents
+distributions, longer deployment horizons, or en-           at solving common knowledge work tasks? In
+vironments built around stable high-level APIs              Proceedings of the 41st International Conference
+may yield a more favorable tradeoff for augmen-             on Machine Learning, volume 235 of Proceedings
+tation methods. Besides, our budget-matching                of Machine Learning Research, pp. 11642–11662.
+argument applies to online augmentation only;               PMLR, 2024. URL https://proceedings.mlr.pr
+offline methods such as SkillWeaver (Zheng et al.,          ess/v235/drouin24a.html.
+2025) and WALT (Prabhu et al., 2026) amortize             Divyansh Garg, Shaun VanWeelden, Diego Caples,
+skill-discovery cost over many uses, and a fair             Andis Draguns, Nikil Ravi, Pranav Putta, Naman
+comparison there requires different accounting.             Garg, Tomas Abraham, Michael Lara, Federico
+
+
+                                                     10
+  Lopez, James Liu, Atharva Gundawar, Prannay                    ery, 2023. doi: 10.1145/3600006.3613165. URL
+  Hebbar, Youngchul Joo, Jindong Gu, Charles Lon-                https://doi.org/10.1145/3600006.3613165.
+  don, Christian Schroeder de Witt, and Sumeet
+  Motwani. REAL: Benchmarking autonomous                       Thibault Le Sellier de Chezelles, Maxime Gasse,
+  agents on deterministic simulations of real web-               Alexandre Lacoste, Massimo Caccia, Alexandre
+  sites. arXiv preprint arXiv:2504.11543, 2025.                  Drouin, Léo Boisvert, Megh Thakkar, Tom Marty,
+  doi: 10.48550/arXiv.2504.11543. URL https:                     Rim Assouel, Sahar Omidi Shayegan, Lawrence Ke-
+  //arxiv.org/abs/2504.11543.                                    unho Jang, Xing Han Lù, Ori Yoran, Dehan
+                                                                 Kong, Frank F. Xu, Siva Reddy, Graham Neu-
+Google DeepMind. Gemini 3 flash. https://storage.                big, Quentin Cappart, Russ Salakhutdinov, and
+  googleapis.com/deepmind-media/Model-Cards                      Nicolas Chapados. The BrowserGym ecosystem
+  /Gemini-3-Flash-Model-Card.pdf, 2025. Model                    for web agent research. Transactions on Machine
+  card.                                                          Learning Research, 2025. ISSN 2835-8856. URL
+                                                                 https://openreview.net/forum?id=5298fKGmv3.
+Hongliang He, Wenlin Yao, Kaixin Ma, Wenhao                      Expert Certification.
+  Yu, Yong Dai, Hongming Zhang, Zhenzhong Lan,
+                                                               Microsoft. Playwright: Fast and reliable end-to-end
+  and Dong Yu. WebVoyager: Building an end-to-
+                                                                 testing for modern web apps. https://playwrig
+  end web agent with large multimodal models. In
+                                                                 ht.dev, 2025. Accessed: 2026-05-06.
+  Proceedings of the 62nd Annual Meeting of the
+  Association for Computational Linguistics (Vol-              Hadi Nekoei, Aman Jaiswal, Patrice Bechard, Oleh
+  ume 1: Long Papers), pp. 6864–6890. Associa-                   Shliazhko, Orlando Marquez Ayala, Mathieu
+  tion for Computational Linguistics, 2024. doi:                 Reymond, Massimo Caccia, Alexandre Drouin,
+  10.18653/v1/2024.acl-long.371. URL https:                      Sarath Chandar, and Alexandre Lacoste. JEF-
+  //aclanthology.org/2024.acl-long.371/.                         Hinter: Leveraging offline knowledge for im-
+                                                                 proving web agents adaptation. arXiv preprint
+Su Kara, Fazle Faisal, and Suman Nath. WABER:                    arXiv:2510.04373, 2025. doi: 10.48550/arXiv.2510.
+  Evaluating reliability and efficiency of web agents            04373. URL https://arxiv.org/abs/2510.04373.
+  with existing benchmarks. In ICLR 2025 Workshop
+  on Foundation Models in the Wild, 2025a. URL                 OpenAI. GPT-5.4 Thinking system card. https:
+  https://openreview.net/forum?id=HY0VG19fHv.                   //openai.com/index/gpt-5-4-thinking-syste
+                                                                 m-card/, March 2026a. System card.
+Su Kara, Fazle Faisal, and Suman Nath. WAREX:
+  Web agent reliability evaluation on existing bench-          OpenAI. GPT-5.4 mini. https://developers.ope
+  marks. arXiv preprint arXiv:2510.03285, 2025b.                 nai.com/api/docs/models/gpt-5.4-mini, 2026b.
+  doi: 10.48550/arXiv.2510.03285. URL https:                     Model documentation.
+  //arxiv.org/abs/2510.03285.
+                                                               Siru Ouyang, Jun Yan, I-Hung Hsu, Yanfei Chen,
+                                                                  Ke Jiang, Zifeng Wang, Rujun Han, Long T.
+Jing Yu Koh, Robert Lo, Lawrence Jang, Vikram
+                                                                  Le, Samira Daruki, Xiangru Tang, Vishy Tiru-
+   Duvvur, Ming Lim, Po-Yu Huang, Graham Neu-
+                                                                  malashetty, George Lee, Mahsan Rofouei, Hangfei
+   big, Shuyan Zhou, Russ Salakhutdinov, and Daniel
+                                                                  Lin, Jiawei Han, Chen-Yu Lee, and Tomas Pfis-
+   Fried. VisualWebArena: Evaluating multimodal
+                                                                  ter. Reasoningbank: Scaling agent self-evolving
+   agents on realistic visual web tasks. In Proceedings
+                                                                  with reasoning memory. In The Fourteenth Inter-
+  of the 62nd Annual Meeting of the Association for
+                                                                 national Conference on Learning Representations,
+  Computational Linguistics (Volume 1: Long Pa-
+                                                                  2026. URL https://openreview.net/forum?id=
+   pers), pp. 881–905. Association for Computational
+                                                                  jL7fwchScm.
+   Linguistics, 2024. doi: 10.18653/v1/2024.acl-long.
+   50. URL https://aclanthology.org/2024.acl-l                 Viraj Prabhu, Yutong Dai, Matthew Fernandez,
+   ong.50/.                                                      Krithika Ramakrishnan, Jing Gu, Yanqi Luo, Sil-
+                                                                 vio Savarese, Caiming Xiong, Junnan Li, Zeyuan
+Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying                     Chen, and Ran Xu. WALT: Web agents that learn
+ Sheng, Lianmin Zheng, Cody Hao Yu, Joseph E.                    tools. In The Fourteenth International Confer-
+ Gonzalez, Hao Zhang, and Ion Stoica. Efficient                  ence on Learning Representations, 2026. URL
+ memory management for large language model                      https://openreview.net/forum?id=cgIDqcJcoI.
+ serving with PagedAttention. In Proceedings of the
+ 29th Symposium on Operating Systems Principles,               Qwen Team. Qwen3.6-27B. https://huggingface.
+ pp. 611–626. Association for Computing Machin-                 co/Qwen/Qwen3.6-27B, 2026. Model card.
+
+
+                                                          11
+Yueqi Song, Frank F. Xu, Shuyan Zhou, and Graham              International Conference on Learning Representa-
+  Neubig. Beyond browsing: API-based web agents.              tions, 2026. URL https://openreview.net/forum
+  In Findings of the Association for Computational            ?id=eC4ygDs02R.
+  Linguistics: ACL 2025, pp. 11066–11085. Associ-
+                                                            Boyuan Zheng, Michael Y. Fatemi, Xiaolong Jin,
+  ation for Computational Linguistics, 2025. doi:
+                                                              Zora Zhiruo Wang, Apurva Gandhi, Yueqi Song,
+  10.18653/v1/2025.findings-acl.577. URL https:
+                                                              Yu Gu, Jayanth Srinivasa, Gaowen Liu, Graham
+  //aclanthology.org/2025.findings-acl.577/.
+                                                              Neubig, and Yu Su. Skillweaver: Web agents can
+Zhaoyang Wang, Qianhui Wu, Xuchao Zhang,                      self-improve by discovering and honing skills. arXiv
+  Chaoyun Zhang, Wenlin Yao, Fazle Elahi Faisal,              preprint arXiv:2504.07079, 2025. doi: 10.48550/a
+  Baolin Peng, Si Qin, Suman Nath, Qingwei Lin,               rXiv.2504.07079. URL https://arxiv.org/abs/
+  Chetan Bansal, Dongmei Zhang, Saravan Rajmo-                2504.07079.
+  han, Jianfeng Gao, and Huaxiu Yao. Webxskill:
+                                                            Shuyan Zhou.     WebArena-Infinity: Generating
+  Skill learning for autonomous web agents. arXiv
+                                                              browser environments with verifiable tasks at scale.
+  preprint arXiv:2604.13318, 2026. doi: 10.48550/a
+                                                              https://webarena.dev/webarena- infinity/,
+  rXiv.2604.13318. URL https://arxiv.org/abs/
+                                                              2026. Accessed 2026-05-24.
+  2604.13318.
+                                                            Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui
+Zora Zhiruo Wang, Apurva Gandhi, Graham Neubig,
+                                                              Zhou, Robert Lo, Abishek Sridhar, Xianyi Cheng,
+  and Daniel Fried. Inducing programmatic skills for
+                                                              Tianyue Ou, Yonatan Bisk, Daniel Fried, Uri
+  agentic tasks. In Second Conference on Language
+                                                              Alon, and Graham Neubig. Webarena: A real-
+  Modeling, 2025a. URL https://openreview.net
+                                                              istic web environment for building autonomous
+  /forum?id=lsAY6fWsog.
+                                                              agents. In The Twelfth International Confer-
+Zora Zhiruo Wang, Jiayuan Mao, Daniel Fried, and              ence on Learning Representations, 2024. URL
+  Graham Neubig. Agent workflow memory. In                    https://openreview.net/forum?id=oKn9c6ytLx.
+  Forty-second International Conference on Machine
+  Learning, 2025b. URL https://openreview.net
+  /forum?id=NTAhi2JEEE.
+Tianci Xue, Weijian Qi, Tianneng Shi, Chan Hee
+  Song, Boyu Gou, Dawn Song, Huan Sun, and
+  Yu Su. An illusion of progress? Assessing the
+  current state of web agents. In Second Conference
+  on Language Modeling, 2025. URL https://open
+  review.net/forum?id=6jZi4HSs6o.
+Ke Yang, Zixi Chen, Xuan He, Jize Jiang, Michel
+  Galley, Chenglong Wang, Jianfeng Gao, Jiawei
+  Han, and ChengXiang Zhai. Plugmem: A task-
+  agnostic plugin memory module for LLM agents. In
+  ICLR 2026 Workshop on Lifelong Agents: Learn-
+  ing, Aligning, Evolving, 2026. URL https://open
+  review.net/forum?id=LE664kai2e.
+Simon Yu, Gang Li, Weiyan Shi, and Peng Qi.
+  Polyskill: Learning generalizable skills through
+  polymorphic abstraction for continual learning.
+  In The Fourteenth International Conference on
+  Learning Representations, 2026. URL https:
+  //openreview.net/forum?id=KdEsujyiSV.
+Qizheng Zhang, Changran Hu, Shubhangi Upasani,
+  Boyuan Ma, Fenglu Hong, Vamsidhar Kamanuru,
+  Jay Rainton, Chen Wu, Mengmeng Ji, Hanchen Li,
+  Urmish Thakker, James Zou, and Kunle Olukotun.
+  Agentic context engineering: Evolving contexts for
+  self-improving language models. In The Fourteenth
+
+
+                                                       12
+A     Implementation Details                               line per node.
+
+Vanilla-IB, AWM, and ASI are all run using the
+                                                           Pruning rule. A StaticText child node is re-
+unified codebase and prompts released by Wang
+                                                           moved when its text content is already contained
+et al. (2025a) to ensure that differences in re-
+                                                           verbatim in the accessible name of its immediate
+sults cannot be attributed to inconsistencies in
+                                                           parent. This handles a common pattern in web
+agent scaffolding, prompt formatting, or environ-
+                                                           accessibility trees, where a parent node (such as
+ment interaction. The codebase uses Browser-
+                                                           a labelled button or a list item) carries the same
+Gym (Le Sellier de Chezelles et al., 2025) for in-
+                                                           text as its StaticText child. Removing the dupli-
+teracting with the environment. AWM and ASI
+                                                           cate cuts context length without dropping infor-
+come from the same research group (Wang et al.,
+                                                           mation. StaticText nodes whose stripped con-
+2025b,a), and AWM is included as a baseline in
+                                                           tent is empty are also removed. Non-StaticText
+the more recent ASI codebase. ReasoningBank
+                                                           nodes, node IDs (BIDs), roles, and tree struc-
+is run using the codebase released by Ouyang
+                                                           ture are not modified. The rule has one excep-
+et al. (2026) due to its unique prompt structure
+                                                           tion: a StaticText child is kept whenever its par-
+and agent logic.
+                                                           ent’s role is one of {article, paragraph, heading,
+We set the actor LLM temperature of Vanilla-IB             strong, emphasis, mark, sectionheader}, even
+to 0, the same as the default value in AWM and             when the child’s text is already in the parent’s
+ASI. ReasoningBank sets the temperature to 0.7             name. This avoids hollowing out actual prose
+and we kept the default intact. The auxiliary              blocks where the StaticText child is the canoni-
+modules of AWM, ASI, and ReasoningBank use                 cal carrier of the rendered text.
+their respective defaults, which we do not modify.
+ReasoningBank’s codebase also ships a vendored             Icon characters. Before comparison, Uni-
+WebArena with custom evaluation pipeline that              code private-use characters in the range
+replaces the standard BrowserGym harness. All              U+E600–U+E6FF (typically icon-font glyphs that
+methods in this paper are evaluated using the              render as visually empty placeholders) are
+unmodified BrowserGym evaluation harness to                stripped from both the parent name and the
+ensure identical assessment criteria across config-        StaticText child. Literal \uXXXX escapes that
+urations.                                                  appear in the serialized tree are also stripped.
+We host Qwen 3.6-27B on four NVIDIA H100                   This prevents icon characters from blocking an
+GPUs using vLLM (Kwon et al., 2023). We                    otherwise valid redundancy match.
+used AI assistants during implementation and
+manuscript preparation for code-related tasks,             C     Prompt Templates
+including generating plotting scripts and LaTeX
+snippets. We also used them to assist with writ-           Vanilla-IB, AWM, and ASI use the prompt tem-
+ing, and for polishing and shortening paragraphs.          plates released by Wang et al. (2025a) without
+                                                           modification, except as noted below. Since the
+                                                           templates are publicly available in the ASI code
+B     Accessibility Tree Pruning                           repository, we do not report them here.
+The accessibility-tree simplification used in
+Vanilla-IB is a deterministic rule-based function          Model-specific modification. The prompts are
+with no LLM call, model fine-tuning, or learned            model-agnostic with one exception. When run-
+component, and therefore no additional token               ning experiments with GPT-5.4-mini, we ob-
+cost. The function operates on the BrowserGym-             served two behaviors that interfered with eval-
+style accessibility tree, in which each node has a         uation. First, the model frequently produced
+role (e.g., button, StaticText, heading) and an            action outputs with no accompanying reasoning
+accessible name, and is rendered as one indented           or explanation. Such explanations are important
+
+                                                      13
+for augmentation methods: the induction mod-               guarantee is that only working functions enter
+ules parse them to extract reusable knowledge              the library. In the verification procedure, the
+from trajectories. Second, the model sometimes             induced function is called as the first decision. If
+generated turns asking the user for clarification          the function changes the environment but fails on
+or additional input, which is not possible during          one of its underlying actions, the agent may still
+automated benchmark evaluation. To address                 recover via primitive actions and solve the task.
+both issues, the following text was appended to            In that case, the episode can be judged a suc-
+the action prompt for GPT-5.4-mini:                        cess and the function is written to disk, without
+                                                           actual verification. A common instance of this
+    You cannot ask for follow-up questions
+                                                           failure is when the function fails because an ele-
+    or hand back to the user. Do your best
+                                                           ment ID has changed after the page reloaded for
+    with the information already available.
+                                                           the verification episode. Functions that require
+    Output a summary of your reasoning
+                                                           arguments whose values depend on a prior ac-
+    and the important information you have
+                                                           tion’s page state are especially prone to this: the
+    found, followed by the best actions at
+                                                           caller cannot supply a valid BID for an element
+    this step (in one triple backticks block).
+                                                           that only becomes visible after an earlier click.
+It is worth noting that Vanilla-IB is less de-             The induced functions are also typically short,
+pendent on reasoning traces in the output: the             averaging approximately 2.4 primitive actions
+vanilla agent acts only on the current observation,        per function under Gemini 3 Flash and 2.5 under
+so in many cases explanatory text is overhead              GPT-5.4-mini, which limits the abstraction ben-
+that could in principle be removed to reduce               efit. Some functions also hardcode task-specific
+completion tokens. This represents an additional           values that do not generalize across tasks; for ex-
+efficiency advantage of Vanilla-IB that our num-           ample, the function fill_refund_request_form
+bers do not capture. However, to ensure a fair             in the shopping library hardcodes the complaint
+comparison across all methods, we applied the              message “It broke after just three days of use”
+same prompt to all methods under each model,               regardless of the actual reason for the refund.
+including the above addition for GPT-5.4-mini.
+
+
+D     Failure Mode Analysis of Aug-
+      mented Agents
+Section 5.2 discusses the structural fragility of          Table 6 quantifies the verification-confound
+programmatic skills in dynamic accessibility-tree          effect. We define a first-step verification failure
+interfaces at a conceptual level. This appendix            as a verification run in which the induced
+extends that discussion with quantitative char-            function fails before the second agent action. A
+acterizations of failure modes across all three            recovered verification is one that was still judged
+augmented methods, and presents concrete exam-             correct despite that first-step failure. First-step
+ples of tasks where augmented agents fail while            failures are not rare. Under GPT, the induced
+Vanilla-IB succeeds. Unless stated otherwise,              function fails immediately in 72.2% of Shopping
+quantities are averaged over three independent             verifications; over half of those are recovered and
+runs per domain–model configuration.                       still produce a stored library entry. Even under
+                                                           Gemini Shopping, where the first-step failure
+                                                           rate is lower (33.3%), two thirds of failures
+D.1    ASI: Verification Confounds Func-
+                                                           recover. In both cases the result is a function
+       tion Success with Agent Recovery
+                                                           library that contains entries whose correctness
+ASI induces Python functions from successful               at verification time was not due to the function
+trajectories and adds them to a shared action              itself.
+library after a verification episode. The intended
+
+                                                      14
+  Domain     Attempts     First-step fail   Recov. rate        induction is gated only by the judge’s verdict.
+                   Gemini 3 Flash                              Table 7 shows the fraction of workflow-induction
+  Shopping     58.0            19.3           69.0%
+                                                               events triggered by failed trajectories. On Shop-
+  Reddit       30.0             9.0           59.3%            ping, nearly half of all induction events, 49.5%
+  Admin        64.3            6.3            63.2%            under Gemini and 52.3% under GPT, originate
+                      GPT-5.4-mini                             from failed agent trajectories. The contamination
+                                                               is substantially lower for Reddit (11–19%), which
+  Shopping     44.3            32.0           54.2%
+  Reddit       25.0            12.3           45.9%            may help explain AWM’s stronger performance
+  Admin        51.7            22.7           47.1%            on that domain. Because AWM’s duplicate-
+                                                               suppression mechanism checks only whether a
+Table 6 ASI verification failures at the first high-           new workflow semantically overlaps an existing
+level function call on WebArena. Values are aver-              one, it does not filter out strategies that are sim-
+ages over three replicas. Attempts: total number of            ply wrong: once an incorrect workflow enters
+function induction attempts by ASI across all tasks.
+                                                               the library, it can be retrieved and applied to all
+First-step fail : number of attempts where the in-
+duced function failed before the second agent action.          future tasks in the same category.
+Recov. rate: fraction of first-step failures where the
+verification episode was nonetheless judged correct,             Domain     Induced     From failed (%)   Final WFs
+causing a potentially broken function to be stored in                                Gemini 3 Flash
+the shared library.
+                                                                 Shopping    105.7           49.5%          37.3
+                                                                 Reddit       45.7           10.9%          16.7
+                                                                 Admin       99.7            42.1%          48.3
+D.2     AWM: Generic Templates and In-
+        duction from Failed Trajectories                                             GPT-5.4-mini
+                                                                 Shopping     78.3           52.3%          33.7
+AWM induces abstract natural-language work-                      Reddit       31.3           19.1%          13.7
+flows from trajectories the judge deems successful,              Admin        50.0           42.0%          24.3
+then retrieves and injects the closest workflow
+into the actor’s prompt at each inference step.                Table 7 AWM workflow-induction statistics on We-
+Many induced workflows are too generic to add                  bArena, averaged per run. Induced : total induction
+                                                               events triggered by the judge for a run. From failed
+navigational value. A stored shopping workflow
+                                                               (%): fraction originating from tasks the ground-truth
+for order-history aggregation reduces to: “click               evaluator classified as failed. Final WFs: distinct
+the account link, click the full-order-history link,           workflows in the final library after duplicate suppres-
+send a summary”. This describes the high-level                 sion.
+intent without preserving operational details that
+determine correctness, such as whether pagina-
+tion is needed, what the stopping condition is,                D.3     ReasoningBank: Contamination
+or how totals are computed. Similarly, a stored                        and Memory Over-Application
+price-range workflow directs the agent to sort,
+toggle direction, navigate to the last page, and               ReasoningBank stores a few short lessons from
+report the range, but omits checks for sort direc-             every task trajectory regardless of outcome, la-
+tion availability, filtered result sets, or whether            beling each entry as a success or failure based
+the last-page element is reachable in the current              on the judge’s verdict. The K most semantically
+state. Because the workflow is injected into the               similar entries are retrieved at inference time and
+actor’s prompt, the agent must decide at each                  injected into the actor’s context. Table 8 reports
+step whether to follow it or ignore it, a burden               the size and contamination of the resulting mem-
+that smaller models are especially ill-equipped                ory corpus. On Shopping tasks, more than half
+to handle, as it competes with the current acces-              of all success-labeled entries, 52.9% for Gemini
+sibility tree and task instruction.                            and 59.5% for GPT, come from trajectories that
+                                                               failed according to the ground-truth evaluator.
+A more fundamental problem is that AWM’s                       These entries are framed with positive guidance
+
+                                                          15
+language regardless of their true provenance, so              confound in ASI, share a common structural root:
+the retrieval mechanism cannot distinguish be-                each method delegates quality control to an LLM
+tween lessons that worked and lessons that did                judge whose input is fundamentally incomplete
+not.                                                          for the tasks it is asked to evaluate.
+
+             Total     Succ.-     FP in      FN in            The judge receives the agent’s textual output
+ Domain      mem.     labeled   succ. (%)   fail (%)          (its reasoning trace and final response) and, in
+                    Gemini 3 Flash                            some configurations, a snapshot of the browser
+ Shopping     518       96       52.9%       40.7%
+                                                              state at the end of the episode. It does not ob-
+ Reddit       294       32       30.2%       25.3%            serve the sequence of intermediate page states
+ Admin        507       86       42.6%       40.4%            the agent traversed, the specific elements it in-
+                                                              teracted with, or whether information the agent
+                     GPT-5.4-mini
+                                                              reports was actually encountered during navi-
+ Shopping     544       67       59.5%       18.4%            gation or confabulated in the reasoning trace.
+ Reddit       307       20       60.0%       17.4%
+                                                              For tasks where correctness depends on having
+ Admin        532       62       48.1%       25.2%
+                                                              visited the right pages and extracted the right
+Table 8 ReasoningBank memory-corpus statistics                values, a judge working from this terminal view
+on WebArena, averaged over three runs. Tasks pro-             cannot reliably reconstruct whether the work was
+cessed per run: 187 (Shopping), 106 (Reddit), 182             actually done.
+(Admin). Succ.-labeled : tasks labeled successful by
+the judge. FP in succ.: fraction of success-labeled           This is not necessarily a matter of judge capabil-
+tasks from trajectories that failed according to the          ity. A more powerful model receiving the same
+ground-truth evaluator. FN in fail : fraction of fail-        partial input faces the same gap: the evidence
+labeled tasks from trajectories that succeeded accord-        needed to verify navigation-dependent correct-
+ing to the ground-truth evaluator.                            ness is simply absent from the judge’s context.
+                                                              Nor is it straightforwardly fixable by expand-
+A separate concern is injection pressure. Even                ing what is passed to the judge. Supplying the
+though only a few memories are retrieved per                  full trace at every step would require passing
+task, they are referenced heavily in the agent                on the order of hundreds of thousands of tokens
+traces: across all domain–model configurations,               per judge call for a ten-step task on a content-
+we observe an average of 8–12 explicit memory-                heavy page, making each evaluation call more
+item mentions per task, with over 95% of Gemini               expensive than the agent trajectory it is judging,
+tasks and over 75% of GPT tasks referencing at                and possibly exceeding practical context limits
+least one retrieved memory. The retrieved mem-                entirely.
+ories therefore function as active policy hints
+rather than passive background. When a mem-                   D.5    Illustrative Task-Level Failures
+ory is overly general or mildly mismatched to
+the current task, the agent may prioritize it over            Table 9 presents representative task-level failures
+the current accessibility tree, producing extra               drawn from our Gemini 3 Flash runs, showing in
+navigation steps, unnecessary checks, or incor-               each case what the augmented agent does and
+rect early termination. Vanilla-IB, which carries             how Vanilla-IB succeeds on the same task.
+no retrieved memory layer, avoids this class of
+distraction entirely by grounding each action in              E     Per-Run Variance Results
+the current observation.
+                                                              Tables 10, 11, and 12 report success rate and
+D.4     Discussion: Structural Limits of                      token usage for each method across three inde-
+        Judge-Based Quality Control                           pendent runs under Gemini 3 Flash, GPT-5.4-
+                                                              mini, and Qwen 3.6-27B, respectively. Standard
+The contamination patterns described above for                deviations are sample std over the three runs.
+AWM and ReasoningBank, and the verification
+
+                                                         16
+Table 9 Example failures of augmented agents where Vanilla-IB succeeds. Tasks are selected from WebArena
+(single runs shown; all from Gemini 3 Flash).
+
+ Method          Intent                 Augmented agent behavior              Vanilla-IB behavior
+ AWM             “Buy the highest- Retrieved workflow for “Buy the            Applies sorting, checks rating and
+                 rated     product highest-rated product” prescribes          price against the budget, and selects
+                 in Ceiling Light sorting then clicking the top result.       the correct product.
+                 within a budget Agent buys the wrong product be-
+                 above $1000.”     cause the workflow does not account
+                                   for rating ties or the budget thresh-
+                                   old.
+ ASI             “Change the deliv- Calls     navigate_to_contact_page        Navigates to Address Book, adds
+                 ery address for my and fill_contact_form using the el-       the new address, recognizes that the
+                 most recent order to ement ID from the docstring example     order address cannot be changed
+                 3 Oxford St, Cam- (’1381’). Receives ValueError and          through the UI, and reports accord-
+                 bridge, MA.”         TypeError; form submission fails.       ingly.
+ ReasoningBank   “What are the top-     Retrieved memory on handling rank-    Reads the same report without dis-
+                 5 best-selling prod-   ing ties directs attention to tie-    traction and returns the correct
+                 ucts in 2023?”         breaking. Agent misidentifies the     ranked list.
+                                        4th and 5th items (reports Sparta
+                                        Gym Tank and Angel Light Running
+                                        Short instead of Sprite Stasis Ball
+                                        and Hawkeye Yoga Short).
+
+
+
+
+                                  Success Rate (%) ↑                            Tok/task (K) ↓
+       Method             Run a   Run b    Run c     Mean±Std      Run a      Run b    Run c     Mean±Std
+                                                    Shopping
+       Vanilla-IB         47.59   49.73     45.99    47.77±1.9      46.6       45.5      45.1       45.7±0.8
+       AWM                43.32   39.04     41.18    41.18±2.1      68.0       70.6      73.9       70.8±3.0
+       ASI                43.32   45.45     45.45    44.74±1.2      82.4       83.0      83.0       82.8±0.3
+       ReasoningBank      44.39   44.91     47.05    45.45±1.4      56.0       54.1      53.6       54.6±1.3
+                                                     Reddit
+       Vanilla-IB         48.11   47.17     47.17    47.48±0.5      71.7       69.5      73.8       71.7±2.2
+       AWM                49.06   46.23     47.17    47.48±1.4      87.6       88.9      85.0       87.2±2.0
+       ASI                47.17   43.40     44.34    44.97±2.0      98.5       89.3      96.0       94.6±4.8
+       ReasoningBank      39.62   38.68     41.50    39.93±1.4      78.9       73.6      77.8       76.8±2.8
+                                                     Admin
+       Vanilla-IB         53.85   56.59     56.59    55.68±1.6       95.2      98.6     103.2        99.0±4.0
+       AWM                47.80   47.80     46.70    47.43±0.6      136.6     147.0     144.4       142.7±5.4
+       ASI                53.85   51.65     52.75    52.75±1.1      132.0     152.3     133.9       139.4±11.2
+       ReasoningBank      47.80   51.10     47.80    48.90±1.9      120.8     126.4     126.5       124.6±3.3
+
+Table 10 Per-run success rate (%) and token usage (K per task) across three independent runs under
+Gemini 3 Flash on WebArena. Standard deviations are sample std over the three runs.
+
+
+
+
+                                                       17
+                            Success Rate (%) ↑                    Tok/task (K) ↓
+    Method          Run a   Run b   Run c    Mean±Std    Run a   Run b   Run c   Mean±Std
+                                            Shopping
+    Vanilla-IB      37.43   39.04   39.04    38.50±0.9   55.1    53.5    54.2       54.3±0.8
+    AWM             27.81   31.02   31.02    29.95±1.9   64.2    61.6    60.2       62.0±2.0
+    ASI             34.22   32.62   32.62    33.15±0.9   70.6    83.5    66.2       73.4±9.0
+    ReasoningBank   21.93   27.81   29.41    26.38±3.9   59.3    58.2    56.2       57.9±1.6
+                                             Reddit
+    Vanilla-IB      38.68   35.85   29.25    34.59±4.8   89.4    102.5   96.6      96.2±6.6
+    AWM             30.19   30.19   28.30    29.56±1.1   77.1    94.4    69.8      80.4±12.6
+    ASI             26.42   30.19   30.19    28.93±2.2   83.8     85.0   92.8      87.2±4.9
+    ReasoningBank   18.87   24.53   22.64    22.01±2.9   67.8    72.5    67.3      69.2±2.9
+                                             Admin
+    Vanilla-IB      35.16   35.16   37.36    35.89±1.3   117.4   133.0   121.9      124.1±8.0
+    AWM             28.57   33.52   34.62    32.24±3.2   129.3   95.9    114.9     113.4±16.8
+    ASI             28.57   35.16   35.16    32.96±3.8   126.1   146.5   142.9     138.5±10.9
+    ReasoningBank   36.26   32.97   33.52    34.25±1.8   121.0   125.5   122.8      123.1±2.3
+
+Table 11 Per-run success rate (%) and token usage per task (K) under GPT-5.4-mini on WebArena.
+Standard deviations are sample std over three runs.
+
+
+
+
+                            Success Rate (%) ↑                    Tok/task (K) ↓
+    Method          Run a   Run b   Run c    Mean±Std    Run a   Run b   Run c   Mean±Std
+                                            Shopping
+    Vanilla-IB      47.06   44.39   46.52    45.99±1.4   57.9    60.5    57.9       58.8±1.5
+    AWM             39.57   43.30   41.18    41.35±1.9   73.6    66.7    75.1       71.8±4.5
+    ASI             47.06   43.85   40.10    43.67±3.5   72.6    81.1    82.8       78.8±5.5
+    ReasoningBank   39.57   40.64   39.04    39.75±0.8   65.6    65.2    65.3       65.4±0.2
+                                             Reddit
+    Vanilla-IB      47.17   43.40   42.45    44.34±2.5    94.5    86.5   88.0       89.7±4.3
+    AWM             44.34   45.28   39.62    43.08±3.0   110.3   87.8    112.8     103.6±13.8
+    ASI             43.40   41.51   44.34    43.08±1.4   118.1   125.9   117.6     120.5±4.7
+    ReasoningBank   39.62   41.51   42.45    41.19±1.4   96.1    95.9    105.4      99.1±5.4
+                                             Admin
+    Vanilla-IB      49.45   52.20   50.54    50.73±1.4   141.2   125.3   124.4     130.3±9.5
+    AWM             45.60   43.40   49.45    46.15±3.1   192.8   172.3   170.3     178.5±12.5
+    ASI             51.65   48.35   47.25    49.08±2.3   177.7   183.1   185.9     182.2±4.2
+    ReasoningBank   46.15   47.25   49.45    47.62±1.7   160.8   162.9   147.1     156.9±8.6
+
+Table 12 Per-run success rate (%) and token usage per task (K) under Qwen 3.6-27B on WebArena.
+Standard deviations are sample std over three runs.
+
+
+
+
+                                              18
+
