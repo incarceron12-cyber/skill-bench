@@ -550,6 +550,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [EdgeBench](../papers/agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | A | Separates agent-visible feedback from evaluator-only snapshots and exposes adaptive-query, persistence, censoring, and best-so-far boundaries; its smooth suite fits are not task-level or universal learning laws |
 | [AgencyBench](../papers/agent-benchmarks/2026-07-15-agencybench-feedback-artifact-validity.md) | A | Makes cumulative native-artifact repair and plural observer evidence inspectable while separating unaided first attempt, no-information retry, generic revision, consequence-only feedback, criterion-disclosed evaluator repair, and authorized ecological feedback; paper/release drift, observer disagreement, hidden aesthetics, missing human labels, single-run ambiguity, and no real users bound it to configured evaluator-assisted repair |
 | [Pista](../papers/agent-benchmarks/2026-07-16-pista-active-oversight-workflow-validity.md) | B | Contributes semantic diffs as operation-level decision-time review artifacts and bounded human inspectability evidence, while its bundled N=16 treatment, unmatched stochastic defects, absent correction/preservation lineage, low endpoint means, and no recipient consequence block effective-oversight, professional-utility, or readiness claims |
+| [HANSEL](../papers/agent-benchmarks/2026-07-17-hansel-interactive-verification-validity.md) | B | Adds interactive trajectory-to-page evidence compression and released shared-error human records, while support-path labels omit negative/contradictory routes, snippet recall and replay fidelity are untested, and a bundled N=14 study shows burden/preference more strongly than correct or calibrated verification |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. Domain analysis adds a related but distinct inquiry ladder: preserve source-bound observation, anomaly or candidate hypothesis, rivals and uncertainty, predeclared discriminating test, executed evidence, update/rejection, recommendation or escalation, and downstream consequence. Candidate-generation quality must not inherit verification or causal-truth credit from a holistic prose grade. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
 
@@ -813,6 +814,22 @@ with DeskCraft's opportunity→adoption chain, AgencyBench's proposition→repai
 and ArtifactCopilot's evidence-packet boundary. Existing interaction,
 feedback/recovery, artifact-view, trace, metric, task-health, participation, and
 validity records suffice; no spreadsheet or oversight-specific subsystem follows.
+
+HANSEL adds a complementary **loss-accounted evidence-projection path**:
+`authoritative raw state/trajectory → typed inclusion and omission decisions →
+projected evidence with source/state identity → reviewer exposure and inspection →
+supported judgment → correct accept/reject/correct/escalate action → consequence`.
+Its 45-trajectory labels concern pages that contributed to the agent's final path,
+not every alternative, contradiction, blocked route, or negative observation needed
+to verify the answer. Page-count compression and predicted-snippet precision therefore
+do not establish minimal sufficiency. The released 14-participant records support a
+bundled reduction in time/effort and strong preference, but the accuracy contrast is
+nonsignificant and nine of 28 wrong-agent HANSEL opportunities remain wrong with high
+confidence. Treat every evidence summary, semantic diff, or review packet as a lossy
+projection with an omission ledger, replay/transformation identity, insufficiency
+state, reviewer-inspection events, and decision-level calibration. Existing trace,
+artifact-view, interaction, metric, task-health, and validity records suffice; no web
+or breadcrumb-specific subsystem follows.
 
 The frozen internal [24-cell report](../pilots/closed-loop-feedback-audit/report.json)
 (SHA-256 `20deddde50fd93fc32b7af5b8f7eb69b9e9ffdab71c9cc3dd1ea421a41e335be`)
