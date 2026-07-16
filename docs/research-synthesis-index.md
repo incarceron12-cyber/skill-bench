@@ -1151,13 +1151,34 @@ condition cell, treatments change evidence availability, and the oracle reminder
 privileged evaluator-derived evidence—not an internal-memory aid. Agent self-report
 fields also do not establish internal memory or causal adoption.
 
-The explicit next gate is a held-out non-ceiling equivalent-form extension with
-harness-observed channel requests, access decisions, releases, and model-visible
-payloads; matched repeated conditions; and separately discriminating obligation and
-primary-work outcomes. Repeating the present ceiling forms would add activity but
-not clarify construct validity. Existing contracts suffice; the pilot supports no
-general prospective-memory, causal-treatment, capability, cross-domain,
-professional-validity, safety, production-fitness, or readiness claim.
+The prospectively frozen [v2 held-out extension](../pilots/delayed-obligation-heldout-v2/README.md)
+completed the next machinery gate without establishing the wider construct. It
+crossed two unseen forms in each of the same two purposive shapes with all three
+conditions. All 12 intended attempts were retained and service-, environment-, and
+artifact-valid, producing 36 turn artifacts. Exact outcomes were six successes,
+three cue-monitoring/access failures, and three due-status/timing failures. Primary
+work passed 35/36 turns. The sole wrong turn-1 decision under an oracle condition
+shows that the primary grader can register concurrent loss, but 35/36 is still
+near-ceiling and cannot estimate interference.
+
+V2 improves observation rather than claim scope: the harness directly records query
+issuance, next-turn channel availability, exact returned evidence, public due cues,
+and oracle presentation. It does not observe encoding or adoption. Three of four
+neutral attempts neither queried nor received the update; the fourth did both. All
+four channel-hint attempts queried and received the update. All four oracle attempts
+were exposed to privileged evaluator-derived update/due evidence regardless of the
+query path, so oracle reminders remain evidence treatments, not memory aids. Do not
+pool v1 with v2 or pool forms, shapes, or conditions within either study; every cell
+has one attempt and no treatment effect is identified.
+
+**Stop/continue decision:** do not run the same matrix again merely to add trials.
+Continue only after independent or expert form/rubric review and a preregistered
+repeated design that names its estimand, unit, cluster structure, contrast,
+invalid/service policy, uncertainty method, and decision use. Otherwise stop at
+bounded machinery validation. Existing contracts suffice, and the studies support
+no internal-memory, general prospective-memory, causal-treatment, capability,
+cross-domain, professional-validity, safety, production-fitness, or readiness
+claim.
 
 ## 7. Task generation and evolution require conformance, provenance, and rollback
 

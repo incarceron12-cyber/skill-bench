@@ -2484,25 +2484,43 @@ single-attempt cells [PMB, DOT].
 PM-Bench makes the obligation state machine, hidden cue channels, lures, updates,
 timing, and deterministic replay unusually inspectable, but its compulsory `A/B/C`
 advance token is ungraded. It therefore observes obligation-menu selection, not
-concurrent-work preservation or interference [PMB]. The frozen internal dual-task
-pilot adds graded primary work and retained six of six service-, environment-, and
+concurrent-work preservation or interference [PMB]. The frozen internal v1 dual-task
+pilot added graded primary work and retained six of six service-, environment-, and
 artifact-valid single attempts. All 18 primary-turn checks passed, creating a
 primary-work ceiling; four cells were exact successes, while the vendor neutral
 cell failed at cue monitoring/access and the vendor oracle cell failed at due
-status/timing [DOT]. Exact replay and planted branch tests validate only the frozen
-instrument and those retained observations. They do not identify internal memory,
-causal reminder effects, absence of interference on harder work, cross-domain
-generality, professional validity, safety, production fitness, or readiness.
+status/timing [DOT].
 
-The next validation gate is a prospectively frozen **held-out, non-ceiling
-equivalent-form extension**. It must make primary-work quality discriminating,
-record channel request, access decision, released payload, and model-visible
-presentation from the harness rather than self-report, retain matched conditions
-and repeated attempts, and confirm effects on obligation and primary-work outcomes
-separately. Repeating the current ceiling forms cannot clarify construct validity.
-Existing evidence-flow, artifact/state, configured-system, trace, task-health,
-metric, and validity records are the implementation homes; no memory-specific
-schema follows.
+The prospectively frozen v2 extension then crossed two unseen forms in each of the
+same two purposive synthetic work shapes with all three conditions. All 12 intended
+attempts were retained and service-, environment-, and artifact-valid, yielding 36
+turn artifacts. Exact obligation outcomes were six successes, three cue-monitoring/
+access failures, and three due-status/timing failures. Primary work passed 35/36
+turns: the one wrong turn-1 decision under an oracle condition is a non-ceiling
+witness that the primary branch can register concurrent loss, but the 35/36 rate
+remains near-ceiling rather than an interference estimate [DOT2].
+
+V2 directly records submitted query issuance, next-turn channel availability,
+exact returned update evidence, public due-cue presentation, and oracle
+presentation. It still does not observe internal encoding or adoption; agent-
+reported obligation state and intended actions cannot fill those gaps. In the four
+neutral cells, three attempts issued no query and received no update, while one
+queried and received it. All four channel-hint attempts queried and received the
+update. Every oracle attempt received privileged evaluator-derived update/due
+evidence regardless of its query path, so an oracle reminder is an evidence-access
+treatment, not a memory aid. Preserve each exact form × condition cell: v1 and v2
+must not be pooled, and neither sparse one-attempt matrix licenses treatment effects,
+internal-memory attribution, cross-domain generality, professional capability,
+safety, production fitness, or readiness [DOT, DOT2].
+
+**Stop/continue gate:** stop repeating this matrix merely to accumulate attempts.
+Continue only after independent or expert review of form and rubric realism and a
+preregistered repeated design that names the estimand, unit, cluster structure,
+contrast, invalid/service policy, uncertainty method, and decision use. Otherwise
+retain v1/v2 as bounded machinery validation. Existing evidence-flow,
+artifact/state, configured-system, trace, task-health, metric, and validity records
+are the implementation homes; no memory-specific schema or additional worker task
+follows.
 
 ### 4.5 Keep three change planes separate
 
@@ -3702,3 +3720,15 @@ them:
   observations and deterministic grader behavior only—not internal memory,
   treatment effects, interference absence, capability, cross-domain/professional
   validity, safety, production fitness, or readiness.
+- **[DOT2]** `pilots/delayed-obligation-heldout-v2/protocol.json` (SHA-256
+  `77e5ac6527efd7c9b343b155c193c6800736ea54fa4b103ac4c829e4f65541ec`),
+  `pilots/delayed-obligation-heldout-v2/execution/study-report.json` (SHA-256
+  `e655e3e79ff33908435c4dd2cb9047b9d1743bc092431679a013d19abf3d50fa`),
+  `pilots/delayed-obligation-heldout-v2/preflight/canary-report.json` (SHA-256
+  `19897e3f7028e719d1c842774a581664500462f110fc8f51b10726d1df847016`),
+  `pilots/delayed-obligation-heldout-v2/validity-record.json`, and 12 retained trial
+  reports. Exact replay passed. Four builder-authored held-out forms and one attempt
+  per form-condition cell support direct channel-flow and exact configured-attempt
+  observations only, not a treatment effect, internal memory, calibrated
+  interference, capability, expert/professional validity, generality, safety,
+  production fitness, or readiness.
