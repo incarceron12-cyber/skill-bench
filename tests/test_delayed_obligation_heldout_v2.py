@@ -1,5 +1,5 @@
 from __future__ import annotations
-import importlib.util,json,unittest
+import hashlib,importlib.util,json,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];P=ROOT/"pilots/delayed-obligation-heldout-v2"
 def load_module():
@@ -25,5 +25,11 @@ class DelayedObligationHeldoutV2Tests(unittest.TestCase):
   self.assertNotIn(s["obligation"]["updated_id"],self.m.treatment("neutral_interrupt",3,s));self.assertNotIn(s["obligation"]["updated_id"],self.m.treatment("channel_hint",3,s));self.assertIn(s["obligation"]["updated_id"],self.m.treatment("oracle_reminder",3,s))
  def test_claim_ceiling_and_preflight(self):
   p=self.m.load(self.m.PROTOCOL);self.assertTrue(all(v is False for v in p["claim_boundaries"].values()));self.assertTrue(p["reporting"]["no_shape_pooling"]);self.assertTrue(p["reporting"]["no_condition_pooling"])
-  r=self.m.preflight(False);self.assertTrue(r["passed"]);self.assertEqual(0,r["model_calls"])
+  self.assertTrue(self.m.calibration()["passed"]);self.assertTrue(all(x["passed"] for x in self.m.isolation()));self.assertTrue(self.m.verify_protocol(False)["passed"])
+ def test_retained_matrix_replays_and_validity_hashes_bind(self):
+  r=self.m.replay();self.assertEqual({"intended":12,"retained":12,"service_valid":12,"environment_valid":12,"artifact_valid":12},r["denominators"]);self.assertFalse(r["encoding_and_adoption_observed"])
+  v=json.loads((P/"validity-record.json").read_text())
+  for section in ("instrument","measurement"):
+   item=v[section];actual=hashlib.sha256((ROOT/item["path"]).read_bytes()).hexdigest();self.assertEqual(item["sha256"],actual)
+  self.assertEqual(35,v["measurement"]["denominators"]["primary_turn_passes"]);self.assertEqual("unsupported",v["construct_and_generalization"]["status"])
 if __name__=="__main__":unittest.main()
