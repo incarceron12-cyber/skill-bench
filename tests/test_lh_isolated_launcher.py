@@ -52,6 +52,16 @@ class IsolatedLauncherCanaryTests(unittest.TestCase):
         self.assertNotIn("chat", command)
         self.assertNotIn("--query", command)
 
+    def test_aggregate_usage_cannot_be_laundered_into_allocation(self) -> None:
+        usage = {
+            "api_calls": 5, "input_tokens": 100, "output_tokens": 20,
+            "cache_read_tokens": 10, "reasoning_tokens": 5,
+        }
+        capability = module.allocation_telemetry_capability(usage)
+        self.assertFalse(capability["phase_resolved_capture_ready"])
+        self.assertFalse(capability["aggregate_usage_may_be_allocated"])
+        self.assertIn("aggregate session totals", capability["blocker"])
+
 
 class RetainedReplicationTests(unittest.TestCase):
     def test_predeclared_replication_is_replayable_and_fail_closed(self) -> None:

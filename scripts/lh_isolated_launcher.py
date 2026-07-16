@@ -220,6 +220,30 @@ def _trial_command(prompt: str) -> list[str]:
     ]
 
 
+def allocation_telemetry_capability(usage: dict[str, Any]) -> dict[str, Any]:
+    """Fail closed unless provider usage carries native per-call coordinates.
+
+    Session aggregates cannot be divided among acting, Skill delivery, or
+    verification without inventing evidence. Phase assignment must be supplied
+    at each call site by a future instrumented runtime.
+    """
+    required = {
+        "call_id", "phase", "prompt_tokens", "completion_tokens",
+        "cache_read_tokens", "cache_write_tokens", "reasoning_tokens",
+        "wall_time_ms",
+    }
+    calls = usage.get("calls")
+    complete = isinstance(calls, list) and bool(calls) and all(
+        isinstance(call, dict) and required <= set(call) for call in calls
+    )
+    return {
+        "phase_resolved_capture_ready": complete,
+        "native_per_call_records": len(calls) if isinstance(calls, list) else 0,
+        "aggregate_usage_may_be_allocated": False,
+        "blocker": None if complete else "--usage-file exposes aggregate session totals without native per-call phase records",
+    }
+
+
 def run_trial(condition: str, run_root: Path) -> dict[str, Any]:
     preflight = canary(condition, run_root / "preflight")
     paths = _materialize(condition, run_root / "trial")
@@ -236,6 +260,8 @@ def run_trial(condition: str, run_root: Path) -> dict[str, Any]:
         path = paths["outputs"] / name
         if path.exists():
             artifacts[name] = {"sha256": sha256(path), "bytes": path.stat().st_size}
+    usage_path = paths["outputs"] / "usage.json"
+    usage = json.loads(usage_path.read_text(encoding="utf-8")) if usage_path.is_file() else {}
     complete = proc.returncode == 0 and {"evidence-matrix.csv", "recommendation.md", "usage.json"} <= set(artifacts)
     report = {
         "schema_version": "0.1.0", "kind": "isolated_agent_trial",
@@ -248,6 +274,7 @@ def run_trial(condition: str, run_root: Path) -> dict[str, Any]:
         },
         "task_sha256": sha256(TASK), "launcher_sha256": sha256(Path(__file__)),
         "artifact_contract_sha256": sha256(ARTIFACT_CONTRACT),
+        "allocation_telemetry_capability": allocation_telemetry_capability(usage),
         "artifacts": artifacts,
         "interpretation_boundary": "One attempt in one arm is execution evidence only; no condition effect, professional validity, or release readiness is licensed.",
     }
