@@ -458,6 +458,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 |---|---:|---|
 | [LH-Bench](../papers/agent-benchmarks/2026-07-10-lh-bench-skill-grounded-evaluation.md) | A | Directly motivates public-skill versus private-check boundaries and skill/rubric factorial comparisons |
 | [SkillsBench](../papers/agent-benchmarks/2026-07-10-skillsbench-paired-skill-efficacy.md) | A | Sharpens matched skill/no-skill comparisons and the need for repeated paired trials and uncertainty |
+| [Medical Skill human evaluation](../papers/agent-benchmarks/2026-07-16-skill-augmented-medical-human-evaluation.md) | A | Adds the missing human-measurement warning to package efficacy: package availability, exposure, adoption, criterion conformance, substantive correctness, transfer, and readiness do not inherit one another; one selected 21-output task, bundled OpenClaw/package treatment, unequal model weighting, absent run traces, and negative expert ICC prevent an identified Skill effect |
 | [Skills Are Not Islands](../papers/agent-benchmarks/2026-07-15-skill-supply-chain-dependency-risk-validity.md) | B | Shows that a Skill treatment may be a transitive Skill/package/service graph while separating static audit reachability from installed, visible, invoked, vulnerable, and consequential runtime state |
 | [Agentic Skills at Scale](../papers/agent-benchmarks/2026-07-15-agentic-skills-at-scale-projection-validity.md) | A | Scales paired Skill/no-Skill authoring to 1,110 released packages while exposing that Skill-derived demand, tasks, instruction rubrics, goal rubrics, and one shared judge identify projected-procedure compliance more directly than independent utility |
 | [AFTER](../papers/agent-benchmarks/2026-07-13-after-procedural-memory-transfer-validity.md) | A | Separates source-context gain, equivalent-form reuse, changed-context transport, and cross-model consumption while exposing complete-case selection, configured-system gaps, feedback/authoring overlap, and trace-diversity/volume confounding |
@@ -471,8 +472,25 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [UniClawBench](../papers/agent-benchmarks/2026-07-13-uniclawbench-proactive-closed-loop-validity.md) | A | Makes executor, private supervisor, public simulator, released signal, and repair cycle inspectable while showing that requested-task repair is not proactivity and structural isolation is not semantic non-leakage |
 | [EdgeBench](../papers/agent-benchmarks/2026-07-13-edgebench-within-run-learning-validity.md) | A | Separates agent-visible feedback from evaluator-only snapshots and exposes adaptive-query, persistence, censoring, and best-so-far boundaries; its smooth suite fits are not task-level or universal learning laws |
 | [AgencyBench](../papers/agent-benchmarks/2026-07-15-agencybench-feedback-artifact-validity.md) | A | Makes cumulative native-artifact repair and plural observer evidence inspectable while separating unaided first attempt, no-information retry, generic revision, consequence-only feedback, criterion-disclosed evaluator repair, and authorized ecological feedback; paper/release drift, observer disagreement, hidden aesthetics, missing human labels, single-run ambiguity, and no real users bound it to configured evaluator-assisted repair |
+| [Pista](../papers/agent-benchmarks/2026-07-16-pista-active-oversight-workflow-validity.md) | B | Contributes semantic diffs as operation-level decision-time review artifacts and bounded human inspectability evidence, while its bundled N=16 treatment, unmatched stochastic defects, absent correction/preservation lineage, low endpoint means, and no recipient consequence block effective-oversight, professional-utility, or readiness claims |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
+
+Skill-treatment evidence now needs two independent chains. **Realization:** `package
+version/mounted subset → surfaced/opened module → invocation → semantic adoption or
+justified rejection → attributable artifact change`. **Claim promotion:** `shared-
+source criterion conformance → independent substantive outcome → held-out transfer →
+professional validity/readiness`. The medical study shows why human review does not
+bridge them automatically: an exact task-family planner exists, but no run establishes
+that it was surfaced or used; the selected 9-versus-12 output contrast changes platform
+and package together; and negative expert ICC means the two-rater instrument cannot
+stably resolve output quality in that sample. Balance must be defined over the declared
+model/task/rater estimand, and criterion-specific reliability is a prerequisite to an
+intervention claim rather than a post-hoc footnote. Unlike linked many-facet panels,
+a two-rater, one-task study cannot justify severity adjustment or task/rater
+population generalization. Existing configured-system, procedural-skill, trace,
+artifact-view, rater, metric, task-health, and validity records already host the
+chain; no medical or Skill-specific subsystem follows.
 
 Targeted inquiry has its own configured-interface boundary: `available evidence →
 selected target → expressed request → parser/router interpretation → realized
@@ -666,6 +684,23 @@ authorized—ecological feedback while holding the starting artifact, target sys
 environment, budget, and grader fixed. Existing feedback/recovery, artifact-view,
 configured-system, task-health, metric, validity, and execution records already
 host this design; no AgencyBench-specific schema follows.
+
+Pista adds a complementary **semantic-diff oversight path**: `operation-level diff
+availability → exposure/inspection → comprehension → matched defect opportunity →
+detection/diagnosis → authorized intervention → receipt/adoption or justified
+rejection → intended state change → independent correction → collateral preservation
+→ calibrated reliance/burden → recipient consequence`. A semantic diff can lower the
+unit of inspection without being faithful or complete; generated explanations,
+affected ranges, and dependencies require independent comparison with raw native
+pre/post state. Pista's bundled two-task study supports perceived inspectability,
+richer explanation, branch use, and reduced prompting, not a detection or repair
+effect: defects were unmatched, correction lineage and artifact replay were absent,
+and requirement success was `0.53` versus `0.50` without equivalence evidence. Read it
+with DeskCraft's opportunity→adoption chain, AgencyBench's proposition→repair chain,
+and ArtifactCopilot's evidence-packet boundary. Existing interaction,
+feedback/recovery, artifact-view, trace, metric, task-health, participation, and
+validity records suffice; no spreadsheet or oversight-specific subsystem follows.
+
 The frozen internal [24-cell report](../pilots/closed-loop-feedback-audit/report.json)
 (SHA-256 `20deddde50fd93fc32b7af5b8f7eb69b9e9ffdab71c9cc3dd1ea421a41e335be`)
 and [six-case adaptive report](../pilots/closed-loop-feedback-audit/adaptive-report.json)

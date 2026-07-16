@@ -1998,6 +1998,41 @@ procedurally guided conditions, and evaluator-cue effects with independent versu
 shared/disclosed instruments. Do not call any one contrast an undifferentiated
 expertise-transfer effect [KW].
 
+A declared package condition also does not establish that the intervention reached
+the solver. Preserve a **Skill realization and claim ladder**:
+
+```text
+package/version and mounted subset → surfaced module and opened spans
+  → invoked procedure/script/resource → semantic adoption or justified rejection
+    → attributable trajectory/artifact change → shared-source criterion conformance
+      → independently observed substantive outcome → held-out transfer
+        → professional validity and readiness
+```
+
+Record router candidates/scores, model-visible bytes, invocation inputs/outputs,
+instantiated or rejected prescriptions, changed loci, and independent checks. Cross
+the package treatment with independently authored and shared-source criteria: a
+task-matched procedure can genuinely improve completeness while also making
+rubric-recognizable structure easier to emit. Package availability, mounting,
+surfacing, opening, invocation, adoption, conformance, correctness, and transfer are
+therefore non-inheriting observations [MSK].
+
+The reviewed medical Skill study is a sharp negative calibration case. Its linked
+pre-v1 package contains 141 `SKILL.md` files and an exact task-family planner, but
+the executed commit/subset, routing, opened modules, invocations, and 21 run records
+are unavailable. Its 9 native and 12 OpenClaw-plus-package outputs come from one
+task under unequal model weights and a bundled platform treatment. The reported
+expert overall-quality difference is `+0.39` with an output-bootstrap interval
+crossing zero; single-rating expert ICC is negative. This is selected configured-
+package and noisy perceived-quality evidence—not an identified Skill effect,
+substantive biomedical correctness, transfer, expert equivalence, or readiness
+[MSK]. Rater reliability is part of treatment-effect identifiability: design the
+estimand over model, task/form, run, criterion, and rater populations before adding
+agent repetitions, and preserve criterion-specific disagreement rather than
+assuming two-rating averages repair an unstable instrument. Unlike a deliberately
+linked many-facet panel with repeated raters and forms, this two-rater, one-task
+sample cannot support stable severity adjustment or task/rater generalization [MF].
+
 For adaptive systems, also pin stream order/seed, warmup, similarity groups,
 reset cadence, update budget, and which feedback may enter memory. Once one test
 item changes behavior on the next, the estimand is ordered-stream learning, not
@@ -2140,6 +2175,46 @@ human collaboration, professional validity, capability, safety, production
 fitness, or readiness [DC]. Existing authority/participation, trace, artifact-state
 transition, task-health, metric, and validity records host the episode; no desktop-
 specific schema follows.
+
+#### Semantic diffs are review artifacts, not evidence of effective oversight
+
+An operation-level explanation can reduce inspection burden relative to a surface
+cell/file diff, but it is itself a fallible model-produced artifact. Preserve three
+separate validations: **diff fidelity** to authoritative pre/post state and
+dependencies; **oversight utility** under matched defect opportunity; and
+**consequence validity** of the accepted or rejected intervention. Use the linked
+chain:
+
+```text
+semantic-diff availability → exposure and inspected locator → comprehension
+  → matched defect opportunity → supported detection and diagnosis
+    → authorized intervention → agent receipt and adoption or justified rejection
+      → intended changed locus → independent correction check
+        → collateral-state preservation → reliance and burden
+          → recipient acceptance and consequence
+```
+
+Hash the raw pre-state, proposed semantic operation, stated rationale/dependencies/
+scope, actual transition, branch, and post-state. Type issue source and authority;
+keep tool-suggested and human-discovered defects separate; admit `incomplete`,
+`contradicted`, and `insufficient_evidence`; and measure review time, attention,
+latency, verification, rework, and introduced defects. Self-reported understanding,
+feature use, attempted steering, a changed branch, or a higher endpoint score cannot
+fill missing links [PISTA].
+
+Pista supplies bounded evidence near the first links: in one bundled, counterbalanced
+two-task study (`N=16`, mostly graduate students), participants reported greater
+inspectability/control, produced more elaborate explanations, used branching often,
+and prompted less. The treatment jointly changed decomposition, explanations,
+requirements/questions, local edits, branching, and model-call topology; defects
+were stochastic and unmatched; no proposition-to-correction lineage, independent
+artifact replay, collateral-preservation test, or recipient consequence was
+reported; mean requirement success remained low (`0.53` versus `0.50`) without an
+equivalence test. Pre-v1 implementation archives establish mechanism availability,
+not study-build correspondence or semantic-diff faithfulness [PISTA]. Read this as
+a decision-time representation hypothesis beside DeskCraft's interaction episode,
+AgencyBench's evaluator-assisted repair path, and artifact evidence-packet work—not
+as general oversight, calibrated reliance, professional utility, or readiness.
 
 #### Simulator fidelity needs information sufficiency before consequence promotion
 
@@ -2781,6 +2856,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Stateful professional workflow (SaaS-Bench, Workflow-GYM, OdysseyBench) | pinned initial state, sparse consequential stage transitions, alternative paths, final-state and artifact checks | residual/pre-satisfied state, stage bypass, canonical-path bias, environment/harness defects, and final consequence mistaken for complete workflow evidence | Workflow-GYM full immutable v3 paper plus post-v3 official showcase/trajectory inspection, with full dataset/VMs/graders/results unavailable [WG]; SaaS-Bench has a separate full review; OdysseyBench remains landscape-level |
 | Adversarial authority and action safety (ClawSafety) | source-authority matrix, exposure/adoption/action-state ledger, containment, recovery, and benign utility | source placement or token match mistaken for adoption/realized harm; refusal or tool failure counted as safety; mutable/live side effects | full immutable v2 paper plus complete post-v2 partial-release audit [CS]; internal inert conformance fixture/preflight validates contract behavior only [AC] |
 | Skill-grounded long-horizon evaluation (LH-Bench) | expert procedure → observable boundary → artifact/check crosswalk | intervention/instrument contamination; agreement mistaken for validity | full immutable v2 PDF/text and deep review [LH] |
+| Human-rated configured Skill package (medical Skill study) | mounted/surfaced/opened/invoked/adopted/artifact-change chain; model/task/rater estimand and criterion-specific reliability | available package mistaken for exposure; platform/package bundle called a Skill effect; shared structure and noisy Likert ratings promoted to expertise, correctness, or transfer | full immutable v1 paper/supplement plus timing-bounded 1,715-file package audit; one selected 21-output task, unequal arm/model mixture, absent run/exposure records, and negative expert ICC support a claim ceiling rather than efficacy [MSK] |
 | Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
@@ -2799,6 +2875,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Configurable participant systems (HAS-Bench) | participant realization, participation-policy vector, authority-event lineage, and availability/exercise/uptake/effect/burden separation | simulated social roles called humans; bundled prompt/tool/information/authority/budget contrasts; event counts mistaken for benefit or human cost | full immutable v1 paper and deep review; paper-reported scenarios/results only, no verifiable official artifact, real task participants, repeated cells, or reported process-judge audit [HAS] |
 | Consequence-linked user-simulator audit | participant realization→authorized observable-state sufficiency→one-step/free-running fidelity→policy transport→real consequence ladder | human-like or assigned-goal dialogue promoted to decision fidelity; future outcome treated as simulator-visible latent truth; observational response differences promoted to causal tactic or production-agent effects | full immutable v1 paper and deep review over one private payment-linked production corpus; same-prefix one-step evidence only, with unavailable claimed release, unvalidated labels, unspecified censoring/clustering, and no free-running or policy-transport trial [USDF] |
 | Evaluator-assisted cumulative artifact repair (AgencyBench) | typed feedback proposition→receipt/uptake→changed loci→criterion-local admissible re-observation→repair/collateral regression→endpoint and cost | extra inference and criterion disclosure called self-correction; evaluator critique called user feedback; non-equivalent observers pooled; first/final/best outcomes or invalids silently merged | full immutable v4 paper plus complete sole-commit January release audit; 32 scenarios/138 cumulative subtasks and 32 heterogeneous demonstrations are inspectable, but paper/release mismatch, single-run and denominator ambiguity, unavailable human labels, hidden aesthetics, observer disagreement, and no real-user evidence bound claims to configured evaluator-assisted repair [AGY] |
+| Semantic-diff active oversight (Pista) | operation/rationale/dependency/scope review artifact linked to exposure, authorized intervention, changed locus, independent correction, preservation, burden, and consequence | generated explanation mistaken for faithful diff; bundled usability treatment, self-report, feature use, or attempted steering promoted to detection, realized repair, calibrated reliance, or utility | full immutable v1 paper plus two author-linked pre-v1 implementation archives; formative N=8 and bundled within-subject N=16 evidence supports inspectability and interaction-efficiency hypotheses, while unmatched defects, absent correction lineage, low endpoints, and no recipient outcome block effective-oversight or readiness claims [PISTA] |
 | Decision-boundary cognitive traps (consulting study) | naive-path/expert-cue/derivation/consequence chain; typed evidence predicates | unavailable corpus/graders, unstable live data, human-applied checks, unvalidated failure tags | full immutable v3 paper plus linked release inspection; design pattern only, not auditable calibration evidence [CT] |
 | Unprompted problem recognition (KWBench) | situation→cue→candidate/alternate frame→inquiry→action→artifact chain; matched framing intervention | cold final gate conflates recognition with domain knowledge, skepticism, action, artifact execution, and judge error; no near neighbors or framed condition | full immutable v1 paper plus linked code/site inspection, but gated task rows unavailable; internal six-cell replay validates synthetic instrumentation only [KW, PR] |
 | Configured-system and harness comparison (Harness-Bench) | harness/adapter identity, outer-envelope contract, execution-alignment trace | bundled treatments, adapter inequivalence, host-readable private graders, fail-open missing evidence, single-attempt cells | full immutable v1 paper plus inspected post-paper official release; descriptive configuration evidence, not mechanism isolation [HB] |
@@ -3036,6 +3113,17 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     baselines, and stakeholder loss. A same-episode association cannot silently
     become prospective prediction, a causal lever, legitimate optimization target,
     professional validity, production fitness, or readiness.
+57. **Skill availability is not expertise transfer:** preserve mounted subset,
+    surfacing/opening, invocation, adoption/rejection, attributable artifact change,
+    independent criteria/outcomes, estimand-level model/task/rater balance,
+    criterion-specific reliability, and held-out transfer. Human-rated conformance
+    to a co-aligned procedure cannot silently become substantive correctness,
+    expert equivalence, professional validity, or readiness.
+58. **Semantic visibility is not effective oversight:** validate operation-level
+    diff fidelity, matched defect opportunity, diagnosis, authorized intervention,
+    receipt/adoption, intended change, independent correction, collateral
+    preservation, reliance/burden, and recipient consequence separately. Self-report,
+    feature use, attempted steering, or branch creation cannot fill later links.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -3045,7 +3133,9 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Automated agreement vs professional validity | LH-Bench judges agree more under expert boundaries, yet individual human/automated concordance is weak [LH]. | Two-expert readiness labels and pairwise choices on a stratified pilot subset; calibrate each automated check against both. |
 | Mid-difficulty efficiency vs rare critical coverage | Psychometric work favors informative middle checks; benchmark mission requires hard safety and expert traps [EB, AP]. | Maintain separate ranking and critical diagnostic sets; test rank fidelity and primitive coverage independently. |
 | Workflow compliance vs latent expertise | Observable transitions are more judgeable, but exact procedure following can substitute for judgment [LH]. | Include at least two expert-approved procedures and held-out consequence variants. |
+| Human-rated package lift vs identified expertise transfer | The medical Skill study adds human review, but one selected 21-output task, unequal model weighting, a bundled OpenClaw/package treatment, no exposure/adoption trace, shared procedure–criterion content, and negative expert ICC leave routing, elaboration, correctness, cueing, and transfer unresolved [MSK]. | Freeze attempted runs and model/task weights; hold harness/tools/budget fixed; cross no/placebo/procedural/executable/full-package arms with independent/shared criteria; log module realization; use connected calibrated raters and independent substantive checks on held-out task families. |
 | Configurable assistance vs identified human-participation effect | HAS-Bench makes roles/channels observable, but its A1/A3/A4 contrasts bundle prompt, tools, information, authority, initiative, and budget while all task participants are model simulators [HAS]. | On well-defined matched tasks, factorially vary one participation-policy component at a time; counterbalance consented humans and pinned simulators, repeat/equate forms, validate process observers independently, and report outcome, safety, latency, active/wait time, interruption, correction, privacy, and accountability separately. |
+| Inspectable semantic diff vs effective oversight | Pista's small bundled study supports perceived inspectability, explanation, feature-use, and prompt-burden observations, but semantic-diff fidelity, equal defect opportunity, proposition-level repair, preservation, calibrated reliance, and recipient outcomes are absent [PISTA]. | From frozen identical defective states, cross surface diff, independently verified semantic diff, ask/edit affordances, and generated suggestions plus misleading/incomplete-diff controls; log inspection through re-observation, grade native and collateral state, and measure burden and decision loss. |
 | Outcome-linked simulator error vs valid policy/consequence transport | Same-prefix probes on one payment-linked corpus report more engagement-positive simulator bias for eventual non-payers, but future outcome may reflect private or later causes; teacher forcing, unvalidated labels, observational agent actions, censoring/clustering gaps, and no free-running policy trial prevent person, causal-tactic, or production-agent claims [USDF]. | Cross independently validated observable-state signals with simulator policy and matched history; compare population calibration with any person-specific target; preserve refusal/silence in bounded free-running rollouts; then compare frozen agent-policy rankings/effects under simulator, replay, and consented human conditions where justified. |
 | Learning from failures vs benchmark contamination | STRACE/ACE support localized lessons; ACE also degrades under weak feedback and changes the online estimand [ST, ACE]. | Quarantine lessons, validate on held-out scenario clusters, and audit private-evidence flow before promotion. |
 | Aggregate leaderboard vs diagnostic instrument | Reduced rankings are cheaper, while root-cause layers produce more actionable but uncertain claims [EB, ST]. | Report both without one composite; evaluate whether diagnoses predict expert-prescribed remediations on repeat trials. |
@@ -3239,6 +3329,25 @@ them:
     matrix, so the task remains blocked rather than pending.
 
 ## Provenance keys
+
+- **[MSK]**
+  `papers/agent-benchmarks/2026-07-16-skill-augmented-medical-human-evaluation.md`;
+  reviewed immutable v1 PDF/text/supplement and timing-bounded linked package paths
+  and hashes are recorded there. The package archive is inspectable, but the 21
+  outputs, raw ratings, executed configuration/commit, selection ledger, and
+  exposure/adoption traces are unavailable. Evidence supports a small selected
+  configured-package/human-rating pilot and a reliability warning—not an isolated
+  Skill effect, substantive correctness, transfer, expert equivalence, professional
+  validity, production fitness, or readiness.
+- **[PISTA]**
+  `papers/agent-benchmarks/2026-07-16-pista-active-oversight-workflow-validity.md`;
+  reviewed immutable v1 PDF/text plus both author-linked pre-v1 implementation
+  archives and provenance are recorded there. The archives expose substantial
+  mechanism code but no exact study build, tasks, participant logs, artifacts,
+  ratings, or analysis. Evidence supports bounded inspectability/interaction-
+  efficiency observations under a bundled two-task lab treatment—not semantic-diff
+  fidelity, effective repair, calibrated oversight, professional utility, or
+  readiness.
 
 - **[PDP]**
   `papers/agent-benchmarks/2026-07-16-plans-dont-persist-context-eviction-validity.md`;
