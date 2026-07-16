@@ -1394,6 +1394,57 @@ side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
 
+### 3.2d Criterion-to-outcome validity is a timed relationship, not a score weight
+
+An external outcome can test a score's relevance without validating the score,
+observer, intervention, or decision. Preserve the non-inheriting ladder:
+
+```text
+criterion authority and intended construct
+  → configured observer validity under an exact evidence view
+    → score time relative to outcome-bearing cues
+      → eligible population, base rate, clusters, and missingness
+        → external outcome authority, window, join, and reversals
+          → concurrent association with uncertainty
+            → incremental prospective prediction over declared baselines
+              → frozen score-targeted intervention effect
+                → threshold/loss, operational decision, and stakeholder consequence
+```
+
+Each relationship binds the criterion, observer/configuration and repeated-label
+evidence; pre-outcome or retrospective view hash; eligible unit, inclusion and
+case-enrichment policy, clusters and censoring; outcome definition, source, join
+integrity, horizon, missingness, reversals and adverse outcomes; estimand,
+comparators, multiplicity and uncertainty; frozen weight/threshold; stakeholder
+authority, loss and prohibited uses. A whole-episode score can be a valid
+retrospective description while leaking consequence-adjacent state and remaining
+invalid as a forecast. Association can reflect task difficulty, user intent,
+agent identity, selection, or observer error; prediction need not identify a
+causal lever; and an observable outcome such as payment, acceptance, or throughput
+need not be a legitimate or sufficient optimization target.
+
+Keep observer accuracy/reliability, concurrent criterion association,
+prospective incremental prediction, intervention effect, outcome authority,
+decision utility, and stakeholder consequence as separate validity claims. Never
+zero-weight correctness, safety, rights, or professional obligations merely
+because they have weak association with one endpoint. Report dimension-level
+relations and applicability before any use-specific aggregate, preserve frozen
+development/confirmation forms, and pair intended outcomes with reversals,
+rework/refunds, burden, safety, and longer-horizon consequences [CVO].
+
+The reviewed conversational-commerce study provides manuscript-reported evidence
+that one configured whole-transcript judge's Need Elicitation and Pacing Strategy
+scores have moderate concurrent associations with payment in a selected
+25-converted/35-unconverted human-only sample; Contextual Memory has no detectable
+bivariate association [CVO]. Different outcome-stratum eligibility rules, roughly
+0.5% source prevalence with case enrichment, uncontrolled intent and clustering,
+an unvalidated single observer, retrospective outcome-cue access, tiny selected
+reweighting, and absent phase-2 rows block judge-validity, prediction, incremental,
+causal, customer-value, professional-validity, production-fitness, and readiness
+claims. Existing criterion/grader, evidence-view, metric, task-health, response-
+matrix, participation, production-validation, and validity records compose the
+required episode; no outcome-validity schema follows.
+
 ### 3.2c Evaluator retry repairs an attempt record, not its substantive validity
 
 Treat selective re-execution as selection over an append-only attempt population:
@@ -2522,6 +2573,58 @@ artifact/state, configured-system, trace, task-health, metric, and validity reco
 are the implementation homes; no memory-specific schema or additional worker task
 follows.
 
+### 4.4b Plan carriage is a proposition-to-consequence experiment, not a latent scalar
+
+Plan-span visibility, a representation contrast, recoverability, free behavioral
+use, endpoint consequence, and context-policy utility are different observations.
+Atomize every plan into versioned obligations with source span and authority,
+prerequisites, acceptable alternatives, live/completed/superseded state, required
+evidence, and downstream action/check IDs; then preserve this ladder:
+
+```text
+obligation proposition and authority
+  → decision-time visible source span and derived restatements
+    → matched omission/corruption/irrelevant/restoration treatment
+      → proposition-specific representation or recoverability
+        → freely chosen action distribution and obligation adoption
+          → realized artifact/state consequence
+            → exact context budget, cost, policy reliability, and bounded transport
+```
+
+The context-treatment record must pin the configured actor, context operator and
+budget; every model-visible view and hash; source, summary, scratchpad, reasoning,
+memory, rationale, and tool-derived copies; treatment loci and matched-capacity/
+position controls; forced versus free continuation; proposition-specific observer
+and grader view; action, artifact, state, invalidity, and resource outcomes. Removing
+the original span does not make the treatment absent when a derivative carries the
+same proposition. Conversely, broad trace stripping changes more than plan content.
+An information-flow audit must therefore disposition original and derived views in
+both arms rather than infer absence from the intended operator [PDP].
+
+Forced-prefix replay is an observer experiment: holding actions and observations
+fixed can isolate a history perturbation, but deliberately blocks behavioral
+adoption and consequence. Last-token cosine distance is representation sensitivity,
+not proposition recovery or durable hidden state across calls. Pair it with free-
+action twins from the same frozen prefix and cross exact/paraphrased, neutral,
+irrelevant, corrupted, omitted, contradicted, and restored clauses at matched
+capacity. Separately sweep plan-only, state-only, plan-plus-current-state,
+re-observation, summary, and full-context policies with exact visible-token ledgers
+and task-clustered repeats.
+
+Plans Don't Persist supplies bounded manuscript evidence that removing the full
+guard-plus-plan exchange changes final-token representations strongly on the first
+forced call and less at later fixed prefixes, that retained reasoning traces can
+reintroduce treatment-related text, and that a severe recent-four-message policy
+reduces reported ALFWorld success while static plan retention/reinjection does not
+repair the broad history loss [PDP]. The treatment mixes content, length, position,
+turn and discourse; phase is strongly decodable; forced replay discards control
+outputs; the endpoint policy also removes observations, actions and working state;
+and no empirical artifacts were released. These experiments cannot be joined into
+plan forgetting, causal action, context-policy, professional-validity, safety, or
+readiness evidence. Existing obligation, configured-system/context-policy,
+evidence-view, trace, artifact/state, metric, task-health and validity records are
+the durable homes; no plan-persistence contract follows.
+
 ### 4.5 Keep three change planes separate
 
 “The system improved” is ambiguous because three different systems can change.
@@ -2623,6 +2726,7 @@ and validity records are the implementation homes; no new schema follows.
 | Metric specification and monitoring record | turn trial observations into a reproducible population estimand and governed trigger | eligible population/unit, versions, missingness, clustering/dependence, aggregation/uncertainty, slices, baseline/window, threshold/loss, alert/audit/remediation/rollback |
 | Review-selection episode | preserve how a large trial/trajectory population became a bounded review sample and what later use it can support | population snapshot and clusters; detector/version; probability, overlap, missingness, evidence view; rater/adjudication lineage; sentinel versus enriched role; time/cost; licensed/prohibited claims; intervention/outcome links |
 | Evaluator-attempt ledger | distinguish outcome-blind repair of invalid evaluator execution from outcome-conditioned reselection and substantive judge validity | immutable source/configuration identity; append-only raw attempts; typed invalidity, abstention, applicability, and insufficiency; predeclared retry eligibility/limit; frozen treatment or fork; final-selection and duplicate-publication semantics; residual-invalid and attempt-count denominators; schema/judge/metric/decision-validity separation |
+| Criterion-to-outcome validation episode | prevent a same-episode association from being promoted to prediction, causal intervention, decision utility, or stakeholder benefit | criterion/observer/evidence-view identity and reliability; score time; eligible population/base rate/clusters; outcome authority/window/join/missingness/reversals; association and incremental baselines; frozen confirmation/intervention; threshold/loss; joint intended/adverse consequences; licensed claim rung |
 | Operational reliability profile | keep capability, repeatability, perturbation response, predictability, and consequences interpretable under bounded conditions | configured system; task/form/family population; environment/provider/time/batch; intended/service-valid/trial-valid/grader-valid/substantive denominators; grader-crossed and matched clustered repeats; retry/missing policy; binary/unequal-repeat estimator and anchor sensitivity; frozen decision-keyed repeat/stopping rule; intervention preservation/exposure evidence; decision-time view; consequence/loss model |
 | Derived trial-confidence observation | preserve a prediction without overwriting the trial result, repeat profile, diagnosis, or decision | configured trial and target predicate; label authority; prefix/post-hoc time and available channels; extractor/calibrator/provider/tokenizer/logprob versions; missingness; calibration/transport population; uncertainty; prohibited uses |
 | Candidate lesson store | improve authoring and systems without silent doctrine drift | provenance, feedback authority, scope, contradiction links, held-out promotion, rollback |
@@ -2636,6 +2740,7 @@ and validity records are the implementation homes; no new schema follows.
 | Persistent-workspace record | distinguish file presence and authored relevance from observed or causal use while preserving state integrity | inventory/overlay hashes, placement and valid time, permissions/network, typed and alternate relations, evidence-view-bound access/write, protected/mutable zones, pre/post mutations, cleanup |
 | Sparse workflow-transition record | distinguish one witness path and final state from run-attributable stage completion | pinned initial state, pre/postconditions, alternative paths, necessity/sufficiency, state delta, evidence views, downstream consequence, invalid-environment policy |
 | Composite-workflow contract | distinguish executable chaining from supported workflow and planning claims | typed obligation DAG, produced/consumed state, equivalent paths, milestone/terminal split, reversal replay, validator cadence, reset attestation, atomic baseline, family clustering, workflow provenance |
+| Context-treatment validation episode | distinguish source-span removal, derivative carriage, representation/recovery, free adoption, consequence, and policy utility without introducing a memory scalar | atomized obligation/version/authority; context operator and exact visible-view/token ledger; derivative information-flow audit; matched omission/corruption/irrelevant/restoration controls; forced observer and free-action twins; artifact/state/cost outcomes; task-clustered repeats and bounded claim |
 | Role-versioned suite membership | distinguish coverage, regression, frontier, calibration, and retired uses of the same task | immutable membership hash, role/tier, admission evidence, outcome-selection flag and snapshot, exposure state, transition event, replacement bridge, retirement reason |
 | Counterfactual artifact record | establish editability and behavioral integrity rather than current-value similarity | native/executable/rendered/trace views, pinned engine, initial-to-final mutation surface, authoritative perturbations, dependency propagation, invariants, permitted formula/layout equivalence, witness health |
 | Action-safety record | distinguish source presence, attempted behavior, realized consequence, recovery, and useful completion | authority matrix, placement/exposure/adoption evidence, tool event, interceptor, pre/post state, severity/reversibility, residual harm, containment canaries, separate safety/utility outcomes |
@@ -2681,7 +2786,9 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
 | Procedural-memory transfer (AFTER) | typed source-context, equivalent-form, changed-context, and cross-model transfer edges with paired outcomes and harm gates | shared authoring/verifier lineage, feedback leakage, complete-case selection, diversity/volume confounding, missing configured-system identity, and macro gains hiding negative transfer | full immutable v1 paper plus pinned post-v1 release audit; 129 released test packages are inspectable, but the 382-task instrument, evolution machinery, traces, configurations, evolved procedures, and result rows are unavailable [AFTER] |
 | Delayed-obligation dual-task evaluation (PM-Bench; internal pilot) | obligation state machine linked to harness-observed cue access, timed realized action, and separately graded primary-work preservation | ungraded nominal ongoing work, privileged reminders mislabeled as memory support, self-report promoted to access/internal-memory evidence, ceiling forms, and single-attempt cells promoted to causal effects | PM-Bench full immutable v1 paper plus pinned paper-time release audit [PMB]; internal frozen six-cell pilot and exact replay support instrument behavior and exact retained observations only [DOT] |
+| Plan/context-treatment validity (Plans Don't Persist) | proposition-level obligation→visible and derived views→matched treatment→representation/recovery→free action→artifact/state consequence→policy cost ladder | broad span removal and last-token distance promoted to plan forgetting; derived-trace contamination; forced replay promoted to behavior; broad history truncation attributed to plan eviction | full immutable v1 PDF/text review [PDP]; manuscript-reported forced-prefix and compression evidence only, with no code, task manifests, trajectories, hidden states, prompts, or result rows released |
 | Production agent evaluation (Anthropic, Amazon) | task/trial/grader/trace separation, task-health lifecycle, metric/monitoring contract, and operational failure taxonomy | engineering guidance may not establish construct validity; named metrics omit populations/estimands; synthetic and online samples drift | full official Anthropic and Amazon articles and concept reviews; experience/prescription evidence, not controlled effectiveness studies [AN, AM] |
+| Criterion-to-outcome validity (conversational commerce) | configured score→timed external criterion→association→incremental prediction→intervention→decision/loss ladder | whole-episode outcome cues, invalid observer, selected/case-enriched populations, association promoted to prediction/causality, harmful proxy optimization, one endpoint overwriting plural quality | full immutable v1 PDF/text/HTML review [CVO]; phase-1 arithmetic is inspectable, while central phase-2 rows, prompts, outcomes, folds, and operational-cycle evidence are unreleased |
 | Practitioner production-practice evidence (MAP) | reporting-unit/selection/denominator provenance and practice→realization→outcome bridge | selected self-report prevalence mistaken for representative practice, audited realization, causal efficacy, reliability, or successful deployment | full accepted immutable v4 paper/instrument plus v3 headline comparison; 20 confidential selected cases and 86 production/pilot main-frame records, no released row data or system/outcome audit [MAP] |
 | Trajectory confidence prediction (Agentic Confidence Calibration) | typed derived probability for one configured success predicate, followed by transport and decision-policy validation | post-outcome prediction mistaken for early warning, repeat reliability, causal diagnosis, decision utility, or provider-invariant confidence | full immutable v1 paper/source review; reported eight-sample cross-validation and transfer tables, but no released code, trajectories, labels, splits, configurations, or calibrator [ACC] |
 | Expert-authored criterion evaluation (ResearchRubrics) | reviewed criterion inventory, criterion-level judge observation, rubric transformation lineage | task-design authority mistaken for domain authority; bundled/dependent or hidden criteria; artifact-only source checks; uncalibrated additive score | full immutable v1 paper plus inspected post-paper official code/dataset releases; authoring and agreement evidence, not professional-readiness validation [RR] |
@@ -2918,6 +3025,17 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     keep abstention, not-applicable, insufficient evidence, unfavorable valid
     outcomes, and residual invalidity in declared denominators. Schema, judge,
     metric, decision, and downstream validity remain separate gates.
+55. **Plan visibility is not plan persistence or use:** atomize obligations and
+    audit all source and derived context views; keep span removal, representation
+    sensitivity, proposition recovery, free-action adoption, artifact/state
+    consequence, and context-policy cost/reliability separate. Forced replay and a
+    separately broad truncation result cannot fill each other's missing causal links.
+56. **Outcome association is not criterion, intervention, or decision validity:**
+    bind every score–outcome relation to observer validity, evidence time, eligible
+    population/base rate/clusters, outcome authority/window/reversals, incremental
+    baselines, and stakeholder loss. A same-episode association cannot silently
+    become prospective prediction, a causal lever, legitimate optimization target,
+    professional validity, production fitness, or readiness.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -2957,6 +3075,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Higher rater agreement vs valid interchangeable measurement | Many-facet analysis separates panel-relative severity/fit from agreement, while rubric-modification results show examples, call topology, and aggregation can shift agreement through shared cueing or construct change [MF, RM]. Neither source supplies held-out professional decisions, repeat model calls, or reproducible release artifacts. | On a connected, held-out pilot panel, cross rubric/example variant with joint versus isolated execution; repeat raters, retain raw scores, estimate task/criterion interactions and linked severity, test legitimate-solution preservation and external decision loss, and report cost/audit burden without adjudicating by adjustment. |
 | Consensus label vs plural professional judgment | One three-psychiatrist panel shows strong systematic disagreement but cannot separate person, framework, rubric, or context effects; the internal fixture proves only aggregation-contract behavior [ED, PJ]. | Repeat held-out ratings, prospectively declare frameworks, replicate experts within framework, vary context/rubric evidence, and compare explicit stakeholder policies while preserving dissent and claim blocks. |
 | Retrospective memory QA vs consequential action transfer | LongMemEval-V2 cleanly evaluates bounded evidence delivery but representation/reader/grader effects remain treatment components and no acting agent uses the memory [LM]. | Compare no-memory, evidence-only, and provenance-gated lessons on equivalent-form QA and held-out artifact/state action; plant stale, failed-attempt, contradiction, safe-alternative, harmful-transfer, and rollback cases. |
+| Plan-span removal vs proposition persistence and consequence | Plans Don't Persist reports a fading last-token contrast under broad guard/plan removal and a success gap under separate recent-four-message truncation; forced replay blocks free action, derivatives can reintroduce treatment content, and broad compression removes working state as well as the plan [PDP]. | On a longitudinal artifact workflow, atomize live obligations; cross exact/paraphrased/neutral/irrelevant/corrupted/omitted/restored clauses at matched capacity; audit every derived view; pair forced observers with free-action twins; separately restore current state; sweep budgets; report proposition recovery, adoption, artifact/state consequence, invalidity, and cost by task cluster. |
+| Concurrent criterion association vs predictive/intervention/decision validity | The commerce study reports heterogeneous whole-dialogue score associations with payment in a small case-enriched sample, but one unvalidated judge, outcome-adjacent evidence, differential eligibility, confounding/clustering, selected weights, incomplete endpoint authority, and absent rows block every later claim [CVO]. | On a legitimate consequential pilot, validate observers under equal blinded views; freeze pre-outcome scores and population/outcome windows; compare incremental value against declared baselines on an untouched temporal form; then test any frozen score-targeted intervention on joint quality, safety, burden, reversals, and stakeholder loss. |
 | Relevant historical information vs authorized current influence | MemSyco-Bench requires both rejection and positive use, but its synthetic authored boundaries, nonfactorial families, uncalibrated judge, and missing adoption/action evidence cannot establish factual, represented-user, or professional authority [MSY]. | On unlike artifact-heavy scenarios, hold the current task and observer fixed while substituting wrong-subject, wrong-recipient, stale, superseded, stronger-evidence, irrelevant, and legitimately controlling history; record retrieval, presentation, adoption/rejection, artifact/state consequence, alternatives, and authority review separately. |
 | Efficient evaluator recovery vs outcome-conditioned censoring | Selective record retry can repair parser or serving failures, but the reviewed production account does not type eligibility, freeze treatment, retain attempts, define residual-failure publication, or report recovery/denominator evidence [SRE]. | In an existing cross-domain retry fixture, plant transport and malformed-output recovery, a schema-valid unfavorable result, abstention/insufficiency, terminal residual invalidity, configuration fork, and duplicate publish replay; assert append-only lineage and exact attempt/final denominators without claiming judge accuracy or production utility. |
 | Unprompted recognition vs solving and execution | KWBench's cold gate combines cue extraction, framing, inquiry, action, artifact production, and judge behavior, with no matched framed condition or negative near neighbors [KW]. The internal replay establishes only staged instrumentation [PR]. | On expert-adjudicated positive/negative scenario pairs, cross situation-only, minimal-frame, and fully specified conditions; score cue, frame, inquiry, action, and artifact separately; repeat by scenario cluster and test alternate valid framings before licensing a recognition claim. |
@@ -3109,15 +3229,35 @@ them:
     fixture/scorer behavior only; observer calibration, expert judgment, agent trials,
     reliability, professional validity, production fitness, and readiness remain
     unsupported [CV, TA].
-22. **Pending evidence-gated selective-review validation —
+22. **Blocked pending evidence-gated selective-review inputs —
     `validate-trajectory-confidence-selective-review`:** do not build a confidence-
     specific schema or run on one-shot/synthetic-only cells. Wait for diverse pilots
     with valid repeated attempts, then exercise the frozen policy comparison in §8.
     Existing trace, reliability, metric, task-health, review-selection, and validity
-    records are the implementation homes [ACC].
+    records are the implementation homes [ACC]. The queue prerequisite audit found
+    no admissible confidence/logprob observations and no diverse repeated outcome
+    matrix, so the task remains blocked rather than pending.
 
 ## Provenance keys
 
+- **[PDP]**
+  `papers/agent-benchmarks/2026-07-16-plans-dont-persist-context-eviction-validity.md`;
+  reviewed immutable v1 PDF/text/metadata hashes are recorded there. The source
+  reports forced-prefix representation contrasts, derived reasoning-trace
+  contamination, steering nulls, and a broad recent-message compression stress test,
+  but releases no code, task manifests, prompts, trajectories, hidden states, folds,
+  policy views, or result rows. It supports an observer method and claim boundary,
+  not proposition-level persistence, behavioral adoption, causal plan loss,
+  professional validity, safety, production fitness, or readiness.
+- **[CVO]**
+  `papers/agent-benchmarks/2026-07-16-criterion-validity-business-outcomes.md`;
+  reviewed immutable v1 PDF/text/raw-HTML/metadata hashes are recorded there. The
+  phase-1 displayed arithmetic is reproducible, but the central 60-row phase-2
+  scores/outcomes, prompt and judge outputs, sampling/join records, folds, operational
+  cases, and code are unavailable. Evidence supports selected concurrent
+  score–payment associations and a dimension-heterogeneity warning, not judge
+  validity, prospective/incremental prediction, causality, outcome authority,
+  decision utility, professional validity, production fitness, or readiness.
 - **[CE]**
   `papers/agent-benchmarks/2026-07-15-claw-eval-multichannel-trajectory-validity.md`;
   reviewed immutable v3 PDF/text/HTML plus a complete pinned post-v3 official release
