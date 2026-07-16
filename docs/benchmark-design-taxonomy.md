@@ -1689,6 +1689,109 @@ side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
 
+### 3.2e Mediated execution and analytical inquiry need link-specific observations
+
+Some evaluations observe a candidate only after another configured system acts
+on it; others score an analytical narrative before any test or decision occurs.
+Both can collapse a knowledge-work chain into one endpoint. Preserve one common
+evidence graph with two explicit branches:
+
+```text
+source authority → task/check projection → candidate artifact
+  → mediator identity + candidate uptake/rejection
+    → attempted action → realized state/artifact
+      → observer/check result → decision → intended/collateral consequence
+
+authorized source/artifact → source-bound analytical observation
+  → anomaly/candidate hypothesis + rivals/uncertainty
+    → discriminating test + required evidence + validity conditions
+      → executed result → evidence adoption → hypothesis update/rejection
+        → decision/recommendation/abstention → action → consequence
+```
+
+The branches may meet—for example, a hypothesis-bearing memo may guide an
+operator—but no node inherits the validity of the next. Executable endpoint
+success does not prove candidate uptake, correct attribution, source-intent
+fidelity, or absence of harmful advice. A plausible or judge-preferred
+hypothesis does not inherit truth, causal, decision, or consequence credit until
+a valid discriminating test is executed and its evidence changes the conclusion.
+Store source spans, requirement atoms, candidate propositions, mediator-visible
+views, uptake/rejection evidence, action/state deltas, observer inputs and raw
+outputs, test validity, update rationale, alternatives, and decision/consequence
+records independently.
+
+Use a stage funnel rather than a success-selected denominator. At minimum retain
+`source_population`, `authority_supported`, `projectable`, `projection_valid`,
+`candidate_attempted`, `mediator_valid`, `candidate_uptake_observed`,
+`action_attempted`, `action_realized`, `observer_valid`, and `scored`. For the
+analytical branch additionally retain `observation_supported`,
+`hypothesis_eligible`, `test_executable`, `test_discriminating`,
+`evidence_available`, `evidence_adopted`, `update_valid`, and
+`decision_eligible`. Counts may coincide but must not be silently merged.
+Missing attempts stay in the declared attempt denominator; `unknown`,
+`not_applicable`, `insufficient_evidence`, `authorization_ambiguous`,
+`projection_invalid`, `mediator_invalid`, `observer_invalid`, and substantive
+failure are distinct states. Report dependence and uncertainty at the source
+work-unit/repository/case-family level rather than treating projected checks or
+repeated stages as independent items.
+
+A mediated positive metric must be named for the observed chain—for example,
+`selected_projected_check_pass_rate`—unless direct reference matching licenses
+recall or precision. Pair it non-compensatorily with unsupported/false-positive
+claims, collateral changes, verification and attention burden, and mandatory
+safety/compliance failures. Require a no-candidate control to estimate mediator
+self-discovery; plural mediators or qualified recipients to expose affinity and
+rank reversal; candidate-proposition→uptake→action→check attribution; and tests
+that admit independently approved alternative-valid outcomes. Selection on a
+mediator's prior success changes the estimand and cannot represent the source
+population without explicit transport evidence.
+
+c-CRAB makes the first branch unusually inspectable: its release preserves a
+funnel from 1,313 historical comments to 234 comments that GPT-5.2 projected into
+fail-before/pass-after tests and one Claude Sonnet 4.6 configuration could repair;
+the same mediator then acts on candidate review batches, and released bytes
+reproduce the four reported 234-check pass counts [CCR]. The evidence supports a
+configured, selected candidate→mediator→projected-test comparison—not direct
+finding equivalence, conventional precision/recall, general review quality, or
+professional consequence. Source-comment authority is incomplete, projection is
+outcome-informed and implementation-sensitive, the final population is selected
+on one mediator, candidate-to-patch attribution is absent, false positives and
+collateral changes are unscored, close systems lack clustered/repeated
+uncertainty, and the pinned release is not certified as exact v3 identity [CCR].
+
+The completed internal mediated-evaluator slice exercises the required failure
+signatures across two builder-authored synthetic domains: downstream success
+without candidate uptake, one claim satisfying multiple checks, rejection of a
+valid alternative by an implementation-specific oracle, hidden unsupported or
+collateral cost, and mediator rank reversal [MEA]. Its 20 deterministic cells
+validate local lineage, denominator, typed-state, and non-compensatory scorer
+behavior only. They do not validate source authority, projection semantics,
+mediator quality, capability, professional utility, generalization, production,
+or readiness.
+
+PM-LLM exposes the second branch mostly by omission. Its paper-era instrument
+uses 52 purposively selected static process-mining prompts, one answer per
+configured package, and a generic one-shot 1–10 model judge without task-specific
+criteria, executable tests, expert labels, evidence-use traces, or downstream
+decisions [PML]. It directly observes selected free-text outputs, not a verified
+hypothesis lifecycle. Its five-judge sensitivity table establishes evaluator
+dependence rather than judge validity. The audited 2026 release adds 8,646 aligned
+answer/evaluation pairs but replaces almost the whole form—only two exact task
+stems remain—and changes answer exposure, score transformation, model-name-based
+treatment, category weights, and scale maximum without an anchor bridge [PML].
+Raw-result inspectability therefore does not create analytical-stage validity or
+longitudinal score identity.
+
+The pending `validate-cross-domain-analytical-hypothesis-lifecycle` task is the
+bounded implementation path: freeze two unlike evidence graphs, rivals,
+discriminating and non-discriminating tests, contradictory evidence, update and
+abstention rules, configured identities, repeats, raw observer outputs, typed
+invalidity, and separate stage/consequence scores before calls. Until that slice
+runs, the analytical chain is a design contract derived from evidence and not a
+validated cross-domain instrument. Reuse evidence, projection, artifact,
+configured-system, metric, task-health, and validity records; do not create a
+code-review, process-mining, or mediated-evaluator subsystem.
+
 ### 3.2d Criterion-to-outcome validity is a timed relationship, not a score weight
 
 An external outcome can test a score's relevance without validating the score,
@@ -3293,6 +3396,8 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Work-activity and handoff-centered reporting | many-to-many activity map, tested-setting claim subtraction, persistent product bound to recipient/next operation, strongest and excluded claims | preliminary labels mistaken for representative coverage; visual realism or product polish mistaken for responsibility, downstream usability, or deployment evidence | full immutable v1 paper; LLM-mediated O*NET/ESCO descriptive taxonomy and three purposive report demonstrations, with no reliability, stability, reconstruction, recipient-use, or framework-effect validation [DR] |
 | Frozen-state successor resumability (Handoff Debt) | matched checkpoint/view intervention; separate fidelity, recipient sufficiency, endpoint, outcome-aware continuation effort, and lifecycle cost | evaluator-derived state leakage; nested checkpoints treated as tasks; outcome-dependent stopping called rediscovery; authoring cost omitted; one coding runtime promoted to human/professional validity | full immutable v1 paper/source and aggregate-table audit, but no verifiable empirical release, task IDs, checkpoints, payloads, run records, or analysis [HD] |
 | High-consequence analytical tool pipelines (DORA) | source/label truth, one executable analytical witness, typed endpoint, recipient/action, and observed or simulated consequence kept distinct | real historical sources and deterministic replay mistaken for task authority, calibrated tolerances, alternative-complete planning, safe operational action, or beneficial outcome | full immutable v1 PDF/text/source review; missing Appendices C–H and no verifiable task/tool/trajectory/result release block empirical replay and operational-validity claims [DORA] |
+| Mediated executable feedback projection (c-CRAB) | source→projection→candidate→mediator uptake/action→observer chain with pre/post-selection funnels, no-candidate controls, alternatives, and false-positive/collateral burden | outcome-informed oracle, selection on one mediator, unobserved candidate attribution, extra findings without cost, and endpoint pass promoted to direct artifact or professional quality | full immutable v3 paper plus complete pinned release audit; exact final 234-check counts reproduce, but exact v3 release identity, source authority, projection completeness, mediator transport, clustered repeats, false-positive burden, and professional outcomes remain unsupported [CCR] |
+| Staged analytical inquiry (PM-LLM) | source-bound observation→rival hypotheses→discriminating test→evidence update→decision/consequence with stage-specific observers and invalidity | one-shot prose genre and holistic judge promoted to verified analysis; candidate cause promoted to truth; changed forms/transforms treated as longitudinal scale | full immutable v1 paper plus paper-era/current pinned release audit; current raw records are inspectable, but one-shot judge validity, executable inquiry, expert labels, consequence evidence, and a two-stem version bridge are absent [PML] |
 
 “Deep review” above means the cited local full text was read in the corresponding
 review; “triage” and “preliminary” are not promoted to equivalent evidence.
@@ -3529,6 +3634,18 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     budgets, presentation, or finite-repeat unions/intersections cannot silently
     license allocation dominance, causal adoption, general Skill/memory value,
     cross-domain transport, production fitness, or readiness [OSM, SAPA, PAT].
+61. **Mediated success is a configured-chain observation:** preserve source and
+    projection authority, every selection denominator, candidate proposition,
+    mediator view/uptake/action, observer, alternative-valid outcome, no-candidate
+    control, unsupported/false-positive burden, collateral state, and consequence.
+    A passing endpoint cannot silently become candidate correctness, recall,
+    precision, professional utility, capability, or readiness.
+62. **Hypothesis quality is not verified analysis:** keep source-bound observation,
+    anomaly, candidate and rival hypotheses, discriminating test, test validity,
+    executed evidence, adoption, update/rejection, abstention, decision, and
+    consequence separate. Holistic prose preference or candidate plausibility
+    cannot silently confer truth, causal diagnosis, fairness, operational value,
+    professional validity, or readiness.
 
 ## 8. Unresolved tensions and required experiments
 
@@ -3586,6 +3703,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Reported production practice vs effective operating policy | MAP transparently reports selected practitioner conditions, but outcome-conditioned recruitment, optional-question attrition, unknown respondent/organization dependence, pooled pilot/production stages, and no system/outcome audit make prevalence and causal success claims invalid [MAP]. | Use practice reports only to sample candidate portfolio conditions; then verify realization from immutable configurations/traces and compare matched permission, human-gate, evaluator, and workflow policies with repeated artifact/state outcomes, reviewer burden, delayed labels, and stakeholder loss. |
 | Artifact correctness vs handoff usability | The design report argues that persistent products support work claims through receiving workflows, but its three purposive cases contain no recipient-use trial, independent mapping reliability, or downstream validation [DR]. | Across unlike domains, give independent recipients only the produced product; test source, boundary, and destination checks separately and record clarification, repair, rejection, time, error propagation, and legitimate alternate formats before licensing downstream-use claims. |
 | Adaptive diagnostic coverage vs comparable measurement | JADE separates stable skills from response-specific claim checks, but generated criterion counts, dependencies, shared model cues, mutable verification, and a fail-open release path leave common denominators and fusion unvalidated [JADE]. | On matched counterfactual artifacts from two unlike work shapes, mutate one claim/citation/dependency; blind experts to scores when judging criterion legitimacy and verdicts; measure extraction/edge agreement and item/graph/rank stability; report fixed and contingent families separately. |
+| Executable downstream success vs direct candidate quality | c-CRAB's released funnel and final counts are unusually inspectable, but outcome-informed test projection, selection on the same repair mediator later used for scoring, missing finding→patch attribution, no no-review control, and unscored false-positive/collateral burden leave only a configured selected-chain claim [CCR]. The internal 20-cell replay detects five planted attribution/selection failures but is deterministic synthetic conformance only [MEA]. | On source-authorized cases, preserve all funnel denominators; cross no-candidate and candidate arms with unlike mediators; bind proposition→uptake→action→check edges; falsify projected oracles with accepted alternatives; score unsupported findings, collateral changes, burden, and consequences non-compensatorily; repeat by source cluster. |
+| Fluent analytical candidate vs verified inquiry and consequence | PM-LLM inventories broad process-analysis prompts, but one-shot holistic judging ends before discriminating tests, evidence updates, decisions, or consequences; no expert target validates the judge, and the current form/score package lacks an anchor bridge to v1 [PML]. | Execute `validate-cross-domain-analytical-hypothesis-lifecycle`: freeze unlike evidence graphs, unsupported causes, rivals, discriminating/non-discriminating tests, contradictory evidence, update/abstention rules, repeats, raw observers, and typed invalidity; score each stage and consequence separately without one holistic scalar. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -3743,6 +3862,21 @@ them:
     the two AgenticVBench defect classes before execution. Reuse projection,
     artifact-view, task-health, metric, and validity machinery; do not infer observer
     accuracy, expert validity, capability, professional quality, or readiness [AVB].
+24. **Completed mediated-attribution conformance, not candidate-quality or mediator
+    validity — `validate-mediated-evaluator-attribution-selection`:** the 20-cell
+    cross-domain deterministic replay preserves source/projectable/mediator-valid/
+    attempted/scored funnels, candidate→uptake→action→check edges, typed unknown and
+    invalid states, alternatives, and non-compensatory unsupported/collateral rates.
+    It detects all five planted attribution and selection failures but supplies no
+    source-authority, projection-validity, capability, professional, generalization,
+    production, or readiness evidence [MEA].
+25. **Pending analytical-hypothesis lifecycle validation, not a process-mining
+    subsystem — `validate-cross-domain-analytical-hypothesis-lifecycle`:** freeze and
+    execute the two-domain inquiry protocol described in §3.2e. Keep candidate,
+    test, evidence-update, decision, and consequence observations separate; preserve
+    repeats, raw observer output, and typed invalidity; do not create a holistic
+    scalar or infer causal diagnosis, professional validity, capability, or readiness
+    [PML].
 
 ## Provenance keys
 
@@ -4493,3 +4627,28 @@ them:
   observations only, not a treatment effect, internal memory, calibrated
   interference, capability, expert/professional validity, generality, safety,
   production fitness, or readiness.
+- **[CCR]**
+  `papers/agent-benchmarks/2026-07-17-c-crab-review-test-projection-validity.md`;
+  reviewed immutable v3 PDF/text and complete pinned official release, provenance,
+  stage funnel, generated tests, repair records, raw reviews, outcomes, and code are
+  recorded there. Released bytes reproduce the four final 234-check counts, but the
+  commit is between v1 and v3 and does not establish exact v3 identity. Evidence is
+  bounded to a selected configured review→Claude-repair→projected-test chain, not
+  direct finding attribution, precision/recall, review quality, professional
+  validity, capability, production fitness, or readiness.
+- **[MEA]** `pilots/mediated-evaluator-attribution-v1/README.md`, `protocol.json`,
+  `observations.json`, `report.json`, and `report.sha256`; 20 deterministic
+  builder-authored cross-domain cells establish local funnel, attribution, typed-
+  state, alternative, and non-compensatory scorer behavior only. They provide no
+  empirical candidate, mediator, expert/professional, cross-domain-generalization,
+  production, or readiness evidence.
+- **[PML]**
+  `papers/agent-benchmarks/2026-07-17-pm-llm-process-analysis-judge-validity.md`;
+  reviewed immutable v1 PDF/text plus pinned paper-era and current official releases,
+  provenance, and machine-readable release audit are recorded there. Paper-era raw
+  answers/judge outputs are absent; the current release is nearly two years later,
+  retains only two exact task stems, and materially changes answer exposure, scoring,
+  category weighting, and scale. Evidence supports a prompt-inventory and evaluator-
+  sensitivity case—not judge validity, verified analytical inquiry, longitudinal
+  capability, causal diagnosis, professional utility, production fitness, or
+  readiness.
