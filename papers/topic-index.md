@@ -32,6 +32,7 @@ The review files below are deep reviews unless their own evidence-status section
 | [Benchmark-to-risk expert elicitation](agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | What evidence is required between a configured-system benchmark observation and a consequential workflow or stakeholder decision claim? | consequence validity, structured judgment, disagreement, decision loss |
 | [OfficeEval](agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | When does adapting an external standardized exam preserve lineage but require a new validity and threshold-transport argument? | external instruments, native artifacts, criterion dependence |
 | [Nubank production evaluation](agent-benchmarks/2026-07-14-nubank-offline-online-production-validity.md) | When does an adaptively selected offline-to-online association support prospective production-validity claims rather than retrospective co-movement among treatment bundles? | production evaluation, A/B testing, metric funnels, selection, configured systems |
+| [Criterion validity against business outcomes](agent-benchmarks/2026-07-16-criterion-validity-business-outcomes.md) | When does a rubric criterion's association with a verified downstream label support concurrent, predictive, intervention, or decision-validity claims, and why must observer validity, timing, selection, outcome authority, and stakeholder loss remain separate? | criterion validity, conversion, LLM judge, case enrichment, proxy outcomes |
 | [OncoRounds](agent-benchmarks/2026-07-15-oncorounds-information-seeking-validity.md) | When does staged evidence requesting identify an inquiry-policy failure, and why do free utilization, changing round targets, judge feedback, and reference-list scoring fail to isolate information seeking from interpretation or knowledge? | evidence acquisition, stopping, clinical reasoning, evaluator feedback, release audit |
 | [TASTE](agent-benchmarks/2026-07-16-taste-tool-sequence-task-generation-validity.md) | When does reverse generation from tool sequences expand meaningful workflow coverage rather than only length-sensitive syntactic dispersion and generator–verifier agreement? | benchmark generation, sequence coverage, medoids, attrition, saturation, release audit |
 
@@ -44,7 +45,12 @@ ranges, calibrated uplift, cyber risk, expected harm, or decision use. Preserve
 packet/order identity, initial and revised rationales, deliberative dependence,
 estimand forks, calibration status, aggregation sensitivity, excluded links, and
 the next discriminating evidence; use the existing validity, metric, participation,
-and elicitation machinery rather than a domain-specific schema.
+and elicitation machinery rather than a domain-specific schema. Add the criterion-
+validity case for the empirical rung between score and outcome: concurrent whole-
+episode association is not pre-outcome prediction, incremental information, a causal
+lever, outcome legitimacy, decision utility, or readiness. Preserve score timing,
+observer validity, case enrichment/base rates, clusters, outcome windows/reversals,
+prospective weight validation, and joint intended/adverse consequences.
 
 ## 2. Expertise elicitation, transfer, participation, and skills
 

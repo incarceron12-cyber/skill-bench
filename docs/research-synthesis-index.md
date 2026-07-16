@@ -770,12 +770,36 @@ specific schema or pilot follows.
 | [AI Agent Reliability](../papers/agent-benchmarks/2026-07-11-agent-reliability-profile.md) | B | Separates accuracy from repeatability, perturbation sensitivity, confidence quality, and violation consequences while binding each estimate to a configured operational profile |
 | [Stochastic Agent Evaluations](../papers/agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md) | B | Makes task-level repeats and released response matrices inspectable while showing that the published variance-of-task-means ratio is not ICC(1,1), omitted invalids change the estimand, and repeat budgets are decision- and population-specific |
 | [Performance-optimization benchmark reliability](../papers/agent-benchmarks/2026-07-15-performance-optimization-benchmark-reliability.md) | B | Separates executable artifacts from environment-sensitive criterion validity; four-profile/three-round replay and fixed-output rescoring expose reference-signal loss, near-zero margins, and score leverage, while the absent study release and bounded design do not establish machine-invariant transport, causal rank effects, portfolio capability, saturation, or professional validity |
+| [Criterion validity against business outcomes](../papers/agent-benchmarks/2026-07-16-criterion-validity-business-outcomes.md) | A/B | Adds a direct score→verified-payment association study and dimension heterogeneity warning, while its whole-dialogue observer, outcome-dependent eligibility, case enrichment, unvalidated judge, small selected reweighting, and absent phase-2 rows separate concurrent association from prediction, intervention benefit, customer value, and readiness |
 | [LiveBench](../papers/agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | B | Makes benchmark renewal operational through rotating recent-source forms, temporary private roles, deterministic checks, and reruns, while exposing equivalent-form, outcome-conditioned selection, exposure, and grader-drift limits |
 | [WorkBench Revisited](../papers/agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | B | Shows why repaired current measurement and longitudinal continuity need linked forms and task-level score bridges rather than one homogeneous time series |
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
 | [BrowserGym](../papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md) | B | Separates useful runner/interface interoperability from unsupported evaluator, score, reset, or construct equivalence across adapted benchmark families |
 
 **Repository consequence:** Criterion/check contracts, metric-monitoring contracts, validity arguments, response matrices, and separate ranking versus absolute-capability claims. Grader identity includes rubric/examples, evidence view, criterion execution topology, score transformation, aggregation/tie policy, and configured rater. Agreement, panel-relative severity, fit, repeated-call stability, construct preservation, decision loss, cost, and audit burden remain separate outcomes; adjusted scores never overwrite raw observations or become adjudicated truth. Reliability is a conditional profile—not a system trait—indexed by configured system, task/form population, environment, time, intervention/exposure distribution, and consequence model. Accuracy, repeatability (including consistently wrong behavior), resource variation, perturbation effects, confidence quality, violation frequency, severity, remediation, and loss remain separate. Every perturbation needs independently supported preservation and exposure claims; wrapper recovery cannot count as agent recovery; confidence is licensed only for the decision time and evidence view at which it was elicited. Plural judgments remain immutable observations; aggregation is a versioned stakeholder/error-loss policy rather than discovered ground truth. Specification error, evidence gaps, rater instability, framework-conditioned disagreement, policy selection with dissent, and unresolved value conflict require distinct dispositions. Derivation criteria must also be proof-carrying: source identity and passage, extracted claim, typed operation, dependencies, conclusion, exact observer view, and licensed claim remain distinct. Mentioning an expected value cannot inherit provenance or causal-use credit; one upstream defect and its descendants must not be counted as independent failures. The completed synthetic plural-judgment conformance slice exercises this boundary but supplies no prevalence, professional-consensus, or readiness evidence. Before the second pilot is interpreted, its adversarial audit should plant a pre-satisfied requirement, an unrelated record sharing the expected scalar, a title-only empty artifact, and one upstream defect with several descendant checks; readiness or duplicated consequences must not inflate progress.
+
+Criterion-to-outcome validation adds a separate ladder: `criterion authority →
+configured observer validity → score frozen at a declared decision time → eligible
+population/base-rate and cluster policy → external outcome and observation window →
+concurrent association → incremental prospective prediction → score-targeted
+intervention effect → threshold/loss and stakeholder decision`. No rung inherits the
+next. Whole-dialogue scores can encode user cooperativeness or outcome-adjacent cues;
+case enrichment can support selected associations while invalidating calibration and
+predictive value; and an observable payment/acceptance label can remain incomplete or
+harmful as an optimization target. Preserve reversals, refunds/rework, burden, safety,
+and longer-horizon outcomes rather than zero-weighting legitimate obligations because
+they do not correlate with one business endpoint.
+
+The reviewed conversational-commerce v1 supplies manuscript-level evidence that two
+of seven configured-judge dimensions have moderate concurrent associations with
+payment in a 25-converted/35-unconverted human-only sample, while one dimension has no
+detectable bivariate association. Different eligibility rules by outcome, roughly 0.5%
+source prevalence, one unvalidated whole-transcript model judge, uncontrolled user
+intent and clustering, tiny selected weighting/cross-validation, and absent phase-2
+rows block judge-accuracy, predictive, causal, customer-value, professional-validity,
+production-fitness, and readiness claims. Existing grader, metric, validity,
+task-health, participation, and production-validation records are the durable homes;
+the missing work is a frozen pre-outcome empirical episode, not a new schema.
 
 PaperBench adds a **replication evidence lattice**: `declared method → implemented
 mechanism → executed mechanism → produced artifact → result correspondence →
