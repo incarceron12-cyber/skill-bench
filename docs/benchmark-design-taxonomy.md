@@ -158,7 +158,36 @@ held-out task/check utility are different outcomes. SimInstruct's 18 paid expert
 reactivity and bounded feasibility in one higher-education network—not tacit-cue
 capture, burden reduction, near-zero-cost recruitment, or real-user validity [SI].
 
-### 2.1c Participation mechanisms need realized treatment and welfare evidence
+### 2.1c An artifact edit is evidence of a delta, not an approved domain claim
+
+Before/after native artifacts can expose expertise that an interview misses, but an
+edit is not self-interpreting. Preserve immutable objects and dispositions along:
+
+```text
+artifact versions + interaction mode → exact delta + contributor rationale
+  → model/analyst candidate interpretations → contributor accept/correct/reject
+    → scope, authority, valid time, contradiction, and allowed use → promotion
+      → selection/delivery → recipient adoption or justified rejection
+        → changed artifact/action → independent consequence and burden
+```
+
+Type direct edits, participant prompt intent, model-generated deltas, and
+model/analyst inferences separately. A direct edit may encode style, local
+preference, factual correction, experiment, or deletion; a prompt-regenerated
+artifact is jointly produced. Neither source proximity nor an `expert` role prompt
+transfers contributor authority to an interpretation. Keep capture denominators
+(eligible edits through accepted/promoted claims) separate from use denominators
+(opportunities through delivery, adoption, effect, regression, expiry, and burden).
+
+The reviewed five-person fixed-order study supports storage of artifact deltas and
+model-generated candidate entries only. Pending expertise verification, absent
+contributor approval and executed context/trace evidence, confounded accumulation,
+and a partial mutable OSF snapshot block extraction-validity, tacit-transfer,
+quality, burden, and cross-domain claims [CMDA]. Existing expertise-transfer,
+participation, intervention, longitudinal, metric, and validity records are the
+implementation homes; do not create an edit-memory subsystem.
+
+### 2.1d Participation mechanisms need realized treatment and welfare evidence
 
 A formal payment or allocation rule is a design object, not evidence that experts
 participated, exerted the intended effort, or produced a more valid benchmark. Keep
@@ -475,6 +504,19 @@ neutral or independent. Treat each criterion as a versioned evidence object:
   not silently double-count one fact; and
 - typed examples (`boundary_case`, `non_exhaustive_instance`, `counterexample`,
   or `reference_answer_fragment`) with disclosure and exhaustiveness metadata.
+
+For workflows, dependencies must distinguish **path evidence**, **intermediate
+consequential state**, and **final consequence**. Bind each edge to its prerequisite
+and produced/consumed state, mark whether a failed ancestor masks or makes a
+descendant inapplicable, retain alternative valid routes, and recheck collateral
+invariants at completion. A strict conjunction may remain a useful endpoint policy,
+but the gap between criterion pass rate and all-check completion is not evidence of
+independent capability failures, error propagation, or operational reliability.
+HealthAdminBench's 135 tasks and 1,698 released checks make this boundary inspectable:
+they mix prescribed clicks, handoff states, and final mutations without dependency
+edges or repeated trials, while requirement-level observation/expert lineage and raw
+paper runs are absent [HAB]. Existing criterion, projection, bundle, trace, task-
+health, execution-validity, metric, and validity objects already host the repair.
 
 ResearchRubrics provides unusually inspectable evidence for a three-role
 draft/review/final-review pipeline and criterion-level judging, but not for
@@ -3977,6 +4019,13 @@ them:
   reviewed immutable v3 PDF/text plus the official post-v3 project-site snapshot
   and 24 showcase trajectories are recorded there. The 338 tasks, VMs,
   initialization, graders, scores, and result inventory were unavailable.
+- **[HAB]**
+  `papers/agent-benchmarks/2026-07-16-healthadminbench-workflow-projection-validity.md`;
+  reviewed immutable v1 PDF/text plus the complete pinned 63-day-post-v1 official
+  release are recorded there. The 135 tasks and 1,698 checks are inspectable, but
+  absent requirement-level lineage, dependency edges, repeated trials, raw paper
+  runs, and stable hosted-state identity block error-propagation, reliability,
+  occupational, safety, production, and readiness claims.
 - **[CS]**
   `papers/agent-benchmarks/2026-07-10-clawsafety-cross-domain-injection-validity.md`;
   reviewed immutable v2 PDF/text and complete post-v2 partial-release inspection
@@ -3994,6 +4043,13 @@ them:
   reviewed immutable v3 PDF/text and inspected paper-linked OSF materials are
   recorded there. The source exposes mixed-initiative elicitation mechanics but
   does not identify capture fidelity, burden reduction, or benchmark utility.
+- **[CMDA]**
+  `papers/agent-benchmarks/2026-07-16-context-mediated-domain-adaptation-edit-validity.md`;
+  reviewed immutable v2 PDF/text plus the complete author-linked OSF snapshot and
+  v1/v2 source comparison are recorded there. The five-person fixed sequence and
+  partial mutable release support edit/event capture and candidate-entry storage,
+  not contributor-approved extraction, realized presentation/adoption, causal
+  quality improvement, tacit transfer, burden reduction, or readiness.
 - **[LWT]**
   `papers/agent-benchmarks/2026-07-13-laboratory-workflow-expert-elicitation.md`;
   reviewed immutable 48-page v1 PDF/text hashes are recorded there. Four reported

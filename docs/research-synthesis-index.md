@@ -58,6 +58,7 @@ Most relevant sources:
 | [Benchmark-to-risk expert elicitation](../papers/agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | A | Makes the score-to-consequence warrant observable as structured disagreement and separates capability interpretation, scenario use, workflow effect, outcome composition, and decision loss |
 | [OfficeEval](../papers/agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | B | Separates external requirement/weight lineage from the validity of a transformed subset, administration, aggregate, or transported decision threshold |
 | [Laboratory workflow twins](../papers/agent-benchmarks/2026-07-13-laboratory-workflow-expert-elicitation.md) | A | Adds claim-level authority gates, mandatory nulls, exact evidence→claim→projection lineage, and masking-channel diagnosis while separating graph executability from knowledge truth or operational validity |
+| [Context-Mediated Domain Adaptation](../papers/agent-benchmarks/2026-07-16-context-mediated-domain-adaptation-edit-validity.md) | A | Makes before/after artifact edits a provenance-rich elicitation channel while separating observed delta, model interpretation, contributor acceptance, promotion, delivery, adoption, downstream effect, and transfer |
 | [SovereignPA-Bench](../papers/agent-benchmarks/2026-07-13-sovereignpa-consent-mediation-validity.md) | B | Separates current intent, memory, third-party pressure, evidence, consent, and burden while exposing that a hidden author oracle and rubric-matched scaffold do not establish user authority, realized action, or benefit |
 | [MapSatisfyBench](../papers/agent-benchmarks/2026-07-15-mapsatisfybench-behavior-grounded-hidden-requirements.md) | A | Retains a valuable future-behavior→candidate-factor→pre-response-evidence firewall while showing that hindsight selection, historical prediction, current applicability, authority/consent, causal consequence, and affected-party acceptance are different warrants |
 | [SOP-Bench](../papers/agent-benchmarks/2026-07-14-sop-bench-procedure-task-validity.md) | A | Makes the procedure→schema→row→tool→oracle→parser chain executable, while showing that asserted expert validation and endpoint agreement do not establish procedure fidelity without item-level lineage, conformance contracts, leakage controls, typed comparators, and independent oracle derivation |
@@ -141,6 +142,21 @@ transfer, and readiness claims. Existing expertise-transfer, participation,
 evidence-state, projection, artifact-admissibility, trace, root/surface, and
 validity records suffice; no graph or masking subsystem follows.
 
+Edit-derived elicitation adds a distinct **delta-to-use chain**: `native artifact
+versions and interaction mode → exact edit delta → participant rationale →
+model/analyst candidate interpretation → contributor acceptance/correction/rejection
+and scope → independent promotion → selected delivery → recipient adoption or
+justified rejection → changed artifact/action → independently measured consequence`.
+No edge inherits authority from the prior edge. In particular, a direct edit may be
+style, local preference, experiment, or factual correction; a prompt-regenerated
+delta is jointly authored; and a model explanation linked to an expert's edit is not
+expert-approved testimony. The five-person fixed-order study and mutable OSF snapshot
+support edit/event capture and model-generated candidate storage, not extraction
+validity, realized later presentation, causal quality improvement, burden reduction,
+tacit transfer, or cross-domain utility. Preserve capture and use denominators and
+map them to existing expertise-transfer, participation, intervention, longitudinal,
+metric, and validity records; no edit-memory subsystem follows.
+
 Representative action adds a principal/mediation boundary: `current intent →
 memory applicability → third-party proposition → evidence and consent basis →
 legitimate terminal set → attempted action/disclosure → policy/environment
@@ -166,6 +182,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [KINA](../papers/agent-benchmarks/2026-07-16-kina-incentive-representativeness-validity.md) | B | Makes a submodular coverage proxy and reviewer-tournament assumptions explicit while showing that a cardinality theorem does not govern quota/duplicate-constrained repair and neither theorem establishes realized coverage, representativeness, contributor behavior, or validity without an instantiation witness |
 | [OccuBench](../papers/agent-benchmarks/2026-07-15-occubench-language-simulator-validity.md) | A | Demonstrates cheap cross-domain synthetic tool-environment packaging while separating occupational labels and closed-loop simulator/verifier agreement from transition validity, professional authority, matched fault resilience, and real-environment transport |
 | [AutomationBench](../papers/agent-benchmarks/2026-07-15-automationbench-workflow-projection-validity.md) | A | Adds broad executable multi-app state, strict conjunction with negative guards, task-local reset, and tool-discoverability interventions while separating synthetic contract conformance from work-demand provenance, production transition transport, complete consequence coverage, and readiness |
+| [HealthAdminBench](../papers/agent-benchmarks/2026-07-16-healthadminbench-workflow-projection-validity.md) | A | Converts observed cross-system administrative work into 135 inspectable tasks and 1,698 checks while showing why path evidence, intermediate state, final consequence, prerequisite masking, strict conjunction, and occupational reliability are non-substitutable |
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
@@ -273,6 +290,23 @@ information-budget comparisons support a planning or realism claim. The internal
 demonstrates poll-order-independent reversal detection and earliest unsupported-
 dependency localization on two synthetic work shapes only; it supplies no agent,
 occupational, planning, safety, cross-software, or readiness evidence.
+
+Dense workflow checks require a **dependency-aware consequence graph**, not a flat
+list interpreted as independent abilities. Preserve `requirement authority → stage
+precondition → admissible evidence acquisition → state/artifact handoff → committed
+mutation → downstream affordance → final consequence`, plus alternative valid routes
+and collateral invariants. Type path observance, intermediate consequential state,
+and final outcome separately. An upstream miss may mask descendants; a prescribed
+click may fail despite an equivalent route; and a strict all-check conjunction is an
+endpoint policy, not evidence of error propagation or operational reliability.
+HealthAdminBench's post-v1 release makes 135 synthetic cross-portal tasks and 1,698
+checks unusually inspectable, but omits requirement-level observation/expert lineage,
+dependency edges, raw paper runs, and repeated trials. Its observed-work origin,
+partially audited expert projection, browser-local replicas, path-heavy checks, and
+single shots support configured-instrument evidence—not healthcare-administration
+coverage, safety, occupational capability, economic value, production fitness, or
+readiness. Existing projection, benchmark-bundle, criterion, trace, task-health,
+execution-validity, metric, and validity records are the durable homes.
 
 Workplace validity therefore needs a **substrate-to-consequence evidence ladder**:
 occupational/task provenance; service and initial-state validity; requirement or
