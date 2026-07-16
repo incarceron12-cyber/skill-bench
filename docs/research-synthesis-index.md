@@ -163,6 +163,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 |---|---:|---|
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Demonstrates large-scale expert-authored multimodal occupational task acquisition while exposing sampling, weighting, witness, and inference limitations |
 | [XpertBench](../papers/agent-benchmarks/2026-07-15-xpertbench-scaled-expert-task-validity.md) | B | Narrates a large cross-domain expert-task and one-shot judge pipeline, while its absent contributor/attrition ledger, observed Education task–rubric mismatch, unidentifiable CDR, unreleased instrument, and unverified release leads show that acquisition scale and a scored exemplar do not establish ecological, criterion, grader, professional, or participation validity |
+| [KINA](../papers/agent-benchmarks/2026-07-16-kina-incentive-representativeness-validity.md) | B | Makes a submodular coverage proxy and reviewer-tournament assumptions explicit while showing that a cardinality theorem does not govern quota/duplicate-constrained repair and neither theorem establishes realized coverage, representativeness, contributor behavior, or validity without an instantiation witness |
 | [OccuBench](../papers/agent-benchmarks/2026-07-15-occubench-language-simulator-validity.md) | A | Demonstrates cheap cross-domain synthetic tool-environment packaging while separating occupational labels and closed-loop simulator/verifier agreement from transition validity, professional authority, matched fault resilience, and real-environment transport |
 | [AutomationBench](../papers/agent-benchmarks/2026-07-15-automationbench-workflow-projection-validity.md) | A | Adds broad executable multi-app state, strict conjunction with negative guards, task-local reset, and tool-discoverability interventions while separating synthetic contract conformance from work-demand provenance, production transition transport, complete consequence coverage, and readiness |
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
@@ -215,6 +216,18 @@ purposive CS-heavy mixture, unmatched custom/private tools, task-specific invali
 policies, post-v2 code/scorer drift, gated dataset, and absent self-contained run
 archive support portfolio-operation evidence—not a latent scientific-capability,
 professional-validity, productivity, safety, or readiness claim.
+
+KINA adds a prior **formal-instantiation boundary**: `declared proxy/theorem →
+variables and assumptions → immutable implementation binding → realized constrained
+selection or participant treatment → independent empirical outcome → validity/use`.
+Its fixed-support max-coverage objective is submodular, but quota and duplicate
+constraints plus repair remove the cardinality-only guarantee. The public 899-item
+corpus instantiates 260 rather than 261 discipline paths, omits advertised source
+fields and every anchor/calibration/selection/mechanism record, exposes the claimed
+encrypted holdout, and conflicts on licenses. A coverage optimum is therefore an
+optimum of an authored proxy, not representativeness. Existing projection,
+participation, task-health, release-conformance, metric, and validity contracts host
+the requirement; no MCQ or optimizer-specific subsystem follows.
 
 The comparative evolution view adds a second boundary: a newer benchmark is
 not automatically a validated successor because it adds more files, longer
@@ -787,6 +800,7 @@ specific schema or pilot follows.
 | [Measuring Agents in Production](../papers/agent-benchmarks/2026-07-14-measuring-agents-production-practitioner-evidence.md) | B | Supplies a transparent practitioner instrument and selected reports of bounded workflows, human gates, sensitive context, delayed outcomes, and mixed evaluators; outcome-conditioned recruitment, optional-question denominators, unknown respondent/organization dependence, and no system audit make this portfolio evidence, not representative prevalence or practice efficacy |
 | [Agentic Confidence Calibration](../papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md) | B | Separates predicted success for one configured trajectory from repeated reliability and causal diagnosis; its unreleased labels/configurations, post-outcome features, clustering omissions, asymmetric transfer, and logprob dependence block decision-utility or universal-calibration claims |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
+| [FinResearchBench II](../papers/agent-benchmarks/2026-07-16-finresearchbench-ii-consensus-rubric-validity.md) | B | Exposes 14,450→3,687→2,600 generated-criterion attrition and makes panel stability/non-triviality screening operational, while report-conditioned generation, outcome-conditioned selection, a 70.76% joint-unanimity subset, partial holdout, and no release block criterion-authority, transport, professional-validity, and readiness claims |
 | [PaperBench](../papers/agent-benchmarks/2026-07-15-paperbench-replication-rubric-validity.md) | A | Provides released leaf labels and a criterion-level judge study while showing that pooled-leaf class-macro F1, invalid-as-zero handling, and local agreement do not validate paper-level scores or replication decisions |
 | [AdaRubric](../papers/agent-benchmarks/2026-07-15-adarubric-adaptive-trajectory-instrument-validity.md) | B | Separates task-conditioned criterion generation, step/dimension observation, and filtering, while its absent empirical release and paper/code contradictions show that fixed-rubric score correlation, repeat agreement, and training gains do not validate adaptive criteria, decisions, rewards, or deployment |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
@@ -835,6 +849,20 @@ rows block judge-accuracy, predictive, causal, customer-value, professional-vali
 production-fitness, and readiness claims. Existing grader, metric, validity,
 task-health, participation, and production-validation records are the durable homes;
 the missing work is a frozen pre-outcome empirical episode, not a new schema.
+
+FinResearchBench II adds a reusable **criterion-health and outcome-selection
+firewall**: `candidate provenance → authority/public basis → admissible evidence view
+→ repeated observer reliability → development-cohort discrimination → independent
+confirmation → threshold/loss`. Its three-judge screen is useful triage, but the
+98.67% human/LLM same-label result conditions on 2,867/4,052 jointly unanimous items
+(70.76%), and the 2,600 survivors are selected to vary on the same ten-report pool
+used to construct the instrument. Preserve unanimous and disputed criteria, always-
+pass/fail roles, every upstream artifact/system use, and selection-adjusted held-out
+estimation. Read with ResearchRubrics for authoring authority and AsymmetryZero for
+the jury-substitution ladder: authority, agreement, repeated-call reliability,
+discrimination, decision equivalence, and loss do not inherit one another. Existing
+criterion, evidence-view, rater, response-matrix, task-health, metric, and validity
+records suffice; no finance-specific schema follows.
 
 PaperBench adds a **replication evidence lattice**: `declared method → implemented
 mechanism → executed mechanism → produced artifact → result correspondence →
@@ -1340,8 +1368,21 @@ These sources are important to the compounding system and adaptive-agent evaluat
 | [Consulting cognitive traps](../papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md) | A | Shows the potential value of SME-authored critical incidents while its missing released task/grader artifacts limit reuse evidence |
 | [SimInstruct](../papers/agent-benchmarks/2026-07-11-siminstruct-simulated-novice-elicitation.md) | B | Demonstrates paid asynchronous role-play feasibility in one network while leaving recruitment denominators, actual burden, privacy/consent lineage, tacit-knowledge yield, and downstream utility unmeasured |
 | [HAS-Bench](../papers/agent-benchmarks/2026-07-13-hasbench-configurable-human-participation-validity.md) | B | Makes participant roles, authority, channels, and event-conditioned process measures explicit while showing that model-simulated assistance is not evidence about real-human participation or burden |
+| [KINA](../papers/agent-benchmarks/2026-07-16-kina-incentive-representativeness-validity.md) | B | Supplies an explicit bonus-on-bar tournament and payoff assumptions while its bundled pay-plus-audit phase comparison and absent assignments, scores, payments, audits, appeals, attrition, and welfare block incentive-effect, contributor-benefit, affordability, and item-validity claims |
 
 **Repository consequence:** Expert-participation contracts, contributor provenance/authority, measured recruitment and review burden, reciprocal outputs, and continued research into near-zero-cost incentives. Benchmark participants must additionally be typed by realization (`real_human`, model simulator, scripted policy, hybrid, or replay), independently of their assigned social role. Participation is a configured treatment vector—prompt, visible participants, channels/tools, information access, action authority, initiative, control threshold, budget, and observer—not an ordinal “agency level.” Preserve the chain `availability → exercise → uptake → effect`; a graph edge, trace event, apparent adoption, and matched outcome effect license different claims. Simulator steps/tokens do not estimate human active time, waiting, interruption, cognitive demand, correction work, privacy exposure, or accountability. HAS-Bench's 397 reported adaptations and scenario-review study support this vocabulary, but its model-backed users, bundled A1/A3/A4 treatments, single rollout per task, unreported process-judge audit, and unverifiable release block human-participation, simulator-parity, professional-collaboration, burden, and readiness claims.
+
+Formal incentive claims add a separate treatment chain: `mechanism assumptions →
+implementation witness → realized assignment/pay/audit/appeal events → effort and
+burden → independent contribution quality → benchmark validity`. KINA improves on
+ELAIPBench at the theoretical rung by specifying effort costs, score noise, winning
+probabilities, and a bonus threshold; ELAIPBench supplies a realized writer–verifier
+contest but no formal game or fixed-pay contrast. Neither releases evidence sufficient
+to identify an incentive effect or contributor welfare. KINA's observed comparison
+changes tournament, bonus, audit regime, and time together, so audit cannot serve as
+both hidden treatment and validating outcome authority. A fixed-audit real-participant
+comparison remains gated by the pending consented micro-pilot; do not simulate
+contributors or treat fixtures as participation evidence.
 
 ## Current reading priority
 

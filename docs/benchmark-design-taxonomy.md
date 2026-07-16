@@ -158,6 +158,42 @@ held-out task/check utility are different outcomes. SimInstruct's 18 paid expert
 reactivity and bounded feasibility in one higher-education network—not tacit-cue
 capture, burden reduction, near-zero-cost recruitment, or real-user validity [SI].
 
+### 2.1c Participation mechanisms need realized treatment and welfare evidence
+
+A formal payment or allocation rule is a design object, not evidence that experts
+participated, exerted the intended effort, or produced a more valid benchmark. Keep
+five non-inheriting layers:
+
+```text
+declared mechanism and assumptions → immutable implementation witness
+  → realized assignment/pay/audit/appeal treatment → participant behavior and burden
+    → independently adjudicated contribution quality → benchmark validity and use
+```
+
+For every contribution unit, bind eligibility and consent; information and action
+rights; assignment probability; complete payoff, penalty, audit, appeal, and
+withdrawal rules; observed opportunity and effort proxies; accepted/rejected/revised
+artifacts; payment and time; disputes, attrition, concentration, and reciprocal
+value. A theorem over latent effort and noisy scores requires an **instantiation
+witness** that maps every variable and assumption to versioned implementation and
+event records. An audit cannot be both an unrecorded treatment change and the
+outcome authority used to attribute a pay effect.
+
+KINA's bonus-on-bar tournament states useful sufficient assumptions, but the actual
+system adds audits, penalties, appeals, scarcity pricing, and a whitelist, while its
+flat-versus-tournament comparison also changes audit regime and time. Scores, costs,
+assignments, payments, audits, contributor histories, and welfare are unreleased
+[KINA]. ELAIPBench supplies a realized writer–verifier contest but no formal game or
+fixed-pay contrast; neither source establishes an incentive effect, contributor
+benefit, affordability, or retained-item validity. **Invariant:** mechanism claims
+stop at the strongest realized and independently observed link. **Validation
+experiment:** only after a consented real contribution is authorized, preregister
+comparable units randomized between fixed audit plus adequate base pay and the same
+audit plus a validity-gated bonus; preserve independent quality, false challenge,
+minutes, earnings, burden, attrition, disputes, and cost. Existing participation,
+expertise-transfer, task-health, metric, and validity records are the durable homes;
+no synthetic participant or incentive schema follows.
+
 ### 2.2 A legitimate trap is a decision-boundary critical incident
 
 Do not equate realistic messiness with arbitrary obscurity. For each trap,
@@ -565,6 +601,49 @@ grader, response-matrix, metric, task-health, and validity objects are the durab
 homes. Do not create an adaptive-rubric schema or reward-learning build before
 authorized reference criteria are available.
 
+### 2.3c Criterion stability and discrimination do not create authority
+
+Generated-criterion pipelines need a typed health lifecycle rather than a `gold`
+promotion shortcut:
+
+```text
+candidate generation and provenance → authority/public-basis review
+  → evidence-view admissibility → repeated observer reliability
+    → development-cohort prevalence/discrimination → independent confirmation
+      → threshold/loss validation and operational role
+```
+
+Record every artifact, query, system, rater panel, and time snapshot used for
+candidate generation, reliability calibration, non-triviality selection,
+thresholding, and final estimation. This **outcome-selection firewall** makes a
+holdout invalid when its artifact contributed upstream, even if only a later filter
+names it as held out. Keep `generated_candidate`, `authority_reviewed`,
+`evidence_admissible`, `panel_stable`, `nontrivial_on_development_cohort`,
+`regression_guard`, `externally_validated`, and `decision_calibrated` as independent
+states. Always-pass basics and always-fail frontier requirements require an explicit
+coverage/consequence disposition rather than automatic deletion. Preserve disputed
+criteria, rationales, evidence locators, applicability, severity, and adjudication;
+agreement can preferentially remove judgment-intensive expertise.
+
+FinResearchBench II makes the selection problem concrete: 14,450 report-conditioned
+candidates become 3,687 after three judges agree on all ten reports and 2,600 after
+requiring both positive and negative labels. Its 98.67% human/LLM same-label headline
+conditions on 2,867/4,052 jointly unanimous observations (70.76%); it does not validate
+the excluded disagreement population or criterion truth. Since the same report pool
+generates candidates and later supplies distinguishability labels, increased spread
+is partly selected by construction. Queries, reports, criteria, labels, generation
+prompt, configurations, and analysis are unreleased [FR2]. Read with ResearchRubrics:
+expert review improves authority lineage but does not make criteria ground truth
+[RR]. Read with AsymmetryZero: panel agreement, repeated-call stability, criterion
+correctness, task decisions, and downstream loss remain separate [AZ]. **Invariant:**
+unanimity licenses at most a panel-and-view-relative observation; discrimination
+licenses at most a declared development-cohort role. **Falsification experiment:**
+freeze authority-reviewed criteria, cross repeated observer draws with unseen
+artifacts/systems/queries, sample retained and rejected criteria for blind authority
+review, and report selection-adjusted criterion and decision error with clustered
+uncertainty. Existing criterion, evidence-view, rater, task-health, response-matrix,
+metric, and validity records suffice; no finance-specific schema follows.
+
 ### 2.4 Evolving evidence is a typed state transition, not a changed answer key
 
 A task's private basis must not collapse every event, source statement, and
@@ -670,6 +749,39 @@ swap [DIC]. This is deterministic, builder-authored calibration of validator
 behavior only. It supplies no expert validity, grader accuracy, semantic-
 equivalence completeness, cross-domain generalization, agent capability, reward
 quality, professional validity, production fitness, or readiness evidence.
+
+#### Formal guarantees require an instantiation witness
+
+A proof applies to its mathematical objects and assumptions, not automatically to
+the benchmark pipeline described beside it. Preserve this non-inheriting chain:
+
+```text
+declared objective/behavioral theorem → variables, assumptions, and claim ceiling
+  → immutable implementation binding → realized constrained execution
+    → empirical treatment comparison → external validity and benchmark use
+```
+
+For a coverage optimizer, version the expert population and mandate, anchors and
+weights, disagreement and omissions, candidate-to-anchor evidence view, calibrated
+support scores, complete constraints, optimizer/repair output, and selected-task
+links. For a behavioral mechanism, additionally preserve the complete game,
+assignment, score reliability, costs, payments, audit/adjudication, missingness,
+appeals, and welfare. Test each assumed link rather than citing the theorem as its
+evidence. A guarantee for a cardinality-only optimum does not transfer through
+quotas, pairwise exclusions, or heuristic repair without a new argument.
+
+KINA exemplifies the boundary. Its max-coverage objective is monotone submodular
+under fixed nonnegative support scores, but the realized quota/duplicate-constrained
+selector has no general stated approximation guarantee. Its 899-row release has 260,
+not the claimed 261, discipline paths; omits advertised source fields and all anchor,
+calibration, selection, review, payment, audit, and rank-analysis records; exposes
+the claimed encrypted holdout; and conflicts on licenses [KINA]. The theorem supports
+a proxy-optimization statement, not population representativeness, professional-work
+coverage, contributor behavior, item validity, or readiness. **Invariant:** every
+formal benchmark claim must cite a machine- or human-auditable instantiation witness
+and stop where implementation correspondence ends. Existing projection,
+participation, task-health, release-conformance, metric, and validity records host
+the evidence; no optimizer-specific schema follows.
 
 ### 2.5a Session-derived tasks are bounded counterfactual projections
 
@@ -3871,6 +3983,29 @@ them:
   substitution plus an allowed representation change. It establishes validator
   behavior only, not expert validity, grader accuracy, equivalence completeness,
   cross-domain generalization, capability, reward quality, or readiness.
+- **[FR2]**
+  `papers/agent-benchmarks/2026-07-16-finresearchbench-ii-consensus-rubric-validity.md`;
+  reviewed immutable v2 PDF/text/HTML plus immutable v1 comparison and bounded
+  acquisition-time release search are recorded there. Exact reported criterion
+  attrition and agreement denominators are inspectable, but queries, reports,
+  criteria, labels, generation protocol, configurations, costs, and analysis are
+  unreleased; panel stability and selected-cohort discrimination do not establish
+  criterion authority, professional validity, transport, or readiness.
+- **[AZ]**
+  `papers/agent-benchmarks/2026-07-14-asymmetryzero-semantic-eval-contracts.md`;
+  reviewed immutable v1 PDF/text plus paper-time framework release and private-study
+  evidence limits are recorded there. The plumbing makes jury topology inspectable,
+  but agreement, repeated-call reliability, criterion correctness, task decisions,
+  and downstream loss remain non-substitutable.
+- **[KINA]**
+  `papers/agent-benchmarks/2026-07-16-kina-incentive-representativeness-validity.md`;
+  reviewed immutable v2 PDF/text plus the complete pinned 899-row official dataset
+  and 11-file code release are recorded there. The final exact-letter corpus is
+  inspectable, while anchors, calibrators, constrained-selection lineage, reviewer
+  scores/assignments/payments/audits/appeals, contributor welfare, raw trials, and
+  rank analyses are absent; release conformance defects and the bundled phase
+  comparison block representativeness, incentive-effect, professional-validity,
+  contributor-benefit, affordability, and readiness claims.
 - **[WA]**
   `papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md`;
   reviewed immutable v2 PDF/text and pinned official February 2026 archive paths
