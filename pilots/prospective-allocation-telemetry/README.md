@@ -20,6 +20,14 @@ The probe nevertheless failed the frozen telemetry gate. The provider response e
 
 This is useful negative evidence: the hook is reached on a real provider call, but this provider response shape cannot support the requested complete allocation coordinate system without changing the estimand or imputing missing evidence.
 
+## v4 provider-native coordinate capability
+
+`v4/` preserves every v1-v3 byte and freezes a provider-native coordinate contract. Total input and output are additive budget coordinates; cache-read and reasoning are typed subcomponents and are never added again; cache-write is explicitly unavailable rather than zero. The contract and identical condition support signature are bound into configured-system and comparison identity. The validator rejects support drift, asymmetric conditions, hidden imputation/derivation, parent/subcomponent double counting, omitted/duplicate/reordered calls, retry substitution, phase spoofing, identity drift, and mismatch on any jointly supported aggregate coordinate.
+
+Exactly one fresh no-replacement `openai-codex`/`gpt-5.6-sol` probe passed. Its native total-input, cache-read, output, and reasoning coordinates exactly reconcile; cache-write remains unavailable despite the downstream aggregate reporting zero, and no uncached prompt value is derived. Included cost remains USD 0.00.
+
+The matched pair was not run. `v4/readiness-report.json` fails closed because no frozen launcher yet binds v4 telemetry/state identities to the parent isolation and dual-rubric path, and no v4 adoption-observation rule was frozen before treatment output. Historical parent trials cannot be repurposed or replaced.
+
 ### Replay
 
 ```bash
@@ -29,7 +37,13 @@ python scripts/validate_allocation_telemetry.py \
   --attempt-id alloc-v2-ab-no-skill \
   --aggregate-usage pilots/prospective-allocation-telemetry/v2/stub-aggregate-usage.json \
   --check-paths
-python -m unittest tests.test_allocation_telemetry -v
+python scripts/validate_allocation_coordinates.py \
+  pilots/prospective-allocation-telemetry/v4/manifest.json \
+  --events pilots/prospective-allocation-telemetry/v4/configured-provider-probe/outputs/call-events.jsonl \
+  --attempt-id alloc-v4-configured-provider-probe-01 \
+  --aggregate-usage pilots/prospective-allocation-telemetry/v4/configured-provider-probe/outputs/usage.json \
+  --check-paths
+python -m unittest tests.test_allocation_telemetry tests.test_allocation_coordinates -v
 ```
 
 This slice reports Skill presentation, invocation, adoption, artifact outcome, and resource allocation separately. It licenses no allocation/Skill effect, capability, cross-domain, expert/professional validity, safety, economic-value, production, or readiness claim.
