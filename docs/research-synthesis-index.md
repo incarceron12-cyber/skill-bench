@@ -177,6 +177,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [WorkArena++](../papers/agent-benchmarks/2026-07-11-workarena-plus-compositional-validity.md) | B | Makes executable setup/oracle/validator composition inspectable while showing that longer chains and lower success do not by themselves establish planning, workflow realism, or occupational coverage |
 | [TheAgentCompany](../papers/agent-benchmarks/2026-07-11-theagentcompany-workplace-simulation-validity.md) | A | Separates integrated workplace substrate and selected workflow coherence from authority, consequence, sampling, collaboration, and labor-automation validity |
 | [EntCollabBench](../papers/agent-benchmarks/2026-07-15-entcollabbench-role-permission-validity.md) | B | Makes static role-scoped tool execution, explicit HTTP routing, task-local state effects, and policy-document decisions inspectable while separating configured capability, usable handoff, delegated authority, approval classification, and authoritative approval effect |
+| [Networked Intelligence](../papers/agent-benchmarks/2026-07-16-networked-intelligence-shared-context-validity.md) | B | Adds candidate-recipient selection and unsolicited cross-workstream delivery between shared storage and recipient use, while its one bundled three-expert campaign, reconstructed routes, post-hoc content universe, unequal standalone comparison, unexecuted proposal, and absent release do not identify routing benefit, tacit transfer, scientific validity, productivity, privacy, or readiness |
 | [OdysseyBench](../papers/agent-benchmarks/2026-07-11-odysseybench-longitudinal-office-memory-validity.md) | B | Connects dialogue-distributed requirements to office-state action while exposing persistent-memory, evaluator-dispatch, collateral-state, and professional-validity gaps |
 | [LongMedBench](../papers/agent-benchmarks/2026-07-14-longmedbench-longitudinal-clinical-validity.md) | B | Separates history volume and factual access from history necessity and consequence validity; its no-history result and retrospective next-event oracle show why a long record alone does not establish longitudinal decision competence |
 | [SciAgentArena](../papers/agent-benchmarks/2026-07-14-sciagentarena-scientific-work-validity.md) | B | Adds matched step-wise versus dependent-pipeline scientific workflow evaluation and premise-validity tasks, while showing why mixed task units, configured-system bundles, propagated failures, fallbacks, and incomplete run/release evidence block real-world-science, novelty, autonomy, reliability, impact, or readiness claims |
@@ -368,6 +369,28 @@ consumer, adjudication, and counterfactual records establish only configured
 synthetic content-dependence and scorer behavior—not human usability, professional
 collaboration, cross-domain causal generalization, capability, safety, production
 fitness, or readiness. No coding-specific or resumability subsystem follows.
+
+Routed shared context adds one nonduplicate transformation between storage or
+handoff and recipient use: `source proposition/authority/permission → routing
+opportunity and candidate-recipient rationale → policy decision and delivered view
+→ receipt/inspection → interpretation → adoption/rejection → decision or artifact
+delta → authorized action → realized result/collateral state → burden and bounded
+route utility`. A graph path is lineage, a delivery is transport, and a narrated
+downstream proposal is neither causal adoption nor realized consequence. The
+[Networked Intelligence](../papers/agent-benchmarks/2026-07-16-networked-intelligence-shared-context-validity.md)
+case makes recipient selection and asynchronous cross-expert routing concrete, but
+its three-human week-long package changes expertise, interaction, persistence,
+proactivity, tools, compute, and stopping relative to two single standalone runs;
+its two route stories are reconstructed, its 26-item content universe is post-hoc,
+and the proposed experiment was not executed. No official graph, route, notebook,
+campaign, rating, or result package was located. Preserve configured-package
+comparison separately from a causal route study. The latter should freeze recipient
+state and compare no route, targeted route, manual forwarding, broadcast,
+delayed/stale route, and corrupted translation while measuring inspection,
+adoption, decision/artifact change, consequences, missed links, overload, recovery,
+and burden. Existing participation/authority, information-flow, handoff, workspace,
+trace, artifact/state, metric, task-health, and validity machinery already hosts the
+chain; no scientific-collaboration or graph subsystem follows.
 
 External exams and certifications add an **instrument-transport chain**:
 `source purpose/population → licensed forms → selection/transformation → configured

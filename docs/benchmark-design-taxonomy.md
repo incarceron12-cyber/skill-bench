@@ -911,6 +911,50 @@ prevalence, causal adoption, judge validity, professional validity, benefit, or
 readiness [MSY]. Existing source, authority, valid-time, information-flow, state,
 grader, metric, and validity objects remain the implementation homes.
 
+#### Routed context is a recipient-state intervention, not a graph edge
+
+Shared storage and typed handoff do not capture **candidate-recipient selection and
+delivery**. Preserve a route event as a join across existing claim, participation,
+information-flow, trace, artifact/state, and metric records:
+
+```text
+source proposition, authority, permission, version, and exact locator
+  → routing opportunity, candidate recipients, rationale, policy, and timing
+    → permission decision and exact delivered evidence view
+      → receipt/inspection → interpretation → adoption or justified rejection
+        → changed belief, analysis, decision, or artifact record
+          → authorized attempted action → realized result and collateral state
+            → recipient burden, error, and bounded route-utility claim
+```
+
+No edge inherits the next. A valid graph relation establishes representational
+lineage; a delivery log establishes transport; a narrative or downstream proposal
+establishes neither receipt nor causal use. A whole-package comparison that changes
+participants, information, sessions, compute, proactivity, tools, and stopping may
+describe configured-system performance, but it cannot identify routing benefit.
+Likewise, an experiment proposal is not its authorization, execution, measured
+result, replication, or consequence.
+
+The discriminating experiment freezes proposition, recipient, prior workspace,
+task, budget, system, and observer, then varies no delivery, targeted delivery,
+manual forwarding, broad delivery, delayed/stale delivery, and corrupted
+translation. Measure opportunity-conditioned delivery, inspection, adoption,
+decision/artifact delta, intended and collateral consequence, missed-link loss,
+overload/interruption burden, and recovery. Route-policy precision or graph
+connectivity cannot substitute for those outcomes.
+
+Networked Intelligence motivates this missing transformation through one week-long
+three-expert scientific campaign, two reconstructed routes, and a 26-item post-hoc
+content audit against two single standalone runs [NI]. Its treatment bundles human
+expertise, repeated sessions, persistence, routing, proactive analysis, tools, and
+unequal total work; the artifact universe is trace-derived; no route-event records,
+repeats, independent scientific review, realized downstream experiment, cost/burden
+ledger, permission model, or official implementation was located. The evidence
+supports a cross-workstream route-event hypothesis, not routing causality, tacit
+transfer, irreducible team intelligence, scientific validity, productivity,
+privacy, professional validity, or readiness. Existing contracts are the durable
+homes; no graph, scientific-team, or Mycelium-specific schema follows.
+
 An authored minimal support set is a hypothesis, not unique ground truth. Admit
 independently reviewed alternate support sets and test necessity through source
 ablation; keep answer agreement and evidence-set overlap separate. HippoCamp
@@ -3499,6 +3543,15 @@ them:
 
 ## Provenance keys
 
+- **[NI]**
+  `papers/agent-benchmarks/2026-07-16-networked-intelligence-shared-context-validity.md`;
+  reviewed immutable v1 PDF/text/HTML and acquisition provenance are recorded
+  there. No author-owned implementation, graph, campaign records, notebooks,
+  routing events, artifact-authoring protocol, run corpus, or analysis release was
+  located. Evidence supports one author-run configured-package case narrative and
+  a post-hoc 26-item content audit—not a routing effect, scientific validation,
+  tacit transfer, irreducibility, productivity, privacy, professional validity, or
+  readiness.
 - **[MSK]**
   `papers/agent-benchmarks/2026-07-16-skill-augmented-medical-human-evaluation.md`;
   reviewed immutable v1 PDF/text/supplement and timing-bounded linked package paths
