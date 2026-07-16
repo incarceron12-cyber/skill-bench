@@ -12,6 +12,14 @@
 
 The retained `v2/readiness-report.json` remains fail-closed. Deterministic conformance is not configured-provider evidence. The exact frozen isolated trial command does not yet mount and invoke the adapter, so no native provider ledger exists to reconcile before authorizing the matched AB pair. Consequently no fresh provider call or pair was run.
 
+## v3 configured-provider probe
+
+`v3/` preserves v1/v2 and adds `scripts/allocation_provider_probe.py`, which read-only mounts the adapter into the same file-only, task-scoped bubblewrap envelope. One retained `openai-codex`/`gpt-5.6-sol` capture probe completed successfully at the service layer and reported included cost of USD 0.00. The adapter emitted one self-hashed native event before aggregation.
+
+The probe nevertheless failed the frozen telemetry gate. The provider response exposed total input, output, cache-read, and reasoning usage but omitted a cache-write field. Under the predeclared policy, the adapter cannot assume an absent cache-write coordinate equals zero; without it, uncached prompt tokens also cannot be derived. The retained event therefore marks `prompt_tokens` and `cache_write_tokens` unsupported and does not reconcile to the aggregate five-coordinate ledger. `v3/readiness-report.json` forbids replay/replacement and leaves the AB pair unexecuted.
+
+This is useful negative evidence: the hook is reached on a real provider call, but this provider response shape cannot support the requested complete allocation coordinate system without changing the estimand or imputing missing evidence.
+
 ### Replay
 
 ```bash

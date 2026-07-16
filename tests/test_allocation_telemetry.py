@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/validate_allocation_telemetry.py"
 HOOK = ROOT / "scripts/provider_call_telemetry.py"
 MANIFEST = ROOT / "pilots/prospective-allocation-telemetry/v1/manifest.json"
+V3_MANIFEST = ROOT / "pilots/prospective-allocation-telemetry/v3/manifest.json"
+V3_PROBE = ROOT / "pilots/prospective-allocation-telemetry/v3/configured-provider-probe"
 spec = importlib.util.spec_from_file_location("allocation_telemetry", SCRIPT)
 assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
@@ -129,6 +131,27 @@ class AllocationTelemetryTests(unittest.TestCase):
         for events, usage, fragment in mutations:
             errors = module.validate_native_events(events, self.manifest, attempt_id=base["attempt_id"], aggregate_usage=usage)
             self.assertTrue(any(fragment in error for error in errors), (fragment, errors))
+
+    def test_v3_configured_provider_probe_is_retained_and_fails_closed(self):
+        manifest = json.loads(V3_MANIFEST.read_text(encoding="utf-8"))
+        report = json.loads((V3_PROBE / "probe-report.json").read_text(encoding="utf-8"))
+        usage = json.loads((V3_PROBE / "outputs/usage.json").read_text(encoding="utf-8"))
+        events = module.load_jsonl(V3_PROBE / "outputs/call-events.jsonl")
+
+        self.assertEqual(module.validate_manifest(manifest, check_paths=True), [])
+        descriptor = manifest["configured_system"]
+        self.assertEqual(module.canonical_hash(descriptor), manifest["configured_system_sha256"])
+        errors = module.validate_native_events(
+            events, manifest, attempt_id=report["attempt_id"], aggregate_usage=usage,
+        )
+        self.assertEqual(len(events), 1)
+        self.assertEqual(report["model_calls"], 1)
+        self.assertEqual(report["decision"], "fail_closed_no_matched_pair")
+        self.assertFalse(report["passed"])
+        self.assertTrue(report["provider_cost_gate"]["passed"])
+        self.assertTrue(any("prompt_tokens" in error for error in errors))
+        self.assertTrue(any("cache_write_tokens" in error for error in errors))
+        self.assertTrue(all(not value for value in report["claim_ceiling"].values()))
 
 
 if __name__ == "__main__":
