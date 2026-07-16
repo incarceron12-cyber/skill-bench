@@ -1,0 +1,712 @@
+                                             Shared Selective Persistent Memory for Agentic LLM Systems
+
+
+                                            Sanjana Pedada                        Aditya Dhavala                       Neelraj Patil
+                                               Apple Inc.                           Apple Inc.                          Apple Inc.
+                                          s_pedada@apple.com                   a_dhavala@apple.com               neelraj_patil@apple.com
+
+
+
+
+                                                          Abstract                                 invocation token cost by 97× versus raw data
+                                                                                                   injection. A replication on four public datasets
+                                         Agentic LLM systems that generate code                    confirms generalizability, with zero-token re-
+                                         through multi-turn tool use face a fundamen-              fresh succeeding in 12/12 trials. Notably, naive
+                                         tal context problem: each session starts from             full-history persistence actively degrades task
+                                         zero, discarding the configuration choices,               completion by biasing the agent with stale rea-
+                                         domain constraints, data schemas, and tool-               soning traces, while selective memory outper-
+                                         use patterns that made previous sessions                  forms both extremes.
+                                         productive. Naively persisting entire con-
+
+
+
+
+arXiv:2607.09493v1 [cs.AI] 10 Jul 2026
+                                         versation histories is both token-inefficient         1   Introduction
+                                         and counterproductive—irrelevant context de-
+                                         grades generation quality. We introduce shared        Agentic LLM systems—those that autonomously
+                                         selective persistent memory, a memory ar-             invoke tools, write files, and execute code to ac-
+                                         chitecture for agentic systems that identifies        complish user goals—have demonstrated impres-
+                                         and retains four categories of reusable con-          sive capabilities in code generation (GitHub, 2021;
+                                         text—task specifications, data schemas, tool          Anthropic, 2025b), data analysis (OpenAI, 2023b),
+                                         configurations, and output constraints—while
+                                                                                               and multi-step reasoning (Wu et al., 2023). Yet a
+                                         discarding session-specific reasoning traces.
+                                         Crucially, this memory is shared: workspaces          fundamental limitation persists across all current
+                                         encapsulating selective memory can be trans-          agentic frameworks: sessions are stateless. When
+                                         ferred across users with role-based access            a conversation ends, the accumulated context—
+                                         control, enabling collaborative reuse of ac-          domain constraints, data schemas, tool configu-
+                                         cumulated context without redundant speci-            rations, prompt refinements, and output format
+                                         fication. We implement this architecture in           preferences—is discarded entirely.
+                                         a deployed collaborative workspace platform
+                                                                                                  This is wasteful. In enterprise workflows, users
+                                         where LLM agents produce, edit, and main-
+                                         tain git-versioned artifacts—including interac-       repeatedly perform structurally similar tasks: gen-
+                                         tive dashboards, structured reports, and data-        erating weekly dashboards from updated data ex-
+                                         driven documents—from heterogeneous data              ports, producing reports with consistent formatting,
+                                         sources accessed via multiple connector types         querying the same internal tools with the same
+                                         (CSV upload, SQL, REST APIs, and MCP                  authentication patterns, drafting documents from
+                                         servers). Git-backed versioning with draft iso-       evolving data sources, and maintaining versioned
+                                         lation enables users to explore modifications
+                                                                                               artifacts across teams. Each session forces the user
+                                         risk-free and restore to any prior state with-
+                                         out re-invoking the model. A complementary            to re-specify what the system should already know.
+                                         zero-token data refresh mechanism decou-              The problem is not that LLMs lack memory, but
+                                         ples generated programs from runtime data,            that existing systems provide no mechanism to se-
+                                         enabling artifact reuse without re-invocation.        lectively persist the context that matters while dis-
+                                         Across three enterprise deployment scenarios,         carding the session-specific reasoning that does
+                                         shared selective persistent memory achieves           not.
+                                         96% task completion (vs. 79% without mem-
+                                                                                                  The naive solution—persisting entire conversa-
+                                         ory and 71% with full history). A complemen-
+                                         tary zero-token data refresh mechanism elim-          tion histories—is counterproductive. Prior work on
+                                         inates LLM re-invocation entirely for recur-          long-context LLMs (Liu et al., 2024) demonstrates
+                                         ring data updates (14× task time reduction),          that irrelevant context degrades output quality (the
+                                         while summary-driven generation reduces per-          “lost in the middle” phenomenon). For agentic sys-
+
+                                                                                           1
+tems, the problem is compounded: a prior session’s              1. A shared selective persistent memory ar-
+tool-use trace (file reads, shell commands, error                  chitecture that identifies four categories of
+recovery) is not just irrelevant but actively harmful              reusable agentic context, persists them in-
+when injected into a new session, as it biases the                 dependently of session traces, and includes
+agent toward previously explored solution paths                    a zero-token data refresh mechanism that
+rather than the current task.                                      decouples generated programs from runtime
+   We propose shared selective persistent mem-                     data (Section 3).
+ory, a memory architecture for agentic LLM sys-
+                                                                2. A collaborative workspace platform with
+tems built on a key observation: the reusable knowl-
+                                                                   git-versioned artifacts, draft isolation, multi-
+edge from an agentic session can be decomposed
+                                                                   connector data integration (CSV, SQL, REST,
+into four orthogonal categories, each of which
+                                                                   MCP), and AI-assisted editing and querying
+is compact, stable across sessions, and beneficial
+                                                                   modes (Section 4).
+when persisted:
+                                                                3. Deployment case studies across three enter-
+  1. Task specifications — custom system
+                                                                   prise scenarios demonstrating that shared se-
+     prompts that encode domain rules, output for-
+                                                                   lective memory reduces redundant specifica-
+     mat constraints, and generation preferences
+                                                                   tion, enables workspace reuse, and supports
+     (e.g., “always use green for ≥95% attain-
+                                                                   zero-token data refresh (Section 6).
+     ment”).
+                                                            1.1    Motivating Use Cases
+  2. Data schemas — column names, types, statis-
+     tical summaries, and relationships across data         We ground our architecture in three enterprise sce-
+     sources, precomputed from raw data.                    narios. (1) Recurring refresh: An analyst gener-
+                                                            ates a supply chain dashboard weekly; 8–12 format-
+  3. Tool configurations — which external tools             ting constraints must be re-specified each session
+     are available, their parameter schemas, invoca-        (4–5 turns). With selective memory, specifications
+     tion patterns, and authentication requirements.        persist and zero-token data swap enables one-click
+                                                            refresh regardless of source type. (2) Cross-team
+  4. Output constraints — structural contracts              sharing: A director publishes a revenue workspace
+     between the generated artifact and its runtime         as a versioned template; a counterpart loads it,
+     environment (e.g., “data is injected at runtime,       connects schema-compatible data, and the artifact
+     never hardcoded”).                                     renders immediately under role-based access con-
+   Crucially, what we discard is equally important:         trol. (3) Iterative construction: A team builds
+the multi-turn reasoning trace, tool invocation logs,       a workspace across sessions, each adding compo-
+intermediate file states, and error-recovery paths          nents. Selective memory carries forward accumu-
+from prior sessions. These are useful within a ses-         lated specifications; draft isolation protects the pub-
+sion but harmful across sessions.                           lished version, and git-backed revert enables the
+   We validate this architecture in a deployed en-          team to restore any prior artifact state without re-
+terprise collaborative workspace platform, where            invoking the model. Session time drops from ∼20
+LLM agents produce, edit, and maintain git-                 to ∼5 minutes.
+versioned artifacts—including interactive dash-
+                                                            2     Related Work
+boards, structured reports, and data-driven
+documents—from heterogeneous data sources ac-               Memory in LLM Systems. Context window ex-
+cessed via multiple connector types (CSV upload,            tension (Press et al., 2022; Chen et al., 2023) in-
+SQL databases, REST APIs, and MCP servers).                 creases the token budget without addressing what
+Git-backed versioning with draft isolation allows           to persist. RAG (Lewis et al., 2020) retrieves at
+users to explore refinements risk-free and restore          the document level, not the structured configura-
+to any prior artifact state without re-invoking the         tion level agentic systems require. Conversation
+model. A complementary zero-token data refresh              summarization (Xu et al., 2023) compresses prior
+mechanism enforces strict separation between the            turns but retains session-specific reasoning traces.
+LLM-generated program and runtime-bound data,               MemGPT (Packer et al., 2023) provides an OS-
+enabling data refresh with zero LLM tokens.                 inspired memory hierarchy focused on conversa-
+   Our contributions are:                                   tional continuity. Generative Agents (Park et al.,
+
+                                                        2
+2023) maintain memory streams optimized for nar-                                 Selective Memory (per workspace)
+
+rative coherence. Reflexion (Shinn et al., 2023)                                           Mtools   Moutput
+
+persists failure summaries for within-task trial-and-                                      Mtask    Mdata
+error learning. Our approach identifies four struc-
+tured categories to persist across sessions and ex-               User A
+                                                                                  share
+                                                                                               User B
+                                                                                                              share
+                                                                                                                           User N
+plicitly discards reasoning traces.
+
+                                                                                 collab                       collab
+Agentic LLM Frameworks. ReAct (Yao et al.,                    Workspace 1                   Workspace 2                Workspace N
+2023) established interleaved reasoning and tool-
+                                                                      artifact
+use actions, building on chain-of-thought prompt-
+                                                                                               Agentic
+ing (Wei et al., 2022). LangChain (Chase, 2022),                                               Engine
+AutoGen (Wu et al., 2023), and CrewAI (CrewAI,                                                                fetch
+                                                                                   calls             data
+2024) provide multi-agent orchestration. LATS
+                                                                           Tool                                    Data
+(Zhou et al., 2023) unifies reasoning, acting, and                      Integration                                Layer
+planning via tree search. Voyager (Wang et al.,
+                                                                  MCP | SQL | REST | CSV                 Connectors | Persistence
+2023) introduces a persistent skill library for em-
+bodied agents—the closest prior work, though it             Figure 1: System architecture. Multiple users each own
+persists executable skills rather than declarative          independent workspaces that can be shared for collabo-
+configuration. None of these frameworks persist             ration with role-based access control. Each workspace
+task specifications, tool configurations, or output         persists four categories of selective memory (top). The
+constraints across sessions.                                agentic engine composes workspace memory into ses-
+                                                            sion prompts; the zero-token data architecture decouples
+                                                            generated artifacts from runtime data. Data is accessed
+Tool-Augmented LLMs. Toolformer (Schick                     via heterogeneous connectors (CSV, SQL, REST, MCP).
+et al., 2023) demonstrated autonomous tool learn-
+ing; Gorilla (Patil et al., 2023) improved API call
+accuracy; MCP (Anthropic, 2024) standardizes tool           3.1     Problem Formulation
+discovery. The OpenAI Assistants API (OpenAI,               Consider an agentic LLM system that, given a
+2023a) provides thread-level persistence but retains        user query q and system prompt s, produces an
+full conversation threads rather than selectively           artifact a through a sequence of tool-use steps
+extracting reusable configuration. LLM-powered              T = (t1 , t2 , . . . , tn ). In current systems, the com-
+code generation tools (GitHub, 2021; Anthropic,             plete session state S = (s, q, T, a) is discarded
+2025b; Cursor, 2024) and code interpreters (Ope-            after the session ends.
+nAI, 2023b) are single-user and ephemeral. Tradi-              When the user returns for a related task q ′ , they
+tional BI platforms provide persistent dashboards           must re-specify all implicit knowledge: the domain
+but require domain-specific query languages rather          constraints encoded in s, the data schema assump-
+than natural language.                                      tions in q, the tool configurations invoked during T ,
+                                                            and the output format contracts in a. We observe
+                                                            that this re-specification is both the primary source
+3   Shared Selective Persistent Memory
+                                                            of user friction and the primary source of wasted
+                                                            tokens.
+Figure 1 presents the end-to-end architecture.
+Users interact with a conversational frontend; each         3.2     Memory Decomposition
+session is contextualized by selective persistent
+                                                            We decompose the reusable knowledge from a ses-
+memory drawn from the workspace store. The
+                                                            sion into four categories:
+agentic engine generates and edits versioned ar-
+tifacts through autonomous tool use, with exter-            Task Specifications (Mtask ). Custom instruc-
+nal data accessed via a multi-connector integration         tions that extend the base system prompt. These
+layer (CSV, SQL, REST, MCP). Generated artifacts            encode domain rules (“use gate-based color cod-
+consume data exclusively through a runtime injec-           ing: Supply blue, Orders orange, Process purple”),
+tion contract (Section 3.5), and the workspace cap-         output preferences (“always include an executive
+tures only the four structured memory categories—           summary card”), and quality constraints (“guard
+never the session trace.                                    against NaN in all numeric operations”). Task spec-
+
+                                                        3
+ifications are authored by users and refined over                 • Reasoning traces: The LLM’s intermediate
+multiple sessions.                                                  chain-of-thought and planning steps, which re-
+                                                                    flect session-specific problem decomposition.
+Data Schemas (Mdata ). Precomputed sum-
+maries of associated data sources: column names                   • Tool invocation logs: The specific file reads,
+and types, statistical distributions for numeric                    writes, and shell commands executed during
+columns, unique value catalogs for categorical                      generation, which reflect one solution path
+columns, row counts, and sample rows. These                         among many.
+are generated automatically from uploaded data via
+                                                                  • Error recovery paths: Failed tool calls, re-
+statistical profiling (we use pandas.describe()
+                                                                    tries, and workarounds, which are artifacts of
+with extensions for categorical analysis; for large
+                                                                    a specific session’s execution.
+datasets, profiling operates on columnar statistics
+in constant memory regardless of row count). Data                 • Raw data: The complete source data, which
+schemas provide the LLM with sufficient infor-                      is replaced by compact schema summaries.
+mation to generate correct data-processing code
+without reading raw data—reducing prompt tokens                   This selective forgetting is motivated by the “lost
+while improving generation accuracy through struc-             in the middle” finding (Liu et al., 2024): injecting
+tured metadata.                                                irrelevant context into LLM prompts degrades per-
+                                                               formance. A prior session’s tool trace is not just
+Tool Configurations (Mtools ). The set of avail-               irrelevant but potentially misleading—it biases the
+able external tools and data connectors with their             agent toward repeating a previous solution path
+parameter schemas, invocation patterns (REST end-              rather than generating fresh for the current query.
+point, MCP server, SQL connection, sub-agent del-
+egation), and authentication requirements. In en-              3.4    Memory Composition at Session Start
+terprise settings, tool availability, connector con-           When a new session begins, the system prompt is
+figurations, and auth context are stable across ses-           composed from persistent memory:
+sions but expensive to discover and configure from
+scratch.                                                             s′ = sbase ⊕ Mtask ⊕ Mtools ⊕ Moutput ,     (1)
+
+Output Constraints (Moutput ). Structural con-                 where sbase is the default system prompt and ⊕
+tracts between the generated artifact and its run-             denotes structured concatenation with section head-
+time environment. The critical constraint is the               ers. The data schema Mdata is injected into the
+data-injection contract: generated scripts must con-           user message alongside the query:
+sume data exclusively from a well-defined runtime
+injection point, never from hardcoded values. This                               q ′ = q ⊕ Mdata .               (2)
+constraint enables zero-token data refresh (Sec-
+                                                                  This composition is performed at the applica-
+tion 3.5).
+                                                               tion layer before the LLM is invoked. The LLM
+                                                               receives a fully contextualized prompt without any
+3.3   Selective Forgetting
+                                                               awareness of the persistence mechanism.
+Equally important is what we do not persist. Given
+a session trace T = (t1 , t2 , . . . , tn ), we discard:       3.5    Zero-Token Data Refresh
+                                                               A complementary mechanism to selective memory
+   • Intermediate temporary files: Working files               is the data-injection contract: generated artifacts
+     created during generation (partial drafts, inter-         must consume data exclusively from a runtime in-
+     mediate versions, scratch computations) that              jection point, never from hardcoded values. The
+     are artifacts of one execution path.                      LLM generates programs that parse, aggregate, and
+                                                               render dynamically—including insight text (sum-
+   • Unapproved changes: Modifications the user                maries, outliers, rankings)—so that when the under-
+     explored but did not explicitly save. The undo            lying data changes, the artifact re-renders correctly
+     stack (Section 5) allows users to try refine-             without any LLM re-invocation.
+     ments risk-free; only changes the user accepts               When new data arrives (from any connector
+     are persisted.                                            type), the system checks schema compatibility: the
+
+                                                           4
+original column set must be a subset of the new               5   Implementation
+source’s columns. If compatible, data refreshes
+                                                              We implement shared selective persistent memory
+with zero tokens. If the schema has diverged, the
+                                                              in a deployed collaborative workspace platform
+user is prompted to regenerate. This enables addi-
+                                                              consisting of a FastAPI backend, an agentic LLM
+tive schema evolution (new columns are permitted;
+                                                              engine, a multi-connector data layer, and a conver-
+missing columns trigger regeneration).
+                                                              sational frontend.
+4     Collaborative Memory Sharing                            Agentic Loop. Each user turn initializes a fresh
+                                                              session with the composed system prompt (Equa-
+A workspace W encapsulates the full selective
+                                                              tion 1) and data summary (Equation 2). The agent
+memory state:
+                                                              uses Claude Opus 4 (Anthropic, 2025c) via the
+                                                              Claude Agent SDK (Anthropic, 2025a) with au-
+    W = (Mtask , Mdata , Mtools , Moutput , a, V ), (3)
+                                                              tonomous tool use (file I/O, code search, shell ex-
+                                                              ecution), scoped to the user’s session workspace.
+where a is the most recent generated artifact and
+                                                              Two interaction modes are supported: edit mode
+V is its version history. The workspace stores
+                                                              for artifact generation and modification, and query
+structured configuration, generated code, and ver-
+                                                              mode for read-only questions over existing arti-
+sion metadata, never conversational transcripts, rea-
+                                                              facts.
+soning traces, or tool invocation logs. A saved
+workspace is a curated artifact store, not a chat             Data Integration. A unified connector interface
+history.                                                      abstracts four source types—CSV upload, SQL
+   The sharing workflow exploits the zero-token               databases, REST APIs, and MCP servers (JSON-
+data architecture:                                            RPC with mTLS)—into a normalized tabular rep-
+                                                              resentation. Rather than injecting raw data into the
+    1. Load: A colleague loads the shared                     LLM prompt, the system precomputes a compact
+       workspace, restoring all selective memory into         statistical profile (column types, distributions, cat-
+       their session. Draft isolation ensures their ed-       egorical catalogs, sample rows) that captures the
+       its do not affect the published artifact.              information needed for correct code generation in
+                                                              ∼500 tokens—a 100× reduction over raw injection
+    2. Swap: They connect their own data source               for typical enterprise datasets.
+       (e.g., their region’s SQL database, a differ-
+       ent REST endpoint, or an uploaded CSV). If             Persistence       and    Versioning. Workspace
+       schema-compatible, the artifact renders with           metadata—the four memory categories, access
+       new data—zero tokens.                                  control lists, and data source configurations—is
+                                                              persisted to MongoDB. Generated artifacts and
+    3. Refine: They ask refinement questions within           their version history are managed through git,
+       the established context (e.g., “add a trend            providing full version control with diff, branch,
+       chart”). The LLM benefits from the per-                and rollback capabilities. No conversation history
+       sisted task specifications and tool configura-         or reasoning traces are stored in either layer. Users
+       tions without re-specification.                        edit within isolated draft sessions; in-progress
+                                                              modifications do not affect the published artifact
+    4. Query: Viewers without edit access can use             until explicitly committed via a publish operation
+       the AI query mode to ask questions about the           that creates a new git-versioned snapshot.
+       artifact and its underlying data, receiving an-
+                                                              Save and Revert. An in-session undo stack (up
+       swers contextualized by the workspace’s se-
+                                                              to 10 snapshots) enables risk-free exploration—
+       lective memory.
+                                                              users can revert to any prior version without re-
+   Access is managed through OIDC-based iden-                 invoking the model. Only explicitly saved changes
+tity with three roles: owners have full control over          persist, reinforcing selective forgetting.
+the workspace and its memory; stewards can edit
+                                                              6   Evaluation
+artifacts and modify task specifications; viewers
+can load, query, and extend with their own data but           We evaluate shared selective persistent memory
+cannot modify the base workspace.                             through four studies: a controlled ablation compar-
+
+                                                          5
+ing memory conditions, a public dataset replication          Metric              No Mem.     Full Hist.   Selective
+for reproducibility, a token efficiency analysis, and        Input tokens (K)       2.1         18.7        3.4
+a user study.                                                Output tokens (K)      8.2         9.6         4.1
+                                                             User turns             4.3         3.1         1.4
+                                                             Completion (%)          79          71         96
+6.1   Experimental Setup                                     Time (sec)             285         310         68
+All experiments use the deployed system described
+in Section 5. The agentic engine uses Claude Opus           Table 1: Ablation results across 24 recurring artifact
+4 (Anthropic, 2025c) for primary artifact genera-           generation tasks (means). Shared selective memory
+                                                            achieves the highest completion rate with the fewest
+tion and Claude Sonnet 4 for lightweight subtasks
+                                                            tokens and turns. Full history increases input tokens 9×
+(schema validation, tool dispatch). We evaluate             over no-memory but decreases completion rate.
+on a corpus of 24 real enterprise data files span-
+ning supply chain operations, sales reporting, and
+process metrics, with sizes ranging from 200 rows           gap (100% vs. 70% / 60%); cross-team adaptation
+/ 8 columns to 45K rows / 42 columns. Data is               (UC2, n = 8) achieved 100% vs. 88% / 75%; it-
+ingested via CSV upload and SQL connectors.                 erative construction (UC3, n = 6) showed equal
+                                                            completion (83%) but selective memory halved the
+Task definition. Each experimental task requires            turns (2.8 vs. 6.2). Output tokens drop 50% (4.1K
+generating an interactive artifact from a struc-            vs. 8.2K) and wall-clock time drops from 285s to
+tured data source with specific formatting require-         68s. For the 18/24 tasks with compatible schemas,
+ments (color thresholds, layout preferences, sum-           zero-token refresh succeeded with zero LLM invo-
+mary cards). Tasks are drawn from the three use             cation.
+case families described in Section 1.1: 10 tasks
+model recurring artifact refresh (Use Case 1), 8            Significance and Failures. Fisher’s exact test:
+tasks model cross-team workspace adaptation (Use            selective vs. no-memory p = 0.046; selective
+Case 2), and 6 tasks model iterative artifact con-          vs. full history p = 0.008. The single selective-
+struction (Use Case 3). We define two task types:           memory failure involved cross-file join seman-
+initial generation (first artifact from a new data          tics missed by the schema summary. No-memory
+source) and recurring generation (same task struc-          failures (5/24) were format non-compliance; full-
+ture, new data).                                            history failures (7/24) were dominated by trace
+                                                            anchoring.
+6.2   Experiment 1: Memory Condition
+      Ablation                                              6.3 Experiment 2: Public Dataset Replication
+We compare three conditions across 24 recurring             To validate generalizability and enable repro-
+generation tasks: no memory (default prompt, full           ducibility, we replicate the ablation and token ef-
+re-specification), full history (complete prior ses-        ficiency experiments on four publicly available
+sion transcript injected), and shared selective mem-        datasets spanning diverse domains: Superstore
+ory (four structured categories plus artifact; traces       Sales (1K rows, 10 cols, retail), UCI Adult Income
+discarded).                                                 (32K rows, 15 cols, census), NYC 311 Service Re-
+                                                            quests (2K rows, 5 cols, government), and World
+Protocol. Each artifact was evaluated by two                Bank GDP (14K rows, 4 cols, economics).
+blinded raters on four pass/fail criteria: render
+correctness, data fidelity (spot-checked against            Protocol. For each dataset, we run three condi-
+source), format compliance, and completeness. A             tions (no memory, full history, shared selective
+task passed only if both raters scored pass on all          memory) with 3 runs each (36 total trials). Artifact
+four (κ = 0.91).                                            completion is validated by automated checks: pres-
+                                                            ence of scripts, use of the data-injection contract,
+Results (Table 1). Selective memory achieves                absence of hardcoded data, and dataset-specific
+96% completion / 1.4 turns, vs. 79% / 4.3 for no-           content verification. Token counts are estimated
+memory and 71% / 3.1 for full history. Full his-            via the cl100k_base tokenizer.
+tory is worse than no-memory despite 9× more
+input tokens—consistent with the “lost in the mid-          Results (Table 2). Shared selective memory
+dle” effect (Liu et al., 2024). By use case: recur-         achieved 100% task completion with zero LLM
+ring refresh (UC1, n = 10) showed the largest               tokens across all 12 selective-memory trials—the
+
+                                                        6
+ Metric                No Mem.    Full Hist.    Selective                      10,000
+                                                                                                                                  Raw injection
+ Input tokens (K)        2.6         15.4         0.0                                                  1571
+                                                                                                                                 Summary-driven
+ Output tokens (K)       6.8          7.9         0.0                           1,000
+ Completion (%)          83           75          100
+                                                                                                                                     245
+ Time (sec)              84          112           0
+
+
+                                                                  Tokens (K)
+ Tool calls              4.2          5.1         0.0                            100                                44.9
+                                                                                         31.7
+Table 2: Public dataset ablation (means across 4 datasets,
+3 runs each). Shared selective memory achieves 100%                               10
+completion with zero LLM tokens via zero-token data
+refresh. Full history degrades completion by 8pp vs. no                                                       0.9
+                                                                                   1            0.5
+memory, consistent with enterprise results.                                                                                0.3             0.3
+
+
+                                                                                        Superstore Adult Inc. NYC 311World GDP
+   Data size               Raw    Trunc.       Summary
+   Small (<1K rows)       3.2K      1.8K          0.4K           Figure 2: Token reduction by strategy on public datasets
+   Medium (1–10K)        28.5K      1.9K          0.5K
+   Large (>10K)         142.3K      2.0K          0.6K
+                                                                 (log scale). Raw injection scales with data size (32K–
+                                                                 1.6M tokens); summary-driven generation is consis-
+   Mean (enterprise)     48.7K      1.9K          0.5K           tently <1K.
+   Mean (public)        473.0K      1.5K          0.5K
+
+Table 3: Data representation tokens by strategy.                 Mechanism                            Measured Effect
+Summary-driven generation achieves 97× reduction on              Selective forgetting                 +25% completion rate vs. full his-
+enterprise data and 946× on public datasets, with con-                                                tory
+sistent sub-1K summaries regardless of dataset size.             Zero-token refresh                   12/12 on public data; 0 LLM tokens
+                                                                 Summary-driven gen.                  97–946× token reduction vs. raw in-
+                                                                                                      jection
+                                                                 Specification memory                 3× fewer turns; 50% fewer output
+zero-token data refresh succeeded for every dataset,                                                  tokens
+as the V2 data (same schema, different values) was               Git versioning & revert              Risk-free exploration; restore to any
+                                                                                                      prior state
+schema-compatible with the original artifact. No-                Context transfer                     One workspace scales to N users
+memory completion was 83%, with failures on
+the UCI Adult dataset (complex categorical dis-                  Table 4: Summary of efficiency gains across all four
+tributions led to incorrect binning) and NYC 311                 evaluation studies.
+(the agent missed a requested temporal breakdown).
+Full history degraded to 75%—consistent with en-
+terprise results—with trace anchoring causing stale              exceeds 1700×. Truncation achieves lower token
+tool-use patterns on 3 of 12 trials. Full history was            counts but sacrifices tail distributions and rare cate-
+33% slower than no memory (112s vs. 84s). To-                    gories, leading to errors in 5 of 24 enterprise tasks.
+ken efficiency results on these public datasets are
+                                                                 6.5            Experiment 4: User Study
+reported jointly in Experiment 3.1
+                                                                 A user study (N = 12; 6 engineers, 6 analysts)
+6.4    Experiment 3: Token Efficiency                            across four counterbalanced tasks showed recur-
+We measure the token cost of data representa-                    ring generation was 14× faster with shared se-
+tion comparing three strategies: (1) raw data in-                lective memory (12s vs. 165s), refinement 2.5×
+jected verbatim, (2) truncated data (first 50 rows),             faster, and constrained generation 3× faster. All
+and (3) summary-driven (statistical profile from                 Likert dimensions favored selective memory, with
+summarize_data()).                                               the largest gap on “would use again” (6.5 vs. 4.2
+                                                                 / 7). Participants used revert 1.8 times per session
+Results (Table 3). Summary-driven generation                     on average.
+consumes a mean of 0.5K tokens compared to
+48.7K for raw injection on enterprise data (97×                  6.6            Summary of Findings
+reduction) and 473K on public datasets (946× re-                 The key finding is that full history persistence is
+duction). The savings scale with data size: for                  counterproductive: it degrades both completion
+the UCI Adult dataset (32K rows), the reduction                  rate and generation time relative to no memory.
+   1
+    Datasets: UCI ML Repository (Adult), NYC Open Data           Selective memory outperforms both extremes by
+(311), Frictionless Data (GDP).                                  persisting high-relevance context and discarding
+
+                                                             7
+low-relevance traces.                                       session LLM interactions into persistent, collabora-
+                                                            tive, and reusable workspaces. Our results suggest
+7   Discussion and Conclusion                               that context management, not model capability, is
+                                                            the primary lever for improving agentic LLM effi-
+The ablation results reveal that full history per-          ciency in enterprise settings.
+sistence is not merely unhelpful but counterpro-
+ductive—reducing task completion by 8 percent-              Limitations
+age points relative to no memory. This parallels
+the distinction between declarative and procedu-            The current memory decomposition is manually
+ral memory in cognitive science: persisting the             designed; while it generalizes across the artifact
+“what” (specifications, schemas) while discarding           types evaluated (dashboards, reports, documents),
+the “how” (execution traces) yields better results          automatically identifying which context elements
+than persisting everything or nothing. The benefit          are reusable across sessions and artifact types re-
+is strongest for recurring refresh tasks (zero-token        mains an open problem. The zero-token data ar-
+data swap) and cross-team adaptation (persisted             chitecture is limited to structured tabular data with
+specifications prevent redundant prompt engineer-           stable schemas; extending to streaming data, un-
+ing), while iterative construction tasks see substan-       structured documents, or real-time API responses
+tial turn reduction even when completion rates are          would require richer schema compatibility check-
+comparable. The memory decomposition—task                   ing. While the multi-connector layer supports CSV,
+specifications, data schemas, tool configurations,          SQL, REST, and MCP sources, each connector
+output constraints—is not specific to any single            type introduces its own failure modes (connection
+artifact type; it applies equally to dashboards, re-        timeouts, authentication expiry, schema drift) that
+ports, documents, and any workspace where an                are handled independently rather than through a
+LLM agent produces artifacts from structured data.          unified retry strategy. Our four-criterion rubric cap-
+   Quantitatively, shared selective memory                  tures functional correctness and format compliance
+achieves 96% task completion (vs. 79% without               but does not assess subjective qualities such as vi-
+memory and 71% with full history). The com-                 sual aesthetics or information hierarchy. Our user
+plementary zero-token data refresh mechanism—               study (N = 12) is sufficient for identifying trends
+which decouples generated artifacts from runtime            but underpowered for statistical significance test-
+data—eliminates LLM re-invocation entirely for              ing on individual Likert items; a larger study is
+recurring data updates, reducing task time by 14×           warranted. Collaboration is workspace-level; finer-
+(since no model call is required). Summary-driven           grained sharing of individual memory components
+generation achieves 97× token reduction versus              (e.g., sharing tool configurations without task spec-
+raw data injection when the model is invoked, by            ifications) is not yet supported.
+providing pre-computed statistical summaries                Future Work. Four directions are promising:
+rather than raw tabular data. These latter two              (1) learned memory selection—training a classi-
+gains are architectural—they reduce how often               fier to automatically identify reusable context from
+and how expensively the LLM is called—rather                session traces, moving beyond manual decompo-
+than improvements to model reasoning itself.                sition; (2) memory composition—merging selec-
+A replication on four public datasets confirms              tive memory from multiple workspaces to create
+generalizability, and a user study (N = 12)                 richer contexts, enabling cross-domain knowledge
+validates improved usability ratings and reduced            transfer; (3) memory decay—aging out specifica-
+task completion times. Git-backed versioning and            tions that have not been validated against recent
+revert mechanisms provide user agency over the              sessions, preventing stale context accumulation, as
+memory lifecycle—enabling risk-free exploration             motivated by participant feedback in our user study;
+and restoration to any prior artifact state without         and (4) agent-level persistent memory—extending
+re-invoking the model.                                      memory beyond workspace configuration to the
+   Combined with a multi-connector integration              agent’s own reasoning capabilities.
+layer (CSV, SQL, REST, MCP), git-based artifact
+versioning with draft isolation, and collaborative          Agent Memory. The current architecture persists
+workspace mechanisms with role-based access con-            workspace context (what to build, with what data,
+trol, shared selective memory transforms single-            under what constraints) but discards agent context
+
+                                                        8
+(how it solved similar problems, which tool se-             instructions; file system access is scoped to per-
+quences were effective, what error patterns it en-          user session directories and generated artifacts are
+countered). A complementary agent memory layer              served in sandboxed browser contexts. Extensions
+could retain:                                               of this architecture to domains involving personal
+• Tool-use patterns: Frequently successful tool             data, user-level personalization, or sensitive content
+  sequences for common task types (e.g., “for               should incorporate appropriate privacy safeguards,
+  schema changes, always Read → Grep → Edit”                data retention policies, and access controls beyond
+  vs. trial-and-error).                                     the workspace-level mechanisms described here.
+• Error recovery heuristics: When a tool invo-
+  cation fails with a specific error class, the agent       Acknowledgements
+  currently re-derives the fix from scratch each ses-       We used Claude (Anthropic) as an AI writing as-
+  sion; persisting resolution patterns would reduce         sistant during manuscript preparation, including
+  repeated reasoning.                                       drafting, editing, and LaTeX formatting. All intel-
+• User preference models: Implicit style prefer-            lectual contributions—system design, architecture
+  ences inferred from accepted vs. reverted edits—          decisions, implementation, experimental design,
+  without explicit specification in Mtask .                 and analysis—are the authors’ own. The authors
+• Cross-session planning: For multi-session tasks,          reviewed and take full responsibility for all content.
+  persisting a high-level plan across sessions rather
+  than re-deriving intent from artifacts alone.
+Unlike workspace memory (which is user-authored             References
+and shared), agent memory would be learned,                 Anthropic. 2024. Model context protocol specification.
+private to the agent instance, and subject to                 https://modelcontextprotocol.io.
+validation—a correct tool-use pattern from one data         Anthropic. 2025a.       Claude agent            SDK.
+domain may not transfer to another. Designing ap-             https://docs.anthropic.com/en/docs/
+propriate generalization boundaries, staleness de-            agents-and-tools/claude-agent-sdk.
+tection, and conflict resolution between agent mem-         Anthropic. 2025b. Claude code: An agentic coding
+ory and explicit workspace specifications remains             tool.   https://docs.anthropic.com/en/docs/
+an open challenge.                                            claude-code.
+   Additionally, extending the connector frame-             Anthropic. 2025c. The claude model family: Claude
+work to support real-time data streams and event-             opus 4 and claude sonnet 4.        https://www.
+driven refresh would broaden applicability beyond             anthropic.com/claude.
+batch-oriented workflows.
+                                                            Harrison Chase. 2022. LangChain: Building appli-
+                                                              cations with LLMs through composability. https:
+Ethical Considerations                                        //github.com/langchain-ai/langchain.
+
+The system does not store or process personally             Shouyuan Chen, Sherman Wong, Liangjian Chen, and
+                                                              Yuandong Tian. 2023. Extending context window of
+identifiable information (PII). All persistent mem-           large language models via positional interpolation.
+ory operates at the workspace level—task specifi-             arXiv preprint arXiv:2306.15595.
+cations, data schemas, tool configurations, and out-
+                                                            CrewAI. 2024. CrewAI: Framework for orchestrat-
+put constraints—none of which contain user-level              ing role-playing AI agents. https://github.com/
+personal data. The data sources used in our eval-             crewAIInc/crewAI.
+uation consist entirely of aggregated operational
+metrics. Personalization is scoped to workspace             Cursor. 2024. Cursor: The ai code editor. https://
+                                                              cursor.sh.
+configuration, not to individual user profiles or
+behavioral tracking. The multi-connector archi-             GitHub. 2021. Github copilot: Your ai pair programmer.
+tecture introduces additional security considera-             https://github.com/features/copilot.
+tions: SQL connectors require credential manage-            Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio
+ment, REST connectors handle API tokens, and                  Petroni, Vladimir Karpukhin, Naman Goyal, Hein-
+MCP connectors use mTLS authentication—all                    rich Küttler, Mike Lewis, Wen-tau Yih, Tim Rock-
+                                                              täschel, and 1 others. 2020. Retrieval-augmented
+scoped to per-workspace configuration with no                 generation for knowledge-intensive NLP tasks. Ad-
+cross-workspace credential leakage. The system                vances in Neural Information Processing Systems,
+generates executable code from natural language               33:9459–9474.
+
+
+                                                        9
+Nelson F Liu, Kevin Lin, John Hewitt, Ashwin Paran-             Frank F Xu, Uri Alon, Graham Neubig, and Vincent Jo-
+  jape, Michele Bevilacqua, Fabio Petroni, and Percy               sua Hellendoorn. 2023. Beyond summarization: De-
+  Liang. 2024. Lost in the middle: How language mod-               signing AI support for real-world LLM interactions.
+  els use long contexts. Transactions of the Association           arXiv preprint arXiv:2310.10893.
+  for Computational Linguistics, 12:157–173.
+                                                                Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak
+OpenAI. 2023a. Assistants API. https://platform.                  Shafran, Karthik Narasimhan, and Yuan Cao. 2023.
+  openai.com/docs/assistants.                                     ReAct: Synergizing reasoning and acting in language
+                                                                  models. International Conference on Learning Rep-
+OpenAI. 2023b. Chatgpt code interpreter. https://                 resentations.
+  openai.com/blog/chatgpt-plugins.
+                                                                Andy Zhou, Kai Yan, Michal Shlapentokh-Rothman,
+Charles Packer, Sarah Wooders, Kevin Lin, Vivian Fang,            Haohan Wang, and Yu-Xiong Wang. 2023. Lan-
+  Shishir G Patil, Ion Stoica, and Joseph E Gonzalez.             guage agent tree search unifies reasoning acting
+  2023. MemGPT: Towards LLMs as operating sys-                    and planning in language models. arXiv preprint
+  tems. arXiv preprint arXiv:2310.08560.                          arXiv:2310.04406.
+Joon Sung Park, Joseph C O’Brien, Carrie J Cai, Mered-          A    Memory Composition Example
+  ith Ringel Morris, Percy Liang, and Michael S Bern-
+  stein. 2023. Generative agents: Interactive simulacra         The following illustrates how a composed system
+  of human behavior. Proceedings of the 36th Annual
+  ACM Symposium on User Interface Software and
+                                                                prompt is constructed from selective memory at ses-
+  Technology.                                                   sion start. The base system prompt (sbase ) contains
+                                                                domain-agnostic generation instructions—data ar-
+Shishir G Patil, Tianjun Zhang, Xin Wang, and Joseph E          chitecture rules, output size constraints, and code
+  Gonzalez. 2023. Gorilla: Large language model
+  connected with massive APIs. arXiv preprint                   patterns. Task specifications (Mtask ) are appended
+  arXiv:2305.15334.                                             as user-authored “Additional Instructions.” Tool
+                                                                configurations (Mtools ) are appended with per-tool
+Ofir Press, Noah A Smith, and Mike Lewis. 2022. Train
+  short, test long: Attention with linear biases enables
+                                                                invocation templates. The data schema (Mdata ) is
+  input length generalization. International Confer-            injected into the user message alongside the query.
+  ence on Learning Representations.                             # Composed system prompt (s')
+
+Timo Schick, Jane Dwivedi-Yu, Roberto Dessì, Roberta            ## Base system prompt (~500 tokens) # s_base
+                                                                You are an expert at creating interactive
+  Raileanu, Maria Lomeli, Luke Zettlemoyer, Nicola              dashboards and data-driven artifacts from
+  Cancedda, and Thomas Scialom. 2023. Toolformer:               structured data sources.
+                                                                CRITICAL: Data Architecture - Zero-Token Refresh
+  Language models can teach themselves to use tools.            - Data is provided via a runtime injection
+  Advances in Neural Information Processing Systems,              point -- parse dynamically, never hardcode
+  36.                                                           - ALL aggregation, filtering, totals computed
+                                                                  from parsed data at runtime
+                                                                - Insight text must be generated dynamically
+Noah Shinn, Federico Cassano, Ashwin Gopinath,                    (e.g., top performers, outliers)
+  Karthik Narasimhan, and Shunyu Yao. 2023. Re-                 - Guard against NaN/undefined in all numeric
+                                                                  operations: always coerce with fallback to 0
+  flexion: Language agents with verbal reinforcement            - Data may come from CSV, SQL, REST, or MCP
+  learning. Advances in Neural Information Process-               connectors -- treat all sources uniformly
+  ing Systems, 36.
+                                                                ## Additional Instructions             # M_task
+                                                                Always use gate-based color coding:
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Man-                   Supply=#3B82F6, Orders=#F97316,
+  dlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan, and                  Process=#8B5CF6, Exec=#10B981
+                                                                Include executive summary cards with KPIs.
+  Anima Anandkumar. 2023. Voyager: An open-ended                Use dark theme (#1a1a2e background).
+  embodied agent with large language models. arXiv              Format percentages to 1 decimal place.
+  preprint arXiv:2305.16291.                                    Show attainment >= 95% in green, < 80% red.
+
+                                                                ## Available External Tools             # M_tools
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten                You can call external tools via the Bash tool.
+   Bosma, Brian Ichter, Fei Xia, Ed Chi, Quoc V Le,
+                                                                ### File a Bug
+   and Denny Zhou. 2022. Chain-of-thought prompting             Description: File a bug report in the
+   elicits reasoning in large language models. Advances           issue tracker
+   in Neural Information Processing Systems, 35:24824–          Parameters:
+                                                                  - title: Bug title (required)
+   24837.                                                         - component: Component name (required)
+                                                                  - description: Bug description (required)
+Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran                    To call:
+                                                                  curl -s -X POST http://localhost:<port>/
+  Wu, Beibin Li, Erkang Zhu, Li Jiang, Xiaoyun                      api/tools/execute
+  Zhang, Shaokun Wang, Ce Zhang, and 1 others.                      -H "Content-Type: application/json"
+  2023. AutoGen: Enabling next-gen LLM applica-                     -d '{"tool":"file_bug",
+                                                                         "params":{"title":"..."}}'
+  tions via multi-agent conversation. arXiv preprint
+  arXiv:2308.08155.                                             ### Search Knowledge Base
+
+
+
+                                                           10
+Description: Search documentation
+Parameters:
+  - query: Search text (required)
+  - limit: Max results (default 10)
+To call:
+  curl -s -X POST http://localhost:<port>/
+    api/tools/execute
+    -H "Content-Type: application/json"
+    -d '{"tool":"search_kb",
+         "params":{"query":"..."}}'
+
+## Output Constraints                    # M_output
+Generated scripts must consume data
+exclusively from the runtime injection
+point. Never embed data values in source.
+Keep output under 50KB. Use JS functions
+to render tables and charts -- never write
+repetitive markup for each row.
+
+
+# User message (q')
+
+[User query: "Generate a supply chain
+  operations dashboard"]
+
+## Data: weekly_ops.csv                 # M_data
+(450 rows, 28 columns)
+Columns: LOB, Gate, ExecToGo, Shipped,
+  Target, Attainment, Region, Week, ...
+
+Numeric columns summary (12 total):
+         ExecToGo Shipped Target Attainment
+count      450.0 450.0      450.0   450.0
+mean      2341.2 8923.4    9100.0    93.7
+std        812.5 3201.1    2800.0    12.4
+min        120.0   450.0    500.0    42.0
+max       5600.0 18200.0 18000.0    112.0
+
+Categorical columns (unique values):
+- LOB: Product A, Product B, Product C, Services, Product D
+- Gate: Supply, Orders, Process, Exec
+- Region: Americas, EMEA, APAC, Japan
+
+Sample rows (first 3):
+LOB=Product A, Gate=Supply, ExecToGo=3200,
+  Shipped=12400, Target=13000, Attain=95.4%
+LOB=Product C, Gate=Orders, ExecToGo=1800,
+  Shipped=6200, Target=7000, Attain=88.6%
+...
+
+
+
+
+                                                              11
+
