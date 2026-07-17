@@ -370,6 +370,156 @@ def _validate_workspace_contract(
         errors.append(f"{prefix}.workspace: cleanup verification failed")
 
 
+def _validate_resource_envelope(
+    contract: dict[str, Any], observation: dict[str, Any], errors: list[str], prefix: str,
+) -> None:
+    """Fail closed across parent, overlay, observer, attempt, and commit identities."""
+    label = f"{prefix}.workspace.resource_envelope"
+    operations = contract["operations"]
+    _check_unique(operations, "operation_id", f"{label}.operations", errors)
+    sequences = [item["sequence"] for item in operations]
+    if sequences != sorted(sequences) or len(sequences) != len(set(sequences)):
+        errors.append(f"{label}: operations require a complete unique order")
+    operation_by_id = {item["operation_id"]: item for item in operations}
+    operation_order = {item["operation_id"]: item["sequence"] for item in operations}
+    for operation in operations:
+        for dependency in operation["depends_on"]:
+            if dependency not in operation_by_id or operation_order.get(dependency, 10**9) >= operation["sequence"]:
+                errors.append(f"{label} operation {operation['operation_id']}: dependency is missing or not earlier")
+
+    resources = contract["resources"]
+    _check_unique(resources, "resource_id", f"{label}.resources", errors)
+    resource_by_id = {item["resource_id"]: item for item in resources}
+    kinds = {item["kind"] for item in resources}
+    if "structured_table" not in kinds or not kinds.intersection({"file_blob", "cache_queue"}):
+        errors.append(f"{label}: inventory must include structured and non-table mutable resources")
+    region_keys: set[tuple[str, str]] = set()
+    canary_by_id: dict[str, dict[str, Any]] = {}
+    for resource in resources:
+        _check_unique(resource["regions"], "region_id", f"{label} resource {resource['resource_id']}.regions", errors)
+        paths = {item["path"] for item in resource["canaries"]}
+        if paths != {"foreground", "background"}:
+            errors.append(f"{label} resource {resource['resource_id']}: canaries must cover foreground and background")
+        for region in resource["regions"]:
+            region_keys.add((resource["resource_id"], region["region_id"]))
+        for canary in resource["canaries"]:
+            if canary["canary_id"] in canary_by_id:
+                errors.append(f"{label}: duplicate canary_id {canary['canary_id']!r}")
+            canary_by_id[canary["canary_id"]] = canary
+
+    observer = contract["observer"]
+    observer_payload = {key: value for key, value in observer.items() if key != "component"}
+    if observer["component"]["sha256"] != canonical_sha256(observer_payload):
+        errors.append(f"{label}: observer comparator/read-set hash is stale")
+    read_keys = {(item["resource_id"], item["region_id"]) for item in observer["read_set"]}
+    exclusion_keys = {(item["resource_id"], item["region_id"]) for item in observer["exclusions"]}
+    if (read_keys | exclusion_keys) - region_keys:
+        errors.append(f"{label}: observer read set or exclusion references an unknown region")
+    if read_keys & exclusion_keys:
+        errors.append(f"{label}: observer cannot both read and exclude a region")
+
+    if (observation["instrument_id"], observation["version"], observation["session_id"]) != (
+        contract["instrument_id"], contract["version"], contract["session_id"]
+    ):
+        errors.append(f"{label}: instrument/session identity mismatch")
+    parent = contract["parent"]
+    if observation["start_parent_root_sha256"] != parent["state_root_sha256"]:
+        errors.append(f"{label}: trial did not start from the declared parent root")
+    parent_changed = observation["end_parent_root_sha256"] != observation["start_parent_root_sha256"]
+
+    _check_unique(observation["canary_results"], "canary_id", f"{label}.canary_results", errors)
+    result_by_id = {item["canary_id"]: item for item in observation["canary_results"]}
+    if set(result_by_id) != set(canary_by_id):
+        errors.append(f"{label}: canary result coverage mismatch")
+    canary_failed = False
+    for canary_id, declaration in canary_by_id.items():
+        result = result_by_id.get(canary_id)
+        if result and result["observed"] != declaration["expected"]:
+            canary_failed = True
+
+    mutations = observation["mutations"]
+    _check_unique(mutations, "mutation_id", f"{label}.mutations", errors)
+    mutation_sequences = [item["sequence"] for item in mutations]
+    if mutation_sequences != sorted(mutation_sequences) or len(mutation_sequences) != len(set(mutation_sequences)):
+        errors.append(f"{label}: mutation ledger must be complete and ordered")
+    mutation_by_id = {item["mutation_id"]: item for item in mutations}
+    mutation_order = {item["mutation_id"]: item["sequence"] for item in mutations}
+    for mutation in mutations:
+        if mutation["operation_id"] not in operation_by_id:
+            errors.append(f"{label} mutation {mutation['mutation_id']}: unknown operation")
+        if (mutation["resource_id"], mutation["region_id"]) not in region_keys:
+            errors.append(f"{label} mutation {mutation['mutation_id']}: unknown resource region")
+        for dependency in mutation["depends_on"]:
+            if dependency not in mutation_by_id or mutation_order.get(dependency, 10**9) >= mutation["sequence"]:
+                errors.append(f"{label} mutation {mutation['mutation_id']}: dependency is missing or not earlier")
+        key = (mutation["resource_id"], mutation["region_id"])
+        expected_observation = "observed" if key in read_keys else "excluded" if key in exclusion_keys else "unobserved"
+        if mutation["context_status"] == "untagged":
+            expected_observation = "escaped"
+        if mutation["observation_status"] != expected_observation:
+            errors.append(f"{label} mutation {mutation['mutation_id']}: observation status does not follow context/read-set evidence")
+    if not any(item["kind"] == "update" and item["before"] is not None and item["after"] is None and item["observation_status"] == "observed" for item in mutations):
+        errors.append(f"{label}: intentional null update was not preserved as an observed mutation")
+    if not any(item["kind"] == "increment" for item in mutations):
+        errors.append(f"{label}: sequence/global increment case is missing")
+    if not any(resource_by_id.get(item["resource_id"], {}).get("kind") in {"file_blob", "cache_queue"} for item in mutations):
+        errors.append(f"{label}: non-table blob/cache effect is missing")
+    escaped = any(item["observation_status"] == "escaped" for item in mutations)
+    background_canary_escaped = any(
+        result_by_id.get(canary_id, {}).get("observed") == "escaped"
+        for canary_id, declaration in canary_by_id.items() if declaration["path"] == "background"
+    )
+    if escaped != background_canary_escaped:
+        errors.append(f"{label}: escaped mutation and background-canary evidence disagree")
+    observer_gap = any(item["observation_status"] in {"excluded", "unobserved"} for item in mutations)
+
+    alternatives = {item["alternative_id"]: item for item in observer["accepted_alternatives"]}
+    ambiguous = False
+    for match in observation["matches"]:
+        if match["resource_id"] not in resource_by_id:
+            errors.append(f"{label} match {match['match_id']}: unknown resource")
+        if len(match["candidate_item_keys"]) > 1:
+            ambiguous = True
+            if match["outcome"] != "insufficient_evidence":
+                errors.append(f"{label} match {match['match_id']}: ambiguous same-resource candidates must fail closed")
+        if "alternative_id" in match:
+            alternative = alternatives.get(match["alternative_id"])
+            if alternative is None or alternative["resource_id"] != match["resource_id"] or alternative["item_key"] not in match["candidate_item_keys"]:
+                errors.append(f"{label} match {match['match_id']}: undeclared or mismatched accepted alternative")
+            elif alternative["status"] == "accepted" and len(match["candidate_item_keys"]) == 1 and match["outcome"] != "accepted":
+                errors.append(f"{label} match {match['match_id']}: declared unambiguous alternative was not admitted")
+
+    attempt = observation["attempt"]
+    expected_attempt = {"completed": "eligible", "failed_evaluation": "failed_attempt", "invalid_environment": "invalid_attempt"}[attempt["status"]]
+    if attempt["disposition"] != expected_attempt or not attempt["denominator_included"]:
+        errors.append(f"{label}: failed/invalid attempt disposition or denominator is incorrect")
+    commit = observation["commit_assessment"]
+    selected_operations = set(commit["selected_operation_ids"])
+    if selected_operations - set(operation_by_id):
+        errors.append(f"{label}: commit selects an unknown operation")
+    computed_closure = all(set(operation_by_id[operation_id]["depends_on"]) <= selected_operations for operation_id in selected_operations if operation_id in operation_by_id)
+    if commit["dependency_closure"] != computed_closure:
+        errors.append(f"{label}: commit dependency-closure label does not replay")
+    unsafe_commit = commit["requested"] and (not commit["authorized"] or not computed_closure or commit["stale_base"] or parent_changed)
+    if unsafe_commit and commit["decision"] != "reject_commit":
+        errors.append(f"{label}: unauthorized, stale, or dependency-incomplete commit was not rejected")
+    if not commit["requested"] and commit["decision"] != "discard":
+        errors.append(f"{label}: evaluation session must default to discard")
+    if commit["decision"] == "commit" and commit["rollback_status"] != "verified":
+        errors.append(f"{label}: committed state lacks a verified rollback path")
+
+    expected_overall = "invalid_environment" if (parent_changed or canary_failed or escaped or attempt["status"] == "invalid_environment") else "insufficient_evidence" if (observer_gap or ambiguous or attempt["status"] == "failed_evaluation") else "conformant"
+    if observation["overall_disposition"] != expected_overall:
+        errors.append(f"{label}: overall disposition does not fail closed from planted evidence")
+
+
+def resource_envelope_errors(contract: dict[str, Any], observation: dict[str, Any]) -> list[str]:
+    """Return semantic errors for a generic cross-resource envelope pair."""
+    errors: list[str] = []
+    _validate_resource_envelope(contract, observation, errors, "resource-envelope")
+    return errors
+
+
 def _validate_action_safety(
     contract: dict[str, Any], observation: dict[str, Any] | None,
     source_ids: set[str], event_by_id: dict[str, dict[str, Any]], errors: list[str], prefix: str,
