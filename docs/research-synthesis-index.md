@@ -203,6 +203,20 @@ authored prompt-policy stress-test claim. Existing participation/consent,
 authority, information-flow, action-safety, state, metric, and validity records
 already host this chain; no personal-agent or sovereignty schema follows.
 
+Human-first criterion capture adds a specific **initiative-to-instrument chain**:
+`candidate-output exposure/order → pre-assistance human span/note/intent → model
+canonicalization and explicit acceptance/edit → impact-preview adaptation → frozen
+bank on untouched artifacts/systems → validated criterion observations → bounded
+decision claim`. A human first click improves provenance at one edge; it does not
+establish criterion coverage, semantic preservation, plural authority, matcher
+accuracy, calibrated weights, or professional validity. Impact preview can debug
+wording and overfit the bank to the same candidate pool. Treat every preview-driven
+edit as adaptation, preserve rejected and revised criteria, and require external
+obligation sources plus untouched confirmation. The reviewed prototype has no user
+study, reliability, judge-validation, cost, held-out, or professional-decision
+evidence; existing authoring, participation, criterion, grader, task-health, metric,
+and validity records suffice, and the real consented-session gate remains blocked.
+
 ## 2. The benchmark should represent broad knowledge work without pretending a small suite represents all work
 
 **Central insight:** Broad occupational or domain coverage is valuable, but a task frame, content pool, administered assembly, and inference population are different denominators. A handful of tasks per occupation does not make a representative sample of work. Pilots should test general principles without becoming accidental scope commitments.
@@ -1007,12 +1021,29 @@ cover the boundary; no feedback-specific schema follows.
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Contributes multimodal professional artifacts and expert preference evidence while showing that preference is not an absolute readiness threshold |
 | [Agents' Last Exam](../papers/agent-benchmarks/2026-07-11-agents-last-exam-expert-task-validity.md) | A | Shows why deterministic artifact grading still needs clean-start attestation, requested-criterion coverage, alternate-path tests, and verifier falsification |
 | [PaperBench](../papers/agent-benchmarks/2026-07-15-paperbench-replication-rubric-validity.md) | A | Adds code, execution-log, and result evidence for long-horizon reconstruction while exposing the need for causal lineage, executable prerequisites, noncompensatory gates, and a separate partial-progress vector |
+| [ORAgentBench](../papers/agent-benchmarks/2026-07-17-oragentbench-decision-artifact-validity.md) | A | Moves evaluation to concrete feasible decision artifacts and staged replanning while exposing why authored obligations, reference strength, native objective loss, normalization, acceptance, and operational consequence are distinct |
 | [DORA](../papers/agent-benchmarks/2026-07-14-dora-disaster-response-consequence-validity.md) | A | Separates real-source and label truth, one executable analytical witness, endpoint agreement, professional acceptance, recipient uptake, action, and consequence; exposes uncalibrated geometry/numeric tolerances and absent operational evidence |
 | [Claw-Eval](../papers/agent-benchmarks/2026-07-15-claw-eval-multichannel-trajectory-validity.md) | A | Reframes final response, action trace, and environment state as criterion-specific evidence routes rather than interchangeable raters; its selected hybrid-only audit, manifest/grader drift, manual reruns, absent fault injector, and incomplete attempt ledger do not calibrate observer accuracy or operational reliability |
 | [CutVerse](../papers/agent-benchmarks/2026-07-15-cutverse-temporal-creative-artifact-validity.md) | A | Makes expert-demonstrated temporal work visible while showing that milestone screenshots do not establish native-project integrity, time-indexed rendered behavior, export validity, creative quality, or recipient acceptance; the post-v1 release lacks the paper tasks, evaluator, and results |
 | [AgenticVBench](../papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md) | A | Repairs CutVerse's task/grader inspectability gap with a full later four-family release and criterion-specific manifest, frame, audio, metadata, and model views; its 13 brief/rubric resolution conflicts, five reversed good-state penalties, absent human/calibration/results records, rights gaps, and unreconciled rollout denominator show that observer richness cannot rescue an incoherent criterion contract |
 
 **Repository consequence:** Score families remain separate, artifact views have admissibility contracts, and task/trial records preserve both produced artifacts and consequential workspace state. Editable artifacts need native, executable/recalculated, rendered, exported, and trace evidence plus authoritative mutation tests; inherited size and one reference witness do not establish work performed or maintainability. Each criterion routes to the authoritative object and temporal scope it actually requires: final prose, a tool request, committed service state, native structure, a rendered interval, exported bytes, or calibrated human judgment. More channels are not automatically redundant truth, and missing or stale decisive views produce `insufficient_evidence` or instrument invalidity rather than a substantive failure. Scored state checks must also distinguish environment readiness from trial-created deltas and identify shared-cause or descendant dependencies. The internal initial-state replay rejects pre-satisfied, stale, copied-witness, and omitted-transition cases, accepts a declared alternative, and abstains on invalid initialization; its seven synthetic matches validate only fixture/scorer behavior ([replay](../pilots/task-initial-state-conformance/replay-report.json)).
+
+Executable decision artifacts add an **obligation/conformance dual witness**.
+An authorized mandate and independent requirement review establish what must be
+true; deterministic validators establish whether encoded constraints and a native
+objective were observed. Preserve direction, native unit/value, hard feasibility,
+reference method/strength, native regret/loss, calibration mode, normalization,
+portfolio estimand, stage aggregation and sensitivity, threshold/loss, recipient
+acceptance, and realized consequence as separate records. ORAgentBench's 107-task
+release is substantial conformance machinery, but synthetic/adapted demand,
+underspecified human review, heterogeneous bound/fallback/poor-anchor scales,
+clustered variants, single runs, absent paper results, and release drift block a
+common professional-quality scale, reproduced ranking, operational competitiveness,
+reliability, production fitness, or readiness. The implemented
+[`objective-calibration.schema.json`](../schemas/objective-calibration.schema.json)
+and validator enforce these record boundaries on builder-authored fixtures only;
+they supply no external calibration or acceptance evidence.
 
 Temporal/compositional artifacts add a reusable evidence ladder: `source identity and
 time basis → native editable structure → rendered interval behavior → export identity

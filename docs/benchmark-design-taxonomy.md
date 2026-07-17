@@ -643,6 +643,51 @@ schema and deterministic semantic-validator behavior only. It does not test an
 artifact observer, criterion authority or expert agreement, score calibration,
 agent behavior, professional quality, generalization, or readiness.
 
+#### Criterion initiative is not full instrument authority
+
+When human authority matters, capture a qualified contributor's span, note,
+polarity, and intended consequence **before** showing a model-generated criterion.
+That temporal control preserves human initiative at one edge; it does not make the
+eventual bank wholly human-authored or valid. Preserve the complete treatment:
+
+```text
+candidate-output exposure and order
+  → pre-assistance human span/note/intent
+    → model canonicalization → human acceptance/edit/rejection
+      → matcher grades/quotes and impact-preview exposure
+        → admission, merge/split, weight, enable/disable, and revision history
+          → frozen bank on untouched artifacts/systems
+            → criterion observations → bounded score/decision claim
+```
+
+Candidate outputs can reveal useful omissions, and impact preview can expose
+over-broad wording. Both are also adaptation data: they can anchor criterion content
+and tune the bank toward current-system discrimination or a preferred ranking.
+Record every output viewed, assistance configuration, semantic diff, preview, and
+post-preview change; separate authoring/adaptation artifacts from untouched
+confirmation and frozen bridges. Criterion coverage, discrimination, decision
+importance, semantic fidelity, matcher validity, and professional authority are
+different properties. A mandatory requirement omitted by every displayed system
+cannot be recovered from output highlighting alone.
+
+The Human-in-the-Loop Nugget Annotation prototype is a useful implementation
+witness for human-note-first canonicalization, criterion-level matching, quotes,
+and impact inspection [HNA]. It reports no user study, expert-time measure,
+inter/intra-rater reliability, canonicalization test, judge validation, held-out
+confirmation, or professional decision criterion. Its mutable demo exposes
+candidate-conditioned authoring, same-pool ranking/weight tuning, first-8,000-
+character grading, invalid-grade-to-zero behavior, and an export that drops much of
+the live transformation and QC history. It therefore supports an accountable-
+initiative interface pattern—not reduced anchoring, complete criteria, reliable
+judging, scalable expert substitution, or professional-valid evaluation.
+
+**Invariant:** a human action in a criterion's ancestry licenses only the recorded
+initiative/approval edge. Later machine transformation, outcome-conditioned
+adaptation, observation, aggregation, and use each require their own identity and
+warrant. Existing expertise-transfer, participation, criterion, grader-view,
+task-health, metric, and validity records are the implementation homes; this adds no
+parallel schema and does not unblock the consented real-session prerequisite.
+
 ### 2.3a Dynamic criteria are a separate contingent population
 
 Open-ended artifacts may create facts, dependencies, risks, or side effects that
@@ -1867,6 +1912,52 @@ its pooled results omit intervals and task-cluster adjustment, and its rare
 side-effect labels have very different errors from success or repetition [ARB].
 These limits support heterogeneous reporting, not a claim about judges across
 knowledge-work domains.
+
+#### Native objective evidence is not a common quality or acceptance scale
+
+For executable decision artifacts, preserve a non-inheriting calibration chain:
+
+```text
+authorized obligation set + hard-feasibility predicates
+  → native objective value, direction, unit, and valid-time state
+    → reference method and strength (optimum, valid bound, reference, heuristic)
+      → native regret/loss + calibration mode
+        → normalized display value
+          → declared portfolio estimand, aggregation, and sensitivity
+            → decision threshold and stakeholder loss
+              → professional acceptance → realized consequence
+```
+
+A deterministic validator is a strong conformance witness for encoded constraints;
+it is not its own obligation witness. Likewise, an objective relative to one solver
+bound, relative-gap fallback, heuristic reference, or poor anchor is a typed local
+observation—not automatically stakeholder utility or comparable quality. Report
+native units and losses first. Stratify unlike calibration modes unless bridge
+evidence supports pooling; keep hard feasibility noncompensatory; and show mean,
+cumulative, terminal, worst-stage, or declared-utility sensitivity for staged work.
+A common normalized threshold is admissible only as an explicit portfolio policy
+with a named estimand and loss basis, never as inherited professional acceptance.
+
+ORAgentBench makes the first half of this chain unusually inspectable through 107
+released task packages, concrete decision files, task-specific feasibility checks,
+typed references, and eight state-carrying replanning tasks [ORA]. But its bound,
+relative-gap, and poor-anchor scales have heterogeneous semantics; reference
+strength varies; one `q > 0.4` threshold is not one operational tolerance; and
+explanation, robustness, approval, and use are mostly unobserved. Synthetic/adapted
+mandates, underspecified human review, clustered variants, single-run cells, absent
+paper trajectories/results, release drift, and an unresolved skill-table denominator
+bound the evidence to configured-package conformance and oracle-relative strength—not
+professional OR quality, reproduced model ranking, operational competitiveness,
+reliability, production fitness, or readiness.
+
+The implemented objective-calibration extension stores native value/unit/direction,
+hard feasibility, reference method/strength, calibration mode, native regret/loss,
+normalization, threshold meaning, portfolio policy, stage sensitivity, and claim
+boundary [OC]. Its builder-authored cross-shape fixture proves validator behavior:
+it rejects heuristic-as-optimum claims, compensatory hard-feasibility passes, silent
+cross-mode pooling, underspecified common thresholds, and staged policies without
+sensitivity outputs. It supplies no external calibration, expert acceptance,
+capability, operational quality, reliability, production, or readiness evidence.
 
 ### 3.2e Mediated execution and analytical inquiry need link-specific observations
 
@@ -3814,6 +3905,8 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Practitioner production-practice evidence (MAP) | reporting-unit/selection/denominator provenance and practice→realization→outcome bridge | selected self-report prevalence mistaken for representative practice, audited realization, causal efficacy, reliability, or successful deployment | full accepted immutable v4 paper/instrument plus v3 headline comparison; 20 confidential selected cases and 86 production/pilot main-frame records, no released row data or system/outcome audit [MAP] |
 | Trajectory confidence prediction (Agentic Confidence Calibration) | typed derived probability for one configured success predicate, followed by transport and decision-policy validation | post-outcome prediction mistaken for early warning, repeat reliability, causal diagnosis, decision utility, or provider-invariant confidence | full immutable v1 paper/source review; reported eight-sample cross-validation and transfer tables, but no released code, trajectories, labels, splits, configurations, or calibrator [ACC] |
 | Expert-authored criterion evaluation (ResearchRubrics) | reviewed criterion inventory, criterion-level judge observation, rubric transformation lineage | task-design authority mistaken for domain authority; bundled/dependent or hidden criteria; artifact-only source checks; uncalibrated additive score | full immutable v1 paper plus inspected post-paper official code/dataset releases; authoring and agreement evidence, not professional-readiness validation [RR] |
+| Human-first criterion authoring (Nugget-HIL) | pre-assistance human intent, typed canonicalization, impact-preview adaptation, frozen-bank confirmation | human initiative mistaken for complete authority; candidate-output and ranking anchoring; same-pool tuning; matcher/export invalidity | full immutable v2 paper plus mutable prototype/code/data audit; interface-pattern evidence only, with no user, rater, judge, held-out, cost, or professional-decision validation [HNA] |
+| Executable decision artifacts (ORAgentBench) | obligation/conformance dual witness; native objective and hard feasibility; reference-strength and staged-policy records | authored-model feasibility or oracle-relative normalization promoted to professional quality; heterogeneous scales pooled; single-run rankings treated as reliable | full immutable v1 paper plus complete pinned post-v1 release audit; strong package-inspection evidence, not reproduced rankings, professional OR validity, operational competitiveness, or readiness [ORA] |
 | Dynamic professional grading (JADE) | separate fixed and response-triggered criterion populations, trigger lineage, typed evidence/dependency graph, and plural score families | answer-conditioned obligations, variable denominators, duplicate/shared-cue checks, live-web authority error, fail-open verification, and uncalibrated fusion | full immutable v1 paper plus inspected close post-v1 release; bounded evaluator-architecture and deterministic fallback evidence, not expert-equivalent, cross-domain, or readiness validation [JADE] |
 | Claim-centered validity | claim ladder, warrant/rebuttal record, facet-specific evidence, threshold/loss basis | checklist ritual, subjective facet ratings, reliability omitted, consequences under-specified | full immutable v4 conceptual paper and deep review; framework itself not empirically validated [VA] |
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
@@ -3901,6 +3994,14 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 17. **Observations do not define metrics:** population, denominator, missingness,
     dependence, uncertainty, threshold, and action semantics must be versioned
     before a per-trial score becomes a monitoring statistic or decision trigger.
+17a. **Human initiative does not authorize the whole instrument:** preserve
+    pre-assistance intent, machine transformation, impact-preview exposure,
+    adaptation, and untouched confirmation separately; a human-origin edge cannot
+    silently validate bank coverage, matching, aggregation, or decision use.
+17b. **Normalization does not create commensurate quality:** retain native units,
+    feasibility, reference strength, calibration mode, regret/loss, portfolio
+    estimand, aggregation sensitivity, and threshold/loss separately; a shared
+    normalized value cannot silently become professional acceptance or consequence.
 18. **Observers do not share a view by default:** bind each expert, deterministic,
     or model judgment to required and actual evidence channels; preserve plural
     labels and adjudication lineage; invalid execution and insufficient evidence
@@ -4135,6 +4236,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Shared runner breadth vs measurement equivalence | BrowserGym runs heterogeneous families through one interface, but inspected adapters retain different rewards/evaluators and transform observations, trajectories, parsing, errors, retries, and resets; paper results lack native/adapted agreement and clustered repeats [BG]. | From frozen native states, run matched native/adapted cases and compare score, termination, side effects, typed evaluator evidence, invalidity, resets, and all attempts; report family scores until preservation and any common-scale validity are independently supported. |
 | Executable composition vs workflow/planning validity | WorkArena++ composes setup, oracle, and validators and increases horizon, but author-designed variants, history-dependent sequential validation, near-floor agents, a small ServiceNow-heavy human sample, and a later release do not isolate planning or occupational realism [WA]. | Across two provenance-grounded unlike workflows, compare matched atomic and composite conditions with controlled presentation/interface/information budgets; replay terminal invariants independent of polling order, test reversals and resets, and report family-clustered uncertainty plus earliest unsupported dependencies [CW]. |
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
+| Human-first initiative vs outcome-conditioned instrument tuning | Nugget-HIL enforces a human note/span before canonicalization, but displays candidate outputs, matcher grades, quotes, coverage, and ranking effects before final admission/weighting; it has no user study, held-out bank, or judge validation [HNA]. | Across two unlike artifact families, compare human-only, AI-proposal-first, human-note-first without preview, and human-note-first with preview; randomize exposure, preserve pre-assistance intent, add external obligations absent from outputs, and test semantic fidelity, coverage, matcher error, burden, and frozen-bank decisions on untouched systems. |
+| Executable feasibility vs calibrated professional decision quality | ORAgentBench strongly observes encoded constraints and oracle-relative objectives, but heterogeneous reference strengths/calibration modes and one common threshold do not establish one loss tolerance, recipient acceptance, or operational utility [ORA]. The internal objective package validates record semantics only [OC]. | On unlike decision artifacts, plant feasible-poor, objective-strong-but-obligation-wrong, legitimate-alternative, parser/tolerance exploit, stale replan, and cumulative-versus-terminal cases; retain native loss and calibration mode, require independent obligation/acceptance review, and test aggregation and threshold sensitivity before any quality or readiness promotion. |
 | Rich temporal observation vs coherent signed criterion semantics | AgenticVBench's later release supplies native/rendered/audio/metadata/model views, yet 13/36 Repurpose briefs conflict with hidden resolution criteria and at least five desirable-state negative-weight items omit the scorer's inversion flag; human/calibration/result records are absent [AVB]. The completed internal slice rejects both observed defect classes and five adjacent contract mutations, but is deterministic builder-authored preflight only [SCI]. | On signed, semantically coherent criteria, calibrate each artifact observer against blinded temporal boundary cases and independent authority review; measure criterion and decision error, disagreement, invalidity, and professional acceptance separately rather than promoting schema conformance or observer agreement. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
@@ -4350,6 +4453,25 @@ them:
     intervention effect, production fitness, or readiness.
 
 ## Provenance keys
+
+- **[HNA]**
+  `papers/agent-benchmarks/2026-07-17-human-in-the-loop-nugget-annotation.md`;
+  reviewed immutable v2 PDF/text and the paper-linked mutable prototype/code/data
+  audit are recorded there. The source supports a human-initiative interface pattern,
+  not reduced anchoring, criterion completeness, canonicalization fidelity, judge
+  validity, held-out decision validity, scalability, professional validity, or
+  readiness.
+- **[ORA]**
+  `papers/agent-benchmarks/2026-07-17-oragentbench-decision-artifact-validity.md`;
+  reviewed immutable v1 PDF/text and complete exact-commit post-v1 official release
+  audit are recorded there. The release supports executable package and scoring-
+  design inspection, not paper-result reproduction, professional OR validity,
+  operational competitiveness, reliability, production fitness, or readiness.
+- **[OC]** `schemas/objective-calibration.schema.json`,
+  `scripts/validate_objective_calibration.py`,
+  `tests/fixtures/valid-objective-calibration.json`, and
+  `tests/test_validate_objective_calibration.py`; implemented builder-authored
+  calibration contract and deterministic conformance tests only.
 
 - **[CLEAR]**
   `papers/agent-benchmarks/2026-07-17-agentic-clear-dynamic-diagnostic-validity.md`;
