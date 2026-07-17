@@ -1038,6 +1038,7 @@ specific schema or pilot follows.
 | [FinResearchBench II](../papers/agent-benchmarks/2026-07-16-finresearchbench-ii-consensus-rubric-validity.md) | B | Exposes 14,450→3,687→2,600 generated-criterion attrition and makes panel stability/non-triviality screening operational, while report-conditioned generation, outcome-conditioned selection, a 70.76% joint-unanimity subset, partial holdout, and no release block criterion-authority, transport, professional-validity, and readiness claims |
 | [PaperBench](../papers/agent-benchmarks/2026-07-15-paperbench-replication-rubric-validity.md) | A | Provides released leaf labels and a criterion-level judge study while showing that pooled-leaf class-macro F1, invalid-as-zero handling, and local agreement do not validate paper-level scores or replication decisions |
 | [AdaRubric](../papers/agent-benchmarks/2026-07-15-adarubric-adaptive-trajectory-instrument-validity.md) | B | Separates task-conditioned criterion generation, step/dimension observation, and filtering, while its absent empirical release and paper/code contradictions show that fixed-rubric score correlation, repeat agreement, and training gains do not validate adaptive criteria, decisions, rewards, or deployment |
+| [GrowLoop](../papers/agent-benchmarks/2026-07-17-growloop-human-seeded-rubric-case-coevolution-validity.md) | A | Couples versioned rubrics and case sets and distinguishes anchor refinement from additive/restructuring updates, while showing why unanimity-selected supervision, model-order-conditioned case admission, and one unexecuted outer transition cannot establish tacit-criterion authority, legitimate-disagreement coverage, construct continuity, or living-benchmark validity |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
 | [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
 | [Auto Benchmark Audit](../papers/agent-benchmarks/2026-07-14-auto-benchmark-audit-task-defect-validity.md) | B | Makes path-grounded inspection of instruction, environment, reference, and grader scalable while separating configured-auditor labels and selected-finding precision from confirmed-defect prevalence, repaired-instrument validity, and corrected capability |
@@ -1129,6 +1130,24 @@ and multiplies scores by confidence without normalizing by confidence, so low
 relevance becomes a quality penalty. Existing criterion, evidence-view, configured-
 grader, response-matrix, task-health, metric, and validity records remain the correct
 homes; no adaptive-rubric subsystem follows.
+
+GrowLoop adds a coupled **criterion-space × probe-population evolution boundary**:
+`typed human observations/disagreement → seed admission and authority → model-proposed
+criterion transformation → versioned rubric/score semantics → rubric-conditioned
+candidate cases → adaptive admission history → independently observed coverage gap →
+authorized refine/add/restructure decision → frozen cross-version bridge → bounded
+claim`. Preserve every rejected rubric and case candidate, trigger, model/judge pool,
+retirement, rollback, and cost. Unanimity among three undisclosed raters supplies a
+clean selected fitting target, not criterion authority; model judgments in a divergent
+zone require independent admissibility review rather than author-declared plausibility.
+Likewise, repeatedly regenerating cases until one judge recovers a prior four-model
+ordering makes discrimination an admission objective, not untouched validity evidence.
+The paper executes initial rubric fitting and case regeneration but no fresh-case →
+human annotation → revised-rubric outer transition; frozen anchors, rollback, multi-
+cycle stability, and cross-domain transport remain future work. Existing participation,
+criterion, evidence-view, task-health, configured-grader, metric, response-matrix,
+longitudinal, and validity records are the durable homes; no conversation- or self-
+evolution-specific schema follows.
 
 Automated benchmark auditing adds a **candidate-defect lifecycle** before score
 revision: `immutable instrument → auditor identity and entitled evidence view →
