@@ -2413,6 +2413,58 @@ The synthetic plural-judgment fixture validates policy/lineage machinery only;
 it does not establish professional consensus, construct validity, or readiness
 [ED, PJ].
 
+### Human effort is a typed covariate, not inherited difficulty or autonomy
+
+Preserve a non-inheriting chain whenever human effort is used to interpret task
+results:
+
+```text
+eligible task, suite, environment, and interface version
+  → qualified person's assigned attempt under recorded access, disclosure,
+    incentive, stopping, and prior-exposure conditions
+      → success, failure, abandonment, timeout, invalidity, corrections, and
+        active/wall/review time with censoring
+          → observed-attempt distribution or separately typed forecast
+            → uncertain task-effort covariate and tested incremental validity
+              → repeated configured-system outcomes on the same form
+                → sampled task/condition comparison
+                  → operational reliability under a declared exposure profile
+                    → autonomy or trust decision under review and loss
+                      → substitution, value, and realized consequence or impact
+```
+
+No arrow is automatic. Never pool an observed successful duration, failed/censored
+duration, author forecast, expert forecast, or model forecast into one untyped
+`task_duration`. Preserve all intended and realized attempts, participant/task-
+specific proficiency, assignment and dependence, task/environment versions,
+information and tool access, threshold/rubric disclosure, incentives, stopping,
+active versus wall time, correction history, and validity reason. A task-level
+summary must state its conditioning and estimator—such as success-conditional
+mean, quantile, lower bound, censored estimate, or forecast—plus support and
+uncertainty. Failed time is evidence about noncompletion, not a row to discard.
+
+Duration can stratify a response matrix or nominate an evaluation-planning slice;
+it is not by itself an item-response difficulty parameter. Test whether it adds
+held-out predictive information beyond domain, work shape, artifact, evidence,
+contradiction, tool, grader, and family/source lineage. Keep task-label uncertainty,
+family and participant clustering, intended/valid/substantive agent denominators,
+and matched-condition deviations in the analysis. Success by duration bucket is
+not a fitted success-at-X-hours model; repeated benchmark success is not safe
+delegation; and neither establishes acceptable review burden, professional
+substitution, economic value, or impact.
+
+HCAST supplies strong methodological motivation but bounded evidence [HCAST]. Its
+immutable v1 has 189 tasks/78 families and 563 attempts by 140 screened people, yet
+only 110 tasks have a successful baseline while 79 use forecasts; duration is a
+successful-attempt geometric mean, human and agent conditions differ, and no fitted
+horizon model or clustered uncertainty is reported. The audited later archive has
+29 enabled variants/11 families, 19 unresolved DVC pointers, and no paper baseline,
+trial, result, or full-suite records. Existing task-health reference attempts,
+configured-system manifests, metric-monitoring populations, reliability profiles,
+validity arguments, participation records, and value/consequence chains host the
+requirements. Do not create a time-horizon subsystem or software-only scope from
+this case.
+
 ### 3.3 Reliability is a conditional operational profile
 
 Mean success and operational reliability are non-substitutable. Bind every
@@ -4454,6 +4506,14 @@ them:
 
 ## Provenance keys
 
+- **[HCAST]**
+  `papers/agent-benchmarks/2026-07-17-hcast-human-time-calibrated-autonomy-validity.md`;
+  reviewed immutable arXiv v1 PDF/text and timing-bounded official release at commit
+  `7a3795e7e060389bed9ed0bced7a2576b85185e4` are recorded there. Evidence supports
+  human attempt duration as a typed, condition-specific task covariate and a bounded
+  configured-system association—not a universal difficulty scale, fitted autonomy
+  horizon, task-level reliability guarantee, trust, professional substitution,
+  economic value, societal impact, production fitness, or readiness.
 - **[HNA]**
   `papers/agent-benchmarks/2026-07-17-human-in-the-loop-nugget-annotation.md`;
   reviewed immutable v2 PDF/text and the paper-linked mutable prototype/code/data

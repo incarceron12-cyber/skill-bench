@@ -234,6 +234,7 @@ and validity records suffice, and the real consented-session gate remains blocke
 | [WindowsWorld](../papers/agent-benchmarks/2026-07-17-windowsworld-process-checkpoint-validity.md) | A | Makes 181 cross-application Windows task strings and 899 trajectory-wide milestone judgments inspectable while showing that free-path state appearance is not durable stage completion or process validity; flat checks, screenshot-only evidence, invalid records, unenforced setup, and an empty/final-`FAIL` L4 shortcut block occupational, reliability, safety, and readiness claims |
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
 | [Chiron field study](../papers/agent-benchmarks/2026-07-17-human-ai-software-delivery-field-validity.md) | B | Separates recorded delivery measures from scenario-derived labor and exposes why field-cell identity, stable bridge units, actual resource exposure, external consequences, and a credible comparator are prerequisites for workflow-value claims |
+| [HCAST](../papers/agent-benchmarks/2026-07-17-hcast-human-time-calibrated-autonomy-validity.md) | A | Makes screened human-attempt effort a version- and condition-specific task covariate while showing why successful-only duration, forecasts, configured-agent success, reliability, autonomy, trust, substitution, value, and impact are non-inheriting claims |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [Bridge Evidence](../papers/agent-benchmarks/2026-07-17-bridge-evidence-causal-use-validity.md) | B | Uses matched document omission to falsify static relevance as a sufficient proxy for one search agent's trajectory dependence, while separating source-at-state transition effects from semantic uptake, necessity, portable utility, and professional consequence |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
@@ -340,6 +341,25 @@ costs attached to passing items do not establish saved cost, output, revenue,
 profit, productivity, or value. Preserve task cost, score, acceptance probability,
 review/correction cost, use, and consequence as separate observations; no scalar
 score-to-dollar transform is admissible without downstream evidence.
+
+HCAST adds a complementary **human-effort-to-claim boundary**:
+`eligible task/version → matched-condition human attempt → success/failure/invalid/
+abandonment and censoring → observed duration or separately typed forecast →
+task-specific effort distribution/covariate → repeated configured-system outcomes
+→ bounded sampled-task comparison → reliability → autonomy/trust → substitution/
+value → consequence/impact`. No link inherits the next. Immutable v1 reports 189
+tasks in 78 families, but only 110 tasks have a successful human baseline and 79
+use forecasts; the successful-only geometric mean discards noncompletion evidence,
+human and agent conditions differ in web access, threshold disclosure, interface,
+budgets, stopping, and incentives, and no fitted horizon model or clustered
+uncertainty is reported. The audited later public release enables 29 variants in
+11 families, retains 19 unresolved DVC pointers, and omits baseline, trial, result,
+and full-suite evidence. Treat duration as an uncertain explanatory/slicing feature,
+not an IRT difficulty parameter, autonomy scale, or value proxy. Existing task-
+health attempt records, configured-system identity, metric populations, reliability
+profiles, validity arguments, participation records, and professional-value/
+consequence ledgers host the requirements; no time-horizon schema or software scope
+commitment follows.
 
 Field records add a complementary **workflow-value and bridge-unit boundary**:
 `configured exposure → authoritative events/artifact-state → derived measures with
