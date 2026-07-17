@@ -552,6 +552,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [AgencyBench](../papers/agent-benchmarks/2026-07-15-agencybench-feedback-artifact-validity.md) | A | Makes cumulative native-artifact repair and plural observer evidence inspectable while separating unaided first attempt, no-information retry, generic revision, consequence-only feedback, criterion-disclosed evaluator repair, and authorized ecological feedback; paper/release drift, observer disagreement, hidden aesthetics, missing human labels, single-run ambiguity, and no real users bound it to configured evaluator-assisted repair |
 | [Pista](../papers/agent-benchmarks/2026-07-16-pista-active-oversight-workflow-validity.md) | B | Contributes semantic diffs as operation-level decision-time review artifacts and bounded human inspectability evidence, while its bundled N=16 treatment, unmatched stochastic defects, absent correction/preservation lineage, low endpoint means, and no recipient consequence block effective-oversight, professional-utility, or readiness claims |
 | [HANSEL](../papers/agent-benchmarks/2026-07-17-hansel-interactive-verification-validity.md) | B | Adds interactive trajectory-to-page evidence compression and released shared-error human records, while support-path labels omit negative/contradictory routes, snippet recall and replay fidelity are untested, and a bundled N=14 study shows burden/preference more strongly than correct or calibrated verification |
+| [Human oversight of agentic systems in practice](../papers/agent-benchmarks/2026-07-17-human-oversight-agentic-systems-practice.md) | B | Locates reported oversight across a priori control, co-planning, monitoring, and post-hoc review and exposes practical plan/test/spot-check/deference heuristics, while a one-company-heavy N=17 retrospective intensity sample with no observed work or outcomes supports lifecycle authoring hypotheses—not prevalence, heuristic correctness, oversight efficacy, or readiness |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. Domain analysis adds a related but distinct inquiry ladder: preserve source-bound observation, anomaly or candidate hypothesis, rivals and uncertainty, predeclared discriminating test, executed evidence, update/rejection, recommendation or escalation, and downstream consequence. Candidate-generation quality must not inherit verification or causal-truth credit from a holistic prose grade. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
 
@@ -831,6 +832,24 @@ projection with an omission ledger, replay/transformation identity, insufficienc
 state, reviewer-inspection events, and decision-level calibration. Existing trace,
 artifact-view, interaction, metric, task-health, and validity records suffice; no web
 or breadcrumb-specific subsystem follows.
+
+The developer interview evidence adds a complementary **oversight-allocation path**:
+`configured authority/task consequence → oversight opportunity at configuration,
+planning, execution, or review → available control/evidence/action → exposure and
+actual inspection → judgment/intervention → uptake → independently observed state or
+consequence → burden and residual risk`. Seventeen purposively recruited experienced
+weekly users—12 at one large technology company—reported distributing effort across a
+priori control, co-planning, light real-time monitoring, and intensive post-hoc review.
+Their plan, test, spot-check, explanation, and cross-agent-agreement heuristics explain
+how review is made tractable; retrospective accounts do not validate those proxies or
+show that the reported allocation worked. Preserve oversight policy, interface
+opportunity, actual human work, judgment/action, and consequence as separate objects.
+Task decomposition and seeded plans are human treatment inputs, not free context;
+tests and generated summaries are scoped observers, not guarantees; unfamiliarity may
+require escalation rather than trust. Existing configured-system, interaction,
+feedback/recovery, artifact/state, evidence-view, metric, task-health,
+participation/authority, cost, and validity records suffice; no coding or
+oversight-specific subsystem follows.
 
 The frozen internal [24-cell report](../pilots/closed-loop-feedback-audit/report.json)
 (SHA-256 `20deddde50fd93fc32b7af5b8f7eb69b9e9ffdab71c9cc3dd1ea421a41e335be`)
