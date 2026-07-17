@@ -18,6 +18,7 @@ def module(name, path):
 
 
 run = module("action_boundary_v2_test_runner", V2 / "run.py")
+finalize = module("action_boundary_v2_finalize_test", V2 / "finalize_interrupted_campaign.py")
 
 
 class ActionBoundaryCompositionV2Tests(unittest.TestCase):
@@ -67,6 +68,16 @@ class ActionBoundaryCompositionV2Tests(unittest.TestCase):
         authority = copy.deepcopy(self.v2)
         authority["cells"][1]["private_contract"]["expected_behavior"] = "act"
         self.assertIn("authority_laundering", run.semantic_errors(authority))
+
+    def test_failed_campaign_report_is_exact_fail_closed_replay(self):
+        retained = json.loads((V2 / "execution/study-report.json").read_text())
+        self.assertEqual(retained, finalize.build_report())
+        self.assertEqual("stopped_fail_closed_after_service_failure", retained["status"])
+        self.assertEqual(6, retained["strict_denominators"]["intended"])
+        self.assertEqual(1, retained["strict_denominators"]["substantively_graded"])
+        self.assertEqual(0, retained["strict_denominators"]["retries"])
+        self.assertEqual({"pass": 0, "fail": 1, "invalid": 5}, retained["classification_counts"])
+        self.assertFalse(any(retained["claim_boundaries"].values()))
 
 
 if __name__ == "__main__":
