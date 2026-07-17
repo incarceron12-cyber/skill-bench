@@ -4,11 +4,17 @@
   "title": "Generic cross-resource observation and commit envelope",
   "type": "object",
   "additionalProperties": false,
-  "required": ["fixture_status", "task_resource_envelope", "trial_resource_envelope"],
+  "required": ["fixture_status"],
+  "oneOf": [
+    {"required": ["task_resource_envelope", "trial_resource_envelope"]},
+    {"required": ["dependency_topology_instrument", "dependency_topology_observation"]}
+  ],
   "properties": {
     "fixture_status": {"const": "internal_synthetic_contract_calibration_only"},
     "task_resource_envelope": {"$ref": "#/$defs/instrument"},
-    "trial_resource_envelope": {"$ref": "#/$defs/observation"}
+    "trial_resource_envelope": {"$ref": "#/$defs/observation"},
+    "dependency_topology_instrument": {"$ref": "#/$defs/dependencyTopologyInstrument"},
+    "dependency_topology_observation": {"$ref": "#/$defs/dependencyTopologyObservation"}
   },
   "$defs": {
     "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
@@ -58,6 +64,70 @@
       }
     },
     "resourceRegionRef": {"type": "object", "additionalProperties": false, "required": ["resource_id", "region_id"], "properties": {"resource_id": {"$ref": "#/$defs/id"}, "region_id": {"$ref": "#/$defs/id"}}},
+    "dependencyTopologyInstrument": {
+      "type": "object", "additionalProperties": false,
+      "required": ["instrument_id", "version", "matched_controls", "forms", "claim_boundaries", "provenance"],
+      "properties": {
+        "instrument_id": {"$ref": "#/$defs/id"}, "version": {"$ref": "#/$defs/text"},
+        "matched_controls": {"type": "object", "additionalProperties": false, "required": ["local_operations", "check_count", "horizon", "budget"], "properties": {
+          "local_operations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+          "check_count": {"type": "integer", "minimum": 1}, "horizon": {"type": "integer", "minimum": 1}, "budget": {"type": "integer", "minimum": 1}
+        }},
+        "forms": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["form_id", "topology_treatment", "endpoints", "value_claims", "transformations", "edges", "checks"], "properties": {
+          "form_id": {"$ref": "#/$defs/id"}, "topology_treatment": {"enum": ["direct_authorized_transfer", "role_rebound_transfer"]},
+          "endpoints": {"type": "array", "minItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["endpoint_id", "resource_kind", "role", "authority", "valid_interval"], "properties": {
+            "endpoint_id": {"$ref": "#/$defs/id"}, "resource_kind": {"enum": ["structured_table", "file_blob", "cache_queue", "external_service"]},
+            "role": {"enum": ["authoritative_source", "transformation_workspace", "required_destination", "verification_endpoint"]},
+            "authority": {"enum": ["authoritative", "derived", "write_only", "verification_only", "unauthorized"]}, "valid_interval": {"$ref": "#/$defs/text"}
+          }}},
+          "value_claims": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["claim_id", "semantic_identity", "source_endpoint_id", "source_locator"], "properties": {
+            "claim_id": {"$ref": "#/$defs/id"}, "semantic_identity": {"$ref": "#/$defs/sha256"}, "source_endpoint_id": {"$ref": "#/$defs/id"}, "source_locator": {"$ref": "#/$defs/text"}
+          }}},
+          "transformations": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["transformation_id", "description", "permitted_invariances"], "properties": {
+            "transformation_id": {"$ref": "#/$defs/id"}, "description": {"$ref": "#/$defs/text"}, "permitted_invariances": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true}
+          }}},
+          "edges": {"type": "array", "minItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["edge_id", "claim_id", "from_endpoint_id", "to_endpoint_id", "transformation_id", "authorized", "depends_on", "downstream_check_ids"], "properties": {
+            "edge_id": {"$ref": "#/$defs/id"}, "claim_id": {"$ref": "#/$defs/id"}, "from_endpoint_id": {"$ref": "#/$defs/id"}, "to_endpoint_id": {"$ref": "#/$defs/id"},
+            "transformation_id": {"$ref": "#/$defs/id"}, "authorized": {"type": "boolean"}, "depends_on": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true},
+            "downstream_check_ids": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/id"}, "uniqueItems": true}
+          }}},
+          "checks": {"type": "array", "minItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["check_id", "family", "depends_on_edges"], "properties": {
+            "check_id": {"$ref": "#/$defs/id"}, "family": {"enum": ["edge_fidelity", "endpoint_state", "global_closure", "collateral_state", "cleanup_reset"]},
+            "depends_on_edges": {"type": "array", "items": {"$ref": "#/$defs/id"}, "uniqueItems": true}
+          }}}
+        }}},
+        "claim_boundaries": {"type": "object", "additionalProperties": false, "required": ["exact_fixture_detection", "coordination_capability", "professional_validity", "safety", "production_fitness", "readiness_evidence"], "properties": {
+          "exact_fixture_detection": {"const": true}, "coordination_capability": {"const": false}, "professional_validity": {"const": false}, "safety": {"const": false}, "production_fitness": {"const": false}, "readiness_evidence": {"const": false}
+        }},
+        "provenance": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/provenance"}}
+      }
+    },
+    "dependencyTopologyObservation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["instrument_id", "version", "cases"],
+      "properties": {
+        "instrument_id": {"$ref": "#/$defs/id"}, "version": {"$ref": "#/$defs/text"},
+        "cases": {"type": "array", "minItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["case_id", "form_id", "edge_observations", "check_results", "write_persistence", "collateral", "cleanup", "disposition"], "properties": {
+          "case_id": {"$ref": "#/$defs/id"}, "form_id": {"$ref": "#/$defs/id"},
+          "edge_observations": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["edge_id", "source_access", "capture", "transformation", "target_write", "persistence", "path_authorized", "evidence"], "properties": {
+            "edge_id": {"$ref": "#/$defs/id"}, "source_access": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]}, "capture": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]},
+            "transformation": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]}, "target_write": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]},
+            "persistence": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]}, "path_authorized": {"type": "boolean"}, "evidence": {"$ref": "#/$defs/text"}
+          }}},
+          "check_results": {"type": "array", "minItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["check_id", "family", "outcome", "evidence"], "properties": {
+            "check_id": {"$ref": "#/$defs/id"}, "family": {"enum": ["edge_fidelity", "endpoint_state", "global_closure", "collateral_state", "cleanup_reset"]}, "outcome": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]}, "evidence": {"$ref": "#/$defs/text"}
+          }}},
+          "write_persistence": {"type": "object", "additionalProperties": false, "required": ["attempted", "acknowledged", "reobserved", "authoritative_state"], "properties": {
+            "attempted": {"type": "boolean"}, "acknowledged": {"type": "boolean"}, "reobserved": {"type": "boolean"}, "authoritative_state": {"enum": ["present", "absent", "not_observed"]}
+          }},
+          "collateral": {"enum": ["acceptable", "prohibited_state_observed", "insufficient_evidence"]}, "cleanup": {"enum": ["verified", "residue_observed", "not_run", "insufficient_evidence"]},
+          "disposition": {"type": "object", "additionalProperties": false, "required": ["edge_fidelity", "endpoint_closure", "global_closure", "collateral_state", "cleanup_reset"], "properties": {
+            "edge_fidelity": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]}, "endpoint_closure": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]},
+            "global_closure": {"enum": ["passed", "failed", "censored", "insufficient_evidence"]}, "collateral_state": {"enum": ["passed", "failed", "insufficient_evidence"]}, "cleanup_reset": {"enum": ["passed", "failed", "not_run", "insufficient_evidence"]}
+          }}
+        }}}
+      }
+    },
     "observation": {
       "type": "object", "additionalProperties": false,
       "required": ["instrument_id", "version", "session_id", "start_parent_root_sha256", "end_parent_root_sha256", "canary_results", "mutations", "matches", "attempt", "commit_assessment", "overall_disposition"],

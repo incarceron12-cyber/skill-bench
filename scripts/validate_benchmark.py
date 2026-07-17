@@ -520,6 +520,132 @@ def resource_envelope_errors(contract: dict[str, Any], observation: dict[str, An
     return errors
 
 
+def dependency_topology_errors(contract: dict[str, Any], observation: dict[str, Any]) -> list[str]:
+    """Replay edge, endpoint, prerequisite-masking, collateral, and reset outcomes."""
+    errors: list[str] = []
+    label = "dependency-topology"
+    if (observation["instrument_id"], observation["version"]) != (contract["instrument_id"], contract["version"]):
+        errors.append(f"{label}: instrument identity/version mismatch")
+    forms = contract["forms"]
+    _check_unique(forms, "form_id", f"{label}.forms", errors)
+    form_by_id = {form["form_id"]: form for form in forms}
+    if {form["topology_treatment"] for form in forms} != {"direct_authorized_transfer", "role_rebound_transfer"}:
+        errors.append(f"{label}: matched forms must vary exactly the declared topology treatment")
+    controls = contract["matched_controls"]
+    for form in forms:
+        prefix = f"{label} form {form['form_id']}"
+        for rows, key, name in [
+            (form["endpoints"], "endpoint_id", "endpoints"), (form["value_claims"], "claim_id", "value_claims"),
+            (form["transformations"], "transformation_id", "transformations"), (form["edges"], "edge_id", "edges"),
+            (form["checks"], "check_id", "checks"),
+        ]:
+            _check_unique(rows, key, f"{prefix}.{name}", errors)
+        endpoint_by_id = {row["endpoint_id"]: row for row in form["endpoints"]}
+        claim_by_id = {row["claim_id"]: row for row in form["value_claims"]}
+        transformation_ids = {row["transformation_id"] for row in form["transformations"]}
+        edge_by_id = {row["edge_id"]: row for row in form["edges"]}
+        check_ids = {row["check_id"] for row in form["checks"]}
+        if len(form["checks"]) != controls["check_count"]:
+            errors.append(f"{prefix}: check count differs from matched control")
+        if {row["family"] for row in form["checks"]} != {"edge_fidelity", "endpoint_state", "global_closure", "collateral_state", "cleanup_reset"}:
+            errors.append(f"{prefix}: check families must keep edge, endpoint, closure, collateral, and cleanup separate")
+        for claim in form["value_claims"]:
+            endpoint = endpoint_by_id.get(claim["source_endpoint_id"])
+            if endpoint is None or endpoint["role"] != "authoritative_source":
+                errors.append(f"{prefix} claim {claim['claim_id']}: source is missing or not role-bound as authoritative_source")
+        for edge in form["edges"]:
+            if edge["claim_id"] not in claim_by_id or edge["from_endpoint_id"] not in endpoint_by_id or edge["to_endpoint_id"] not in endpoint_by_id:
+                errors.append(f"{prefix} edge {edge['edge_id']}: dangling claim or endpoint")
+            if edge["transformation_id"] not in transformation_ids:
+                errors.append(f"{prefix} edge {edge['edge_id']}: unknown transformation")
+            if not set(edge["depends_on"]) <={*edge_by_id} or edge["edge_id"] in edge["depends_on"]:
+                errors.append(f"{prefix} edge {edge['edge_id']}: dangling or self dependency")
+            if not set(edge["downstream_check_ids"]) <= check_ids:
+                errors.append(f"{prefix} edge {edge['edge_id']}: unknown downstream check")
+        for check in form["checks"]:
+            if not set(check["depends_on_edges"]) <= {*edge_by_id}:
+                errors.append(f"{prefix} check {check['check_id']}: unknown edge dependency")
+
+    cases = observation["cases"]
+    _check_unique(cases, "case_id", f"{label}.cases", errors)
+    signatures = {"wrong_path_endpoint_pass": False, "source_masking": False, "ack_without_persistence": False, "closure_with_residue": False}
+    for case in cases:
+        prefix = f"{label} case {case['case_id']}"
+        form = form_by_id.get(case["form_id"])
+        if form is None:
+            errors.append(f"{prefix}: unknown form_id")
+            continue
+        edge_by_id = {row["edge_id"]: row for row in form["edges"]}
+        check_by_id = {row["check_id"]: row for row in form["checks"]}
+        observations = case["edge_observations"]
+        _check_unique(observations, "edge_id", f"{prefix}.edge_observations", errors)
+        if {row["edge_id"] for row in observations} != set(edge_by_id):
+            errors.append(f"{prefix}: edge observation coverage mismatch")
+        failed_source_edges: set[str] = set()
+        computed_edge = "passed"
+        for row in observations:
+            edge = edge_by_id.get(row["edge_id"])
+            if edge is None:
+                errors.append(f"{prefix}: unknown observed edge {row['edge_id']}")
+                continue
+            stages = [row[key] for key in ("source_access", "capture", "transformation", "target_write", "persistence")]
+            if row["source_access"] == "failed":
+                failed_source_edges.add(row["edge_id"])
+                if stages[1:] != ["censored"] * 4:
+                    errors.append(f"{prefix} edge {row['edge_id']}: source failure must censor every downstream opportunity")
+            first_failure = next((index for index, value in enumerate(stages) if value == "failed"), None)
+            if first_failure is not None and any(value != "censored" for value in stages[first_failure + 1:]):
+                errors.append(f"{prefix} edge {row['edge_id']}: post-failure stages must be censored, not scored as failures")
+            if not edge["authorized"] or not row["path_authorized"] or "failed" in stages:
+                computed_edge = "failed"
+            elif computed_edge != "failed" and ("insufficient_evidence" in stages or "censored" in stages):
+                computed_edge = "insufficient_evidence"
+
+        results = case["check_results"]
+        _check_unique(results, "check_id", f"{prefix}.check_results", errors)
+        if {row["check_id"] for row in results} != set(check_by_id):
+            errors.append(f"{prefix}: check result coverage mismatch")
+        by_family: dict[str, list[str]] = {}
+        for result in results:
+            check = check_by_id.get(result["check_id"])
+            if check is None or result["family"] != check["family"]:
+                errors.append(f"{prefix} check {result['check_id']}: unknown check or family drift")
+                continue
+            if result["family"] in {"endpoint_state", "global_closure"} and set(check["depends_on_edges"]) & failed_source_edges and result["outcome"] != "censored":
+                errors.append(f"{prefix} check {result['check_id']}: failed source prerequisite must censor downstream check")
+            by_family.setdefault(result["family"], []).append(result["outcome"])
+
+        def aggregate(family: str) -> str:
+            values = by_family.get(family, [])
+            if not values or "insufficient_evidence" in values:
+                return "insufficient_evidence"
+            if "failed" in values:
+                return "failed"
+            if "censored" in values:
+                return "censored"
+            return "passed"
+
+        persistence = case["write_persistence"]
+        persistence_failed = persistence["attempted"] and persistence["acknowledged"] and (not persistence["reobserved"] or persistence["authoritative_state"] != "present")
+        expected = {
+            "edge_fidelity": computed_edge,
+            "endpoint_closure": aggregate("endpoint_state"),
+            "global_closure": aggregate("global_closure"),
+            "collateral_state": {"acceptable": "passed", "prohibited_state_observed": "failed", "insufficient_evidence": "insufficient_evidence"}[case["collateral"]],
+            "cleanup_reset": {"verified": "passed", "residue_observed": "failed", "not_run": "not_run", "insufficient_evidence": "insufficient_evidence"}[case["cleanup"]],
+        }
+        if case["disposition"] != expected:
+            errors.append(f"{prefix}: dispositions do not replay independently from edge/check/collateral/reset evidence")
+        signatures["wrong_path_endpoint_pass"] |= expected["edge_fidelity"] == "failed" and expected["endpoint_closure"] == "passed"
+        signatures["source_masking"] |= bool(failed_source_edges) and expected["endpoint_closure"] == "censored" and expected["global_closure"] == "censored"
+        signatures["ack_without_persistence"] |= persistence_failed and any(row["persistence"] == "failed" for row in observations)
+        signatures["closure_with_residue"] |= expected["endpoint_closure"] == "passed" and (expected["collateral_state"] == "failed" or expected["cleanup_reset"] == "failed")
+    for signature, present in signatures.items():
+        if not present:
+            errors.append(f"{label}: required planted contrast missing: {signature}")
+    return errors
+
+
 def _validate_action_safety(
     contract: dict[str, Any], observation: dict[str, Any] | None,
     source_ids: set[str], event_by_id: dict[str, dict[str, Any]], errors: list[str], prefix: str,
