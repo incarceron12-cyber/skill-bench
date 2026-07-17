@@ -80,7 +80,7 @@ This supplies controlled coverage but no ecological sampling warrant. No expert-
 
 ### Assertions and score
 
-The benchmark release contains 675 typed assertion occurrences across the 150 cases:
+The benchmark release contains 709 typed assertion occurrences across the 150 cases:
 
 - `skill_match` 136;
 - `structural_type` 131;
