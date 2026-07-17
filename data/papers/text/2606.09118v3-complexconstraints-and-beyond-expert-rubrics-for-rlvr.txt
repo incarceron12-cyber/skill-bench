@@ -1,0 +1,664 @@
+                                                  ComplexConstraints and Beyond: Expert Rubrics for RLVR
+
+
+                                                          Sushant Mehta* , Liudas Panavas, Suhaas Garre, Edwin Chen
+                                                                                   Surge AI
+
+
+
+
+                                                              Abstract                           meaningful capability differences can no longer be
+                                                                                                 distinguished (Eriksson et al., 2025). Data contam-
+
+
+
+
+arXiv:2606.09118v3 [cs.AI] 4 Jul 2026
+                                            Evaluation protocols can lag behind LLM capa-
+                                            bilities. Programmatically verified benchmarks       ination can further erode confidence in reported
+                                            cover narrow surface constraints, whereas            scores. More fundamentally, there is a growing
+                                            real-world instruction following and agentic         misalignment between what benchmarks measure
+                                            workflows require judging semantic, contex-          and what real-world deployment requires: namely,
+                                            tual, and policy-dependent behavior. We              the ability to follow complex, layered instructions;
+                                            study expert-curated rubric-based evaluation         to maintain behavioral constraints across extended
+                                            as a unified mechanism for measurement and
+                                                                                                 interactions; and to execute multi-step professional
+                                            reinforcement-learning rewards across two set-
+                                            tings: complex instruction following and enter-      workflows reliably.
+                                            prise agentic tasks. We identify rubric-design          IFEval (Zhou et al., 2023b), one of the most
+                                            choices that affect reward quality, including        widely cited instruction-following benchmarks, il-
+                                            maximum viable atomicity, intent-aware crite-        lustrates this gap vividly. Its 25 verifiable constraint
+                                            rion design, and LLM-judge calibration. We           types (word counts, forbidden characters, format-
+                                            introduce C OMPLEX C ONSTRAINTS, an expert-
+                                                                                                 ting rules) can be checked programmatically, but
+                                            curated instruction-following suite compris-
+                                            ing a public 75-prompt benchmark with 1,559          this programmatic verifiability comes at the cost of
+                                            rubric criteria and a disjoint 1,000-prompt train-   validity. A model can produce incoherent nonsense
+                                            ing set, with 10–40 atomic criteria per prompt.      and still pass, so long as it avoids commas and the
+                                            Empirically, rubric rewards improve training         letter “c.” The benchmark shaped itself around the
+                                            in both fixed task datasets, such as C OMPLEX -      evaluation method rather than around the construct
+                                            C ONSTRAINTS, and stateful RL environments,          it claims to measure.
+                                            such as CoreCraft. Training a 4B model on
+                                            C OMPLEX C ONSTRAINTS improves mean cri-
+                                                                                                    This paper examines an alternative paradigm:
+                                            terion pass rate by +15.5 pp on a held-out split,    expert-curated rubric-based evaluation, in which
+                                            bringing it within 0.5 pp of the untrained base-     domain experts decompose task success into
+                                            line of a roughly 60× larger Qwen3 model, and        atomic, verifiable criteria that capture both ex-
+                                            the gains transfer to external benchmarks the        plicit requirements and pragmatic user intent. We
+                                            model never saw during training: +8.4 pp on          analyze this approach across two complementary
+                                            AdvancedIF and +10.1 pp on MultiChallenge.           domains: complex instruction following, using
+                                            In CoreCraft, rubric-reward RL likewise trans-
+                                                                                                 C OMPLEX C ONSTRAINTS, a new expert-curated
+                                            fers to out-of-distribution benchmarks (+4.5 pp
+                                            BFCL, +7.4 pp τ 2 -Bench, +6.8 pp Toolathlon).       benchmark and training suite we introduce in this
+                                            These results show that expert-authored rubrics      work, alongside the independently developed Ad-
+                                            provide effective evaluation targets and scalable    vancedIF and MultiChallenge benchmarks (He
+                                            reward signals for improving LLM instruction         et al., 2025; Deshpande et al., 2025); and agen-
+                                            following and agentic behavior.                      tic task execution, using the CoreCraft enterprise
+                                        1    Introduction                                        simulation (Mehta et al., 2026; Ritchie et al., 2026).
+                                                                                                    Our paper makes three contributions. First, we
+                                        Traditional benchmarks are increasingly saturated,       describe rubric-design decisions that improve con-
+                                        with frontier models topping out on tests where          struct validity relative to programmatic verifica-
+                                            * Correspondence to: sushantmehta@surgehq.ai         tion and make expert rubrics useful as reward sig-
+nals (§3). Second, we introduce C OMPLEX C ON -         results suggest that this investment in expressive-
+STRAINTS, an expert-curated instruction-following       ness pays a second dividend: rubrics rich enough
+suite embodying these decisions: a public 75-           to evaluate frontier models are also rich enough to
+prompt benchmark with 1,559 expert-authored             train them.
+rubric criteria, and a disjoint 1,000-prompt train-
+ing set built through the same pipeline, with 10–40     LLM-as-a-Judge. Rubric-based evaluation typ-
+atomic criteria per prompt. Third, we present em-       ically relies on LLM judges to assess criterion
+pirical evidence demonstrating that expert rubrics      satisfaction. A growing body of work examines
+designed according to these decisions are highly        the reliability of this approach. Gu et al. (2024)
+effective as reward signals for reinforcement learn-    provide a comprehensive survey, while Yamauchi
+ing (§5): in both instruction following and agentic     et al. (2025) find that clear evaluation criteria
+task execution, rubric-based RL training on modest      matter more for judge reliability than chain-of-
+amounts of data produces substantial, transferable      thought prompting, which adds little once such
+improvements, suggesting that expert rubrics serve      criteria are present. Schroeder and Wood-Doughty
+not only as more valid evaluation instruments but       (2024) demonstrate limitations of single-shot LLM
+also as highly effective training signals.              evaluations, and Chehbouni et al. (2025) argue
+                                                        from a measurement-theoretic perspective that
+                                                        LLM-judge validity remains undertested. Rao and
+2   Background and Related Work
+                                                        Callison-Burch (2026) consolidate many of these
+From Programmatic to Rubric-Based Evalua-               design choices into Autorubric, a unified open-
+tion. Instruction-following evaluation has pro-         source framework for rubric-based LLM evalua-
+gressed through several stages. IFEval (Zhou et al.,    tion that operationalizes per-criterion atomic evalu-
+2023b) established programmatic verification with       ation, ensemble judging, and psychometric reliabil-
+25 constraint types. FollowBench (Jiang et al.,         ity metrics. These concerns motivate careful rubric
+2024) revealed that model performance degrades as       design that reduces evaluator ambiguity.
+constraint complexity increases. InFoBench (Qin         Agentic Evaluation. Agent benchmarks have
+et al., 2024) proposed decomposing complex in-          evolved from simplified web interfaces toward re-
+structions into binary verification questions. Com-     alistic, execution-based environments (Zhou et al.,
+plexBench (Wen et al., 2024) introduced a hierar-       2024). Function calling is tracked by the Berke-
+chical taxonomy of constraint composition. Mul-         ley Function Calling Leaderboard (BFCL) (Patil
+tiChallenge (Deshpande et al., 2025) extended re-       et al., 2025), and customer service evaluation is
+alistic evaluation to multi-turn conversation, grad-    addressed by τ -bench (Yao et al., 2025) and its suc-
+ing with instance-level rubrics. AdvancedIF (He         cessor τ 2 -Bench (Barres et al., 2025). Toolathlon
+et al., 2025) moved to expert-curated rubrics for       (Li et al., 2025) benchmarks agents on 108 diverse,
+1,600+ prompts, finding that even frontier models       long-horizon tasks. A survey of 86 practitioners
+achieve only approximately 75% when assessed            working with deployed agent systems found that
+against these richer criteria. In a complemen-          68% of deployed agents execute ten or fewer steps
+tary medical setting, HealthBench (Arora et al.,        before human intervention (Pan et al., 2025), under-
+2025) pairs 5,000 multi-turn health conversations       scoring the gap between benchmark performance
+between models and users with 48,562 physician-         and deployment readiness.
+written rubric criteria across multiple behavioral
+axes (accuracy, communication, context aware-           Rubrics as Training Signals. Reinforcement
+ness). Our C OMPLEX C ONSTRAINTS dataset, in-           Learning from Verifiable Rewards (RLVR), intro-
+troduced in this paper, shares the expert-authored      duced by Tülu 3 (Lambert et al., 2025) and pop-
+rubric design of these recent efforts but is built      ularized by DeepSeek-R1 (DeepSeek-AI et al.,
+from the start to serve a second purpose: the same      2025), has been extended to instruction following
+rubrics that evaluate frontier models also function     through rubric-based reward signals. RIFL (He
+as data-efficient reward signals for reinforcement      et al., 2025) uses a finetuned rubric verifier to pro-
+learning. The broader progression reflects a general    vide rewards for RL training. VerIF (Peng et al.,
+trend: as evaluation criteria become more expres-       2025) combines rule-based and LLM-based verifi-
+sive, they better distinguish model capabilities, but   cation. RLCF (Viswanathan et al., 2025) extracts
+they also become harder to automate reliably. Our       instruction-specific checklists. ToolRL (Qian et al.,
+2025) demonstrates that GRPO-based training with        whether the gradient points toward correct answers
+fine-grained tool-use rewards enables tool-use gen-     or toward responses that are confidently wrong in
+eralization.                                            superficially similar ways.
+Concurrent Rubric-Based Work. Several re-               3.2   Intent over Literalism
+cent and concurrent efforts use rubrics for ei-
+ther evaluation or RL training, and C OMPLEX -          A user asks for help improving their Spanish, while
+C ONSTRAINTS occupies a distinctive position in         fluently summarizing an economics article they are
+this landscape along two axes: rubric authorship        reading in Spanish. A rubric that takes “improve
+(human-expert vs. LLM-generated) and purpose            my Spanish” at face value rewards beginner vocab-
+(evaluation only vs. RL training signal). Rubr-         ulary lists. Used as a reward, the failure compounds
+icRAG (Dhole and Agichtein, 2026) addresses             beyond a single misgraded response: the rubric sys-
+the cost of human authoring by retrieving do-           tematically trains the model to privilege surface
+main knowledge to generate query-specific rubrics       phrasing over context. Before writing any criteria,
+at inference time, RubricBench (Zhang et al.,           our rubric authors therefore read several model re-
+2026) quantifies the quality gap between model-         sponses to the prompt and restate the user’s intent
+generated and human rubrics, and Autorubric             in their own words – the “what” and the “why” –
+(Rao and Callison-Burch, 2026) unifies the judg-        then write criteria against that restatement. Intent-
+ing infrastructure. Relative to these, C OMPLEX -       aware criteria make contextual reading a rewarded
+C ONSTRAINTS contributes (i) expert-authored            behavior.
+rubrics, deliberately chosen over synthetic gen-
+                                                        3.3   Calibrating the Judge
+eration to capture pragmatic intent that LLM-
+generated rubrics tend to miss; (ii) coverage of        Every criterion is validated against an LLM verifier
+instruction following with high constraint density      before deployment, through an iterative loop. The
+(10–40 criteria per prompt), complementary to the       author drafts the criterion, grades a reference re-
+medical focus of HealthBench and the evaluation-        sponse by hand, and checks that the verifier agrees.
+only orientation of AdvancedIF’s benchmark com-         On disagreement, the author diagnoses whether the
+ponent; and (iii) explicit dual-purpose design: the     criterion’s phrasing is genuinely ambiguous and
+same rubrics serve as evaluation instruments and        revises it. The adversarial step follows: the author
+as RL reward signals. The design discussion in          edits the response so that the correct verdict flips,
+§3 consolidates lessons from this line of work into     and confirms that the verifier’s verdict flips with it.
+guidance for expert rubric authoring.                      This loop can surface ambiguities no style guide
+                                                        anticipates. A criterion asking a poem to “avoid
+3     What Makes a Rubric Trainable                     alliteration” failed when the verifier flagged “his
+Naive implementations of using a rubric as a reward     heart.” The fix – specifying poetic alliteration, the
+can fail in several predictable ways. Partial credit    repetition of initial stressed consonant sounds – pro-
+can flow to confidently wrong answers. Surface-         duced agreement in both directions. Other rules
+anchored criteria can reward phrasing over intent.      accumulate the same way: embed answer keys di-
+Ambiguously phrased criteria can turn the judge         rectly in factual criteria so the judge verifies instead
+into a source of noise rather than signal.              of recalling; decompose criteria too broad to grade
+   Our rubric methodology exists to close these         reliably into concrete, checkable parts.
+failure modes. We highlight the design decisions           This step matters even more for training. A noisy
+that most directly determine reward quality when        judge produces a noisy reward, and RL optimizers
+the rubric is used as a reward signal during RL.        locate and exploit reward noise efficiently. Cri-
+                                                        terion calibration functions as a defense against
+3.1    Maximum Viable Atomicity                         reward hacking.
+Standard rubric guidance holds that criteria should
+                                                        3.4   Optimal Difficulty for RL
+be atomic: each should test one thing. Applied
+literally, atomicity degrades the signal. Our cri-      RL extracts the most training signal where models
+teria instead target the smallest meaningful unit.      sometimes succeed: tasks that every model passes
+For evaluation, this keeps scores correlated with re-   yield no gradient, and tasks that no model passes
+sponse quality. For RL, the distinction determines      yield none either. Because rubric authors evaluate
+frontier responses against their rubrics during con-    Rubric criteria undergo LLM-judge calibration be-
+struction, difficulty is tuned task by task into the    fore use as evaluation criteria or reward signals.
+band where the signal is most informative.
+   Per-criterion density provides a second mecha-       Data construction. Prompts were authored from
+nism. Passing a task outright requires satisfying       scratch by a workforce of domain experts span-
+every criterion, so full success remains rare even      ning several task categories. Each prompt passed
+for frontier models. Per-criterion scoring, however,    through a three-stage workflow: (i) draft authoring
+creates a continuous gradient between partial and       by a domain expert, including a reference response
+full success: a response satisfying 28 of 30 crite-     used to anchor rubric writing; (ii) rubric authoring
+ria receives meaningfully more reward than one          against the reference; and (iii) independent review
+satisfying 15, and the optimizer learns from the        by a second expert, with adjudication by a senior
+difference.                                             reviewer when authors disagreed. Difficulty was
+                                                        calibrated through a pilot evaluation against a fron-
+4   The C OMPLEX C ONSTRAINTS Dataset                   tier model.
+To validate the design decisions above and to           Difficulty profile. Even the strongest frontier
+provide a concrete instantiation of expert rubric-      model on the public leaderboard passes barely two-
+based evaluation, we introduce C OMPLEX C ON -          fifths of benchmark tasks outright (where passing
+STRAINTS, an expert-curated instruction-following       requires all rubric criteria to be satisfied; Table 1),
+suite designed to serve as both a challenging evalua-   and most models score far lower. This difficulty
+tion benchmark for frontier models and an effective     profile is not artificially engineered but arises natu-
+training resource for RLVR.                             rally from the realistic complexity of the prompts,
+   C OMPLEX C ONSTRAINTS comprises two dis-             making it well-suited for both evaluation and RL
+joint sets built through the same expert pipeline: a    training. The continuous gradient between par-
+public benchmark of 75 prompts with 1,559 rubric        tial and full success, provided by the high rubric
+criteria, used for fine-grained measurement of fron-    density, produces a rich reward landscape for rein-
+tier models,1 and a companion training set of 1,000     forcement learning.
+single-turn prompts used for the RL experiments
+in §5. Each prompt is paired with 10 to 40 atomic       5     Expert Rubrics as RL Training Signals:
+rubric criteria (median 19) authored by domain                Empirical Evidence
+experts following the design decisions described
+in §3, with each criterion labeled along two axes:      Having established what high-quality rubrics look
+explicit vs. implicit, and objective vs. subjective.    like, we now turn to the central empirical ques-
+Every prompt mirrors authentic professional use         tion: are expert-curated rubrics effective as reward
+cases with high instruction density: constraints that   signals for reinforcement learning? We present ev-
+depend on one another (multi-step), fire only un-       idence across both instruction following and agen-
+der certain conditions (conditional), require think-    tic task execution, showing that rubric-based RL
+ing ahead (planning), or go unstated (implicit).        training produces substantial, transferable improve-
+Tasks are grounded in real-world scenarios such         ments from modest amounts of data.
+as scheduling under combinatorial constraints, it-
+                                                        5.1    Targeting Frontier Capability Gaps for
+erative document editing, and multi-requirement
+                                                               Training
+content generation; the training set spans seven
+task categories weighted toward professional writ-      Dense expert rubrics reveal trainable capability
+ing and planning work: business writing (39%),          gaps that coarser metrics hide. By evaluating each
+scheduling (22%), data categorization (11%), per-       response against many atomic criteria, these rubrics
+sonal plans (10%), numeric processing (7%), cre-        show not only whether a model failed a task, but
+ative writing (6%), and extraction (4%).                which requirements it failed to satisfy.
+   Both sets consist exclusively of single-turn            Table 1 shows that even the strongest frontier
+prompts, each authored to exercise a high density of    model passes all rubric criteria on only 40.4% of
+layered constraints within a single user instruction.   tasks, and scores fall off steeply: five models sit be-
+  1
+                                                        low 5%, two of them at 0%. This low task pass rate
+    Released under  CC-BY-4.0  at  https:
+//huggingface.co/datasets/surgeai/                      is consistent with the multiplicative difficulty of
+ComplexConstraints.                                     satisfying many constraints simultaneously: a task
+            Model                    Task Pass %                    Model                                        Task Pass %
+            Gemini 3.1 Pro                40.4                      Claude Opus 4.6 (Adaptive Thinking + Max             30.80
+            GPT-5.5                       38.7                      Reasoning Effort)
+            Gemini 3.5 Flash              36.9                      GPT-5.2 (High Reasoning Effort)                      29.70
+            Qwen3.7 Max                   36.0                      Gemini 3.1 Pro                                       27.20
+            Claude Opus 4.8               34.9                      Claude Opus 4.6 (High Reasoning Effort)              26.20
+            Kimi K2.6                     34.0                      DeepSeek v3.2 Thinking                               24.10
+            Claude Opus 4.7               33.6                      Claude Opus 4.6                                      22.10
+            DeepSeek V4 Pro               26.7                      GPT-5.2-Codex (xHigh Reasoning Effort)               20.10
+            Kimi K2.5                     18.7                      Claude Sonnet 4.6                                    16.40
+            Grok 4.20 Beta                16.9
+            DeepSeek V4 Flash             16.4                      Table 2: Frontier model performance on CoreCraft
+            Qwen3.5 Plus                  16.0
+            Ernie 5.1                     15.2                      (Mehta et al., 2026). Pass rate requires all expert-
+            GPT-5.4                        4.9                      authored rubric criteria to be satisfied; even the strongest
+            DeepSeek v3.2                  1.8                      model solves only 30.80% of tasks.
+            Mistral Large                  0.4
+            Nova 2 Pro                     0.0
+            Ernie 4.5                      0.0
+                                                                    training signals: the RL optimizer receives targeted
+                                                                    feedback about which aspects of task execution
+Table 1: Frontier model performance on the released
+C OMPLEX C ONSTRAINTS benchmark (75 prompts).                       need improvement.
+Task pass rate requires all rubric criteria to be satis-
+fied. Public leaderboard snapshot, last updated June
+                                                                    5.2   Grounding Rubrics in Agentic Failures
+3, 2026 (https://surgehq.ai/benchmarks/                             High quality expert rubrics can also make agen-
+complex-constraints). Even the strongest fron-                      tic failures easier to interpret and target. In Core-
+tier model passes only 40.4% of tasks, revealing sub-               Craft, rubric-level analysis supports the Hierarchy
+stantial headroom for rubric-based RL training.                     of Agentic Capabilities (Ritchie et al., 2026), an
+                                                                    empirically derived framework that organizes com-
+with 20 rubric criteria requires every criterion to be              mon agent failures into five levels. By analyzing
+satisfied, and even small per-criterion failure prob-               trajectories of twelve frontier and legacy models
+abilities compound rapidly. Crucially, this rubric                  on 150 CoreCraft tasks, the authors observed that
+density creates a continuous gradient between par-                  failures cluster around distinct competence levels
+tially and fully correct responses, providing a richer              rather than occurring randomly. The hierarchy com-
+reward landscape for RL than binary pass/fail met-                  prises:
+rics. While C OMPLEX C ONSTRAINTS itself is                            Level 1: Tool Use. Whether a model can reliably
+single-turn, prior work documents an average 39%                    invoke tools with correctly formatted arguments.
+performance drop when LLMs are evaluated on                         Models at this level fail at passing the correct data
+multi-turn, underspecified variants of single-turn                  type to a parameter, or confuse field names (e.g.,
+generation tasks (Laban et al., 2025), suggesting                   passing “gold” into a customer_id field). Mod-
+that the constraint-tracking gap we measure here                    els that cannot reliably use tools are not agents;
+may understate the headroom that remains in con-                    they are chatbots with tool access.
+versational settings.                                                  Level 2: Planning and Goal Formation. De-
+   Table 2 shows a similar picture for agentic tasks:               composing multi-step tasks into sub-objectives and
+even with maximum reasoning effort, the strongest                   executing them in order. Weaker models skip steps
+public CoreCraft result solves only 30.80% of tasks                 or forget sub-objectives (e.g., searching only for
+under the all-criteria pass-rate metric.2 Trajectory                “fulfilled” orders when “paid” and “pending” are
+analysis reveals recurring failure patterns (poor                   also specified).
+search strategy, failure to paginate through incom-                    Level 3: Adaptability. Adjusting when the plan
+plete results, incomplete exploration of available                  meets reality. Searching for “Vortex Labs” returns
+tools), each diagnosable through specific rubric                    no results because the system stores the brand as
+criteria (Ritchie et al., 2026). This diagnostic gran-              “VortexLabs” (no space). Less adaptable models
+ularity is precisely what makes rubrics valuable as                 accept empty results; more adaptable models iterate
+                                                                    with different search parameters.
+   2
+     Tables 1 and 2 reflect public leaderboard snapshots taken         Level 4: Groundedness. Staying tethered to
+at different times on different task suites, so their model line-
+ups differ; neither should be read as a single contemporaneous      the task context. Failures include hallucinating
+leaderboard.                                                        identifiers, using incorrect dates despite explicit
+context, or misattributing data fields in the final        credit for partially satisfying the required criteria
+response.                                                  while allowing other criteria to shape the reward
+   Level 5: Common-Sense Reasoning. Reason-                around response quality and avoidable errors.
+ing sensibly about situations not explicitly covered
+by instructions. Even GPT-5 failed to infer that a         Judge model. Per-criterion satisfaction judg-
+support ticket mentioning “the package showed up           ments are produced by GPT-5-mini during C OM -
+                                                           PLEX C ONSTRAINTS training and CoreCraft train-
+a few hours ago” describes a return, not a cancella-
+tion.                                                      ing. AdvancedIF transfer numbers (Table 4) use the
+                                                           judge specified by He et al. (2025); MultiChallenge
+   This hierarchy has an implication for RL train-
+                                                           follows its official protocol, with each model run
+ing design: rubric criteria can target failures at
+                                                           four times per task and graded by an external LLM
+multiple levels of agentic capability, including tool
+                                                           judge (Deshpande et al., 2025); BFCL, τ 2 -Bench,
+invocation correctness, plan completeness, recov-
+                                                           and Toolathlon use their respective official grading
+ery from unexpected results, factual consistency,
+                                                           protocols.
+and inferential reasoning. Because expert rubrics
+decompose task success across these capability di-         Training configurations. For instruction follow-
+mensions, rubric-based RL provides more localized          ing, we train Qwen3-4B (Thinking) on the C OM -
+training signal than task-level success alone. This        PLEX C ONSTRAINTS training set with RLVR, us-
+structured reward signal is one reason rubric-based        ing a 90:10 train/test split (approximately 900
+training proves effective, as we demonstrate next.         single-turn training tasks, each with 10–40 expert-
+                                                           authored criteria). All criteria are required in this
+5.3   Training Methodology: Rubrics as RL
+                                                           setting (α = β = 0), so the reward is the fraction
+      Rewards
+                                                           of criteria satisfied. No external benchmark was
+Both the instruction-following and agentic train-          used for training, hyperparameter tuning, check-
+ing pipelines employ RLVR, using expert rubric             point selection, or reward design. For agentic tasks,
+criteria as the verifiable reward signal. Concretely,      CoreCraft (Mehta et al., 2026) trains using Group
+criteria are partitioned into required criteria (Creq ),   Relative Policy Optimization (GRPO) (Shao et al.,
+bonus-only criteria (Cbonus ), and penalty-only cri-       2024) with decoupled clipping (Yu et al., 2025),
+teria (Cpen ). Given a rubric C = Creq ∪ Cbonus ∪          generating 16 rollouts per prompt that interact with
+Cpen and per-criterion satisfaction judgments sc ∈         stateful Docker containers running the enterprise
+{0, 1} provided by an LLM judge, the reward is             simulation.
+
+                  1      X                                 Reward hacking. We monitored training trajec-
+          r=                   sc
+                |Creq |                                    tories for two common forms of reward hacking:
+                        c∈Creq
+                |       {z      }                          (i) responses that verbally satisfy criteria without
+                    Required                               substantive content, and (ii) responses that exploit
+                         1          X                      known judge biases (e.g., verbosity preference).
+                +α                      sc
+                     |Cbonus |                      (1)    Qualitative inspection of paired pre/post-training
+                               c∈Cbonus
+                     |        {z         }                 rollouts on a held-out subsample showed no sys-
+                               Bonus
+                                                           tematic degradation in response quality alongside
+                     1      X
+                −β                (1 − sc )                the reward improvement, and the judge-calibration
+                   |Cpen |
+                           c∈Cpen                          procedure is designed in part to harden criterion
+                                                           phrasing against verbal trickery. The use of a judge
+                   |         {z          }
+                                Penalty
+                                                           model distinct from the policy model further limits
+where α, β ≥ 0 scale the bonus and penalty terms,          shared-representation exploits.
+and any term with an empty criterion set is defined
+as zero. With α = β = 0 the reward reduces to the          5.4   Results: Generalization on Instruction
+fraction of required criteria satisfied; the asymmet-            Following
+ric structure lets bonus criteria add reward when          Table 3 presents the core result: training on ap-
+satisfied without penalizing omissions, and penalty-       proximately 900 expert-curated rubric examples
+only criteria penalize violations without rewarding        produces a +15.5 pp improvement in mean per-
+mere avoidance. This formulation provides a dense          criterion pass rate for Qwen3-4B. The trained
+learning signal: unlike binary task success, it gives      4B model (73.4%) scores within 0.5 pp of the
+    Model                           Held-out pass rate          Benchmark              Base    Trained       ∆
+    Qwen3-4B (base)                       57.9%                 CoreCraft (held-out)   25.4%    36.8%     +11.4 pp
+    Qwen3-4B (trained)               73.4% (+15.5 pp)           BFCL Parallel          91.0%    95.5%     +4.5 pp
+                                                                τ 2 -Bench Retail      68.7%    76.1%     +7.4 pp
+    Qwen3-235B-A22B-Instruct              73.9%
+                                                                Toolathlon (Pass@1)    18.8%    25.6%     +6.8 pp
+
+Table 3: Mean per-criterion pass rate (the fraction           Table 5: GLM 4.6 after one epoch of GRPO on Core-
+of rubric criteria satisfied, averaged across tasks)          Craft with rubric-based rewards (Mehta et al., 2026).
+on the held-out C OMPLEX C ONSTRAINTS split after             The last three rows are out-of-distribution benchmarks
+training Qwen3-4B on ∼900 expert-curated examples             the model was never trained on. GLM 4.6 was the latest
+via RLVR. Qwen3-235B-A22B-Instruct, an untrained              available open-weights model at the start of training.
+model roughly 60× larger, is shown as a reference point.
+Note that this is a different summary statistic than the
+task pass rate reported in Table 1: a model can satisfy a
+                                                              pp on MultiChallenge instruction retention, +12.4
+high fraction of individual criteria without satisfying all
+criteria on any given task.                                   pp on AdvancedIF system steerability, and +10.5
+                                                              pp on MultiChallenge self-coherence. This cross-
+                                                              format transfer is somewhat surprising given that
+  Benchmark / Dimension      Base     Trained     ∆
+                                                              single-turn training data does not directly model
+  AdvancedIF                                                  conversational dynamics; we hypothesize that the
+    Single Turn              34.1%     40.1%    +6.0 pp
+    System Steerability      22.5%     34.9%    +12.4 pp      underlying competency is shared: tracking many
+    Carried Context          28.8%     35.9%    +7.1 pp       simultaneous requirements without dropping any
+    Overall                  28.2%     36.6%    +8.4 pp
+                                                              is the same skill whether the requirements arrive in
+  MultiChallenge                                              one dense prompt (a median of 19 criteria in our
+   Instruction Retention     23.6%     45.7%    +22.1 pp
+   Self-Coherence            33.5%     44.0%    +10.5 pp      training data) or accumulate across many turns of
+   Inference Memory          59.5%     65.3%    +5.8 pp       conversation. System steerability shows the map-
+   Overall                   41.1%     51.2%    +10.1 pp      ping most directly, because a system prompt func-
+                                                              tions as a persistent constraint set, structurally anal-
+Table 4: Transfer of Qwen3-4B trained on C OMPLEX -
+                                                              ogous to the dense constraint sets in C OMPLEX -
+C ONSTRAINTS to two external benchmarks (task pass
+rate): Meta’s AdvancedIF (He et al., 2025) and Mul-           C ONSTRAINTS training data. A controlled inves-
+tiChallenge (Deshpande et al., 2025). Training uses           tigation of the transfer mechanism remains future
+only single-turn C OMPLEX C ONSTRAINTS data, yet the          work.
+largest gains land on multi-turn dimensions. For Multi-
+Challenge, Overall covers all four benchmark axes; we         5.5   Results: Generalization on Agentic Tasks
+break out the three axes that most directly test carrying
+instructions and context across turns.                        Table 5 presents results from training GLM 4.6
+                                                              (355B parameters, 32B active) on CoreCraft with
+                                                              rubric-based rewards. After a single epoch, the
+untrained Qwen3-235B-A22B-Instruct baseline                   model improves by 11.4 pp on held-out CoreCraft
+(73.9%), a model roughly 60× its size: on this                tasks, a gain exceeding the capability gap between
+capability, 1,000 expert-curated examples were suf-           Claude Sonnet 4.5 and Claude Opus 4.5 (+7.05 pp)
+ficient to close a 60× parameter gap. We caution              (Mehta et al., 2026).
+that the reported numbers reflect a single-seed train-           More importantly, these gains transfer to out-of-
+ing run; we have not yet quantified seed-to-seed              distribution benchmarks: +4.5 pp on BFCL Paral-
+variance, and treat the magnitude rather than the             lel function calling, +7.4 pp on τ 2 -Bench Retail
+precise value of each ∆ as the more reliable signal.          customer service, and +6.8 pp on Toolathlon long-
+   Table 4 demonstrates that these gains transfer to          horizon tool use. The Toolathlon result is particu-
+two external benchmarks disjoint from the training            larly notable because its tasks (Kubernetes manage-
+distribution: Meta’s AdvancedIF (+8.4 pp over-                ment, Canvas grading, database synchronization)
+all), designed independently with different rubric            differ substantially from CoreCraft’s customer sup-
+authors, and MultiChallenge (+10.1 pp overall),               port domain. The model’s Pass3 (the fraction of
+a public multi-turn conversation benchmark. No-               tasks solved on all three independent runs, a relia-
+tably, C OMPLEX C ONSTRAINTS training consists                bility variant of pass@k) nearly doubles from 9.3%
+exclusively of single-turn tasks, yet the largest im-         to 17.6%, indicating that rubric-based training im-
+provements land on multi-turn dimensions: +22.1               proves not just peak capability but also reliability
+(Mehta et al., 2026).                                    ing manually written prompts paired with syntheti-
+   Qualitative analysis of paired trajectories reveals   cally generated rubrics. Because the base models
+three categories of learned competencies: improved       and training pipelines differ, this comparison is sug-
+multi-step workflow execution (correct task decom-       gestive rather than controlled, but it is consistent
+position and sequencing), better constraint han-         with the view that expert rubrics can provide unusu-
+dling (accurate temporal filtering and policy ap-        ally dense and generalizable supervision. This data
+plication), and higher response quality (structured,     efficiency also echoes the Superficial Alignment
+professional communication). These competencies          Hypothesis (Zhou et al., 2023a): small amounts
+are consistent with the broader claim that expert        of high-quality data can suffice when the training
+rubrics provide localized feedback across work-          distribution sits at the capability frontier.
+flow, constraint-handling, and communication di-            The efficiency advantage plausibly arises be-
+mensions, allowing training signal to target several     cause expert curation captures pragmatic distinc-
+competencies independently.                              tions that are difficult to control in synthetic rubric
+                                                         generation. Recent work on automatic rubric
+5.6   Discussion: Why Expert Rubrics Are
+                                                         generation quantifies a roughly 27-point accuracy
+      Effective Training Signals
+                                                         gap between human-authored and model-generated
+Across both domains, three properties of expert          rubrics with the judge held fixed, and finds that scal-
+rubrics explain their training effectiveness.            ing the quantity of synthetic rubrics yields dimin-
+   Dense reward from rubric granularity. With            ishing returns while human rubrics improve con-
+10–40 criteria per prompt, the model receives de-        sistently (Zhang et al., 2026), indicating that even
+tailed feedback about which specific aspects of task     state-of-the-art models struggle to autonomously
+completion succeeded or failed. This enables more        specify valid evaluation criteria. In our setting, the
+precise credit assignment than binary task-level re-     distinctions experts capture include inferring prag-
+wards or holistic preference judgments. A response       matic user intent, calibrating criteria for reliable
+satisfying 28 of 30 criteria receives a meaningfully     judge interpretation, and structuring reward so that
+different reward from one satisfying 15, guiding         partial progress remains informative.
+the optimizer toward targeted improvements.                 These properties also explain the observed cross-
+   Optimal task difficulty. Expert rubric design         format and cross-domain transfer. The constraint-
+helps calibrate task difficulty: annotators can build    tracking, workflow decomposition, and quality
+prompts, evaluate frontier model responses against       standards learned from rubric-dense training are
+the rubric, and then iterate on the prompt to tar-       general competencies, not environment-specific
+get an appropriate difficulty range. By designing        heuristics.
+tasks that even the strongest frontier models pass
+outright well under half the time – at most 40.4%        6   Broader Discussion
+on C OMPLEX C ONSTRAINTS and about 31% on
+CoreCraft under the all-criteria pass-rate metric        Construct Validity. Expert rubrics improve con-
+(Tables 1 and 2) – the training distribution occupies    struct validity along three dimensions. Content
+a region where learning signal is most informative.      validity: rubrics extend the evaluable space to in-
+Tasks that are too easy or too hard provide mini-        clude semantic correctness and pragmatic appropri-
+mal gradient; expert-authored prompts and rubrics        ateness (e.g., AdvancedIF’s carried-context tasks
+allow task difficulty to be adjusted toward the pro-     require evaluating whether a constraint stated turns
+ductive middle ground.                                   earlier – such as excluding non-family-friendly
+   Data efficiency from expert curation. Ex-             songs from a karaoke playlist – still governs the
+pert curation can concentrate training signal in a       current response (He et al., 2025)). Predictive va-
+small number of high-fidelity examples. Training         lidity: models scoring well on decomposed rubrics
+on C OMPLEX C ONSTRAINTS achieves a +8.4 pp              show improvements on out-of-distribution bench-
+overall improvement on AdvancedIF with approxi-          marks (§5; Mehta et al., 2026), whereas models
+mately 1,000 expert-curated examples, despite Ad-        tuned to the small set of verifiable constraints in
+vancedIF being an independently authored bench-          IFEval-style benchmarks overfit and fail to gener-
+mark. This gain is larger than the 6.7 pp improve-       alize to unseen constraints (Pyatkin et al., 2025).
+ment reported by RIFL (He et al., 2025) on Ad-           Discriminant validity: the wide spread in task pass
+vancedIF, its in-distribution evaluation setting, us-    rates among frontier models on C OMPLEX C ON -
+STRAINTS (from 0% to 40.4% in Table 1) creates        References
+space in which meaningful capability differences      Rahul K. Arora, Jason Wei, Rebecca Soskin Hicks, Pre-
+become visible, in contrast to saturated benchmarks     ston Bowman, Joaquin Quiñonero-Candela, Foivos
+where frontier models cluster within a few percent-     Tsimpourlas, Michael Sharman, Meghan Shah, An-
+age points of each other.                               drea Vallone, Alex Beutel, Johannes Heidecke, and
+                                                        Karan Singhal. 2025. HealthBench: Evaluating large
+                                                        language models towards improved human health.
+Infrastructure Investment. Expert rubric cre-
+                                                        Preprint, arXiv:2505.08775.
+ation costs more, but our results demonstrate that
+this investment yields returns in both measurement    Victor Barres, Honghua Dong, Soham Ray, Xujie Si,
+quality and training efficiency. Hybrid approaches      and Karthik Narasimhan. 2025. τ 2 -Bench: Evaluat-
+                                                        ing conversational agents in a dual-control environ-
+that combine expert-authored seed rubrics with syn-     ment. Preprint, arXiv:2506.07982.
+thetic scaling (Dhole and Agichtein, 2026) may
+offer a middle ground; the finetuned RIFL verifier    Khaoula Chehbouni, Mohammed Haddou, Jackie
+                                                        Chi Kit Cheung, and Golnoosh Farnadi. 2025. Nei-
+achieves 0.728 F1 agreement with humans, com-           ther valid nor reliable? investigating the use of llms
+pared to 0.515 for a vanilla LLM judge (He et al.,      as judges. Preprint, arXiv:2508.18076.
+2025), suggesting that even small amounts of ex-
+pert supervision substantially raise the ceiling on   DeepSeek-AI, Daya Guo, Dejian Yang, Haowei Zhang,
+                                                        Junxiao Song, Peiyi Wang, Qihao Zhu, Runxin Xu,
+automated rubric quality.                               Ruoyu Zhang, Shirong Ma, Xiao Bi, Xiaokang
+                                                        Zhang, Xingkai Yu, Yu Wu, Z. F. Wu, Zhibin
+7   Conclusion                                          Gou, Zhihong Shao, Zhuoshu Li, Ziyi Gao, Aixin
+                                                        Liu, Bing Xue, Bingxuan Wang, Bochao Wu, Bei
+We have presented expert-curated rubric-based           Feng, Chengda Lu, Chenggang Zhao, Chengqi Deng,
+evaluation as an approach that improves both            Chenyu Zhang, Chong Ruan, Damai Dai, Deli Chen,
+                                                        Dongjie Ji, Erhang Li, Fangyun Lin, Fucong Dai,
+the measurement and the training of large lan-          Fuli Luo, Guangbo Hao, Guanting Chen, Guowei
+guage models. We identified four rubric-design          Li, H. Zhang, Han Bao, Hanwei Xu, Haocheng
+decisions that are central to using rubrics as re-      Wang, Honghui Ding, Huajian Xin, Huazuo Gao,
+ward signals: maximum viable atomicity, in-             Hui Qu, Hui Li, Jianzhong Guo, Jiashi Li, Jiawei
+                                                        Wang, Jingchang Chen, Jingyang Yuan, Junjie Qiu,
+tent over literalism, adversarial judge calibra-        Junlong Li, J. L. Cai, Jiaqi Ni, Jian Liang, Jin Chen,
+tion, and difficulty/density tuning. We instantiate     Kai Dong, Kai Hu, Kaige Gao, Kang Guan, Kexin
+these decisions in C OMPLEX C ONSTRAINTS, an            Huang, Kuai Yu, Lean Wang, Lecong Zhang, Liang
+instruction-following suite comprising a public 75-     Zhao, Litong Wang, Liyue Zhang, Lei Xu, Leyi Xia,
+                                                        Mingchuan Zhang, Minghua Zhang, Minghui Tang,
+prompt benchmark and a 1,000-prompt training
+                                                        Meng Li, Miaojun Wang, Mingming Li, Ning Tian,
+set, with 10–40 atomic criteria per prompt. Train-      Panpan Huang, Peng Zhang, Qiancheng Wang, Qinyu
+ing with rubric-based rewards produces substan-         Chen, Qiushi Du, Ruiqi Ge, Ruisong Zhang, Ruizhe
+tial in-distribution gains and transfers to out-of-     Pan, Runji Wang, R. J. Chen, R. L. Jin, Ruyi Chen,
+distribution benchmarks designed by independent         Shanghao Lu, Shangyan Zhou, Shanhuang Chen,
+                                                        Shengfeng Ye, Shiyu Wang, Shuiping Yu, Shunfeng
+teams in both instruction-following and agentic         Zhou, Shuting Pan, S. S. Li, Shuang Zhou, Shaoqing
+settings. Open questions, including controlled iso-     Wu, Shengfeng Ye, Tao Yun, Tian Pei, Tianyu Sun,
+lation of which design decisions drive transfer and     T. Wang, Wangding Zeng, Wanjia Zhao, Wen Liu,
+broader study of asymmetric reward shaping, re-         Wenfeng Liang, Wenjun Gao, Wenqin Yu, Wentao
+                                                        Zhang, W. L. Xiao, Wei An, Xiaodong Liu, Xiaohan
+main natural next steps.                                Wang, Xiaokang Chen, Xiaotao Nie, Xin Cheng, Xin
+                                                        Liu, Xin Xie, Xingchao Liu, Xinyu Yang, Xinyuan Li,
+Data Availability                                       Xuecheng Su, Xuheng Lin, X. Q. Li, Xiangyue Jin,
+                                                        Xiaojin Shen, Xiaosha Chen, Xiaowen Sun, Xiaoxi-
+The C OMPLEX C ONSTRAINTS benchmark (75                 ang Wang, Xinnan Song, Xinyi Zhou, Xianzu Wang,
+prompts with 1,559 expert-authored rubric               Xinxia Shan, Y. K. Li, Y. Q. Wang, Y. X. Wei, Yang
+                                                        Zhang, Yanhong Xu, Yao Li, Yao Zhao, Yaofeng
+criteria) is publicly available under CC-BY-4.0 at      Sun, Yaohui Wang, Yi Yu, Yichao Zhang, Yifan Shi,
+https://huggingface.co/datasets/                        Yiliang Xiong, Ying He, Yishi Piao, Yisong Wang,
+surgeai/ComplexConstraints, and a con-                  Yixuan Tan, Yiyang Ma, Yiyuan Liu, Yongqiang Guo,
+tinuously updated public leaderboard is maintained      Yuan Ou, Yuduan Wang, Yue Gong, Yuheng Zou, Yu-
+                                                        jia He, Yunfan Xiong, Yuxiang Luo, Yuxiang You,
+at https://surgehq.ai/benchmarks/                       Yuxuan Liu, Yuyang Zhou, Y. X. Zhu, Yanhong Xu,
+complex-constraints.                                    Yanping Huang, Yaohui Li, Yi Zheng, Yuchen Zhu,
+                                                        Yunxian Ma, Ying Tang, Yukun Zha, Yuting Yan,
+  Z. Z. Ren, Zehui Ren, Zhangli Sha, Zhe Fu, Zhean          Graf, Jena D. Hwang, Jiangjiang Yang, Ronan Le
+  Xu, Zhenda Xie, Zhengyan Zhang, Zhewen Hao,               Bras, Oyvind Tafjord, Christopher Wilhelm, Luca
+  Zhicheng Ma, Zhigang Yan, Zhiyu Wu, Zihui Gu, Zi-         Soldaini, Noah A. Smith, Yizhong Wang, Pradeep
+  jia Zhu, Zijun Liu, Zilin Li, Ziwei Xie, Ziyang Song,     Dasigi, and Hannaneh Hajishirzi. 2025. Tülu 3: Push-
+  Zizheng Pan, Zhen Huang, Zhipeng Xu, Zhongyu              ing frontiers in open language model post-training.
+  Zhang, and Zhen Zhang. 2025. DeepSeek-R1: Incen-          In Conference on Language Modeling.
+  tivizing reasoning capability in LLMs via reinforce-
+  ment learning. Preprint, arXiv:2501.12948.              Junlong Li, Wenshuo Zhao, Jian Zhao, Weihao Zeng,
+                                                            Haoze Wu, Xiaochen Wang, Rui Ge, Yuxuan Cao,
+Kaustubh Deshpande, Ved Sirdeshmukh, Johannes Bap-          Yuzhen Huang, Wei Liu, Junteng Liu, Zhaochen Su,
+  tist Mols, Lifeng Jin, Ed-Yeremai Hernandez-              Yiyang Guo, Fan Zhou, Lueyang Zhang, Juan Miche-
+  Cardona, Dean Lee, Jeremy Kritz, Willow E. Pri-           lini, Xingyao Wang, Xiang Yue, Shuyan Zhou, Gra-
+  mack, Summer Yue, and Chen Xing. 2025. Multi-             ham Neubig, and Junxian He. 2025. The tool de-
+  Challenge: A realistic multi-turn conversation eval-      cathlon: Benchmarking language agents for diverse,
+  uation benchmark challenging to frontier LLMs. In         realistic, and long-horizon task execution. Preprint,
+  Findings of the Association for Computational Lin-        arXiv:2510.25726.
+  guistics: ACL 2025.
+                                                          Sushant Mehta, Logan Ritchie, Suhaas Garre, Ian
+Kaustubh D. Dhole and Eugene Agichtein. 2026. Rubri-        Niebres, Nick Heiner, and Edwin Chen. 2026. En-
+  cRAG: Towards interpretable and reliable LLM eval-        terpriseBench Corecraft: Training generalizable
+  uation via domain knowledge retrieval for rubric gen-     agents on high-fidelity RL environments. Preprint,
+  eration. Preprint, arXiv:2603.20882.                      arXiv:2602.16179.
+Maria Eriksson, Erasmo Purificato, Arman Noroozian,       Melissa Z. Pan, Negar Arabzadeh, Riccardo Cogo, Yux-
+ Joao Vinagre, Guillaume Chaslot, Emilia Gomez,             uan Zhu, Alexander Xiong, Lakshya A Agrawal,
+ and David Fernandez-Llorca. 2025. Can we trust ai          Huanzhi Mao, Emma Shen, Sid Pallerla, Liana Patel,
+ benchmarks? an interdisciplinary review of current         Shu Liu, Tianneng Shi, Xiaoyuan Liu, Jared Quincy
+ issues in ai evaluation. Preprint, arXiv:2502.06559.       Davis, Emmanuele Lacavalla, Alessandro Basile,
+                                                            Shuyi Yang, Paul Castro, Daniel Kang, Koushik Sen,
+Jiawei Gu, Xuhui Jiang, Zhichao Shi, Hexiang Tan,
+                                                            Dawn Song, Joseph E. Gonzalez, Ion Stoica, Matei
+   Xuehao Zhai, Chengjin Xu, Wei Li, Yinghan Shen,
+                                                            Zaharia, and Marquita Ellis. 2025. Measuring agents
+   Shengjie Ma, Honghao Liu, Saizhuo Wang, Kun
+                                                            in production. Preprint, arXiv:2512.04123.
+   Zhang, Yuanzhuo Wang, Wen Gao, Lionel Ni, and
+   Jian Guo. 2024. A survey on LLM-as-a-judge.
+                                                          Shishir G. Patil, Huanzhi Mao, Fanjia Yan, Char-
+   Preprint, arXiv:2411.15594.
+                                                            lie Cheng-Jie Ji, Vishnu Suresh, Ion Stoica, and
+Yun He, Wenzhe Li, Hejia Zhang, Songlin Li, Kar-            Joseph E. Gonzalez. 2025. The Berkeley function
+  ishma Mandyam, Sopan Khosla, Yuanhao Xiong,               calling leaderboard (BFCL): From tool use to agentic
+  Nanshu Wang, Xiaoliang Peng, Beibin Li, Shengjie          evaluation of large language models. In Proceedings
+  Bi, Shishir G. Patil, Qi Qi, Shengyu Feng, Ju-            of the 42nd International Conference on Machine
+  lian Katz-Samuels, Richard Yuanzhe Pang, Sujan            Learning.
+  Gonugondla, Hunter Lang, Yue Yu, Yundi Qian,
+  Maryam Fazel-Zarandi, Licheng Yu, Amine Benhal-         Hao Peng, Yunjia Qi, Xiaozhi Wang, Bin Xu, Lei Hou,
+  loum, Hany Awadalla, and Manaal Faruqui. 2025.            and Juanzi Li. 2025. VerIF: Verification engineering
+  AdvancedIF: Rubric-based benchmarking and rein-           for reinforcement learning in instruction following.
+  forcement learning for advancing LLM instruction          Preprint, arXiv:2506.09942.
+  following. Preprint, arXiv:2511.10507.
+                                                          Valentina Pyatkin, Saumya Malik, Victoria Graf,
+Yuxin Jiang, Yufei Wang, Xingshan Zeng, Wanjun              Hamish Ivison, Shengyi Huang, Pradeep Dasigi,
+  Zhong, Liangyou Li, Fei Mi, Lifeng Shang, Xin             Nathan Lambert, and Hannaneh Hajishirzi. 2025.
+  Jiang, Qun Liu, and Wei Wang. 2024. Follow-               Generalizing verifiable instruction following. In Ad-
+  Bench: A multi-level fine-grained constraints fol-        vances in Neural Information Processing Systems,
+  lowing benchmark for large language models. In            Datasets and Benchmarks Track.
+  Proceedings of the 62nd Annual Meeting of the As-
+  sociation for Computational Linguistics (Volume 1:      Cheng Qian, Emre Can Acikgoz, Qi He, Hongru Wang,
+  Long Papers).                                             Xiusi Chen, Dilek Hakkani-Tür, Gokhan Tur, and
+                                                            Heng Ji. 2025. Toolrl: Reward is all tool learning
+Philippe Laban, Hiroaki Hayashi, Yingbo Zhou, and           needs. Preprint, arXiv:2504.13958.
+  Jennifer Neville. 2025. Llms get lost in multi-turn
+  conversation. Preprint, arXiv:2505.06120.               Yiwei Qin, Kaiqiang Song, Yebowen Hu, Wenlin Yao,
+                                                            Sangwoo Cho, Xiaoyang Wang, Xuansheng Wu, Fei
+Nathan Lambert, Jacob Morrison, Valentina Pyatkin,          Liu, Pengfei Liu, and Dong Yu. 2024. InFoBench:
+  Shengyi Huang, Hamish Ivison, Faeze Brahman,              Evaluating instruction following ability in large lan-
+  Lester James Validad Miranda, Alisa Liu, Nouha            guage models. In Findings of the Association for
+  Dziri, Xinxi Lyu, Yuling Gu, Saumya Malik, Victoria       Computational Linguistics: ACL 2024.
+Delip Rao and Chris Callison-Burch. 2026. Autorubric:         Luke Zettlemoyer, and Omer Levy. 2023a. LIMA:
+  Unifying rubric-based llm evaluation. Preprint,             Less is more for alignment. In Advances in Neural
+  arXiv:2603.00077.                                           Information Processing Systems.
+Logan Ritchie, Sushant Mehta, Nick Heiner, Mason Yu,        Jeffrey Zhou, Tianjian Lu, Swaroop Mishra, Siddhartha
+  and Edwin Chen. 2026. The hierarchy of agentic               Brahma, Sujoy Basu, Yi Luan, Denny Zhou, and
+  capabilities: Evaluating frontier models on realistic        Le Hou. 2023b. Instruction-following evaluation for
+  RL environments. Preprint, arXiv:2601.09032.                 large language models. Preprint, arXiv:2311.07911.
+Kayla Schroeder and Zach Wood-Doughty. 2024. Can            Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou,
+  you trust LLM judgments? reliability of LLM-as-a-           Robert Lo, Abishek Sridhar, Xianyi Cheng, Tianyue
+  judge. Preprint, arXiv:2412.12509.                          Ou, Yonatan Bisk, Daniel Fried, Uri Alon, and Gra-
+                                                              ham Neubig. 2024. WebArena: A realistic web envi-
+Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu,               ronment for building autonomous agents. In Interna-
+  Junxiao Song, Xiao Bi, Haowei Zhang, Mingchuan              tional Conference on Learning Representations.
+  Zhang, Y. K. Li, Y. Wu, and Daya Guo. 2024.
+  DeepSeekMath: Pushing the limits of mathemati-
+  cal reasoning in open language models. Preprint,
+  arXiv:2402.03300.
+Vijay Viswanathan, Yanchao Sun, Shuang Ma, Xiang
+  Kong, Meng Cao, Graham Neubig, and Tongshuang
+  Wu. 2025. Checklists are better than reward models
+  for aligning language models. In Advances in Neural
+  Information Processing Systems.
+Bosi Wen, Pei Ke, Xiaotao Gu, Lindong Wu, Hao
+  Huang, Jinfeng Zhou, Wenchuang Li, Binxin Hu,
+  Wendy Gao, Jiaxin Xu, Yiming Liu, Jie Tang, Hongn-
+  ing Wang, and Minlie Huang. 2024. Benchmark-
+  ing complex instruction-following with multiple con-
+  straints composition. In Advances in Neural Informa-
+  tion Processing Systems, Datasets and Benchmarks
+  Track.
+Yusuke Yamauchi, Taro Yano, and Masafumi Oyamada.
+  2025. An empirical study of LLM-as-a-judge: How
+  design choices impact evaluation reliability. Preprint,
+  arXiv:2506.13639.
+Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik
+  Narasimhan. 2025. τ -bench: A benchmark for tool-
+  agent-user interaction in real-world domains. In In-
+  ternational Conference on Learning Representations.
+Qiying Yu, Zheng Zhang, Ruofei Zhu, Yufeng Yuan, Xi-
+  aochen Zuo, Yu Yue, Weinan Dai, Tiantian Fan, Gao-
+  hong Liu, Lingjun Liu, Xin Liu, Haibin Lin, Zhiqi
+  Lin, Bole Ma, Guangming Sheng, Yuxuan Tong, Chi
+  Zhang, Mofan Zhang, Wang Zhang, Hang Zhu, Jin-
+  hua Zhu, Jiaze Chen, Jiangjie Chen, Chengyi Wang,
+  Hongli Yu, Yuxuan Song, Xiangpeng Wei, Hao Zhou,
+  Jingjing Liu, Wei-Ying Ma, Ya-Qin Zhang, Lin Yan,
+  Mu Qiao, Yonghui Wu, and Mingxuan Wang. 2025.
+  DAPO: An open-source LLM reinforcement learning
+  system at scale. Preprint, arXiv:2503.14476.
+Qiyuan Zhang, Junyi Zhou, Yufei Wang, Fuyuan
+  Lyu, Yidong Ming, Can Xu, Qingfeng Sun, Kai
+  Zheng, Peng Kang, Xue Liu, and Chen Ma. 2026.
+  RubricBench: Aligning model-generated rubrics
+  with human standards. Preprint, arXiv:2603.01562.
+Chunting Zhou, Pengfei Liu, Puxin Xu, Srini Iyer, Jiao
+  Sun, Yuning Mao, Xuezhe Ma, Avia Efrat, Ping Yu,
+  Lili Yu, Susan Zhang, Gargi Ghosh, Mike Lewis,
+
