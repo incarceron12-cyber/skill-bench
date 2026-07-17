@@ -1,0 +1,762 @@
+                                             Agentic CLEAR: Automating Multi-Level Evaluation of LLM Agents
+
+                                                                 Asaf YehudaiI * , Lilach EdenI * , Michal Shmueli-ScheuerI
+                                                                                            I
+                                                                                       IBM Research
+                                                                     Asaf.Yehudai@ibm.com, {lilache, shmueli}@il.ibm.com
+
+
+
+
+                                                                     Abstract                      modes, repeated loops, misaligned sub-agent be-
+                                              Agentic systems are becoming more capable:           havior, and error propagation across steps that are
+
+
+
+
+arXiv:2605.22608v1 [cs.CL] 21 May 2026
+                                              agents define strategies, take actions, and inter-   hard to detect from final outputs alone.
+                                              act with different environments. This autonomy          This pressing need for oversight has led to the
+                                              poses serious challenges for overseeing and as-      proliferation of agent observability platforms (e.g.,
+                                              sessing agent behavior. Most current tools are       LangSmith, LangFuse). While invaluable for log-
+                                              limited, focusing on observability with basic        ging execution traces, their evaluation capabili-
+                                              evaluation capabilities or imposing static, hand-
+                                                                                                   ties are largely limited to basic metric aggregation
+                                              crafted error taxonomies that cannot adapt to
+                                              new domains. To address this gap, we present         or coarse, single-prompt LLM-as-a-judge assess-
+                                              Agentic CLEAR, an automatic, dynamic, and            ments applied to the full trace. Consequently, de-
+                                              easy-to-use evaluation framework. It produces        velopers are still required to manually inspect large
+                                              textual insights into the agent behavior on three    numbers of traces to identify systemic issues. In
+                                              levels of granularity: system, trace, and node.      parallel, the research community has focused on
+                                              Agentic CLEAR operates above the observabil-         constructing agent error taxonomies (Cemri et al.,
+                                              ity layer, enabling seamless integration and fea-    2026; Zhu et al., 2026; Deshpande et al., 2025)
+                                              turing an intuitive UI that makes agent evalua-
+                                                                                                   and high-fidelity benchmarks (Jimenez et al., 2024;
+                                              tion highly accessible. In our experiments on
+                                              four benchmarks, seven agentic settings, and         Yehudai et al., 2025a). Yet, these approaches yield
+                                              tens of thousands of LLM calls, we show that         static, rigid categories or require extensive, hand-
+                                              Agentic CLEAR produces high-quality, data-           crafted engineering that cannot dynamically adapt
+                                              driven, insightful feedback. Our analysis shows      to the bespoke tasks faced by everyday agent devel-
+                                              strong alignment with human-annotated errors         opers.
+                                              and the ability to predict task success rate.           In this work, to bridge this gap, we present Agen-
+                                              Code: https://ibm.biz/ACLEAR-Code                    tic CLEAR, an automatic, dynamic, and easy-to-
+                                         1    Introduction                                         use evaluation method that produces rich, textual
+                                                                                                   insights into agent behavior. Agentic CLEAR eval-
+                                         Agentic systems have become increasingly capable          uates each trace, producing step-level and full-trace
+                                         of defining strategies, executing actions, interacting    feedback, and then aggregates them across the full
+                                         with external environments, and solving complex,          collection of execution traces to surface recurrent
+                                         multi-step tasks (Schick et al., 2023; Wang et al.,       failures, quality degradation, and issues (See §2).
+                                         2024). This success has driven widespread adop-           Our approach produces structured, textual diag-
+                                         tion across various domains, including software           nostics across three levels of granularity, the sys-
+                                         engineering (Anthropic, 2025), scientific discov-         tem, node, and trace levels, enabling developers to
+                                         ery (Ghafarollahi and Buehler, 2025), and open-           quickly understand not only what failed, but why.
+                                         ended web browsing (OpenAI, 2025). Crucially,                We provide Agentic CLEAR as a pip-installable
+                                         this paradigm shift is not limited to large-scale en-     Python package designed for easy integration into
+                                         terprise solutions. Individual developers are adopt-      existing agent development workflows (See §3.1).
+                                         ing agentic workflows to automate bespoke, day-to-        It also provides an intuitive interactive UI for
+                                         day tasks. However, despite this democratization          deep-dive trace analysis (See §3.2). Through ex-
+                                         of agent building, agentic systems remain inher-          periments on diverse traces drawn from leading
+                                         ently brittle. They frequently exhibit subtle failure     benchmarks and prominent agent architectures, we
+                                             * Equal contribution.                                 demonstrate that Agentic CLEAR delivers action-
+Figure 1: Agentic CLEAR Pipeline. We start by preparing the execution traces. Stage 1: Apply multi-level per-trace
+evaluation via an LLM Judge. Stage 2: Aggregate insights using CLEAR, split into System-wide patterns and
+Node-specific patterns, and prepare them for the UI.
+
+
+able, high-level insights without requiring hand-         yields an execution trace tn = {(ik , ok , ak )}K    n
+                                                                                                            k=1 ,
+crafted evaluation rubrics or extensive human an-         consisting of a sequence of LLM calls, where each
+notation (See §5). By lowering the barrier to mean-       call is divided into an input and an output pair,
+ingful agent evaluation and diagnostics, Agentic          ({(ik , ok , ak )}), produced by a specific node ak , as
+CLEAR supports faster iteration, improved relia-          dictated by the agent structure and execution flow.
+bility, and more systematic understanding of agent        Overall, by running the agent on D, we get the
+behavior across tasks and domains.                        resulting traces, denoted as T = {tn }N   n=1 .
+   In summary, our contributions are:                         Given this data, our evaluation proceeds in two
+    1. A Dynamic Evaluation Methodology: We                stages: trace evaluation and system-level aggrega-
+       introduce a multi-level method that empha-          tion. As outlined in Algorithm 1, first, for every
+       sizes automatic, dynamic, and granular evalu-       trace tn , we employ an LLM judge J to perform
+       ation insights.                                     three assessments: (1) Step-wise Evaluation: For
+                                                           each pair (ik , ok ), Js produces a quality score and
+    2. Open-Source Package: We provide a Python            a natural language critique (subscript notation indi-
+       package with easy integration and an interac-       cates different evaluation modes of J). (2) Trace-
+       tive visual dashboard.                              wise Evaluation: Similarly, Jt evaluates the qual-
+                                                           ity of the complete trace, taking into account step
+    3. Empirical Validation: We demonstrate the            and full trace considerations. (3) Rubric Evalua-
+       efficacy of Agentic CLEAR across varied             tion: We apply a two-step assessment. First, given
+       benchmarks, agents, and models, showing its         xn , the judge Jr generates a set of task-specific cri-
+       ability to surface execution failures without       teria/rubrics required to accomplish the task. Then,
+       human-engineered tests.                             based on xn and the generated rubrics rn , the judge
+   We hope that Agentic CLEAR will serve the               Jv assesses whether these criteria were met within
+broader NLP and software engineering commu-                the trace tn .
+nities, fostering faster iteration, improved agent            In the second stage, to identify high-level in-
+reliability, and the development of next-generation        sights, we leverage CLEAR (Yehudai et al., 2025b)
+evaluation tools.                                          to cluster and summarize the instance-level feed-
+                                                           back into global insights. For each node (ak ), we
+2     Agentic CLEAR Method                                 group input-output pairs associated with it, and ap-
+Agentic CLEAR generates multi-level feedback by            ply CLEAR to surface component-specific failures
+analyzing the agentic system behavior across an en-        (Inode ). Similarly, we aggregate trace-level judg-
+tire dataset. As described in Figure 1, the pipeline       ments to identify holistic system behaviors (Isys ).
+ingests execution traces and outputs insights at the       Finally, we also link each insight to the specific
+system, node, and trace levels.                            execution step or trace that triggered it.
+   Formally, let D = {xn }N  n=1 be a dataset of N            This hierarchical approach delivers clear, inter-
+tasks and A be a target agentic system (i.e., a multi-     pretable insights across multiple levels of granular-
+agent system) composed of distinct nodes (e.g.,            ity, giving the agent developer visibility into the
+sub-agents or components, depending on the de-             system at different resolutions, from fine-grained
+velopment framework). Invoking A on task xn                nodes and traces to the full system view.
+  Algorithm 1: Agentic CLEAR Insight Generation Pipeline
+   Input: Dataset D = {xn }N        n=1 ; Agent A; Judge J; Aggregator C LEAR
+   Output: System Insights Isys , Node Insights Inode , Trace Evaluations Etrace
+ 1 Φnode ← ∅; Φsys ← ∅                                                    // Init feedback containers
+   /* Stage 1: Execution & Granular Evaluation                                                     */
+ 2 for n ← 1 to N do
+ 3     tn ← Execute(A, xn )               // Trace tn = {(ik , ok , ak )} with inputs, outputs, nodes
+       // 1. Node-wise Evaluation
+ 4     foreach step k in tn do
+ 5         cnode
+            nk    ← Js (ik , ok )                                         // Critique individual step
+ 6         Φnode [ak ] ← Φnode [ak ] ∪ {cnode   nk }                              // Group by node ak
+       // 2. Trace-wise Evaluation
+ 7     ctrace
+        n      ← Jt (tn )                                                  // Holistic trace critique
+       // 3. Rubric Evaluation
+ 8     rn ← Jr (xn )                                            // Generate task-specific criteria
+ 9     crubric
+        n      ←  J  (t
+                    v n n , r   )                                                 // Check compliance
+                              trace rubric
+10     Φsys ← Φsys ∪ {cn , cn                 }                            // Collect for system view
+11     Etrace [n] ← {ctrace
+                        n      ,  crubric node
+                                   n      , cnk  }
+   /* Stage 2: Insight Aggregation via CLEAR                                                       */
+12 Inode ← ∅
+13 foreach node a in Φnode .keys do
+14     Inode [a] ← C LEAR(Φnode [a])                                  // Per-node recurring patterns
+15 Isys ← C LEAR (Φsys )                                                    // Global system patterns
+16 return Isys , Inode , Etrace
+
+
+
+
+3       Agentic CLEAR Framework                        aspects such as correctness, completeness, and clar-
+                                                       ity. For Jt , we extend these criteria to trace-level
+3.1      Pipeline                                      dimensions, including execution quality and the
+To allow easy integration and usability, we provide    final deliverable. In Jr , the judge needs to decide
+Agentic CLEAR as a Python package available on         on the number of rubrics and generate them to suit
+PyPI (Permissive Apache 2.0 License). The pack-        the given task. Each prompt elicits a brief textual
+age supports the different end-to-end evaluation       justification prior to the score, functioning as a
+levels described in §2. Each evaluation level in the   chain-of-thought rationale. While our method pri-
+pipeline can be used on its own or combined with       marily focuses on providing textual insights, we
+the others, allowing users to tailor the workflow to   also surface these quantitative scores in the UI.
+their specific evaluation needs and preferences.       When ground-truth evaluation scores are available
+   For easy onboarding, we adopt an OpenTeleme-        for each trace, the system generates further insights
+try1 -compatible format. Specifically, we utilize      into execution paths and predictive patterns of trace
+LangFuse-formatted2 traces, which we convert to        success, and additionally assesses the reliability of
+an intermediate representation that serves as input    the judge. All the prompts are presented in App. A.
+to the pipeline. For other trace formats, we require   To support customization, users can adjust the eval-
+only minimal preprocessing to reach the same in-       uation dimensions, override the prompts, or replace
+termediate state that captures the LLM call’s inputs   the judge with a custom Python implementation.
+and outputs in the trace, along with the necessary
+metadata. We focus our analysis on the LLM in-         Code We provide Agentic CLEAR as a PyPI
+teractions, as they govern the system’s decision-      package. The analysis can be executed with a sin-
+making and are its most stochastic element.            gle CLI command, configured via a YAML file.
+                                                       Once processing completes, the interactive inter-
+   We design specific prompts for each judge eval-
+                                                       face can be launched from the command line. The
+uation mode. For Js , the judge assesses step-level
+                                                       pipeline stores its results as a ZIP file in the desig-
+    1
+        OpenTelemetry                                  nated output directory, which can then be loaded
+    2
+        LangFuse                                       manually into the app.
+ Entry View                                    a Entry view, with     2. Node View
+ Provides an easy                                tabs for each view   Provides node-level issues with per-instance error analysis.
+ entry point to our
+ tool.
+
+ 1. System                                     b Agent workflow
+ View                                            graph, system-
+                                                 level statistics,
+ Provides a                                      global scores,
+ workflow-                                       and system-level
+ level overview to                               recurring issues
+ help understand
+ the system
+ behavior and                                                                                                d Per-instance evaluation, scores,
+ identify high-level                                                                                           and recurring issues
+ patterns and issues
+ in the agent
+ execution.
+
+                                                                      c Filter by issue types and score
+                                                                        range
+
+ 3. Trace                                                                                                                    f Rubric evaluation,
+ View                                                                                                                          with cross-rubric
+                                                                                                                               evaluation summary
+ Provides search and
+ filtering options,
+ trace-level
+ analytics, high-level
+ evaluation, and
+ rubric and                                                            g Per-rubric assessment,
+ dimension-based                                                         with description, criterion,
+ evaluation.                                                             fulfillment assessment,
+                                      e Trace search and filtering.      and reasoning
+                                        Detailed assessment of
+                                        trace quality
+
+
+
+
+                                                                                                                      h Step and trace dimension
+                                                                                                                        scores
+
+
+
+
+Figure 2: The interactive UI of Agentic CLEAR, enabling multi-granular evaluation and diagnosis of agentic
+workflows. (a) The entry module provides top-level navigation across different analysis tabs. (b) The System
+View offers a macro-level summary, visualizing agent topologies, global performance scores, and system-wide
+recurring issues. The Node View facilitates agent-specific error analysis via (c) issue- and score-based filtering to
+isolate relevant evaluations, alongside (d) per-instance scoring and error distributions. The Trace View enables
+fine-grained, instance-level inspection, featuring (e) trace search and filtering capabilities, (f) cross-rubric evaluation
+summaries, (g) detailed per-rubric assessments with fulfillment reasoning, and (h) granular step- and trace-level
+dimension scores.
+
+
+
+   •••                                                                Finally, it aggregates global performance scores
+                                                                      and surfaces systemic recurring issues.
+      $ pip install clear - eval
+                                                                      Node View This view allows navigating between
+                                                                      agent nodes. For each, it presents the dynamically
+3.2      Agentic CLEAR UI                                             generated issues the node exhibits. Users can fil-
+Agentic CLEAR dashboard (Figure 2) provides a                         ter steps by issue types and score ranges. This
+hierarchical visual suite. We designed it to move                     allows targeted inspection of per-instance error dis-
+beyond static telemetry, enabling agent developers                    tributions, surfacing recurring patterns localized to
+and researchers to diagnose agent behaviors across                    individual prompts or behaviors.
+levels. The interface is structured around three
+primary perspectives:                                                 Trace View Facilitating fine-grained analysis,
+                                                                      the Trace View unpacks individual execution traces.
+System Level This view dynamically recon-                             It presents overall trace evaluation, alongside gran-
+structs the multi-agent topology directly from ex-                    ular, step-level dimension scores, and rubric evalua-
+ecution traces. It presents high-level agent behav-                   tion. Crucially, it exposes the LLM judge’s natural
+ioral patterns, like node usage and flow dynamics.                    language reasoning for each assessment, providing
+Benchmark             Agent              Model               # Traces   Source        Universal Error Patterns Several recurring is-
+AppWorld              CUGA               GPT-4o                417      Leaderboard
+                                                                                      sue categories appeared among the 195 trace-level
+GAIA                  Generalist Agent   Claude 4.5 Sonnet     165      HAL
+                      Generalist Agent   GPT-4.1               165      HAL
+                                                                                      issues generated across all configurations, reflect-
+                      HF DeepResearch    Claude 4.5 Sonnet     165      HAL           ing systemic weaknesses in current agent systems:
+                      HF DeepResearch    OpenAI o3             117      TRAIL
+                                                                                      (1) Redundant and Inefficient Tool Usage: unnec-
+SWE-bench Ver. Mini   Generalist Agent   Claude 4.5 Sonnet     50       HAL
+
+TAU-bench (Airline)   Generalist Agent   Claude 3.7 Sonnet     50       HAL
+                                                                                      essary repeated calls, poorly designed queries, or
+                                                                                      wasted computation; (2) Insufficient Error Han-
+       Table 1: Data statistics for the curated traces                                dling and Recovery: agents frequently failed to
+                                                                                      recover from tool errors or to shift to alternative
+                                                                                      strategies after failure and lacked effective fallback
+users with interpretable, context-aware justifica-                                    mechanisms; (3) Incomplete Workflows: agents
+tions for every identified failure mode.                                              failed to bring tasks to completion and fulfill all
+                                                                                      goals; (4) Output Formatting and Schema Compli-
+4      Experimental Setup
+                                                                                      ance: agents failed to adhere to output formats.
+To rigorously evaluate Agentic CLEAR across di-
+verse settings, we curate execution traces generated                                   Domain-Specific Issues (a) System-Level: Be-
+by leading agent architectures and LLMs across                                         yond these shared errors, each benchmark dis-
+prominent benchmarks. Specifically, we take traces                                     played its own domain-specific weaknesses. GAIA,
+from the following benchmarks: SWE-Bench Ver-                                          a research-oriented benchmark, was dominated by
+ified Mini (Jimenez et al., 2024), GAIA (Mialon                                        sourcing and verification failures (e.g., “Lack
+et al., 2023), AppWorld (Trivedi et al., 2024), and                                    of cross-verification across independent sources”);
+τ 2 -Bench (Barres et al., 2025). The agents are                                       AppWorld, which tests multi-step API orchestra-
+CUGA (Marreed et al., 2025), the SOTA agent on                                         tion, exhibited unique failures such as incom-
+AppWorld, HAL generalist agent (Kapoor et al.,                                         plete executions and domain-specific workflow
+2026), and Hugging Face’s Open Deep Research                                           breakdowns (e.g., “acting on contaminated shop-
+agent (Roucher et al., 2025), with top OpenAI and                                      ping carts and dropping email attachments”); Re-
+Anthropic models (See Table 1).                                                        sults on SWE-Bench Verified Mini highlight code-
+    We collect traces from HAL (Kapoor et al.,                                         related issues, such as monkey-patching and bro-
+2026), TRAIL (Deshpande et al., 2025), and the                                         ken diff output, while τ 2 -Bench focused on pol-
+AppWorld leaderboard, and consolidate them into                                        icy violations (e.g., “unauthorized payment selec-
+our unified intermediate representation schema. We                                     tion, fabricated cost estimates”). Notably, Agentic
+select seven settings to support comparative anal-                                     CLEAR discovered these domain-specific issues
+yses across models, agents, and benchmarks. We                                         without any benchmark-specific prompting.
+present detailed descriptions of the benchmarks,                                       (b) Node-level: This differentiation extends fur-
+the evaluated agents, and the specific trace datasets                                  ther at the node level. Running our method on
+in Appendix B.                                                                         the CUGA agent reveals that while universal is-
+    As judges, we employ two leading models, OSS-                                      sues like JSON malformation appeared across
+120B (OpenAI et al., 2025) in high thinking mode                                       nearly all nodes, different nodes surfaced distinct
+as a representative of a leading open-source model,                                    failure types matching their role: planning nodes
+and GPT-5 (Singh et al., 2025) as a closed-source                                      were dominated by task decomposition and API
+model.                                                                                 selection issues (e.g., TaskDecompositionAgent:
+    We perform trace-wise evaluation across all                                       “subtasks are ordered illogically or not in a natu-
+seven trace datasets using two judge models. The                                       ral execution sequence”), while execution nodes
+resulting evaluations are then passed to the CLEAR                                     surfaced functional bugs (e.g., APICodePlannerA-
+aggregation stage for issue discovery.                                                 gent: “missing pagination handling for APIs that
+                                                                                       return multiple pages of results”). Moreover, this
+5      Agentic CLEAR Issues Results                                                    evaluation mode allows pinpointing specific pitfalls
+                                                                                       behind each failure mode and addressing them di-
+In the following, we report findings on the universal                                  rectly. For example, hallucinations occur mainly
+failure patterns, the effect of the agent architecture                                 during the planning stages (e.g., ShortlisterAgent:
+and the backbone model, benchmark-specific is-                                        “APIs not defined in the supplied API catalog are
+sues, and the impact of judge selection.                                               listed”) but not during execution. Insights like
+these help agent developers fine-tune the relevant           Method                    Micro F1   Macro Cat F1
+                                                             Random (GT freq)           0.342        0.288
+components more effectively. See Appendix C for              Always top-4               0.459        0.199
+concrete examples of both cross-benchmark and                OSS-120B (full)            0.377        0.261
+cross-level issue variations.                                OSS-120B (full+partial)    0.427        0.374
+                                                             GPT-5 (full)               0.467        0.368
+                                                             GPT-5 (full+partial)       0.497        0.459
+Backbone Model and Agent Differences Com-
+paring GPT-4.1 and Claude 4.5 Sonnet as back-            Table 2: Error category prediction performance against
+bones for the HAL agent on GAIA (judged by               TRAIL (Planning and Reasoning categories).
+GPT-5), the two models shared the majority of
+their system-level failure profile: both were flagged    6     Analysis
+for source verification gaps, tool misuse, and
+output formatting noncompliance. For instance,           We validate Agentic CLEAR through two com-
+both produced nearly identical issues around out-        plementary analyses. The first compares our is-
+put compliance (GPT-4.1: “noncompliance with             sues against human-annotated errors. The second
+required execution and output formats/protocols”;        compares our score prediction methods with a few
+Claude 4.5 Sonnet: “failure to adhere to output for-     ground-truth benchmarks’ labels.
+matting and deliverable specifications”). However,
+                                                         6.1 Alignment with Human Error Taxonomies
+each also exhibited unique tendencies: GPT-4.1
+was flagged for “prematurely giving up after er-         To validate that our automatically generated issues
+rors instead of diagnosing, retrying, or pivoting to     capture meaningful error patterns, we first perform
+alternatives”, while Claude 4.5 Sonnet was associ-       a semantic mapping between our generated issues
+ated with “contradictory or self-conflicting state-      and TRAIL categories (Deshpande et al., 2025).
+ments; does not commit to a consistent interpreta-       TRAIL provides a hierarchical taxonomy of 20
+tion”. Similarly, comparing the HF DeepResearch          error categories spanning reasoning, planning, and
+and HAL agents with Claude as the backbone over          system execution failures. Here, we use the 12 non-
+GAIA reveals a largely shared error profile, with        execution categories as Agentic CLEAR focuses
+some small distinctions, suggesting the dataset has      on LLM reasoning and planning. These categories
+a greater effect than the agent architecture on the      account for 94% of the ground-truth labels.
+error types.                                                Since our issues are taxonomy-free by design,
+                                                         we first apply a semantic alignment: we map each
+Judge Selection Both judges were consistently            of our system-level issues into the TRAIL cate-
+able to uncover diverse and non-trivial recurring        gories as either a full match (directly correspond-
+issues. However, they produced qualitatively dif-        ing to a TRAIL category), or a partial match (over-
+ferent diagnoses, even of the same agent behavior.       laps conceptually but covers a broader or adjacent
+Their output differed not only in wording but also       concern). The full mappings between the issues
+in depth, specificity, and the behavior they chose to    produced by both judges and the TRAIL taxonomy
+emphasize. OSS-120B tended to generate shorter           are presented in Appendix D.
+issues (67 vs. 130 characters on average) and to sur-       The mapping was performed using Claude Opus
+face broader and more generic categories, more fo-       4.6 and verified by the authors. All 15 GPT-5 issues
+cused on operationally oriented failures (e.g., “Re-     and all 12 OSS-120B issues map to at least one
+dundant searches and file inspections causing inef-      TRAIL category, collectively covering 12 and 10
+ficiency” or “Misused tool arguments or invoked          of the 12 relevant categories, respectively.
+the wrong tool” on SWE-Bench Verified Mini). In             To verify that the alignment holds at the instance
+contrast, GPT-5 produced longer, more nuanced,           level, i.e., traces flagged with issues by Agentic
+and domain-specific failure modes that more fre-         CLEAR exhibit the corresponding TRAIL errors,
+quently targeted verification and validation failures,   we propagate the mapping transitively to individual
+incorrect logic or reasoning, and methodological         traces (117 in total) and measure agreement. We
+correctness (e.g., “breaks SQL query correctness         report macro-averaged F1 as the primary metric,
+due to missing alias remapping when combining            as it equally weights all error categories and thus
+SQL components”). These findings suggest that            directly measures breadth of taxonomy coverage.
+judge selection is consequential for determining         To calibrate, we compare against two baselines: a
+the specificity and depth of the generated failures.     random predictor weighted by the true category
+                                                          Step-Wise             Trace             Rubric
+Benchmark Agent                  Model               OSS-120B GPT-5 OSS-120B GPT-5 OSS-120B GPT-5
+AppWorld      CUGA               GPT-4o                  0.758    0.823     0.837       0.890   0.778      0.828
+GAIA          Generalist Agent   Claude 4.5 Sonnet       0.664    0.632     0.712       0.720   0.596      0.566
+GAIA          Generalist Agent   GPT-4.1                 0.707    0.742     0.839       0.848   0.560      0.597
+GAIA          HF DeepResearch    Claude 4.5 Sonnet       0.541    0.546     0.609       0.716   0.537      0.571
+GAIA          HF DeepResearch    OpenAI o3               0.783    0.706     0.774       0.819   0.729      0.736
+SWE-bench     Generalist Agent   Claude 4.5 Sonnet       0.788    0.779     0.661       0.803   0.505      0.524
+TAU-bench     Generalist Agent   Claude 3.7 Sonnet       0.409    0.529     0.618       0.554   0.539      0.597
+
+Table 3: AUC for predicting trajectory success using Agentic CLEAR scores. We report trace-level, rubric-based,
+and step-wise (average) scores
+
+
+frequencies, and a majority baseline that always            do not hold uniformly across all settings. The
+predicts the four most common categories.                   rubric method assumes the task description con-
+   Table 2 presents the results. The GPT-5                  tains all the requirements to determine success,
+judge achieves the strongest agreement under the            which breaks for τ 2 -Bench when implicit policy ad-
+full+partial matching, with a macro-F1 of 0.459             herence is critical. The step-wise method assumes
+and micro-F1 of 0.497. The frequency baseline is            that trace evaluation can be decomposed into the
+competitive on micro-F1 (0.459) due to the skewed           quality of isolated steps, which is more suitable
+category distribution, but its low macro-F1 (0.199)         for some agents and benchmarks. For instance,
+indicates that it fails to cover the tail of the error      modular agent architectures like CUGA are com-
+distribution. As expected, the GPT-5 judge outper-          posed of distinct, self-contained components with
+forms the smaller OSS-120B judge.                           clearly defined tasks, making it easier to assess
+   Overall, Agentic CLEAR recovers the majority             each node’s contribution. It can also benefit from
+of reasoning and planning error categories with-            a composable task structure, like in SWE-Bench
+out requiring predefined category definitions. The          Verified Mini, where the tasks naturally decompose
+generated issues are often more fine-grained and            into discrete phases, e.g., locating, understanding,
+actionable than the TRAIL categories they map to,           and fixing a bug. These differences suggest that
+capturing specific failure patterns where the taxon-        Agentic CLEAR evaluation methods can provide
+omy provides only broad groupings. This suggests            complementary signals depending on the target do-
+that our method can preserve the diagnostic capa-           main and agent.
+bilities of expert taxonomies while surfacing more             Comparing results across benchmarks reveals
+targeted and nuanced insights.                              large variations. AppWorld is the most predictable
+                                                            benchmark, with all results exceeding 0.75, and
+6.2   Score Prediction                                      GPT-5 specifically achieving at least 0.82 AUC
+To evaluate our judge’s ability to predict trace suc-       with all methods. τ 2 -Bench results, on the other
+cess, we compute the area under the ROC curve               hand, do not exceed 0.62, and both GAIA and
+(AUC) between the ground-truth and the predicted            SWE-Bench Verified Mini exhibit variation de-
+scores. Agentic CLEAR provides three methods to             pending on the method, agent, and model. These
+predict trace success: (1) Trace: the overall score         results call for further research to investigate the
+generated by the trace-wise evaluation; (2) Rubric:         effectiveness of trace judges in different agentic
+the proportion of task-level rubrics predicted as ful-      configurations.
+filled; and (3) Step-wise: the average score across
+all steps within the trace.                                 6.3   Rubric Analysis
+    Table 3 presents the full results. GPT-5 gener-         To better understand what our generated rubrics
+ally outperforms OSS-120B across the methods.               capture, we compared our generated rubrics against
+Across configurations, the trace-level method is the        benchmark-native evaluation criteria on sampled
+strongest predictor, outperforming the step-wise            tasks. Notably, our rubrics are generated from
+and rubric methods. This likely reflects the fact           the task description alone, without access to
+that the underlying assumptions of each method              benchmark-internal metadata. This gap affects
+benchmarks differently. In AppWorld, our rubrics        8   Conclusions
+correctly capture the expected agent behavior, but
+                                                        We presented Agentic CLEAR, an automatic eval-
+describe the process qualitatively, while gold as-
+                                                        uation framework that produces multi-level textual
+sertions are programmatic state checks against pre-
+                                                        insights into agent behavior at scale, without requir-
+computed outcomes. For example, on a shopping
+                                                        ing predefined error taxonomies or hand-crafted
+task, our rubrics capture the workflow (retrieve
+                                                        rubrics. Across four benchmarks and seven agentic
+list, parse items, add to cart, checkout), while gold
+                                                        configurations, we demonstrated alignment with
+constraints focus on assertions that validate the
+                                                        human-annotated errors and meaningful predictive
+gold state is reached, like "exactly one new order
+                                                        signal for task success. Key directions for future
+created" and "no address records modified. In τ 2 -
+                                                        work include extending Agentic CLEAR to analyze
+Bench, the difference is much starker. Many tasks
+                                                        system execution alongside reasoning and planning,
+are adversarial, meaning the correct behavior is to
+                                                        improving judge capabilities and reliability across
+refuse the user’s request. Because our generator
+                                                        diverse agentic settings, and enabling systematic
+sees only the surface-level request, it inadvertently
+                                                        cross-configuration comparisons.
+produces rubrics that reward task completion in-
+stead. These findings suggest that rubric generation
+from task descriptions alone can be enhanced by         References
+task metadata and should be examined based on           Anthropic. 2025. Claude-code.
+the target agentic setting.
+                                                        Elron Bandel, Asaf Yehudai, Lilach Eden, Yehoshua
+7   Related Work                                           Sagron, Yotam Perlitz, Elad Venezian, Natalia
+                                                           Razinkov, Natan Ergas, Shlomit Shachor Ifergan,
+General Agent Evaluation Our work takes a                  Segev Shlomov, Michal Jacovi, Leshem Choshen,
+                                                           Liat Ein-Dor, Yoav Katz, and Michal Shmueli-
+first step towards automatic environment-agnostic          Scheuer. 2026a. General agent evaluation. Preprint,
+agent evaluation. Recent work has begun to un-             arXiv:2602.22953.
+derstand the importance of standardizing agen-
+                                                        Elron Bandel, Asaf Yehudai, Alexandre Lacoste, Avijit
+tic evaluation (Bandel et al., 2026b,c) and has            Ghosh, Graham Neubig, Margaret Mitchell, Michal
+made first steps towards achieving it (Kapoor et al.,      Shmueli-Scheuer, and Leshem Choshen. 2026b.
+2026). These efforts focus on the runtime and              Agentic systems should be general. SSRN Electronic
+execution layers across environment type (Ban-             Journal.
+del et al., 2026a; Harbor Framework Team, 2026),        Elron Bandel, Asaf Yehudai, and Michal Shmueli-
+standardizing agent evaluation protocols (Lacoste          Scheuer. 2026c. Ready for general agents? let’s
+et al., 2026), and building frameworks that enable         test it. In ICLR Blogposts 2026. Https://iclr-
+                                                           blogposts.github.io/2026/blog/2026/general-agent-
+easy and scalable agent and benchmark integra-             evaluation/.
+tion. While these efforts focus on standardizing
+the benchmarking infrastructure, Agentic CLEAR          Victor Barres, Honghua Dong, Soham Ray, Xujie Si,
+                                                          and Karthik Narasimhan. 2025. τ 2 -bench: Evaluat-
+operates above the execution layer and addresses          ing conversational agents in a dual-control environ-
+how to interpret traces, providing out-of-the-box         ment. Preprint, arXiv:2506.07982.
+multi-level agent evaluation.
+                                                        Mert Cemri, Melissa Z Pan, Shuyi Yang, Lakshya A
+                                                         Agrawal, Bhavya Chopra, Rishabh Tiwari, Kurt
+Agent Meta-Evaluation Several recent works
+                                                         Keutzer, Aditya Parameswaran, Dan Klein, Kannan
+focus on creating benchmarks that assess judges’         Ramchandran, Matei Zaharia, Joseph E. Gonzalez,
+ability to detect agent erroneous steps and classify     and Ion Stoica. 2026. Why do multi-agent LLM sys-
+them into the right pre-defined category (Cemri          tems fail? In The Thirty-ninth Annual Conference
+et al., 2026; Zhu et al., 2026; Deshpande et al.,        on Neural Information Processing Systems Datasets
+                                                         and Benchmarks Track.
+2025; Lù et al., 2025). These works extend a large
+body of works on meta-evaluation of LLMs (Zheng         Darshan Deshpande, Varun Gangal, Hersh Mehta, Jitin
+                                                          Krishnan, Anand Kannappan, and Rebecca Qian.
+et al., 2023; Gera et al., 2025). Unlike these ap-
+                                                          2025. Trail: Trace reasoning and agentic issue local-
+proaches, which assume a fixed error taxonomy and         ization. arXiv preprint arXiv:2505.08638.
+evaluate judges’ recovery of it, Agentic CLEAR op-
+                                                        Ariel Gera, Odellia Boni, Yotam Perlitz, Roy Bar-
+erates without predefined categories, dynamically         Haim, Lilach Eden, and Asaf Yehudai. 2025. Jus-
+surfacing failure patterns that adapt to the target       trank: Benchmarking llm judges for system ranking.
+system and domain.                                        Preprint, arXiv:2412.09569.
+Alireza Ghafarollahi and Markus J Buehler. 2025. Scia-    OpenAI. 2025. Chatgpt agent: bridging research and
+  gents: automating scientific discovery through bioin-     action.
+  spired multi-agent intelligent graph reasoning. Ad-
+  vanced Materials, 37(22):2413523.                       Aymeric Roucher, Albert Villanova del Moral, Merve
+                                                            Noyan, Thomas Wolf, and Clémentine Fourrier. 2025.
+Harbor Framework Team. 2026. Harbor: A framework            Open-source DeepResearch – Freeing our search
+  for evaluating and optimizing agents and models in        agents. Accessed: 2025-02-04.
+  container environments.
+                                                          Timo Schick, Jane Dwivedi-Yu, Roberto Dessì, Roberta
+Carlos E. Jimenez, John Yang, Alexander Wettig,             Raileanu, Maria Lomeli, Eric Hambro, Luke Zettle-
+  Shunyu Yao, Kexin Pei, Ofir Press, and Karthik            moyer, Nicola Cancedda, and Thomas Scialom. 2023.
+  Narasimhan. 2024. Swe-bench: Can language mod-            Toolformer: Language models can teach themselves
+  els resolve real-world github issues? Preprint,           to use tools. Advances in neural information process-
+  arXiv:2310.06770.                                         ing systems, 36:68539–68551.
+Sayash Kapoor, Benedikt Stroebl, Peter Kirgis, Nitya      Aaditya Singh, Adam Fry, Adam Perelman, Adam Tart,
+  Nadgir, Zachary S Siegel, Boyi Wei, Tianci Xue,           Adi Ganesh, Ahmed El-Kishky, Aidan McLaugh-
+  Ziru Chen, Felix Chen, Saiteja Utpala, Franck Nd-         lin, Aiden Low, AJ Ostrow, Akhila Ananthram, Ak-
+  zomga, Dheeraj Oruganty, Sophie Luskin, Kangheng          shay Nathan, Alan Luo, Alec Helyar, and more.
+  Liu, Botao Yu, Amit Arora, Dongyoon Hahm, Harsh           2025.     Openai gpt-5 system card.     Preprint,
+  Trivedi, Huan Sun, and 12 others. 2026. Holistic          arXiv:2601.03267.
+  agent leaderboard: The missing infrastructure for AI
+  agent evaluation. In The Fourteenth International       Harsh Trivedi, Tushar Khot, Mareike Hartmann, Ruskin
+  Conference on Learning Representations.                   Manku, Vinty Dong, Edward Li, Shashank Gupta,
+                                                            Ashish Sabharwal, and Niranjan Balasubramanian.
+Alexandre Lacoste, Nicolas Gontier, Oleh Shliazhko,         2024. Appworld: A controllable world of apps and
+  Aman Jaiswal, Kusha Sareen, Shailesh Nanisetty,           people for benchmarking interactive coding agents.
+  Joan Cabezas, Manuel Del Verme, Omar G. You-              Preprint, arXiv:2407.18901.
+  nis, Simone Baratta, Matteo Avalle, Imene Ker-
+  boua, Xing Han Lù, Elron Bandel, Michal Shmueli-        Lei Wang, Chen Ma, Xueyang Feng, Zeyu Zhang, Hao
+  Scheuer, Asaf Yehudai, Leshem Choshen, Jonathan           Yang, Jingsen Zhang, Zhiyuan Chen, Jiakai Tang,
+  Lebensold, Sean Hughes, and 7 others. 2026. Cube:         Xu Chen, Yankai Lin, Wayne Xin Zhao, Zhewei Wei,
+  A standard for unifying agent benchmarks. Preprint,       and Jirong Wen. 2024. A survey on large language
+  arXiv:2603.15798.                                         model based autonomous agents. Frontiers of Com-
+                                                            puter Science, 18(6).
+LangFuse. 2023. Langfuse: Observability for ai appli-
+  cations.                                                Asaf Yehudai, Lilach Eden, Alan Li, Guy Uziel, Yilun
+                                                            Zhao, Roy Bar-Haim, Arman Cohan, and Michal
+LangSmith. 2023. Langsmith: Evaluation framework            Shmueli-Scheuer. 2025a. Survey on evaluation of
+  for ai applications.                                      llm-based agents. Preprint, arXiv:2503.16416.
+Xing Han Lù, Amirhossein Kazemnejad, Nicholas             Asaf Yehudai, Lilach Eden, Yotam Perlitz, Roy
+  Meade, Arkil Patel, Dongchan Shin, Alejandra Zam-         Bar-Haim, and Michal Shmueli-Scheuer. 2025b.
+  brano, Karolina Stanczak, Peter Shaw, Christopher         Clear: Error analysis via llm-as-a-judge made easy.
+  Pal, and Siva Reddy. 2025. Agentrewardbench: Eval-        Preprint, arXiv:2507.18392.
+  uating automatic evaluations of web agent trajecto-
+  ries. In Second Conference on Language Modeling.        Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan
+                                                            Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin,
+Sami Marreed, Alon Oved, Avi Yaeli, Segev Shlo-             Zhuohan Li, Dacheng Li, Eric Xing, Hao Zhang,
+  mov, Ido Levy, Offer Akrabi, Aviad Sela, Asaf             Joseph E Gonzalez, and Ion Stoica. 2023. Judging
+  Adi, and Nir Mashkif. 2025. Towards enterprise-           LLM-as-a-judge with MT-bench and chatbot arena.
+  ready computer using generalist agent. Preprint,          In Advances in Neural Information Processing Sys-
+  arXiv:2503.01861.                                         tems, volume 36, pages 46595–46623. Curran Asso-
+                                                            ciates, Inc.
+Grégoire Mialon, Clémentine Fourrier, Craig Swift,
+  Thomas Wolf, Yann LeCun, and Thomas Scialom.            Kunlun Zhu, Zijia Liu, Bingxuan Li, Muxin Tian, Yingx-
+  2023. Gaia: a benchmark for general ai assistants.        uan Yang, Jiaxun Zhang, Pengrui Han, Qipeng Xie,
+  Preprint, arXiv:2311.12983.                               Fuyang Cui, Weijia Zhang, Xiaoteng Ma, Xiaodong
+                                                            Yu, Gowtham Ramesh, Yusheng Su, Jialian Wu,
+OpenAI, :, Sandhini Agarwal, Lama Ahmad, Jason              Zicheng Liu, Pan Lu, James Zou, and Jiaxuan You.
+  Ai, Sam Altman, Andy Applebaum, Edwin Arbus,              2026. Where LLM agents fail and how they can learn
+  Rahul K. Arora, Yu Bai, Bowen Baker, Haiming Bao,         from failures.
+  Boaz Barak, Ally Bennett, Tyler Bertao, Nivedita
+  Brett, Eugene Brevdo, Greg Brockman, Sebastien
+  Bubeck, and more. 2025. gpt-oss-120b & gpt-oss-
+  20b model card. Preprint, arXiv:2508.10925.
+A     Prompts                                          HAL Generalist Agent An agent developed by
+                                                       the HAL team, designed to work across their uni-
+The prompts are presented in our code repository.      fied evaluation framework.
+B     Data
+                                                       HF Open Deep Research Agent An open-
+B.1    Benchmarks
+                                                       source agentic search framework developed by
+SWE-Bench Verified Mini A subset of 50                 Hugging Face. It is engineered to autonomously
+human-validated real-world software engineering        navigate the web, synthesize information across
+tasks from popular Python repositories. Each           long trajectories, and generate comprehensive,
+provides a GitHub issue and repository snapshot;       citation-backed answers for complex research
+agents produce patches that are evaluated against      queries.
+hidden unit tests (Jimenez et al., 2024).
+
+AppWorld A benchmark for evaluating user-              C   Issue Examples
+assistance agents on realistic day-to-day digital
+tasks. The agent interacts with the environment
+                                                       We present two examples illustrating the issues
+by writing Python code that is executed in a ded-
+                                                       generated by Agentic CLEAR across different con-
+icated interpreter with access to the AppWorld
+                                                       figurations and analysis levels.
+APIs (Trivedi et al., 2024).
+                                                          Table 4 presents the top 10 system-level issues
+τ 2 -Bench evaluates customer-service agents           discovered for both GAIA and SWE-Bench Veri-
+across retail, airline, and telecom domains via        fied Mini under the same configuration (same agent,
+LLM-simulated users, measuring both policy-            model, and judge). Four of the issues are shared
+compliant task completion and violation rejec-         across the benchmarks, capturing universal error
+tion (Barres et al., 2025).                            patterns such as inefficient workflows or tool mis-
+                                                       use. The remaining issues are domain-specific:
+GAIA comprises 466 human-designed, real-
+                                                       GAIA surfaces issues like inadequate source veri-
+world questions for evaluating general AI assis-
+                                                       fication or unreliable data processing, while SWE-
+tants. Each task requires fundamental abilities such
+                                                       Bench Verified Mini reveals engineering-oriented
+as web browsing, multi-modal, and multi-file han-
+                                                       failures such as broken patch output or missing
+dling (Mialon et al., 2023).
+                                                       regression tests. This differentiation occurred with-
+B.2    Traces Data                                     out any benchmark-specific prompting, demonstrat-
+                                                       ing Agentic CLEAR’s ability to adapt issue discov-
+HAL A unified evaluation framework that stan-
+                                                       ery to the relevant data.
+dardizes agent benchmarking across diverse do-
+mains. It provides a large set of execution traces,        Table 5 presents the top 10 issues discovered
+enabling automated trace evaluation to uncover hid-    at the system level and at the node level for the
+den failure modes, issues in agent behavior, and       TaskDecompositionAgent, both generated from the
+unsafe real-world actions (Kapoor et al., 2026).       same CUGA traces on AppWorld. The system-
+                                                       level issues capture system-wide failure modes
+TRAIL provides a set of execution traces with          such as incomplete task execution or entity res-
+human-annotated agent errors, based on a prede-        olution errors. The node-level issues pinpoint
+fined taxonomy, testing whether LLM judges can         planning-stage errors, including wrong app assign-
+accurately pinpoint reasoning, planning, and sys-      ments or unsupported capability assumptions. Sev-
+tem execution failures (Deshpande et al., 2025).       eral themes appear at both levels but with different
+                                                       granularity. For example, the system level flags
+B.3    Agents                                          incomplete execution, while the node level traces
+CUGA ConfigUrable Generalist Agent (CUGA)              it to the TaskDecompositionAgent omitting the fi-
+is an open-source system specifically designed for     nalization step. Together, the two views offer com-
+enterprise automation. It handles complex tasks        plementary diagnostics: the system level surfaces
+through multi-agent orchestration, dynamic rea-        broad failure patterns, while the node level local-
+soning, and API integrations while ensuring strict     izes problems to specific components and uncovers
+policy compliance.                                     nuanced failures not visible at the system level.
+    GAIA                                                            SWE-bench Verified Mini
+                                                           Similar Issues
+    Inefficient workflow that delays or neglects high-signal        Employs inefficient, noisy workflows with unnecessary de-
+    resources (e.g., provided local files/attachments), causing     tours and retries
+    redundant searches and retries
+    Violates tool constraints or misuses provided tools (e.g.,      Misuses tools or output formatting (disallowed imports, use
+    disallowed open/import/apt-get)                                 of open/subprocess, incorrect code fences)
+    Failure to adhere to output formatting and deliverable speci-   Does not follow task instructions or required outputs (e.g.,
+    fications (e.g., missing required terminators, wrong format)    missing facts survey, plan, or final patch)
+    Inadequate edge-case handling in computations (e.g., zero       Delivers partial fixes that miss edge cases or cross-
+    derivative, convergence and rounding rules)                     backend/platform differences
+                                                    Benchmark-Specific Issues
+    Failure to use and verify the mandated authoritative source     Produces incorrect or non-applicable patch output (escaped
+    and its exact version/timeframe; reliance on mirrors/snip-      content, partial diffs, missing unified diff)
+    pets
+    Insufficient cross-validation and evidentiary support; claims   Runs commands/tests without ensuring environment pre-
+    presented without corroboration                                 requisites and paths are correct
+    Unreliable data processing: fragile parsing and incorrect       Introduces broad behavior changes without proper scoping
+    filtering logic                                                 or compatibility/regression analysis
+    Wrong methodological framework or inconsistent formal-          Avoids established APIs/patterns and relies on fragile tech-
+    ism for the task                                                niques like monkey-patching
+    Incomplete enumeration or coverage before counting (miss-       Insufficient validation of changes (lacks repo tests/regres-
+    ing items/pages; partial lists)                                 sion, skips context-specific checks)
+    Poor disambiguation of task terms or scope, leading to          Provides no comments or documentation explaining ratio-
+    misinterpretation of requirements                               nale and potential impacts
+
+Table 4: System-level issues generated by Agentic CLEAR for two benchmarks using the same agent (HAL
+Generalist), model (Claude 4.5 Sonnet), and judge (GPT-5). Top: shared issues surfaced for both benchmarks.
+Bottom: benchmark-specific issues.
+
+
+D     Agentic CLEAR Issues to TRAIL
+      Mapping
+Tables 6 and 7 present the full mapping between the
+issues generated by Agentic CLEAR at the system-
+level using GPT-5 and OSS-120B, respectively, and
+the TRAIL taxonomy.
+   System-Level Issues                                             TaskDecompositionAgent (Node-Level)
+   Execution flow management and processing strategy flaws:        Assumes unsupported app capabilities; violates strict app
+   inefficient execution and incomplete coverage, loss of criti-   constraints
+   cal variables across steps, and continuing after success
+  Validation and preconditions gaps: skips critical pre/post-      Workflow coherence errors: reasoning, tasks, and ordering
+  action checks, neglects idempotency, fails to pre-check          don’t align; steps lack clear dependencies or references to
+  required permissions/tokens, and claims success without          prior outputs
+  evidence
+   Blockage handling failures: does not prompt for missing         Fails to return the user’s intent verbatim for single-app
+   info, avoids practical fallbacks or alternative paths, and      tasks; paraphrases or alters details
+   declares failure prematurely
+  Incomplete execution: stops short of finishing the core task     App boundary and handoff mistakes: wrong app assign-
+  (checkout, send/forward, save/receipt)                           ment, unclear division of responsibilities, or cross-app ac-
+                                                                   cess without explicit handoff
+   Entity resolution weaknesses: brittle matching/normaliza-       Insufficient disambiguation criteria for selecting among
+   tion and poor disambiguation among multiple candidates          multiple emails/items or handling time zones
+  API/framework contract noncompliance: schema/role/out-           Poor handling of absent data and capability limits/out-of-
+  put violations, misdeclared capabilities, misuse of field-       scope cases: lacks fallbacks, conditional logic, or alterna-
+  s/params, or using interactive prompts in non-interactive        tive suggestions
+  environments
+   Intent and channel selection errors: misinterprets the re-      Missing required parameters or constraints (time, recipients,
+   quest, uses the wrong app/medium, or ignores medium-            recurrence, labels, totals, etc.)
+   specific limits
+   Shopping cart and selection integrity issues: proceeds with     Insufficient handling of edge cases and input/format varia-
+   contaminated carts, mishandles cart restoration or item-to-     tions (e.g., boundary dates, file formats, catalog matching)
+   product mapping, and fails to validate product variants
+   Edge-case robustness deficiencies: mishandles time zones,       Missing finalization: fails to perform the final action (e.g.,
+   date boundaries/rollovers, unit normalization, and variant-     send/forward, purchase) or to return/deliver the final answer
+   level inventory                                                 to the user
+   Data integrity in inputs: uses hard-coded or unverified iden-   Adds unsupported assumptions or extra details not provided
+   tifiers/values instead of extracting them from retrieved data   by the user
+
+Table 5: Top 10 system-level and node-level issues generated by Agentic CLEAR for the CUGA agent on AppWorld
+(GPT-4o backbone, GPT-5 judge), sorted by frequency. System-level analysis captures system-wide failure modes,
+while node-level analysis pinpoints component-specific root causes within the TaskDecompositionAgent.
+    #   Issue                                                   Full Match               Partial Match
+
+    1   Did not leverage available tools and site-specific fea- Tool Selection Errors    Hallucinations – Lang.
+        tures; relied on memory or generic methods instead of                            Poor Info. Retrieval
+        invoking search/visit/inspect
+    2   Repeated tool misuse without correction (e.g., wrong Tool Selection Errors       Hallucinations – Tool
+        arguments to functions, failure to use helper functions                          Context Handling Failures
+        or archives)                                                                     Resource Abuse
+    3   Made claims without case-specific substantiation: Hallucinations – Lang.         Hallucinations – Tool
+        guessed/fabricated data, provided generic explanations,                          Poor Info. Retrieval
+        or asserted verification without reproducible evidence
+        (quotes, permalinks, screenshots, tool outputs, URLs/-
+        parameters)
+    4   Failed to follow the outlined plan; skipped core retrieval Task Orchestration    Instruction Non-compl.
+        and verification steps                                     Goal Deviation
+    5   Incomplete execution and coverage of the task: did Task Orchestration            Instruction Non-compl.
+        not enumerate all candidates, apply filters, check all Goal Deviation
+        occurrences, or perform required computations/counts/-
+        filtering
+    6   Poor error recovery; repeated failing steps instead of Task Orchestration        Resource Abuse
+        pivoting to alternative strategies                                               Context Handling Failures
+    7   Inefficient and redundant actions; excessive planning Resource Abuse             Task Orchestration
+        without tangible progress
+    8   Faulty or superficial parsing/extraction of source con- Tool Output Misinterp.   Poor Info. Retrieval
+        tent (PDF/HTML or narratives), leading to incorrect                              Formatting Errors
+        values or miscounts
+    9   Internal inconsistencies or logic errors within the anal- NA                     Goal Deviation
+        ysis (e.g., off-by-one indices, contradictory counts,                            Incorrect Problem Id.
+        changing the required metric mid-analysis)                                       Context Handling Failures
+   10 Did not ensure requirements and scope clarity: failed to Incorrect Problem Id.     Instruction Non-compl.
+      state/apply definitions, timeframe/version constraints,
+      or to ask for clarification/pause when inputs were un-
+      available
+   11 Output formatting and numerical precision require- Formatting Errors               Instruction Non-compl.
+      ments not followed (units, rounding rules, extra words,
+      template violations)
+   12 Minor factual inaccuracies and inconsistencies (e.g., Hallucinations – Lang.       Tool Output Misinterp.
+      misspelled names, wrong coordinates, misread code/-
+      grammar)
+   13 Ignored explicit source requirements; did not consult Instruction Non-compl.       Poor Info. Retrieval
+      the specified source
+   14 Failed to verify data adjustment/measurement method- Tool Output Misinterp.        Incorrect Problem Id.
+      ology (e.g., adjusted vs. unadjusted, intraday vs. close)                          Poor Info. Retrieval
+   15 Lack of cross-verification across independent sources    Poor Info. Retrieval      Hallucinations – Lang.
+
+Table 6: Mapping of GPT-5 system-level issues (GAIA) to TRAIL error categories. Lang. = Language-only; Tool =
+Tool-related; Misinterp. = Misinterpretation; Id. = Identification; Non-compl. = Non-compliance; Info. = Information.
+“—” indicates no full match.
+   #   Issue                                                    Full Match               Partial Match
+
+   1   Answers generated without retrieving or verifying data Hallucinations – Lang.     Poor Info. Retrieval
+       using tools, leading to unverified or fabricated informa-                         Tool Selection Errors
+       tion
+   2   Repeated identical or unnecessary tool calls              Resource Abuse          Task Orchestration
+   3   Poor error handling and lack of adaptation to failures   Task Orchestration       Context Handling Failures
+                                                                                         Resource Abuse
+   4   No source citations or evidence provided for answers     Instruction Non-compl.   Hallucinations – Lang.
+   5   Misused tool arguments or invoked the wrong tool         Tool Selection Errors    Hallucinations – Tool
+   6   Excessive planning steps that cause inefficiency         Resource Abuse           Task Orchestration
+   7   Missing required formatting tags or improper final an- Formatting Errors          Instruction Non-compl.
+       swer handling
+   8   Factual inaccuracies caused by unsupported assump- Hallucinations – Lang.         Poor Info. Retrieval
+       tions
+   9   Failed to handle missing or unsupported files gracefully Task Orchestration       Tool Output Misinterp.
+                                                                                         Context Handling Failures
+   10 Did not use the most appropriate specialized API (e.g., Tool Selection Errors      Poor Info. Retrieval
+      Wikipedia API) for precise data extraction
+   11 Inefficient or incorrect handling of pagination and multi- Poor Info. Retrieval    Context Handling Failures
+      page navigation                                                                    Tool Output Misinterp.
+                                                                                         Resource Abuse
+   12 Inappropriate tool selection for the task (e.g., omitting Tool Selection Errors    Poor Info. Retrieval
+      a required web_search)
+
+Table 7: Mapping of OSS-120B system-level issues (GAIA) to TRAIL error categories. Abbreviations as in Table 6.
+
