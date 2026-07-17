@@ -236,6 +236,7 @@ and validity records suffice, and the real consented-session gate remains blocke
 | [HealthAdminBench](../papers/agent-benchmarks/2026-07-16-healthadminbench-workflow-projection-validity.md) | A | Converts observed cross-system administrative work into 135 inspectable tasks and 1,698 checks while showing why path evidence, intermediate state, final consequence, prerequisite masking, strict conjunction, and occupational reliability are non-substitutable |
 | [StructureClaw](../papers/agent-benchmarks/2026-07-17-structureclaw-artifact-trace-validity.md) | A | Makes a request→model→validation→provider→result→report evidence chain and positive safe terminals executable, while its coarse model comparator, lossy semantic observer, single-run cells, absent result rows, revision drift, and broken standalone fixture paths show why provenance edges, semantic edge validity, expert acceptance, and professional readiness are non-substitutable |
 | [WindowsWorld](../papers/agent-benchmarks/2026-07-17-windowsworld-process-checkpoint-validity.md) | A | Makes 181 cross-application Windows task strings and 899 trajectory-wide milestone judgments inspectable while showing that free-path state appearance is not durable stage completion or process validity; flat checks, screenshot-only evidence, invalid records, unenforced setup, and an empty/final-`FAIL` L4 shortcut block occupational, reliability, safety, and readiness claims |
+| [UI-CUBE](../papers/agent-benchmarks/2026-07-18-ui-cube-operational-reliability-validity.md) | B | Crosses deterministic application-state predicates with viewport variants and short versus composed interactions, while exposing why a 136/90 declared suite, an unexplained roughly 67-result complex denominator, family-macro human aggregation, manifest/source drift, and post-paper task repairs cannot support operational-reliability, expert-parity, or enterprise-readiness claims |
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
 | [Chiron field study](../papers/agent-benchmarks/2026-07-17-human-ai-software-delivery-field-validity.md) | B | Separates recorded delivery measures from scenario-derived labor and exposes why field-cell identity, stable bridge units, actual resource exposure, external consequences, and a credible comparator are prerequisites for workflow-value claims |
 | [HCAST](../papers/agent-benchmarks/2026-07-17-hcast-human-time-calibrated-autonomy-validity.md) | A | Makes screened human-attempt effort a version- and condition-specific task covariate while showing why successful-only duration, forecasts, configured-agent success, reliability, autonomy, trust, substitution, value, and impact are non-inheriting claims |
@@ -335,6 +336,34 @@ automation. The completed WorkArena L1
 audit supports enterprise-UI and selected native-state operation claims,
 not representative knowledge work; WorkArena++ closes the composition-method gap but
 not occupational validity.
+
+UI-CUBE adds a controlled **state-predicate × presentation × composition** case to
+that family. Its 226-task React release makes final-state checks and fresh task
+containers inspectable and shows a large short-control versus composed-workflow
+cliff across all five configured systems. That is configured replica-conformance
+evidence, not operational reliability: the environment has no live backend,
+permissions, concurrency, or changing records; model and harness vary together;
+and paper runs, traces, exact runtime identity, repeats, and uncertainty are absent.
+The published complex percentages are jointly compatible with about 67 scored rows
+rather than the declared 90, with no exclusion ledger. The displayed 61.2% human
+complex result is a family macro; weighting the seven displayed rates by released
+task counts gives about 58.1%, and participant/attempt provenance is unavailable.
+At the audited pre-paper revision, manifest regeneration changes 22 prompts, while
+later commits alter instructions and repair three task bugs, so prompt, initial
+state, observer, runtime, and migration identity must remain separate.
+
+These are already represented rather than a reason for another schema: the
+[trial-accounting reconciliation gate](../pilots/trial-accounting-reconciliation/README.md)
+freezes assignments and rejects silent denominator loss; its
+[retained-campaign validation](../pilots/trial-accounting-reconciliation/retained-campaign-validation-v1/README.md)
+has exercised that invariant on two unlike empirical work shapes. Benchmark-bundle
+component identities and admissibility, task-health revisions/adjudication,
+metric-monitoring population/invalid/macro-micro semantics, and outcome-evidence
+fixed-denominator bounds cover the remaining links. Future use should retain
+outcome-state predicates and crossed presentation variants, repair observer
+assurance and exact release consistency, and test paired task transitions with
+repeated, task-clustered uncertainty. Computer use remains a methodological stress
+case, not the benchmark's scope.
 
 $OneMillion-Bench adds a sharp **cost-to-value boundary**:
 `versioned human task effort/cost → configured-system output distribution →
