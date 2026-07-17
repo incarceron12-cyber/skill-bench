@@ -1,0 +1,801 @@
+                                             Do You Need a Frontier Model as a Citation Verifier?
+                                        Benchmarking Rubric LLMs for Deep-Research Source Attribution
+                                                         Ethan Leung* Elias Lumer Corey Feld Austin Huber
+                                                                   Vamse Kumar Subbiah Kevin Paul
+                                                      Commercial Technology and Innovation Office, PricewaterhouseCoopers, U.S.
+
+
+
+                                                                                         Abstract
+                                                 Reinforcement learning increasingly relies on an LLM judge to score each rubric criterion,
+                                             and that judge acts as the reward model during training. Before such a signal can be trusted,
+                                             we need to know how capable the judge must be and how biased it is. We study this cali-
+
+
+
+
+arXiv:2607.08700v1 [cs.CL] 9 Jul 2026
+                                             bration question for citation quality in deep-research systems, where a search-grounded LLM
+                                             must support each claim it writes with a cited source. Citation quality is a structured rubric
+                                             task in which each attribution-citation pair is judged along two dimensions that require an
+                                             LLM, source relevance and factual support. On an adversarial long-form benchmark, we score
+                                             8 off-the-shelf LLM judges from 3 model families against gold labels over 1,248 rubric decisions,
+                                             all of which were human-reviewed and 378 of which were hard cases adjudicated from judge
+                                             disagreements. Cheaper judges remain competitive across both dimensions, with GPT-5-mini
+                                             attaining the strongest source-relevance pass-class F1 at 0.908 (κ=0.636), while on factual sup-
+                                             port the judges are statistically indistinguishable (overlapping confidence intervals), so no single
+                                             model dominates. At comparable F1, the judges still differ substantially in pass-rate drift, false
+                                             positive rate, and false negative rate. Scalar F1 obscures this directional bias, yet it is exactly
+                                             what a downstream reinforcement learning loop would reinforce. Calibrating the judge is there-
+                                             fore a prerequisite for using citation rubrics as reward signals, and our results show that this
+                                             calibration does not require the most expensive available model.
+
+
+                                        1    Introduction
+                                        Reinforcement learning with verifiable rewards (RLVR) has become the dominant post-training
+                                        recipe for tasks where output quality can be automatically checked [Tyagi et al., 2026, Mahmoud
+                                        et al., 2026, DeepSeek-AI, 2025, Lambert et al., 2024a]. In domains where no programmatic verifier
+                                        exists (medical advice, scientific writing, instruction following), the community has converged on
+                                        prompt-specific rubrics with weighted criteria, each scored by an LLM judge whose aggregate
+                                        judgment serves as the scalar reward [Rezaei et al., 2026, Mahmoud et al., 2026, Liu et al., 2023].
+                                        This convergence makes explicit a connection that is easy to overlook. The model that scores
+                                        each criterion acts as the reward model, so designing the training rubric amounts to designing the
+                                        operationalized goal. These scoring calls are also a verification bottleneck at scale [Trivedy et al.,
+                                        2026], which raises a practical question about how capable a judge needs to be before the reward
+                                        signal degrades.
+                                            Citation quality in deep-research and other search-augmented systems is a strong test case for
+                                        this question. These systems produce long-form answers where each factual claim is supported by
+                                        a retrieved, cited source, and faithful citation generation of this kind is an active RLVR training
+                                        target [Nakano et al., 2022, Menick et al., 2022, Asai et al., 2024, Gao et al., 2023b, Bohnet
+
+
+                                                                                              1
+et al., 2022]. How well a judge evaluates citations also depends on retrieval quality, since the
+harness and retrieval strategy shape which sources get cited [Sen et al., 2026]. The quality of
+each citation decomposes into criteria applied per attribution-citation pair. Two of them require
+an LLM judgment, whether the source is topically relevant to the claim and whether it factually
+supports it, while a third, whether the cited URL is accessible, is a deterministic check. Each LLM-
+judged criterion is an independent rubric judgment structurally similar to a process reward model
+(PRM) step [Lightman et al., 2024], a per-step judgment used as an intermediate reward signal, and
+the task is narrow enough that a well-specified rubric may compensate for model scale. Citation
+quality is therefore a direct empirical test of whether cheaper judges can close the loop as reliably
+as frontier models. Onweller et al. [2026] introduce the first evaluation framework for this task,
+pairing an AST-based parser that extracts attribution-citation pairs from markdown-formatted
+LLM output with a three-dimension evaluator that checks link accessibility, source relevance, and
+factual support. Benchmarking 14 LLMs on citation quality in deep research agents, they find
+that factual support accuracy drops by approximately 42% as retrieval depth scales from 2 to 150
+tool calls, exposing a systematic gap between surface-level citation quality and factual reliability.
+Their work leaves open the judge design problem of which LLM to use for the two LLM-judged
+dimensions, at what cost, and with what bias, the precise inputs needed to deploy citation quality
+evaluation as an RLVR reward signal.
+    The judge design problem sits at the intersection of two active research threads. In rubric RL,
+recent work shows that weak judges produce proxy-reward gains that do not transfer to stronger
+reference panels [Mahmoud et al., 2026], and that the verification bottleneck can be reduced by
+an order of magnitude through batching and lower-cost judges [Trivedy et al., 2026]. In LLM-as-
+judge research, Kim et al. [2024] show that a 13B model with rubric fine-tuning matches GPT-4
+evaluation quality, establishing that rubric-following ability is separable from model scale, while
+weak-to-strong generalization results show that a weaker supervisor’s directional signal can still
+enable strong model improvement [Burns et al., 2023], suggesting that judge imperfection does not
+necessarily degrade downstream training quality. No prior work, however, benchmarks multiple
+off-the-shelf candidate judges, general-purpose LLMs used without task-specific fine-tuning, on a
+citation-specific rubric task with adversarially constructed documents and human-reviewed labels.
+We address this gap by building on the pipeline of Onweller et al. [2026] and studying the judge
+design problem directly. We construct the Deep-Research Citation Benchmark, an adversarial long-
+form dataset spanning multiple domains with intentional factual errors and misleading citations,
+and produce gold labels for 1,248 rubric decisions across the two LLM-judged dimensions of source
+relevance and factual support, all human-reviewed and including 378 hard cases adjudicated from
+judge disagreements. We then benchmark 8 LLM judges from 3 model families (Anthropic, Google,
+and OpenAI), measuring F1 and Cohen’s κ as primary accuracy metrics and pass-rate drift, false
+positive rate, and false negative rate to characterize directional bias.
+    Our contributions are as follows:
+
+   • We introduce the Deep-Research Citation Benchmark, 624 attribution-citation pairs with gold
+     labels for all 1,248 LLM-judged decisions, every one human-reviewed, including 378 hard cases
+     (263 source relevance, 115 factual support) adjudicated from judge disagreements.
+
+   • We benchmark 8 rubric-based citation judges across 3 model families and find that cheaper
+     models are competitive. GPT-5-mini achieves the strongest source relevance F1 (0.908,
+     κ=0.636) while Claude Opus 4.6 leads on factual support (F1=0.750, κ=0.701), with no
+     single model dominating across dimensions.
+
+   • We show that rubric-based citation judges differ substantially in pass-rate drift, false positive
+
+                                                  2
+      rate, and false negative rate even at similar F1. This directional bias is invisible to scalar F1
+      but would shape what a downstream RLVR loop reinforces, so calibrating it is a prerequisite
+      for using the rubric as a reward signal.
+
+
+2    Related Work
+Scalar reward models for RLHF are prone to reward hacking and sycophancy because a single score
+conflates multiple quality dimensions [Gao et al., 2023a, Sharma et al., 2024, Ouyang et al., 2022,
+Lambert et al., 2024b]. Rubric-based rewards address this by decomposing response quality into
+explicit, independently scored criteria, making the training objective auditable and reducing the
+surface area for reward hacking [Tyagi et al., 2026, Mahmoud et al., 2026, Bai et al., 2022]. This
+approach has moved from a research recipe to a default, and rubric RL pipelines now span clinical
+question answering, scientific writing, instruction following, and agentic tasks [Rezaei et al., 2026].
+Two findings from this literature are directly relevant to judge design. First, Kim et al. [2024]
+show that a 13B model fine-tuned on rubric evaluation matches GPT-4 quality, so rubric-following
+ability is separable from model scale. Second, Burns et al. [2023] show that directionally correct
+reward signals from weaker supervisors still enable strong model improvement, suggesting that
+judge imperfection does not necessarily degrade downstream training quality.
+    Faithful citation generation has been an RL training target since WebGPT [Nakano et al.,
+2022], which used human preference over cited answers as a reward signal. Menick et al. [2022]
+made the citation judgment explicit, using a dedicated support model that scores whether each
+quoted passage supports the generated claim, with its binary predictions serving as the RL reward.
+Self-RAG [Asai et al., 2024] internalizes this judgment further, training a model to emit per-
+citation reflection tokens (including [IsSupported]) inline with generation, using an LLM judge
+to produce the training signal. Each of these systems uses a single, large, or purpose-built model.
+None study whether off-the-shelf smaller models can provide an equally reliable reward signal, nor
+do they characterize the directional bias (pass-rate drift, false positive rate, false negative rate)
+that determines what the training loop actually reinforces.
+    The LLM-as-judge literature establishes that judge reliability depends more on task structure
+than on model scale. Zheng et al. [2023] identify systematic biases in LLM judges (position prefer-
+ence, verbosity bias, self-enhancement) but study response quality evaluation, not citation-specific
+rubric tasks. RAG evaluation frameworks such as RAGAS [Es et al., 2024] and ARES [Saad-
+Falcon et al., 2024] assess faithfulness at the answer level, treating the full context-answer pair
+as a unit rather than scoring individual attribution-citation pairs Lumer et al. [2026a]. Citation
+grounding benchmarks such as ALCE [Gao et al., 2023c] and FactScore [Min et al., 2023] evaluate
+whether claims are supported by evidence, but operate over closed retrieval corpora rather than
+live hyperlinks and use single NLI-based scorers rather than comparing judge models. Citation
+attribution benchmarks such as CiteME [Press et al., 2024] and CiteGuard [Choi et al., 2026] test
+whether a model attributes a scientific claim to the correct source paper, a matching task over a
+fixed corpus. Our setting differs in that we score the quality of citations to live web sources along
+independent relevance and factual-support criteria, and we compare candidate judge models rather
+than proposing a single attributor. Recent work on judge cost confirms that lower-cost judges can
+match frontier performance on structured rubric tasks when the criteria are well-specified [Trivedy
+et al., 2026], a finding our experiments extend to the citation quality domain. Our work departs
+from all of these threads at once. Prior citation RL systems assume a large or dedicated judge is
+necessary, prior LLM-as-judge work does not study citation-specific rubric tasks, and prior RAG
+evaluation frameworks neither compare candidate judge models nor characterize their directional
+
+
+                                                  3
+                               Clean cited                                      Adversarial editing
+    Topic selection                                   Parse attributions
+                                overviews                                         ∼60% of claims,
+       25 topics                                      extract attribution-
+                           long-form summaries,                                    19 strategies
+                                                         citation units
+                               varied sources
+
+
+
+                             Human review                Council of 6           Deep-Research Ci-
+                            of every decision            LLM judges             tation Benchmark
+                               all 1,248 deci-           relevance and            624 attribution-
+                              sions validated           factual support            citation units
+
+
+
+
+                 Unanimous (870)       Disagreements (378)
+                confirmed on review    human adjudication
+
+
+
+                           golden dataset.json
+                            1,872 labels, 1,248
+                             judged decisions
+
+Figure 1: Construction pipeline for the Deep-Research Citation Benchmark. 25 topics are selected
+and clean overviews are generated with attributed sources. About 60% of the attributed claims are
+then adversarially edited using 19 base strategies, with some claims receiving more than one, while
+the rest are left clean. Gold labels are produced by a council of 6 LLM judges that independently
+run the source attribution pipeline. A human reviewer validates every council decision. The 870
+unanimous decisions are confirmed on review, and the 378 non-unanimous decisions receive inten-
+sive adjudication.
+
+
+bias.
+
+
+3       Benchmark Construction
+We build on the two-stage source attribution evaluation pipeline of Onweller et al. [2026], which
+parses attribution-citation pairs from long-form model output and then scores each pair against
+the rubric criteria. Our benchmark supplies that pipeline with a controlled, adversarial input and
+a set of human-reviewed gold labels.
+
+3.1     Benchmark Overview
+The Deep-Research Citation Benchmark is a single long-form report spanning 25 topic domains,
+namely Amtrak, Pokémon, 1600s historical events, calculus, agentic artificial intelligence, mascots,
+neurology, black holes, artisan sourdough baking, quantum computing, the history of the Silk
+Road, beekeeping and honey production, urban planning and zoning laws, classical Greek pottery,
+electric vehicle battery recycling, Shakespeare’s comedies, deep-sea hydrothermal vents, minimalist
+interior design principles, traditional Bhutanese music, Antarctic penguin species, cryptocurrency
+regulation, flight mechanics of birds, vintage watch collecting, genetic engineering in agriculture,
+and the history of the postal system. Domain diversity reduces the risk that a judge’s domain
+knowledge, rather than its rubric-following ability, drives performance. Most attributed claims are
+
+
+                                                  4
+              Model                   Provider         API identifier
+              Claude Haiku 4.5        Google Vertex    claude-haiku-4-5-20251001
+              Claude Sonnet 4.6       Google Vertex    claude-sonnet-4-6
+              Claude Opus 4.6         Google Vertex    claude-opus-4-6
+              Gemini 3.1 Flash Lite   Google Vertex    gemini-3.1-flash-lite-preview
+              Gemini 3.1 Pro          Google Vertex    gemini-3.1-pro-preview
+              GPT-5-mini              Azure OpenAI     gpt-5-mini-2025-08-07
+              GPT-5.4-mini            OpenAI           gpt-5.4-mini-2026-03-17
+              GPT-OSS-120B            AWS Bedrock      gpt-oss-120b
+
+      Table 1: The 8 LLM judges evaluated, with serving provider and exact API identifier.
+
+
+left clean, while the rest carry intentional factual errors, live-but-irrelevant sources, and plausible-
+but-unsupporting sources designed to stress-test each rubric criterion independently (Figure 1).
+Parsing the report with the pipeline yields 624 attribution-citation pairs.
+
+3.2   Worked Example
+To illustrate the pipeline, consider an adversarial claim, “The Taylor series is a finite sum of terms
+used to approximate functions near a point” cited to openstax.org/books/calculus-volume-1/.
+Stage 1 extracts this as an attribution-citation pair, and Stage 2 evaluates each LLM-judged crite-
+rion in turn.
+
+  1. Source relevance. The OpenStax calculus page covers Taylor series, so this criterion passes.
+
+  2. Factual support. The source defines a Taylor series as an infinite sum of terms, contradicting
+     the claim of a finite sum, so this criterion fails.
+
+The structured output is {relevant content: 1, fact check:              0}, with the judge’s rationale
+noting the mismatch between finite and infinite.
+
+3.3   Ground-Truth Labels
+Link accessibility labels are produced deterministically by an HTTP check that passes when the
+cited URL returns a 200 status, so this criterion needs no LLM and no human review, and we
+exclude it from the judge comparison. Source relevance and factual support labels were produced
+by a council of 6 LLM judges that independently ran the evaluation pipeline. The council com-
+prised GPT-5-mini (gpt-5-mini-2025-08-07), GPT-5.2 (gpt-5.2-2025-12-11), Claude Opus 4.5
+(claude-opus-4-5), Claude Opus 4.6 (claude-opus-4-6), Gemini 2.5 Pro (gemini-2.5-pro), and
+Gemini 3 Pro (gemini-3-pro). A human reviewer then examined the full set of council decisions,
+corrected errors caught on review, and adjudicated the final label for every case in which the council
+was not unanimous. Of the 378 non-unanimous decisions, 263 were source relevance and 115 were
+factual support, with none on link accessibility. Relevance disagreements most often arose when
+a source was topically correct but factually wrong, a conflation the relevance criterion does not
+explicitly separate from factual support. Agreement among the labeling judges, the structure of
+the disagreements, and the resulting gold pass rates are reported with the other quantitative results
+in Section 4.
+
+
+
+
+                                                   5
+                                                        Source Relevance       Factual Support
+      Model                   Cost (log10 , rel.)
+                                                           F1         κ           F1        κ
+      GPT-5-mini                            0.33    0.908 [.89,.93]   0.636   0.710 [.64,.78]   0.649
+      Claude Opus 4.6                       1.69    0.866 [.84,.89]   0.551   0.750 [.68,.82]   0.701
+      GPT-5.4-mini                          0.74    0.888 [.87,.91]   0.542   0.671 [.60,.73]   0.580
+      GPT-OSS-120B                          0.00    0.851 [.83,.88]   0.523   0.649 [.56,.72]   0.590
+      Gemini 3.1 Pro                        1.15    0.819 [.79,.85]   0.463   0.670 [.59,.75]   0.615
+      Gemini 3.1 Flash Lite                 0.25    0.823 [.79,.85]   0.461   0.724 [.66,.78]   0.653
+      Claude Haiku 4.5                      0.97    0.746 [.71,.78]   0.343   0.708 [.64,.77]   0.632
+      Claude Sonnet 4.6                     1.48    0.700 [.66,.74]   0.322   0.726 [.65,.79]   0.675
+
+Table 2: Pass-class F1 (with 95% bootstrap confidence interval, 2,000 resamples over the 624 pairs)
+and Cohen’s κ for 8 LLM judges on source relevance and factual support, with a relative log-cost
+index per decision. The cost column is a base-10 log index relative to the lowest-cost included model
+(GPT-OSS-120B, index 0.00), so +1.00 indicates 10× higher cost. Cost estimates are derived from
+each provider’s published API pricing as of June 2026, assuming one call per judged dimension
+per attribution-citation pair. On factual support every interval overlaps, so no model is statistically
+distinguishable on that dimension. Link accessibility is deterministic and excluded. Best per column
+in bold.
+
+
+4     Experiments and Results
+4.1   Experimental Setup
+We evaluate 8 LLM judges from 3 model families (Anthropic, Google, and OpenAI), accessed
+through their respective cloud inference APIs. Table 1 lists each judge with its serving provider
+and exact API identifier. Each judge is applied to all 624 source relevance pairs and all 624 factual
+support pairs in the benchmark, yielding 1,248 decisions. We measure pass-class F1 and Cohen’s κ
+per dimension as the primary accuracy metrics, and to characterize reward signal quality beyond
+accuracy we also measure pass-rate drift, false positive rate (FPR), and false negative rate (FNR),
+the bias metrics that determine what an RLVR training loop over-rewards and under-rewards. All
+reported F1 and κ values are computed over the 624 pairs per dimension. Two of the 8 judges
+(GPT-5-mini and Claude Opus 4.6) also contributed to the gold-label council, but because they
+span the cost range and the human-adjudicated subset offers a council-independent comparison,
+this overlap does not drive the cost and quality findings.
+    Both judge scores and gold labels are binarized at a threshold of 0.5, where a score ≥ 0.5 is
+treated as pass, the positive class. For each dimension we form the confusion counts TP, FP, FN,
+TN against the gold label and report the following metrics.
+                           2 TP
+    • Pass-class F1 =                , the harmonic mean of pass-class precision TP/(TP+FP)
+                      2 TP + FP + FN
+      and recall TP/(TP + FN).
+                    po − pe
+    • Cohen’s κ =           , where po is the observed judge-gold agreement and pe is the agreement
+                    1 − pe
+      expected by chance from the marginal pass and fail rates.
+                                         FP
+    • False positive rate FPR =                (a bad citation accepted) and false negative rate
+                                       FP + TN
+                FN
+      FNR =           (a good citation rejected).
+              FN + TP
+
+                                                    6
+                           1.0
+                                                                              Source relevance      Factual support
+                           0.8
+
+
+
+
+           Pass-class F1
+                           0.6
+
+                           0.4
+
+                           0.2
+
+                           0.0   GPT-5    Claude    GPT-5.4   GPT-OSS Gemini 3.1 Gemini 3.1 Claude     Claude
+                                 -mini   Opus 4.6    -mini     -120B     Pro     Flash Lite Haiku 4.5 Sonnet 4.6
+
+Figure 2: Pass-class F1 for 8 judges on source relevance and factual support. No single judge
+dominates both dimensions.
+
+
+   • Pass-rate drift ∆ = rjudge − rgold , the signed difference between the judge and the gold pass
+     rate, indicating systematic leniency (∆ > 0) or strictness (∆ < 0).
+
+The cost and quality figure uses a class-balanced average F1. For each dimension we average the
+pass-class and fail-class F1 (macro-F1), then average across the two dimensions, and we plot this
+against the estimated cost per judge decision on a logarithmic axis. Confidence intervals are the
+2.5th and 97.5th percentiles of the metric over 2,000 bootstrap resamples of the pairs.
+
+4.2   Main Results
+The gold labels reflect the adversarial design of the benchmark. Link accessibility passes at 98.4%,
+source relevance at 79.3%, and factual support at only 18.4%, the last kept intentionally low to
+stress-test judge discrimination on the hardest citation quality dimension.
+    Table 2 reports F1, Cohen’s κ, and the relative log-cost index for all 8 judges, allowing cost and
+performance to be read per dimension. On source relevance, performance is heterogeneous, with
+F1 varying from 0.700 (Claude Sonnet 4.6) to 0.908 (GPT-5-mini) across the evaluated judges. On
+factual support, the hardest dimension with a gold pass rate of only 18.4%, Claude Opus 4.6 posts
+the highest point estimate (F1=0.750, κ=0.701) and GPT-OSS-120B the lowest (F1=0.649), but
+every 95% confidence interval overlaps on this dimension (from 0.649 [.56,.72] to 0.750 [.68,.82]),
+so no model is statistically distinguishable and the apparent Opus lead is within noise. Source
+relevance is better resolved, with GPT-5-mini at 0.908 [.89,.93] separating from lower-ranked models
+such as Claude Sonnet 4.6 at 0.700 [.66,.74]. GPT-5-mini leads on source relevance (F1=0.908)
+but ranks fourth on factual support (F1=0.710), while Claude Opus 4.6 leads on factual support
+(F1=0.750) but ranks third on source relevance (F1=0.866), so no single model dominates across
+both dimensions, as Figure 2 visualizes. Treating judge selection as a single model choice, rather
+than a per-criterion decision, leaves reward signal quality on the table.
+
+4.3   Multi-Judge Disagreement Cases
+The 378 multi-judge disagreement cases are the hardest instances in the benchmark, the pairs
+where the 6 gold-label judges did not agree and a human adjudicated the final label. Treating this
+
+
+                                                                  7
+                                                  GPT-5-mini
+                           0.88
+                                                                                                                     Claude Opus 4.6
+                           0.86
+                                   GPT-OSS-120B                        GPT-5.4-mini
+
+
+
+
+       Class-balanced F1
+                           0.84
+                                          Gemini 3.1 Flash Lite                          Gemini 3.1 Pro
+                           0.82
+
+                           0.80
+
+                           0.78   Model family                                  Claude Haiku 4.5
+                                      OpenAI                                                              Claude Sonnet 4.6
+                           0.76       Anthropic
+                                      Google
+                                                                  $0.001                                          $0.01
+                                                       Cost per judge decision, USD (log scale)
+
+Figure 3: Judge quality (average class-balanced F1), estimated cost per decision on a logarithmic
+axis, and pass-rate drift. Cost does not track quality. Low-cost judges are among the most compet-
+itive, and cost alone does not predict reward signal quality.
+
+
+adjudicated subset as an ablation isolates judge behavior on genuinely ambiguous citations. Most
+disagreements were near-consensus rather than deep splits, with 44% showing a single dissenting
+judge and only 12% evenly split, while 29% included at least one partial (0.5) score, indicating that
+the binary rubric is occasionally applied as a graded one. Agreement among the labeling judges
+was substantial, with mean pairwise Cohen’s κ of 0.62 (range 0.50 to 0.72) on source relevance and
+0.67 (range 0.54 to 0.83) on factual support. On the adjudicated cases, no single labeling judge
+reliably matched the human label, with per-model agreement ranging from 38% to 85% on source
+relevance and 43% to 67% on factual support.
+    On this subset, all 8 judges degrade on source relevance, while factual support behavior is
+mixed, with GPT-5.4-mini, Claude Haiku 4.5, and Gemini 3.1 Flash Lite improving on the adjudi-
+cated cases. On source relevance, GPT-5-mini remains the strongest (F1=0.832) but drops 0.076
+from its full-set score, while Claude Sonnet 4.6 degrades most severely, falling from F1=0.700 to
+0.420. On factual support, GPT-5.4-mini leads the subset (F1=0.780), improving from its full-set
+score of 0.671 and displacing Claude Opus 4.6 (F1=0.672), which led the full set. Rankings shift
+substantially between the full set and this hard subset (Figure 4). Among the 8 evaluated judges,
+pairwise agreement ranges from 76.9% (GPT-5.4-mini and Claude Sonnet 4.6, κ=0.535) to 93.6%
+(GPT-OSS-120B and Gemini 3.1 Pro, κ=0.860), with 21 of 28 pairs between 82% and 88%. The
+lowest agreement involves the pair with the largest pass-rate difference, where GPT-5.4-mini passes
+49.2% of evaluated pairs while Sonnet 4.6 passes 28.4%.
+
+
+
+
+                                                                           8
+                                                              Source relevance
+                           1.0
+                                                                           Full set     Council disagreement subset
+                           0.8
+
+
+
+           Pass-class F1
+                           0.6
+
+                           0.4
+
+                           0.2
+
+                           0.0   GPT-5    Claude    GPT-5.4   GPT-OSS Gemini 3.1 Gemini 3.1 Claude     Claude
+                                 -mini   Opus 4.6    -mini     -120B     Pro     Flash Lite Haiku 4.5 Sonnet 4.6
+                                                               Factual support
+                           1.0
+
+                           0.8
+
+
+
+           Pass-class F1
+                           0.6
+
+                           0.4
+
+                           0.2
+
+                           0.0   GPT-5    Claude    GPT-5.4   GPT-OSS Gemini 3.1 Gemini 3.1 Claude     Claude
+                                 -mini   Opus 4.6    -mini     -120B     Pro     Flash Lite Haiku 4.5 Sonnet 4.6
+
+Figure 4: Judge accuracy on the full benchmark compared with the 378 multi-judge disagreement
+cases. Rankings shift substantially on the adjudicated subset, so full-set F1 is an incomplete proxy
+for reliability on the most ambiguous citations.
+
+
+5     Discussion
+5.1   Directional Bias
+Most judges are stricter than the gold labels on source relevance. All 8 models produce predicted
+pass rates below the gold pass rate of 79.3% (from 42.9% to 72.0%), indicating a systematic tendency
+to under-reward citations on that dimension. Factual support shows more variation, with 3 models
+(GPT-5.4-mini, Claude Haiku 4.5, and Gemini 3.1 Flash Lite) exceeding the 18.4% gold pass
+rate, reflecting heterogeneous bias across dimensions. Pass-rate drift is consequential for RLVR
+training, since a judge that consistently under-rewards will produce signal sparsity, potentially
+training models to over-hedge or under-cite. On source relevance, judges exhibit high precision but
+moderate recall, rarely marking irrelevant sources as relevant while frequently missing relevant ones.
+On factual support, false negative rates vary from 0.183 (GPT-5.4-mini) to 0.470 (GPT-OSS-120B),
+indicating that most judges reject a substantial fraction of genuinely supported citations. As shown
+in Figure 5, FNR profiles differ substantially across judges even at similar F1 scores, confirming
+that scalar F1 obscures the reward signal asymmetries most consequential for training loop design.
+This asymmetry maps directly onto the reward hacking mechanism studied in rubric RL [Mahmoud
+et al., 2026, Li, 2026], where a judge with high FPR over-rewards bad citations, driving the trained
+model to exploit the judge’s permissive behavior rather than learn the true quality signal. A judge
+with high FNR instead under-rewards genuinely supported claims, producing signal sparsity and
+potentially training models to over-hedge or under-cite.
+
+
+                                                                  9
+                                                      Source relevance                                      Factual support
+                                 0.5
+
+                                 0.4
+
+
+
+
+           False negative rate
+                                 0.3
+
+                                 0.2
+
+                                 0.1
+
+                                 0.0
+                                       0.00   0.05       0.10   0.15       0.20   0.25     0.00    0.05      0.10    0.15       0.20   0.25
+                                                     False positive rate                                  False positive rate
+                                       GPT-5-mini               GPT-5.4-mini             Gemini 3.1 Pro               Claude Haiku 4.5
+                                       Claude Opus 4.6          GPT-OSS-120B             Gemini 3.1 Flash Lite        Claude Sonnet 4.6
+
+Figure 5: False positive rate (FPR) and false negative rate (FNR) per judge per dimension.
+Judges with similar F1 can differ substantially in directional bias, a property invisible to scalar F1
+but directly relevant to what an RLVR training loop reinforces.
+
+
+5.2   Difficulty by Adversarial Strategy
+To locate the factual-support difficulty, we linked each adversarially edited claim to its strategy
+(Appendix B) and measured how often the 8 judges reject it. Detection is uniformly high, from
+roughly 86% for the subtlest edits (wrong attribution, minimization, and partial truth) to near
+100% for negations and semantic drift, so judges rarely accept an edited citation. The low pass-
+class factual-support F1 instead reflects the opposite error, over-rejection of genuinely supported
+citations, consistent with the high false negative rates above. This distinction matters for reward
+design, because the dominant factual-support failure is under-rewarding correct citations rather
+than over-rewarding fabricated ones, so calibration effort should target judge strictness rather than
+fabrication detection.
+
+5.3   Cost and Quality
+Judge cost per decision spans a 49× range across the 8 models, from GPT-OSS-120B to Claude
+Opus 4.6, and cost does not predict accuracy. GPT-5-mini, the third-cheapest model, achieves the
+highest source relevance F1 (0.908), making it the most accurate on one of the two key dimensions.
+Gemini 3.1 Flash Lite, the second-cheapest, achieves an average class-balanced F1 of 0.771, com-
+petitive with models up to 8× more expensive. As shown in Figure 3, cost does not track quality.
+Mid-tier models are not consistently competitive with either the cheapest or the most accurate op-
+tions, so judge selection should be driven by per-dimension rubric fit rather than model tier or price.
+Cost estimates are derived from each provider’s published API pricing as of June 2026, assuming
+one LLM call per judged dimension per attribution-citation pair. Batch scoring, which evaluates all
+criteria in a single call, and prompt caching [Lumer et al., 2026b], which amortizes shared context
+across tool calls in long-horizon agentic workloads, would reduce costs further [Trivedy et al., 2026].
+More broadly, judge selection is a component of the agent design problem in production systems,
+
+
+                                                                                  10
+where the choice of model, tool, and scoring strategy must be made jointly [Lumer et al., 2026a].
+
+5.4   Reward Noise from Disagreement
+The multi-judge disagreement subset (Section 4) shows that full-set F1 is an incomplete proxy for
+judge reliability on the ambiguous cases most likely to determine reward signal quality in practice,
+since rankings shift there and no single model reliably matches the adjudicated label, so single-model
+consensus is insufficient and human adjudication is essential. Low inter-judge agreement signals
+high reward noise, because decisions on which judges disagree introduce inconsistent training signal
+for the same input. Selecting judges with high pairwise agreement, or ensembling across disagreeing
+judges, can reduce this noise without a stronger model.
+
+
+6     Conclusion
+As reinforcement learning increasingly delegates reward modeling to LLM judges, a practical ques-
+tion follows about how capable the judge needs to be and how much its bias matters. We study
+this calibration question for citation quality in deep-research systems, where each attributed claim
+must be judged along two LLM-scored dimensions, source relevance and factual support, using
+the Deep-Research Citation Benchmark of 1,248 human-reviewed rubric decisions. Across 8 off-
+the-shelf judges from 3 model families, cheaper judges prove competitive on source relevance, with
+GPT-5-mini (F1=0.908, 95% CI [.89,.93]) leading among the lowest-cost options, while on factual
+support all confidence intervals overlap and no judge is statistically distinguishable from the rest.
+Beyond accuracy, judges differ substantially in pass-rate drift, false positive rate, and false negative
+rate at similar F1 levels, and these directional biases shape what a downstream RL loop would
+reinforce in ways that scalar F1 does not reveal. These findings are limited to a single adversarial
+document, and sensitivity to prompt design and batching remain open questions. Calibrating the
+judge is a prerequisite for using citation rubrics as reward signals, and our results show that this
+calibration does not require the most expensive model available.
+
+
+References
+Akari Asai, Zeqiu Wu, Yizhong Wang, Avirup Sil, and Hannaneh Hajishirzi. Self-RAG: Learning to
+  retrieve, generate, and critique through self-reflection. In International Conference on Learning
+  Representations, 2024.
+
+Yuntao Bai, Saurav Kadavath, Sandipan Kundu, Amanda Askell, Jackson Kernion, Andy Jones,
+  et al. Constitutional AI: Harmlessness from AI feedback. 2022.
+
+Bernd Bohnet, Vinh Q. Tran, Pat Verga, Roee Aharoni, Daniel Andor, Livio Baldini Soares,
+  Massimiliano Ciaramita, Jacob Eisenstein, Kuzman Ganchev, Jonathan Herzig, Kai Hui, Tom
+  Kwiatkowski, Ji Ma, Jianmo Ni, et al. Attributed question answering: Evaluation and modeling
+  for attributed large language models. 2022.
+
+Collin Burns, Pavel Izmailov, Jan Hendrik Kirchner, Bowen Baker, Leo Gao, Leopold Aschen-
+  brenner, Yining Chen, Adrien Ecoffet, Manas Joglekar, Jan Leike, Ilya Sutskever, and Jeff Wu.
+  Weak-to-strong generalization: Eliciting strong capabilities with weak supervision. 2023.
+
+Yee Man Choi, Xuehang Guo, Yi R. Fung, and Qingyun Wang. CiteGuard: Faithful citation
+  attribution for LLMs via retrieval-augmented validation. In Proceedings of the 64th Annual
+
+                                                  11
+  Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), pages 6241–
+  6257, 2026.
+
+DeepSeek-AI. DeepSeek-R1: Incentivizing reasoning capability in LLMs via reinforcement learning.
+  2025.
+
+Shahul Es, Jithin James, Luis Espinosa-Anke, and Steven Schockaert. RAGAS: Automated evalu-
+  ation of retrieval augmented generation. In Proceedings of the 18th Conference of the European
+  Chapter of the Association for Computational Linguistics, 2024.
+
+Leo Gao, John Schulman, and Jacob Hilton. Scaling laws for reward model overoptimization. In
+  International Conference on Machine Learning, 2023a.
+
+Luyu Gao, Zhuyun Dai, Panupong Pasupat, Anthony Chen, Arun Tejasvi Chaganty, Yicheng Fan,
+  Vincent Y. Zhao, Ni Lao, Hongrae Lee, Da-Cheng Juan, and Kelvin Guu. RARR: Researching
+  and revising what language models say, using language models. In Proceedings of the 61st Annual
+  Meeting of the Association for Computational Linguistics, 2023b.
+
+Tianyu Gao, Howard Yen, Jiatong Yu, and Danqi Chen. Enabling large language models to generate
+  text with citations. In Proceedings of the 2023 Conference on Empirical Methods in Natural
+  Language Processing, pages 6465–6488, 2023c.
+
+Seungone Kim, Jamin Shin, Yejin Cho, Joel Jang, Shayne Longpre, Hwaran Lee, Sangdoo Yun,
+  Seongjin Shin, Sungdong Kim, James Thorne, and Minjoon Seo. Prometheus: Inducing fine-
+  grained evaluation capability in language models. In International Conference on Learning Rep-
+  resentations, 2024.
+
+Nathan Lambert, Jacob Morrison, Valentina Pyatkin, Shengyi Huang, Hamish Ivison, Faeze Brah-
+ man, Lester James V. Miranda, Alisa Liu, Nouha Dziri, et al. Tülu 3: Pushing frontiers in open
+ language model post-training. 2024a.
+
+Nathan Lambert, Valentina Pyatkin, Jacob Morrison, LJ Miranda, Bill Yuchen Lin, Khyathi
+ Chandu, Nouha Dziri, Sachin Kumar, Tom Zick, Yejin Choi, Noah A. Smith, and Hannaneh
+ Hajishirzi. RewardBench: Evaluating reward models for language modeling. 2024b.
+
+Jessica Li. Systematic reward hacking and prime sprints. Prime Intellect Blog, 2026. URL https:
+  //www.primeintellect.ai/blog/reward-hacking.
+
+Hunter Lightman, Vineet Kosaraju, Yura Burda, Harri Edwards, Bowen Baker, Teddy Lee, Jan
+ Leike, John Schulman, Ilya Sutskever, and Karl Cobbe. Let’s verify step by step. In International
+ Conference on Learning Representations, 2024.
+
+Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang, Ruochen Xu, and Chenguang Zhu. G-Eval: NLG
+  evaluation using GPT-4 with better human alignment. In Proceedings of the 2023 Conference on
+  Empirical Methods in Natural Language Processing, 2023.
+
+Elias Lumer, Anmol Gulati, Faheem Nizar, Dzmitry Hedroits, Atharva Mehta, Henry Hwangbo,
+  Vamse Kumar Subbiah, Pradeep Honaganahalli Basavaraju, and James A Burke. Tool and agent
+  selection for large language model agents in production: A survey. In 2026 IEEE Conference on
+  Artificial Intelligence (CAI), pages 701–708. IEEE, 2026a.
+
+
+
+
+                                               12
+Elias Lumer, Faheem Nizar, Akshaya Jangiti, Kevin Frank, Anmol Gulati, Mandar Phadate, and
+  Vamse Kumar Subbiah. Don’t break the cache: An evaluation of prompt caching for long-horizon
+  agentic tasks. arXiv preprint arXiv:2601.06007, 2026b.
+Anas Mahmoud, MohammadHossein Rezaei, Zihao Wang, Anisha Gunjal, Bing Liu, and Yunzhong
+ He. Reward hacking in rubric-based reinforcement learning. 2026.
+Jacob Menick, Maja Trebacz, Vladimir Mikulik, John Aslanides, Francis Song, Martin Chadwick,
+  Mia Glaese, Susannah Young, Lucy Campbell-Gillingham, Geoffrey Irving, and Nat McAleese.
+  Teaching language models to support answers with verified quotes. 2022.
+Sewon Min, Kalpesh Krishna, Xinxi Lyu, Mike Lewis, Wen tau Yih, Pang Wei Koh, Mohit Iyyer,
+  Luke Zettlemoyer, and Hannaneh Hajishirzi. FActScore: Fine-grained atomic evaluation of fac-
+  tual precision in long form text generation. In Proceedings of the 2023 Conference on Empirical
+  Methods in Natural Language Processing, 2023.
+Reiichiro Nakano, Jacob Hilton, Suchir Balaji, Jeff Wu, Long Ouyang, Christina Kim, Christopher
+  Hesse, Shantanu Jain, Vineet Kosaraju, William Saunders, et al. WebGPT: Browser-assisted
+  question-answering with human feedback. 2022.
+Hailey Onweller, Elias Lumer, Austin Huber, Pia Ramchandani, Vamse Kumar Subbiah, and Corey
+ Feld. Cited but not verified: Parsing and evaluating source attribution in LLM deep research
+ agents. 2026.
+Long Ouyang, Jeff Wu, Xu Jiang, Diogo Almeida, Carroll L. Wainwright, Pamela Mishkin, Chong
+  Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, John Schulman, Jacob Hilton, Fraser
+  Kelton, Luke Miller, Maddie Simens, Amanda Askell, Peter Welinder, Paul Christiano, Jan
+  Leike, and Ryan Lowe. Training language models to follow instructions with human feedback.
+  2022.
+Ori Press, Andreas Hochlehnert, Ameya Prabhu, Vishaal Udandarao, Ofir Press, and Matthias
+  Bethge. CiteME: Can language models accurately cite scientific claims? In Advances in Neural
+  Information Processing Systems, 2024.
+MohammadHossein Rezaei, Anas Mahmoud, Zihao Wang, Utkarsh Tyagi, Advait Gosai, Razvan-
+ Gabriel Dumitru, Aakash Sabharwal, Bing Liu, and Yunzhong He. Rubric-guided self-distillation:
+ Post-training without rubric verifiers. 2026.
+Jon Saad-Falcon, Omar Khattab, Christopher Potts, and Matei Zaharia. ARES: An automated
+  evaluation framework for retrieval-augmented generation systems. In Proceedings of the 2024
+  Conference of the North American Chapter of the Association for Computational Linguistics,
+  2024.
+Sahil Sen, Akhil Kasturi, Elias Lumer, Anmol Gulati, and Vamse Kumar Subbiah. Is grep all you
+  need? how agent harnesses reshape agentic search. arXiv preprint arXiv:2605.15184, 2026.
+Mrinank Sharma, Meg Tong, Tomasz Korbak, David Duvenaud, Amanda Askell, Samuel R. Bow-
+ man, et al. Towards understanding sycophancy in language models. In International Conference
+ on Learning Representations, 2024.
+Vivek Trivedy, Jake Broekhuizen, Harrison Chase, Niko Grupen, Gabe Pereyra, Spencer Poff,
+  and Julio Pereyra. Designing efficient verifiers for legal agents. LangChain Blog, 2026. URL
+  https://www.langchain.com/blog/designing-efficient-verifiers-for-legal-agents.
+
+                                               13
+Utkarsh Tyagi, Xingang Guo, MohammadHossein Rezaei, Daniel George, Anas Mahmoud, Jackson
+  Lee, Bing Liu, and Yunzhong He. Not every rubric teaches equally: Policy-aware rubric rewards
+  for RLVR. 2026.
+
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang,
+  Zi Lin, Zhuohan Li, Dacheng Li, Eric P. Xing, Hao Zhang, Joseph E. Gonzalez, and Ion Stoica.
+  Judging LLM-as-a-judge with MT-bench and chatbot arena. In Advances in Neural Information
+  Processing Systems, 2023.
+
+
+
+
+                                              14
+A    Judge Prompts and Rubric
+Every LLM-judged criterion is scored by a single LLM call with the system and human prompts
+below. Link accessibility is not prompted, since it is a deterministic HTTP check that passes when
+the cited URL returns a 200 status. Both prompts request a binary score (1 = criterion met, 0 =
+not met) together with a free-text rationale, and are applied identically across all 8 judges.
+
+Source relevance.
+
+SYSTEM:
+You are an expert evaluator assessing content relevance.
+Your task is to determine if the content at a URL is relevant to a given
+attribution text.
+
+Evaluate whether the content at the URL is relevant to the attribution text.
+Consider:
+- Does the URL content discuss the same topic as the attribution?
+- Does it provide supporting information for the claims in the attribution?
+- Is there a clear connection between the attribution and the URL content?
+
+This is a binary evaluation:
+- score = 1 if the content IS relevant
+- score = 0 if the content is NOT relevant
+
+HUMAN:
+Attribution Text:
+{attribution_text}
+
+URL: {url}
+
+URL Content:
+{url_content}
+
+Evaluate whether this URL content is relevant to the attribution text.
+
+Factual support.
+
+SYSTEM:
+You are an expert fact-checker evaluating factual accuracy.
+Your task is to determine if the factual claims in an attribution text are
+supported by the content at a URL.
+
+Evaluate whether the factual claims in the attribution text are supported by
+the URL content. Consider:
+- Are the specific facts, numbers, dates, and claims in the attribution text
+  present in the URL content?
+- Do they match or are they consistent?
+- Are there any contradictions?
+
+
+                                               15
+This is a binary evaluation:
+- score = 1 if the facts ARE supported by the URL content
+- score = 0 if the facts are NOT supported (contradicted, missing, or
+  unverifiable)
+
+HUMAN:
+Attribution Text:
+{attribution_text}
+
+URL: {url}
+
+URL Content:
+{url_content}
+
+Verify whether the factual claims in the attribution text are supported by
+this URL content.
+
+   The relevance rubric asks whether the source “provide[s] supporting information for the claims,”
+which overlaps with the factual support criterion. This overlap is the most frequent source of inter-
+judge disagreement on relevance (Section 3), where judges split on sources that are topically correct
+but factually wrong. Tightening the separation between the two criteria is a concrete direction for
+improving rubric specificity.
+
+
+B    Adversarial Edit Strategies
+The Deep-Research Citation Benchmark applies adversarial edits to roughly 60% of attributed
+claims using the 19 strategies below (some claims receive more than one). Clean claims are left
+unchanged from the source overview.
+
+wrong date incorrect dates or years.
+wrong number incorrect statistics, quantities, or distances.
+wrong entity wrong person, company, or organization.
+negation claim asserts the opposite of the truth.
+wrong location incorrect geographic location.
+fabricated detail plausible but invented specifics.
+wrong attribution credited to the wrong person or organization.
+magnitude error off by orders of magnitude.
+source mismatch citation URL points to a real but wrong-topic page.
+irrelevant claim a fully off-topic claim is inserted.
+semantic drift meaning is subtly shifted from the truth.
+reversed causation cause and effect are swapped.
+near miss almost correct but one key detail is wrong.
+cross topic a fact from a different topic is inserted.
+
+                                                 16
+partial truth true and false elements are mixed.
+overgeneralization a specific truth is extended too broadly.
+outdated info old information is presented as current.
+exaggeration numbers or impact are inflated.
+minimization numbers or impact are understated.
+
+
+
+
+                                               17
+
