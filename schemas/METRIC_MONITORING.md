@@ -46,6 +46,15 @@ or readiness claim.
    and expiry. Production actions cannot use a calibration-only baseline,
    provisional threshold, unbridged version pooling, or fixture enumeration as
    uncertainty.
+8. **Native decision loss survives normalization.** The linked extension
+   `objective-calibration.schema.json` retains direction, native unit/value, hard
+   feasibility, reference identity/method/strength, bound or poor anchor,
+   calibration mode, native regret/loss, and explicit normalized mapping/clipping
+   side by side without changing historical metric-package bytes.
+   Heuristics cannot be called optima, hard feasibility is noncompensatory, unlike
+   calibration modes cannot be silently pooled, and staged aggregation requires
+   sensitivity output. A common threshold is a declared portfolio policy, not a
+   universal objective-loss tolerance.
 
 ## Calibration fixture
 
@@ -77,6 +86,14 @@ and this metric were co-authored within the project.
 | Criterion dependence and eligible criterion populations | Fine-grained rubric labels can overlap; missing grader states and additive weighting do not define calibrated artifact quality. | `papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md`, Rubric construction and concrete change 5 |
 | Fidelity gate for synthetic/simulated populations | Historical or generated provenance does not establish target-population prevalence, ambiguity, or failure-mode coverage. | Amazon concept note, “Synthetic golden data has a transformation boundary” |
 | Versioned threshold/action lifecycle | Drift can come from traffic, instruments, tools, judges, or interventions; alerts need owners, audit burden, remediation, and rollback. | Amazon concept note, “Continuous monitoring changes the sampling problem” |
+| Native objective calibration and aggregation sensitivity | Equal normalized values can encode materially different native loss under bounds, relative-gap fallbacks, and poor anchors; stage means can hide cumulative, terminal, or worst-stage loss. | `papers/agent-benchmarks/2026-07-17-oragentbench-decision-artifact-validity.md`, “Quality is not one common quality scale” and “Dynamic tasks” |
+
+`tests/fixtures/valid-objective-calibration.json` is an internal, builder-authored
+conformance slice. It uses unrelated staffing-allocation and maintenance-scheduling
+artifact shapes, includes equal normalized values with different native losses,
+and shows a staged mean/terminal/worst-stage disposition reversal. It tests only
+the contract and makes no capability, professional-validity, operational-quality,
+reliability, production, or readiness claim.
 
 Amazon's article is an official production experience report, not a controlled
 or quantitative validation of this contract. The two paper reviews supply
@@ -90,5 +107,8 @@ real-population fidelity studies.
 ```bash
 python scripts/validate_metric_monitoring.py --check-paths \
   tests/fixtures/valid-metric-monitoring.json
-python -m unittest tests.test_validate_metric_monitoring -v
+python scripts/validate_objective_calibration.py --check-paths \
+  tests/fixtures/valid-objective-calibration.json
+python -m unittest tests.test_validate_metric_monitoring \
+  tests.test_validate_objective_calibration -v
 ```
