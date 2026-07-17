@@ -1,0 +1,1474 @@
+                                              StructureClaw: Traceable LLM Agents and an Executable Benchmark for
+                                                                Structural Engineering Workflows
+
+                                                         Sizhong Qin† , Yi Gu† , Yao Jiang, Ao Cai, Changjian Zhou, Shaoxuan Shuai,
+                                                              Jiachang Wang, Tianhao Shen, Yueqiang Li, Xinhao Li, Li Zeng,
+                                                          Yueshi Chen, Dachen Gao, Genrong Xu, Wenjie Liao∗ and Xinzheng Lu∗
+                                                                                  †
+                                                                                      Equal contribution. ∗ Corresponding authors.
+
+
+
+                                                                 Abstract                                                                           Engineering Request
+                                                                                                                                                    “Design a 7-story RC frame building …”
+
+                                         Addressing a structural-engineering request requires more
+                                         than a single answer; it requires a chain of interdependent                         Engineer                    Traditional LLM                         StructureClaw
+
+
+
+
+arXiv:2607.14896v1 [cs.SE] 16 Jul 2026
+                                         artifacts: interpreted requirements, a computable model,
+                                                                                                                                                               Here is a possible design           Skills
+                                         validation records, solver outputs, code-check records, and                                                           python code …
+                                                                                                                                                                                                              StructureClaw
+
+                                                                                                                  Drawings               Software
+                                         a final report. Evaluations centered on question answer-                             Engineer
+                                                                                                                                                    import openseespy.opensees as ops
+                                                                                                                                                    ops.wipe()
+                                                                                                                                                                                                   Tools      Structural model
+                                                                                                                                                                                                              Solver trace
+                                                                                                                              Judgment              ops.model('Basic', '-ndm', 3, '-ndf', 6)
+                                         ing or script generation rarely verify this complete evi-                                                  #…
+                                                                                                                                                    ops.analyze(10)
+                                                                                                                                                                                                              Code check
+                                                                                                                                                                                                              Final report
+                                                                                                                                                    #…                                            Artifacts   …
+                                         dence chain and may therefore reward fluent outputs even                  Codes                 Analysis
+
+                                         when the underlying engineering workflow is incomplete,                       Reliable, but manual             Fluent, but unverifiable               Executable and traceable
+
+                                         internally inconsistent, or non-executable. To address this
+                                         limitation, we present StructureClaw, an artifact-centered            Figure 1. From a structural-engineering request to reviewable ev-
+                                         workbench in which LLM agents operate through governed                idence. Unlike a text-only response, StructureClaw preserves the
+                                         engineering skills, typed tools, shared artifact state, and           skills, tool executions, and artifacts that support the reported re-
+                                         local analysis backends. We also introduce StructureClaw-             sult.
+                                         Bench, an executable benchmark of 150 controlled scenar-
+                                         ios spanning standard workflow execution, interactive ro-             in architecture, engineering, and construction (AEC) [20,
+                                         bustness, and multimodal structural-model reconstruction.             44]. Structural-engineering agents, however, cannot be ad-
+                                         A scenario succeeds only when all required artifact- and              equately evaluated as single-response systems. The validity
+                                         execution-level assertions pass in a single run. Across ten           of an engineering conclusion depends on a sequence of mu-
+                                         agent-model configurations, each evaluated on the same 50             tually consistent artifacts: interpreted requirements, a struc-
+                                         standard cases, the average Success Rate rises from 56.8%             tural model, assumptions and units, solver inputs, analysis
+                                         with the generic-skill baseline to 88.6% with the full au-            results, applicable checks, and a final report. A fluent an-
+                                         tomatic workflow. The interactive and multimodal evalu-               swer or syntactically valid script can remain unusable if
+                                         ations identify two prominent remaining challenges: safe              an upstream artifact is missing or inconsistent, or if the
+                                         handling of invalid numerical inputs and fixture-consistent           resulting workflow cannot be executed. As Figure 1 illus-
+                                         reconstruction of structural models. These findings show              trates, an agent must expose the computational evidence
+                                         that artifact-centered evaluation can expose workflow-level           behind its answer rather than return only a plausible end-
+                                         failures that are difficult to identify from final responses          point. Throughout this paper, the evidence chain refers to
+                                         alone, providing a more rigorous basis for evaluating and             the linked artifacts, tool executions, validation records, and
+                                         improving structural-engineering agents. The code and                 terminal decisions that support a reported engineering re-
+                                         benchmark are available at https : / / github . com /                 sult.
+                                         structureclaw/ structureclaw .                                            We therefore formulate structural-engineering agent
+                                                                                                               evaluation at the workflow level. In this setting, success
+                                                                                                               requires more than arriving at a numerically plausible an-
+                                         1. Introduction                                                       swer: the agent must select an appropriate workflow path
+                                                                                                               and engineering capability, construct a computable model,
+                                         Large language models (LLMs) are increasingly applied                 validate it using the checks available within the system’s
+                                         to information retrieval, design assistance, and analysis             declared scope, invoke a compatible backend, execute or
+
+
+                                                                                                           1
+abstain safely, and ground its report in the resulting trace.          paths shown in Figure 2 are optional review interfaces and
+The unit of evaluation is thus the complete evidence chain             are not used during automated benchmark execution. The
+rather than the final text. This formulation also makes fail-          public release includes the skill manifests, structural-model
+ures localizable: an incorrect result can be attributed to rout-       protocol, validation tools, benchmark scenarios, test fix-
+ing, information extraction, model construction, validation,           tures, and evaluation runners used in this study.
+backend execution, code checking, or reporting.                            A traceable workbench alone does not establish relia-
+    Recent studies have progressively extended structural-             bility; evaluation must also execute and inspect the same
+engineering automation from isolated design generation                 evidence chain. OSWorld tests computer use [48], while τ -
+to analysis-integrated and agent-assisted workflows. Data-             bench targets policy-constrained tool interaction [50]. AEC-
+driven methods have broadened the solution space of struc-             Bench evaluates multimodal agentic tasks [33], whereas
+tural layout design [41], while building-scale generative              EngDesign uses simulation-validated engineering design
+frameworks have coupled design generation with structural              [14]. These benchmarks, however, do not jointly evalu-
+analysis [28]. Diffusion-based approaches continue this di-            ate the structural-engineering chain of information extrac-
+rection by generating shear-wall layouts and evaluating                tion, model validity, backend-aware execution, safe non-
+them using structural-performance metrics [12]. In paral-              execution, and report faithfulness. We therefore introduce
+lel, LLM-based systems have begun to support engineering               StructureClaw-Bench, a controlled benchmark built around
+tasks such as code-compliant design and robust structural              the same evidence chain as the workbench. Its 150 scenar-
+analysis [2, 30]. Multi-agent orchestration and retrieval-             ios cover standard workflow execution, interactive robust-
+augmented calculation have also been used to support task              ness, and multimodal structural-model reconstruction. Each
+decomposition, tool coordination, and knowledge ground-                scenario is specified by assertions over routing, artifacts,
+ing [3, 26]. However, most existing studies focus on indi-             execution, interaction, and reporting, and its Success Rate
+vidual capabilities or partial workflows. A key remaining              records the percentage of scenarios in which all required
+question is whether an engineering agent can maintain con-             assertions pass in a single run. We use the benchmark as a
+sistency across the complete evidence chain, from interpret-           diagnostic testbed under explicit assumptions, not as certi-
+ing user intent and constructing model artifacts to valida-            fication of construction-ready designs.
+tion, solver execution, code checking, and final report gen-               In summary, this paper makes three contributions:
+eration.                                                               • Artifact-centered formulation. We define structural-
+    To study this gap, we present StructureClaw, a skill-                 engineering agent success over a complete evidence
+guided, tool-enabled, and artifact-centered workbench for                 chain, requiring consistency among user intent, model ar-
+structural-engineering agents. Given a natural-language re-               tifacts, validation results, solver outputs, supported code
+quest and optional project files, the agent selects governed              checks, and the final report.
+domain skills and typed tools for structure-type detection,            • Governed executable workbench. StructureClaw com-
+parameter extraction, model construction, validation, anal-               bines domain skills, typed tools, a shared structural-
+ysis, code checking, and report generation. The defining de-              model protocol, backend-aware execution, and persistent
+sign choice is shared artifact state: each stage consumes and             artifact state to make intermediate engineering decisions
+produces inspectable objects, including model drafts, vali-               inspectable and reviewable.
+dation diagnostics, tool-call records, solver outputs, code-           • Executable benchmark and diagnostic evaluation.
+check results, and reports. Unsupported backends and un-                  StructureClaw-Bench provides 150 scenarios evenly split
+resolved assumptions are represented explicitly and trigger               between Chinese and English prompts, with typed asser-
+clarification, safe non-execution, or unsupported termina-                tions, reference fixtures, and multimodal inputs. Across
+tion as appropriate, rather than being hidden behind gener-               ten agent-model configurations on 50 standard cases,
+ated prose.                                                               its assertion-level diagnostics quantify the system-level
+    StructureClaw implements this design through a ReAct-                 difference between automatic and generic-only execu-
+style execution loop, a shared structural-model protocol,                 tion and expose failures in invalid-value handling and
+domain-specific skills, typed tools, backend providers, and               structural-model reconstruction.
+persistent artifact records. The execution loop builds on
+reasoning–action interaction and program-aided computa-                2. Related Work
+tion [8, 49], while the shared artifact state records models,
+                                                                       2.1. Generative Design & Structural LLM Systems
+validation results, solver outputs, and engineering checks
+throughout execution. Open-source structural analysis is               Generative AI has expanded structural-design automa-
+performed using OpenSees through its OpenSeesPy inter-                 tion from component design to building-scale layout and
+face [34, 56], with provider interfaces supporting additional          topology generation [28]. At the component level, neural,
+analysis engines when available. The human-verification                reinforcement-learning, graph, and diffusion methods au-
+
+                                                                   2
+                                        Information
+                                           Check
+
+
+             Engineering Context                                 StructureClaw Agent Kernel                                                    Verified Structural Artifacts
+
+
+        1     Natural-language Intent                             1       Capability Context                                                   1          Structure Model
+
+                                                Skills                   Prompt / context                       Tool policy
+             "Design a 7-story
+             RC frame building,
+                  with … "                                                                                             Engineering
+                                                                                                                  2      Tools
+                                          Context                      Think /
+                                        Integration                    Reason
+        2     CAD / BIM / Images                                                                                             Build
+
+                                                                                                                                               2          Analysis Evidence
+                                                                                              Act                           Validate
+                                                    Iterate /
+                                                      Stop             Agent                (tool call)
+
+
+                                                                                                                            Analyze
+
+
+                                                                      Observe
+                                        ReAct                         (read results /                                        Check
+                                                                      update state)
+                                        Loop
+                                                                                                                       … (other tools)
+        3     Engineering Materials                                                                                                            3          Code-check & Report
+
+                                                                                                                                                  Item        Value   Status
+            - Design codes              3   Artifact State                                                                                     Story drift
+                                                                                                                                                                               Report
+
+            - Seismic condition                                                                                                                   ratio
+                                                                                                                                                              1/823   PASS √
+
+                                                                 Structure                  Analysis /
+            - Load tables                   Draft                                                                         Report                  T3/T1        0.82   PASS √
+                                                                  model                      checks                                            Story mass
+            - Material documents                                                                                                                  ratio
+                                                                                                                                                               1.00   PASS √
+
+            - Performance targets                                                                                                               Shear-to-
+                                                                                                                                               weight ratio
+                                                                                                                                                              2.35%   PASS √
+
+
+
+                Multimodal Input                                                                                                                          Verified & Traceable
+                                                                Local Engineering Sandbox
+
+                                        Workspace          Python                 Design                  OpenSees /             Analysis &
+                                         & files           runtime              knowledge                 PKPM / YJK            report tools
+
+
+
+
+                                                                               Human Verification
+
+
+
+Figure 2. Overall framework of StructureClaw. Multimodal engineering context enters a StructureClaw agent kernel, where capability
+context, engineering tools, and artifact state support a ReAct-style workflow. The local engineering sandbox executes model construction,
+validation, analysis, code checking, and report generation, producing structural artifacts and enabling validation-guided refinement.
+
+tomate structural design or member sizing [1, 13, 17, 42].                                  ing workflows [20]. BIMS-GPT retrieves BIM information
+At the building scale, convolutional and adversarial mod-                                   through language [54], while Text2BIM produces editable
+els infer or generate shear-wall layouts from architectural                                 building models [5]. BIMgent and MCP4IFC further sup-
+constraints [27, 38], while related methods address steel                                   port model authoring through computer use and standard-
+frame–brace systems [6, 7]. Graph-based approaches gen-                                     ized IFC-based tool interaction, respectively [4, 35]. LLM-
+erate structural topology, shear-wall layouts, and beam lay-                                based compliance systems connect regulatory interpreta-
+outs [51–53]. Physics-guided models embed explicit design                                   tion with model-based execution and violation reporting
+rules during generation [7], whereas analysis-enabled stud-                                 [16, 32]. In structural engineering, recent systems address
+ies generate shear-wall layouts and evaluate them through                                   code-compliant reinforced-concrete design [2]. Other sys-
+downstream structural analysis [12, 55]. Generative-AI as-                                  tems automate structural-analysis word problems and two-
+sistants provide interactive structural-design support [40],                                and three-dimensional frame analysis [9, 10, 25]. Separate
+while LLM-based controllers coordinate natural-language-                                    work evaluates beam-analysis reliability across repeated
+driven design and optimization tasks [39]. Most of these                                    runs and robustness under varied loading and boundary
+studies evaluate generated designs or task-specific outputs                                 conditions, and analyzes recurring model-generation and
+rather than consistency across a complete executable work-                                  code-execution errors [30]. Cross-platform execution and
+flow; StructureClaw instead governs and evaluates the evi-                                  retrieval-augmented calculation broaden the available tools
+dence chain from user intent to modeling, validation, anal-                                 and knowledge sources [3, 11]. MASSE adds role-separated
+ysis, checking, and reporting.                                                              analysis, design, and adequacy verification around engi-
+    AEC LLM systems have progressed from information                                        neering tools [26], while Heo’s staged pipeline adds an ex-
+access toward model authoring and executable engineer-                                      plicit verification–correction loop and policy-based routing
+
+
+                                                                                        3
+to a deterministic solver [15]. However, most evaluate a spe-         artifacts rather than treating the final response as the sole
+cific task, backend, or output artifact rather than consistency       output. Depending on the task, these artifacts record the
+across the full evidence chain. StructureClaw instead eval-           interpreted design intent, structural model, validation diag-
+uates whether governed skills and backend providers can               nostics, analysis results, supported code-check results, and
+maintain consistency across a shared typed artifact protocol.         final report. This evidence chain allows an engineer to deter-
+StructureClaw-Bench additionally tests safe non-execution             mine whether a reported result is grounded in the workflow
+and trace-grounded reporting across 150 scenarios.                    that produced it.
+                                                                          Figure 2 summarizes the architecture. Natural-language
+2.2. Tool-Augmented and Skill-Based Agents                            requirements, CAD/BIM files or images, and project-
+Tool-augmented LLMs provide a basis for executable rea-               specific engineering materials and constraints enter the
+soning. ReAct interleaves reasoning and action [49]; Tool-            agent kernel. The kernel combines capability context, a
+former learns API calls [45]. PAL delegates steps to pro-             ReAct-style execution loop, typed engineering tools, and
+grams [8]; Gorilla selects APIs from large collections [36].          the current artifact state. Computation is delegated to a
+HuggingGPT orchestrates external models [46]. API-Bank                local engineering sandbox that hosts model-construction,
+and ToolLLM test multi-step API use [22, 43]. BFCL                    validation, analysis, code-checking, and report-generation
+focuses on function calling [37]. Voyager and SkillAct                components. Tool outputs are written back to the artifact
+study reusable behaviors [29, 47]. Recent work system-                state, where they remain available to subsequent actions
+atizes agentic skills beyond atomic tool use [18].                    and external review. The right-hand artifacts in Figure 2 are
+    StructureClaw instantiates this paradigm within a                 checked within the system’s supported scope and remain
+domain-specific structural-engineering execution contract.            subject to professional verification; they do not constitute
+A StructureClaw skill declares supported structural sys-              construction certification.
+tems, input and output schemas, validation requirements,
+runtime dependencies, backend-provider constraints, and               3.1. Skills, Tools, and Artifact State
+artifact outputs. This design distinguishes a governed do-
+                                                                      StructureClaw separates roles that are often conflated in a
+main capability from a prompt template or unconstrained
+                                                                      generic tool agent. A skill supplies domain-specific plan-
+API wrapper and makes its preconditions and products vis-
+                                                                      ning context and declares its triggers, supported guidance
+ible to the evaluator.
+                                                                      scopes and structure types, runtime dependencies, and ar-
+2.3. Executable Agent & Engineering Benchmarks                        tifact contract. A capability is the function that a skill de-
+                                                                      clares to the agent, such as frame modeling or modal anal-
+LLM evaluation increasingly uses process-aware environ-               ysis. A tool is a typed executable operation, such as pa-
+ments. AgentBench and SWE-bench evaluate interaction                  rameter extraction, model construction, validation, analy-
+and software repair, respectively [19, 31]. OSWorld and               sis, code checking, or report generation. A provider binds
+τ -bench test computer use and policy-constrained interac-            a tool contract to a particular backend, while an artifact is
+tion, respectively [48, 50]. EngDesign covers simulation-             the structured record consumed or produced by these oper-
+validated design [14]. AECBench and DrafterBench evalu-               ations. Thus, a skill constrains how the agent approaches a
+ate domain knowledge and drawing revision, respectively               task, a tool performs a bounded state transition, a provider
+[23, 24]. AEC-Bench and AECV-Bench focus on multi-                    supplies the concrete execution backend, and artifacts carry
+modal agentic tasks and engineering-drawing understand-               both engineering state and auditable evidence across transi-
+ing, respectively [21, 33].                                           tions.
+    To our knowledge, none of the benchmarks re-
+                                                                          This separation supports flexible rather than fully hard-
+viewed above jointly requires a structural model, valida-
+                                                                      coded workflows. The agent selects applicable skills and
+tion evidence, backend-aware execution, supported design
+                                                                      tools from the request and current state, while the de-
+checks, safe non-execution, and a trace-grounded report.
+                                                                      clared contracts describe expected artifact inputs and out-
+StructureClaw-Bench focuses on this combination. It uses
+                                                                      puts and typed tools enforce runtime preconditions. Shared
+typed assertions over intermediate and final artifacts so that
+                                                                      artifact state also prevents downstream operations from hav-
+end-to-end success and stage-specific failures can be mea-
+                                                                      ing to reconstruct geometry, assumptions, or analysis con-
+sured in the same executable environment.
+                                                                      text solely from the conversation history.
+3. StructureClaw System                                                   The central artifact is a structural model protocol that
+                                                                      represents project metadata, structural system, geometry
+StructureClaw is an artifact-centered workbench for                   and topology, materials, sections, supports, loads, load com-
+structural-engineering agents. Given a natural-language re-           binations, analysis metadata, and explicit unit conventions.
+quest, optional project files, and design constraints, it or-         Analysis tools access a solver through a provider, an adapter
+ganizes execution as a sequence of inspectable engineering            that implements the tool contract for a particular backend.
+
+                                                                  4
+                                                                                                        Structure types                                               Robustness
+The current system supports open-source structural analysis                                                                                  Missing                                        8
+                                                                            Steel frame            12              10          18             Invalid                                       8
+using OpenSees through its OpenSeesPy interface [34, 56],                                                                                 Unrealistic                                       8
+                                                                                 Beam              9               13           8          Multi-turn                                       8
+with provider interfaces for PKPM and YJK when those                                                                                      Conflicting                         5
+                                                                                                                                           Recovery                      4
+backends are configured. Provider availability is checked                        Truss             8               6            7     Unit ambiguity                     4
+                                                                                                                                       Unsupported                       4
+before execution, so an unavailable backend remains an ex-                 Portal frame            6               6            7
+                                                                                                                                      Static analysis         1
+
+plicit workflow condition rather than being replaced by an                                                                                              0         2     4         6     8
+                                                                        Concrete frame             6               5            4
+unverified result.                                                                                                                     Multimodal input                      Language
+                                                                       Continuous beam             5               2            5
+                                                                                                                                         DXF
+3.2. Artifact-Grounded Validation and Recovery                                 Generic             1               6            1         15
+                                                                                                                                                                         ZH            EN
+                                                                                                                                         30%
+                                                                                                                                                                         75            75
+                                                                                                                                                        Img             50%           50%
+StructureClaw instantiates the ReAct reasoning–action pat-                     Column              3               2            0                        35
+                                                                                                                                                        70%
+tern [49] over artifact state. At each iteration, the agent ob-                               ndard             ess           oda
+                                                                                                                                 l
+                                                                                          Sta                stn         ultim
+                                                                                                          obu           M
+serves the request, active capability context, and existing ar-                                          R
+
+tifacts; it then invokes a tool, requests clarification, repairs       Figure 3. Composition of StructureClaw-Bench. The heatmap
+an artifact, or terminates. The returned tool result updates           shows structure-type coverage across task families, the bar chart
+the state and becomes the evidence for the next decision.              decomposes interactive robustness cases, and the pie charts sum-
+This makes the execution trace a sequence of inspectable               marize multimodal input format and Chinese/English balance.
+engineering transitions rather than an opaque chain of con-
+                                                                       English prompts (Figure 3). The standard-workflow fam-
+versational responses.
+                                                                       ily contains well-specified text-to-analysis requests for steel
+    Validation records model-linked diagnostics. The imple-
+                                                                       frames, concrete frames, beams, trusses, portal frames, con-
+mented checks cover schema compliance, identifier and
+                                                                       tinuous beams, columns, and generic structural-analysis
+cross-reference consistency, minimum model complete-
+                                                                       tasks. The interactive-robustness family tests missing in-
+ness, finite coordinates, support representation, and load
+                                                                       formation, invalid references or values, unrealistic assump-
+and load-combination references. These checks establish
+                                                                       tions, unit ambiguity, multi-turn updates, conflicting con-
+that a model is well formed under the protocol; they do not,
+                                                                       straints, recovery after failed actions, unsupported requests,
+by themselves, certify full engineering correctness. Their
+                                                                       and static-analysis edge cases. The multimodal structural-
+results instead govern recovery: missing assumptions can
+                                                                       model reconstruction family begins with images or DXF
+require clarification, invalid references can trigger repair
+                                                                       files and requires the agent to infer geometry, topology,
+followed by revalidation, and invalid or inconsistent inputs
+                                                                       supports, loads, and member relationships before construct-
+can lead to safe non-execution. An unavailable provider or
+                                                                       ing an analysis model. The current released comparator
+unsupported operation instead produces an explicit unsup-
+                                                                       evaluates model counts, coordinate spans, and approximate
+ported termination.
+                                                                       loads rather than complete topology, support equivalence,
+    The final report is generated only from the artifacts avail-
+                                                                       or member-by-member connectivity.
+able for the requested workflow. When analysis or code
+                                                                           Typed assertions cover structure recognition, skill se-
+checking is required, the corresponding execution record
+                                                                       lection, model existence and reference-fixture consistency,
+must therefore be present before its results can be reported.
+                                                                       solver/backend execution, clarification or non-execution,
+This linkage from request to workflow path, model, valida-
+                                                                       and reporting. Only fixture-listed assertions are required; a
+tion, execution, and report is the basis for the traceability
+                                                                       clarification case, for example, need not produce a model.
+evaluated by StructureClaw-Bench; Appendix A specifies
+                                                                       Reference fixtures provide reproducible operational targets,
+the evidence semantics of these workflow stages and arti-
+                                                                       not an exhaustive set of engineering-equivalent solutions.
+facts.
+                                                                       Appendix B details their semantics.
+4. StructureClaw-Bench                                                 4.2. Primary Metric and Evaluation Protocol
+StructureClaw-Bench evaluates agents within the exe-                   Let S denote an evaluated scenario set, As the required as-
+cutable workflow rather than as standalone question-                   sertions for scenario s, and zs,a ∈ {0, 1} the outcome of
+answering systems. Each scenario specifies the required ev-            assertion a in a single run. The primary metric is
+idence, and success requires every listed assertion over rout-
+ing, artifacts, execution, interaction, and reporting to pass.                                                                       100% X Y
+                                                                                          Success Rate(S) =                                   zs,a ,                                        (1)
+Plausible prose therefore cannot compensate for a missing                                                                             |S|
+                                                                                                                                                  s∈S a∈As
+or inconsistent engineering trace.
+                                                                       which we call Success Rate. The product equals one only
+4.1. Scenarios and Assertions                                          when every required assertion for that scenario succeeds.
+The benchmark contains 150 controlled scenarios, divided               Assertion-level outcomes are retained for diagnosis, but
+equally among three task families, with 75 Chinese and 75              they do not provide partial credit toward Success Rate.
+
+
+                                                                   5
+    Each scenario is executed once, with automatic retries                    Descriptive evaluation profile (50–100 zoom)
+                                                                                    Model/Exec                          Generic
+disabled. Runs are isolated in child processes under a com-
+mon timeout policy, and a timeout is recorded as an execu-
+tion failure. The default automatic mode allows the agent
+to select applicable skills. For standard-workflow scenarios,
+we additionally evaluate generic-only mode, which restricts                                                                       100
+the agent to the generic structural skill and the requested                                                              75
+analysis skill while retaining the same broad execution en-                                                  <=50
+vironment. We define Auto–Generic Lift as the difference             Interaction                                                        Workflow
+in Success Rate between these two modes, in percentage
+points. Because the two modes jointly change specialized
+routing, structural priors, artifact expectations, and valida-
+tion guidance, this lift is a paired system-level comparison
+rather than a component-level ablation.
+4.3. Diagnostic Views
+                                                                                     MM task                        MM recon
+For failure localization, assertion results are grouped into
+routing, modeling, execution/backend, interaction/safety,
+and report dimensions. Diagnostic rates pool recorded                                   Kimi-K2.6             Gemini 3.5 Flash
+fixture-applicable outcomes and disclose unavailable obser-                             DeepSeek-V4-Flash     Qwen3.7-Max
+                                                                                        GLM-5.2 / GLM-4.6V    GPT-5.5
+vations; an unavailable required outcome still fails the sce-                           GLM-5-Turbo           DeepSeek-V4-Pro
+nario under Equation 1. We also stratify Success Rate by                                Claude Opus 4.8       MiniMax-M3
+
+family, structure, language, and modality. These small, de-          Figure 4. Descriptive evaluation profiles. The radial display zooms
+signed subsets are descriptive rather than statistically pow-        the 50–100 range: observed scores at or below 50 share the inner
+ered benchmarks.                                                     ring, and larger scores are linearly expanded toward the outer ring.
+                                                                     Appendix C defines the axes and their abbreviations. Gaps denote
+5. Experiments                                                       unevaluated axes; radar area is not an evaluation metric.
+
+The evaluation addresses three questions: whether the bun-           workflow Success Rates average the 10 configuration-level
+dled automatic workflow achieves higher end-to-end suc-              rates, equivalently pooling them because every configura-
+cess than the generic-only configuration on well-specified           tion evaluates the same 50 cases. Appendix C gives the ex-
+requests, whether agents respond safely to interactive edge          act definitions. Because each configuration–scenario pair is
+cases, and whether they can reconstruct executable struc-            observed once, small subset differences are descriptive and
+tural artifacts from images and DXF files. Each task fam-            should not be interpreted as statistically resolved rankings.
+ily contains 50 scenarios. We evaluate 10 agent-model con-
+                                                                         Figure 4 provides a descriptive profile of the evaluated
+figurations in the text-only settings and six in the multi-
+                                                                     settings without defining an overall score. Its axes combine
+modal setting, yielding 36 configuration–setting runs and
+                                                                     family-level Success Rates with a limited set of diagnostic
+1,800 single-attempt scenario executions. When visual per-
+                                                                     summaries and should be read separately rather than com-
+ception and agent reasoning use different models, we report
+                                                                     bined by area. Unevaluated multimodal axes are shown as
+the configuration as agent model / vision model. Standard-
+                                                                     gaps, so missing coverage is not represented as observed
+workflow scenarios are evaluated in both automatic and
+                                                                     failure.
+generic-only modes; interactive robustness and multimodal
+structural-model reconstruction are evaluated only in auto-
+                                                                     5.1. Standard Workflow
+matic mode. We follow the single-run protocol defined in
+Section 4: each scenario is attempted once with automatic            The first analysis compares the bundled automatic workflow
+retries disabled and a 15-minute timeout.                            with generic-only mode while retaining the same broad ex-
+    The primary metric is Success Rate: the percentage of            ecution environment. Figure 5 and Table 1 show that the
+scenarios for which all required assertions pass in a single         mean Success Rate increases from 56.8% to 88.6%, a gain
+run. Assertion-level success rates, average tool calls, and          of 31.8 percentage points. All 10 configurations achieve a
+average wall-clock time are diagnostic metrics. Aggregate            higher Success Rate in automatic mode. Kimi-K2.6 satisfies
+assertion and subset rates pool recorded outcomes desig-             every required assertion on all 50 cases, while DeepSeek-
+nated applicable by the scenario fixture and report their ef-        V4-Flash and GLM-5.2 each succeed on 48 of 50 cases.
+fective denominators; unavailable required outcomes count            This comparison changes the structural skill path and its
+against primary Success Rate. The reported mean standard-            associated priors, artifact expectations, and validation guid-
+
+
+                                                                 6
+                                    Standard workflow                                                                        Overall    Invalid values
+        Kimi-K2.6                                                            +32
+                                                                                                                         Interactive robustness
+DeepSeek-V4-Flash                                                        +46
+                                                                                         Claude Opus 4.8                                                                  94
+          GLM-5.2                                                        +30
+                                                                                             GLM-5-Turbo                                                                  94
+
+      GLM-5-Turbo                                                    +30
+                                                                                                Kimi-K2.6                                                                 94
+
+  Claude Opus 4.8                                                  +38
+                                                                                            Qwen3.7-Max                                                              92
+
+  Gemini 3.5 Flash                                             +26                               GPT-5.5                                                        90
+
+    Qwen3.7-Max                                                +24                      DeepSeek-V4-Pro                                                         90
+
+          GPT-5.5                                             +28                                GLM-5.2                                                        90
+
+ DeepSeek-V4-Pro                                             +30                       DeepSeek-V4-Flash                                                        90
+                                                                   Generic-only
+      MiniMax-M3                            +34                                          Gemini 3.5 Flash                                                  88
+                                                                   StructureClaw
+
+                                                                                             MiniMax-M3                                                    88
+                     30   40   50     60     70         80     90          100
+                                     Success Rate (%)
+                                                                                                            50     60             70        80             90                  100
+Figure 5. Standard workflow results. Purple points denote generic-                                                            Success Rate (%)
+only execution, teal points denote automatic execution, and labels                     Figure 6. Interactive robustness results. Bars show overall Success
+give the absolute Success Rate gain in percentage points.                              Rate, and diamonds show Success Rate on the invalid-value sub-
+                                                                                       set.
+ance together; it therefore evaluates the structured workflow                                                     Multimodal reverse engineering
+as a system and does not attribute the gain to any single
+                                                                                       GLM-5.2 / GLM-4.6V                                                                 94
+component.
+    The diagnostics distinguish routing, artifact construc-                                     Kimi-K2.6                                                  88
+
+tion, and backend execution. Automatic-mode structural-
+                                                                                          Claude Opus 4.8                                             84
+type, skill-selection, and model-matching rates are 98.0%,
+100.0%, and 90.8%. In generic-only mode, 488 model-                                      Gemini 3.5 Flash                                    78
+
+related assertion records are recoverable and 12 are unavail-
+                                                                                                  GPT-5.5                              72
+able; among the recoverable records, 449/488 (92.0%) con-
+tain a model artifact, but only 344/488 (70.5%) satisfy the                                   MiniMax-M3                60
+                                                                                                                                            Overall        Image               DXF
+model-matching rule. Appendix D shows that this gap per-
+                                                                                                            50     60             70        80             90                  100
+sists when unavailable records are counted as failures and
+                                                                                                                               Success Rate (%)
+examines its structure-family variation.
+                                                                                       Figure 7. Multimodal structural-model reconstruction results. Bars
+                                                                                       separate image and DXF inputs, and teal dots show each configu-
+5.2. Interactive Robustness                                                            ration’s overall Success Rate.
+
+We next ask whether an agent clarifies, abstains, or recov-                            5.3. Multimodal Reconstruction
+ers when immediate analysis is inappropriate. Overall Suc-                             Finally, we evaluate whether visual or DXF inputs can be
+cess Rates range from 88.0% to 94.0% across the 10 con-                                converted into artifacts that satisfy the same workflow asser-
+figurations, with a mean of 91.0% (Figure 6). Table 2 fur-                             tions. Success Rates vary more widely across the six mul-
+ther reports pooled assertion rates of 89.6% for clarification,                        timodal configurations than across the interactive configu-
+90.7% for avoiding an invalid model, and 91.0% for cor-                                rations (Figure 7). GLM-5.2 / GLM-4.6V attains 94.0%,
+rectly withholding analysis. The narrow end-to-end range                               followed by Kimi-K2.6 at 88.0% and Claude Opus 4.8 at
+makes the assertion and category breakdowns more infor-                                84.0%; MiniMax-M3 attains 60.0% (Table 3). These num-
+mative for diagnosis than the aggregate ranking.                                       bers compare complete agent/vision configurations and do
+   Invalid numerical values form the weakest robustness                                not isolate the contribution of the perception model.
+category: 56 of 79 recorded configuration–scenario eval-                                   Pooled DXF and image Success Rates are 80.0% (72/90)
+uations succeed (70.9%), compared with 71/80 multi-                                    and 79.0% (166/210), but the subsets differ in size and
+turn evaluations (88.8%) and 45/50 conflicting-requirement                             composition. Across the 281 recoverable applicable out-
+evaluations (90.0%). The recorded locale split is 96.0% for                            comes shared by the three diagnostics—the remaining 19
+English and 86.7% for Chinese, but wording and category                                are unavailable—structural-type recognition and skill selec-
+composition are not independently controlled. Appendix D                               tion reach 93.6% and 96.4%, while model matching reaches
+reports denominators and missing-outcome sensitivity. The                              84.7%. At the aggregate level, recognition and routing rates
+evidence identifies invalid-value checking as a targeted ro-                           are therefore higher than the released model-matching rate.
+bustness priority, not an intrinsic language effect.                                   Because these are marginal diagnostics, they do not iden-
+
+
+                                                                                   7
+Table 1. Standard workflow results on 50 cases. Auto and Generic report Success Rate (%); Generic uses the same environment with
+only the generic structural skill plus the requested analysis capability. Gain is the percentage-point difference, and Calls and Time report
+auto-mode averages.
+Model                     Auto           Generic             Gain          Type match             Model match           Backend     Calls    Time (s)
+Kimi-K2.6                 100.0             68.0             32.0                 100.0                 100.0             100.0      6.82      196.9
+DeepSeek-V4-Flash          96.0             50.0             46.0                 100.0                  96.0             100.0      6.90       78.0
+GLM-5.2                    96.0             66.0             30.0                 100.0                  96.0             100.0      6.34       93.4
+GLM-5-Turbo                92.0             62.0             30.0                  95.9                  96.0              94.4      6.70      123.8
+Claude Opus 4.8            90.0             52.0             38.0                  95.9                  94.0             100.0      7.06       61.3
+Gemini 3.5 Flash           88.0             62.0             26.0                  95.9                  98.0             100.0      6.56       43.1
+Qwen3.7-Max                88.0             64.0             24.0                 100.0                  88.0              94.4      6.54      109.5
+GPT-5.5                    86.0             58.0             28.0                  98.0                  88.0             100.0      6.98       70.7
+DeepSeek-V4-Pro            84.0             54.0             30.0                  95.9                  86.0              88.9      6.74       74.8
+MiniMax-M3                 66.0             32.0             34.0                  98.0                  66.0              55.6      6.36       46.1
+
+Table 2. Interactive robustness results on 50 cases. Success Rate requires all required assertions for a case to pass; Clarify, No invalid
+model, and No analysis are assertion-level diagnostics, while Invalid reports category-level Success Rate. Lower is better only for Calls
+and Time.
+Model                     Success Rate             Clarify           No invalid model              No analysis          Invalid     Calls    Time (s)
+Claude Opus 4.8                   94.0               96.4                         100.0                 100.0            100.0      4.39        64.2
+GLM-5-Turbo                       94.0               92.9                          93.1                  93.1             75.0      3.34        91.4
+Kimi-K2.6                         94.0               89.3                          93.1                  93.1             75.0      3.15        86.6
+Qwen3.7-Max                       92.0               89.3                          89.7                  89.7             62.5      3.46       103.6
+GPT-5.5                           90.0               89.3                          89.7                  89.7             75.0      3.76        54.3
+DeepSeek-V4-Pro                   90.0               85.7                          89.7                  89.7             62.5      3.66        73.2
+GLM-5.2                           90.0               85.7                          86.2                  86.2             62.5      3.71        99.7
+DeepSeek-V4-Flash                 90.0               82.1                          82.8                  86.2             50.0      3.61       102.2
+Gemini 3.5 Flash                  88.0               92.6                          92.9                  92.9             85.7      3.62        37.1
+MiniMax-M3                        88.0               92.9                          89.7                  89.7             62.5      3.85        36.8
+
+Table 3. Multimodal reconstruction results on 50 image/DXF cases. Success Rate requires all required assertions for a case to pass; Image
+and DXF report input-format subsets. When different, the first column reports agent model / vision model.
+Agent / vision             Success Rate            Image            DXF           Type match          Model match           Skill    Calls   Time (s)
+GLM-5.2 / GLM-4.6V                 94.0             97.1            86.7                  100.0                  93.6      100.0      5.65     108.4
+Kimi-K2.6                          88.0             85.7            93.3                   93.5                  91.3      100.0      6.57     169.1
+Claude Opus 4.8                    84.0             85.7            80.0                   97.9                  87.2       95.7      7.12      75.1
+Gemini 3.5 Flash                   78.0             80.0            73.3                   91.5                  93.6      100.0      6.35      36.8
+GPT-5.5                            72.0             65.7            86.7                   83.0                  78.7       89.4      6.45      85.4
+MiniMax-M3                         60.0             60.0            60.0                   95.7                  63.8       93.6      6.94      73.4
+
+tify a sequential failure stage within individual traces. Ap-                       ors, artifact expectations, and validation guidance change
+pendix B shows that the model-matching rule tests counts,                           together, however, the comparison supports the workflow
+spans, and approximate loads rather than complete topol-                            as a system without identifying one causal mechanism.
+ogy, supports, or engineering equivalence.                                              The diagnostics also separate two bottlenecks that re-
+                                                                                    quire different controls. Invalid-value cases attain 70.9%
+6. Discussion                                                                       over recorded outcomes despite a 91.0% interactive mean,
+                                                                                    indicating a pre-execution weakness in constraint checking
+The central result is a gap between merely producing an                             and safe state transition. Multimodal structure recognition
+artifact and maintaining consistency across the evidence                            (93.6%) and skill selection (96.4%) exceed model match-
+chain. In generic-only mode, model artifacts occur in 92.0%                         ing (84.7%) on the same 281 observed outcomes, indicat-
+of recorded outcomes, but only 70.5% satisfy the model-                             ing an aggregate gap between broad routing diagnostics and
+matching rule. Automatic execution raises matching to                               artifact reconstruction. The former motivates deterministic
+90.8% and mean Success Rate to 88.6%. The narrower                                  value checks before model mutation or solver invocation;
+existence–consistency gap is consistent with the view that                          the latter motivates inspectable intermediate representations
+structured workflow guidance may be particularly valuable                           of extracted dimensions, loads, and structural relationships
+at the handoffs among routing, model construction, val-                             before analysis. A single end-to-end score would not distin-
+idation, and execution, where an early assumption con-                              guish these intervention points, while the marginal diagnos-
+strains all downstream artifacts. Because specialization, pri-                      tics and current comparator cannot establish within-trace or-
+
+
+                                                                              8
+dering or attribute the reconstruction gap to a specific stage.
+    The aggregate automatic-mode gain is also not uniform.
+Continuous-beam cases decrease from 96.0% in generic-
+only mode to 76.0% in automatic mode, with the regression
+recurring across half of the evaluated configurations. This
+counterexample shows that the bundled automatic workflow
+can introduce a correlated, structure-specific regression
+even while improving the benchmark average. Structure-
+family regressions should therefore be treated as release
+criteria alongside aggregate Success Rate, and paired case-
+level traces should be used to determine whether the com-
+mon failure enters during modeling assumptions, valida-
+tion, execution, or reporting.
+    More broadly, progress should address a clearly identi-
+fied failure at a specific workflow transition without intro-
+ducing regressions elsewhere, rather than merely raise mean
+Success Rate. Stage-local outcomes with coverage counts
+can therefore serve as auditable release criteria rather than
+merely as inputs to a model leaderboard.
+    These results remain diagnostic rather than defini-
+tive model rankings or engineering certification. Each
+configuration–scenario pair is observed once, some sub-
+sets are small, and the mode comparison changes several
+workflow elements. Reference fixtures may omit valid al-
+ternatives, the comparator may accept untested defects, and
+solver completion does not establish code compliance. The
+next evaluation priorities are repeated trials for run variabil-
+ity, matched component ablations for attribution, controlled
+agent/vision pairings, and engineer-reviewed equivalence
+criteria. StructureClaw remains an assistance and evaluation
+environment, not a substitute for professional review.
+
+7. Conclusion
+StructureClaw integrates skill-guided planning, typed tool
+execution, shared structural-model artifacts, validation
+records, solver traces, code-check results, and report gener-
+ation into a traceable workflow. StructureClaw-Bench eval-
+uates this evidence chain through 150 controlled scenar-
+ios; on the 50 standard cases, the bundled automatic work-
+flow achieves 88.6% mean Success Rate versus 56.8%
+for generic-only execution. Stage-level diagnostics further
+expose safe handling of invalid inputs and multimodal
+structural-model reconstruction as distinct bottlenecks. A
+structure-specific regression on continuous-beam cases also
+shows that aggregate gains should be accompanied by
+family-level release checks. The contribution is an exe-
+cutable framework for observing failures and testing im-
+provements, not a claim of autonomous engineering compe-
+tence. Future work should isolate component effects, quan-
+tify uncertainty, add engineer-reviewed equivalence criteria,
+and evaluate larger projects and additional backends.
+
+
+
+
+                                                                   9
+References                                                                    Beixiao Zhu, et al. Toward engineering AGI: Benchmarking
+                                                                              the engineering design capabilities of LLMs. In Advances in
+ [1] Kai-Hung Chang and Chin-Yi Cheng. Learning to simulate                   Neural Information Processing Systems, 2025. Datasets and
+     and design for structural engineering. In Proceedings of the             Benchmarks Track. 2, 4
+     37th International Conference on Machine Learning, pages            [15] Seokjae Heo. Enhancing reliability and automation of LLM-
+     1426–1436. PMLR, 2020. 3                                                 based structural analysis using a hybrid multi-agent pipeline.
+ [2] Jinxin Chen and Yi Bao. Multi-agent large language model                 Scientific Reports, 16:19458, 2026. 4
+     framework for code-compliant automated design of rein-              [16] Odin Iversen and Lizhen Huang. Leveraging large language
+     forced concrete structures. Automation in Construction, 177:             models for BIM-based automated compliance checking. Au-
+     106331, 2025. 2, 3                                                       tomation in Construction, 182:106707, 2026. 3
+ [3] Kichang Choi, Minwoo Jeong, Taegeon Kim, Seokhwan                   [17] Jong-Hyun Jeong and Hongki Jo. Deep reinforcement learn-
+     Kim, Seungwon Baek, and Hongjo Kim. RAMASC: A                            ing for automated design of reinforced concrete structures.
+     retrieval-augmented multi-agent framework for automated                  Computer-Aided Civil and Infrastructure Engineering, 36
+     structural calculation. Advanced Engineering Informatics,                (12):1508–1529, 2021. 3
+     74:104698, 2026. 2, 3                                               [18] Yanna Jiang, Delong Li, Haiyu Deng, Baihe Ma, Xu
+ [4] Zihan Deng, Changyu Du, Stavros Nousias, and André Bor-                 Wang, Qin Wang, and Guangsheng Yu. SoK: Agentic
+     rmann. BIMgent: Towards autonomous building modeling                     skills – beyond tool use in LLM agents. arXiv preprint
+     via computer-use agents. In ICML 2025 Workshop on Com-                   arXiv:2602.20867, 2026. 4
+     puter Use Agents, 2025. 3                                           [19] Carlos E. Jimenez, John Yang, Alexander Wettig, Shunyu
+ [5] Changyu Du, Sebastian Esser, Stavros Nousias, and André                 Yao, Kexin Pei, Ofir Press, and Karthik Narasimhan. SWE-
+     Borrmann. Text2BIM: Generating building models using a                   bench: Can language models resolve real-world GitHub is-
+     large language model-based multiagent framework. Journal                 sues? In International Conference on Learning Representa-
+     of Computing in Civil Engineering, 40(2):04025142, 2026.                 tions, 2024. 4
+     3                                                                   [20] Dimitrios Kampelopoulos, Athina Tsanousa, Stefanos
+ [6] Bochao Fu, Yuqing Gao, and Wei Wang. Dual generative                     Vrochidis, and Ioannis Kompatsiaris. A review of LLMs
+     adversarial networks for automated component layout design               and their applications in the architecture, engineering and
+     of steel frame-brace structures. Automation in Construction,             construction industry. Artificial Intelligence Review, 58:250,
+     146:104661, 2023. 3                                                      2025. 1, 3
+ [7] Bochao Fu, Wei Wang, and Yuqing Gao. Physical rule-                 [21] Aleksei Kondratenko, Mussie Birhane, Houssame E. Hsain,
+     guided generative adversarial network for automated struc-               and Guido Maciocci. AECV-Bench: Benchmarking multi-
+     tural layout design of steel frame-brace structures. Journal             modal models on architectural and engineering drawings un-
+     of Building Engineering, 86:108943, 2024. 3                              derstanding. arXiv preprint arXiv:2601.04819, 2026. 4
+ [8] Luyu Gao, Aman Madaan, Shuyan Zhou, Uri Alon, Pengfei               [22] Minghao Li, Yingxiu Zhao, Bowen Yu, Feifan Song, Hangyu
+     Liu, Yiming Yang, Jamie Callan, and Graham Neubig. PAL:                  Li, Haiyang Yu, Zhoujun Li, Fei Huang, and Yongbin Li.
+     Program-aided language models. In Proceedings of the                     API-Bank: A comprehensive benchmark for tool-augmented
+     40th International Conference on Machine Learning, pages                 LLMs. In Proceedings of the 2023 Conference on Empirical
+     10764–10799. PMLR, 2023. 2, 4                                            Methods in Natural Language Processing, pages 3102–3116,
+ [9] Ziheng Geng, Jiachen Liu, Ran Cao, Lu Cheng, Haifeng                     Singapore, 2023. Association for Computational Linguistics.
+     Wang, and Minghui Cheng. A lightweight large language                    4
+     model-based multi-agent system for 2D frame structural              [23] Yinsheng Li, Zhen Dong, and Yi Shao. DrafterBench:
+     analysis. arXiv preprint arXiv:2510.05414, 2025. 3                       Benchmarking large language models for tasks automation
+[10] Ziheng Geng, Ian Franklin, Santiago Martinez, Jiachen Liu,               in civil engineering. arXiv preprint arXiv:2507.11527, 2025.
+     Yunhe Zhao, and Minghui Cheng. Agentic large language                    4
+     models for automated structural analysis of 3D frame sys-           [24] Chen Liang, Zhaoqi Huang, Haofen Wang, Fu Chai, Chuny-
+     tems. arXiv preprint arXiv:2606.06525, 2026. 3                           ing Yu, Huanhuan Wei, Zhengjie Liu, Yanpeng Li, Hongjun
+[11] Ziheng Geng, Jiachen Liu, Ian Franklin, Ran Cao, Dan M.                  Wang, Ruifeng Luo, and Xianzhong Zhao. AECBench: A
+     Frangopol, and Minghui Cheng. Automating structural anal-                hierarchical benchmark for knowledge evaluation of large
+     ysis across multiple software platforms using large language             language models in the AEC field. Advanced Engineering
+     models. arXiv preprint arXiv:2604.09866, 2026. 3                         Informatics, 71:104314, 2026. 4
+[12] Yi Gu, Yuli Huang, Wenjie Liao, and Xinzheng Lu. Intel-             [25] Haoran Liang, Mohammad Talebi Kalaleh, and Qipei Mei.
+     ligent design of shear wall layout based on diffusion mod-               Integrating large language models for automated structural
+     els. Computer-Aided Civil and Infrastructure Engineering,                analysis. arXiv preprint arXiv:2504.09754, 2025. 3
+     39(23):3610–3625, 2024. 2, 3                                        [26] Haoran Liang, Yufa Zhou, Mohammad Talebi Kalaleh,
+[13] Yi Gu, Sizhong Qin, Wenjie Liao, and Xinzheng Lu. In-                    and Qipei Mei. Automating structural engineering work-
+     telligent design of dimensions of reinforced concrete frame              flows with large language model agents. arXiv preprint
+     structure components using diffusion models. Computers in                arXiv:2510.11004, 2025. 2, 3
+     Industry, 175:104428, 2026. 3                                       [27] Wenjie Liao, Xinzheng Lu, Yuli Huang, Zhe Zheng, and
+[14] Xingang Guo, Yaxin Li, Xiangyi Kong, Yilan Jiang, Xiayu                  Yuanqing Lin. Automated structural design of shear wall
+     Zhao, Zhihua Gong, Yufan Zhang, Daixuan Li, Tianle Sang,                 residential buildings using generative adversarial networks.
+
+
+                                                                    10
+     Automation in Construction, 132:103931, 2021. 3                            3
+[28] Wenjie Liao, Xinzheng Lu, Yifan Fei, Yi Gu, and Yuli                  [41] Sizhong Qin, Yifan Fei, Wenjie Liao, and Xinzheng Lu.
+     Huang. Generative AI design for building structures. Au-                   Leveraging data-driven artificial intelligence in optimization
+     tomation in Construction, 157:105187, 2024. 2                              design for building structures: A review. Engineering Struc-
+[29] Anthony Zhe Liu, Jongwook Choi, Sungryull Sohn, Yao Fu,                    tures, 341:120810, 2025. 2
+     Jaekyeom Kim, Dong-Ki Kim, Xinhe Wang, Jaewon Yoo,                    [42] Sizhong Qin, Wenjie Liao, Yuli Huang, Shulu Zhang, Yi Gu,
+     and Honglak Lee. SkillAct: Using skill abstractions im-                    Jin Han, and Xinzheng Lu. Intelligent design for compo-
+     proves LLM agents. In ICML 2024 Workshop on LLMs and                       nent size generation in reinforced concrete frame structures
+     Cognition, 2024. 4                                                         using heterogeneous graph neural networks. Automation in
+[30] Jiachen Liu, Ziheng Geng, Ran Cao, Lu Cheng, Paolo                         Construction, 171:105967, 2025. 3
+     Bocchini, and Minghui Cheng. A large language model-                  [43] Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan,
+     empowered agent for reliable and robust structural analysis.               Yaxi Lu, Yankai Lin, Xin Cong, Xiangru Tang, Bill Qian,
+     Structure and Infrastructure Engineering, 2026. 2, 3                       Sihan Zhao, Lauren Hong, Runchu Tian, Ruobing Xie, Jie
+[31] Xiao Liu, Hao Yu, Hanchen Zhang, Yifan Xu, Xuanyu Lei,                     Zhou, Mark Gerstein, Dahai Li, Zhiyuan Liu, and Maosong
+     Hanyu Lai, Yu Gu, Hangliang Ding, Kaiwen Men, Kejuan                       Sun. ToolLLM: Facilitating large language models to mas-
+     Yang, Shudan Zhang, Xiang Deng, Aohan Zeng, Zhengx-                        ter 16000+ real-world APIs. In International Conference on
+     iao Du, Chenhui Zhang, Sheng Shen, Tianjun Zhang, Yu                       Learning Representations, 2024. 4
+     Su, Huan Sun, Minlie Huang, Yuxiao Dong, and Jie Tang.                [44] Abdullahi Saka, Ridwan Taiwo, Nurudeen Saka, Ba-
+     AgentBench: Evaluating LLMs as agents. In International                    batunde Abiodun Salami, Saheed Ajayi, Kabiru Akande, and
+     Conference on Learning Representations, 2024. 4                            Hadi Kazemi. GPT models in construction industry: Oppor-
+[32] Soumya Madireddy, Lu Gao, Zia Ud Din, Kinam Kim,                           tunities, limitations, and a use case validation. Developments
+     Ahmed Senouci, Zhe Han, and Yunpeng Zhang. Large lan-                      in the Built Environment, 17:100300, 2024. 1
+     guage model-driven code compliance checking in building               [45] Timo Schick, Jane Dwivedi-Yu, Roberto Dessı̀, Roberta
+     information modeling. Electronics, 14(11):2146, 2025. 3                    Raileanu, Maria Lomeli, Eric Hambro, Luke Zettlemoyer,
+[33] Harsh Mankodiya, Chase Gallik, Theodoros Galanos, and                      Nicola Cancedda, and Thomas Scialom. Toolformer: Lan-
+     Andriy Mulyar. AEC-Bench: A multimodal benchmark for                       guage models can teach themselves to use tools. In Advances
+     agentic systems in architecture, engineering, and construc-                in Neural Information Processing Systems, pages 68539–
+     tion. arXiv preprint arXiv:2603.29199, 2026. 2, 4                          68551, 2023. 4
+[34] Frank McKenna. OpenSees: A framework for earthquake en-               [46] Yongliang Shen, Kaitao Song, Xu Tan, Dongsheng Li,
+     gineering simulation. Computing in Science & Engineering,                  Weiming Lu, and Yueting Zhuang. HuggingGPT: Solving
+     13(4):58–66, 2011. 2, 5                                                    AI tasks with ChatGPT and its friends in Hugging Face. In
+[35] Bharathi Kannan Nithyanantham, Tobias Sesterhenn, Ash-                     Advances in Neural Information Processing Systems, pages
+     win Nedungadi, Sergio Peral Garijo, Janis Zenkner, Chris-                  38154–38180, 2023. 4
+     tian Bartelt, and Stefan Lüdtke. MCP4IFC: IFC-based build-           [47] Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Mandlekar,
+     ing design using large language models. arXiv preprint                     Chaowei Xiao, Yuke Zhu, Linxi Fan, and Anima Anandku-
+     arXiv:2511.05533, 2025. 3                                                  mar. Voyager: An open-ended embodied agent with large
+[36] Shishir G. Patil, Tianjun Zhang, Xin Wang, and Joseph E.                   language models. Transactions on Machine Learning Re-
+     Gonzalez. Gorilla: Large language model connected with                     search, 2024. 4
+     massive APIs. In Advances in Neural Information Process-              [48] Tianbao Xie, Danyang Zhang, Jixuan Chen, Xiaochuan Li,
+     ing Systems, pages 126544–126565, 2024. 4                                  Siheng Zhao, Ruisheng Cao, Toh Jing Hua, Zhoujun Cheng,
+[37] Shishir G. Patil, Huanzhi Mao, Fanjia Yan, Charlie Cheng-                  Dongchan Shin, Fangyu Lei, Yitao Liu, Yiheng Xu, Shuyan
+     Jie Ji, Vishnu Suresh, Ion Stoica, and Joseph E. Gonzalez.                 Zhou, Silvio Savarese, Caiming Xiong, Victor Zhong, and
+     The Berkeley function calling leaderboard (BFCL): From                     Tao Yu. OSWorld: Benchmarking multimodal agents for
+     tool use to agentic evaluation of large language models. In                open-ended tasks in real computer environments. In Ad-
+     Proceedings of the 42nd International Conference on Ma-                    vances in Neural Information Processing Systems, pages
+     chine Learning, pages 48371–48392. PMLR, 2025. 4                           52040–52094, 2024. 2, 4
+[38] Pablo N. Pizarro, Leonardo M. Massone, Fabián R. Rojas,              [49] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran,
+     and Rafael O. Ruiz. Use of convolutional networks in the                   Karthik R. Narasimhan, and Yuan Cao. ReAct: Synergizing
+     conceptual structural design of shear wall buildings layout.               reasoning and acting in language models. In International
+     Engineering Structures, 239:112311, 2021. 3                                Conference on Learning Representations, 2023. 2, 4, 5
+[39] Sizhong Qin, Hong Guan, Wenjie Liao, Yi Gu, Zhe Zheng,                [50] Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik R.
+     Hongjing Xue, and Xinzheng Lu. Intelligent design and opti-                Narasimhan. τ -bench: A benchmark for tool-agent-user in-
+     mization system for shear wall structures based on large lan-              teraction in real-world domains. In International Conference
+     guage models and generative artificial intelligence. Journal               on Learning Representations, 2025. 2, 4
+     of Building Engineering, 95:109996, 2024. 3                           [51] Chong Zhang, Mu-Xuan Tao, Chen Wang, and Jian-Sheng
+[40] Sizhong Qin, Wenjie Liao, Shengnan Huang, Kongguo Hu,                      Fan. End-to-end generation of structural topology for
+     Zhuang Tan, Yuan Gao, and Xinzheng Lu. AIstructure-                        complex architectural layouts with graph neural networks.
+     Copilot: Assistant for generative AI-driven intelligent design             Computer-Aided Civil and Infrastructure Engineering, 39
+     of building structures. Smart Construction, 1(1):0001, 2024.               (5):756–775, 2024. 3
+
+
+                                                                      11
+[52] Pengju Zhao, Wenjie Liao, Yuli Huang, and Xinzheng Lu.
+     Intelligent design of shear wall layout based on graph neural
+     networks. Advanced Engineering Informatics, 55:101886,
+     2023.
+[53] Pengju Zhao, Wenjie Liao, Yuli Huang, and Xinzheng Lu.
+     Beam layout design of shear wall structures based on graph
+     neural networks. Automation in Construction, 158:105223,
+     2024. 3
+[54] Junwen Zheng and Martin Fischer. Dynamic prompt-based
+     virtual assistant framework for BIM information search. Au-
+     tomation in Construction, 155:105067, 2023. 3
+[55] Ying Zhou, Hao Leng, Shiqiao Meng, Hao Wu, and Zheng
+     Zhang. StructDiffusion: End-to-end intelligent shear wall
+     structure layout generation and analysis using diffusion
+     model. Engineering Structures, 309:118068, 2024. 3
+[56] Minjie Zhu, Frank McKenna, and Michael H. Scott.
+     OpenSeesPy: Python library for the OpenSees finite element
+     framework. SoftwareX, 7:6–11, 2018. 2, 5
+
+
+
+
+                                                                     12
+A. Implementation and Trace Semantics                                       tween stages. Recognition without a model is therefore dis-
+                                                                            tinguishable from model construction, and model construc-
+StructureClaw is implemented around an explicit evidence                    tion is distinguishable from successful execution. The same
+chain rather than a single conversational output. The chain                 separation prevents a report artifact from serving as evi-
+records what the agent was asked to do, which governed                      dence that an analysis occurred: numerical claims require
+capability it selected, which engineering artifacts were con-
+                                                                            an analysis result or supported check record in the trace.
+structed, whether those artifacts passed the available checks,
+which backend was invoked, and what evidence was avail-                     A.2. Skill Schema and Artifact Graph
+able when the report was written. This appendix specifies
+                                                                            A skill schema is reusable: it declares how a capability is
+how skill manifests, guidance scopes, runtime contracts, ar-
+                                                                            discovered, which scope-specific engineering guidance it
+tifact records, and terminal workflow states organize that
+                                                                            contributes, which constraints govern its selection, and how
+chain.
+                                                                            its runtime contract consumes or provides artifacts. A man-
+A.1. Evidence Chain                                                         ifest records identity, discovery metadata, declared capa-
+                                                                            bilities, requirements, conflicts, and priority. It also speci-
+A request and its optional project files enter a sequence
+                                                                            fies runtime compatibility, the skill-API version, its runtime
+of workflow stages: requirement interpretation and routing,
+                                                                            role, and the artifact inputs, outputs, or provider slots associ-
+model construction, validation, analysis or code checking,
+                                                                            ated with that role. Separate guidance documents contribute
+and reporting. A stage consumes the current workflow state
+                                                                            content for intent, draft, analysis, and design scopes.
+and records a typed state update, an artifact, or an explicit
+                                                                                Figure 8 illustrates this schema for a regular three-
+condition that prevents safe continuation. Tool-call records
+                                                                            dimensional steel-frame request. The frame manifest iden-
+associate each executable operation with its inputs, returned
+                                                                            tifies the capability as frame in the structure-type domain,
+object, provider binding, or error. Consequently, an evalua-
+                                                                            assigns it the entry role, and declares a design-basis output.
+tor need not infer model creation or solver execution from
+                                                                            Unlike the workflow stages in Table 4, its intent, draft, anal-
+fluent prose alone.
+                                                                            ysis, and design labels are parallel guidance scopes that may
+   Table 4 summarizes the evidence available at each stage.
+                                                                            be activated nonlinearly; they do not prescribe an execution
+The table describes an audit interface, not a claim that every
+                                                                            order. Execution occurs through typed tools and, when anal-
+task must traverse every row. A request that lacks material
+                                                                            ysis or checking is requested, through separately selected
+information can terminate with clarification before model
+                                                                            provider bindings. Thus, a skill can guide frame-model con-
+construction; an unsupported provider can terminate before
+                                                                            struction without certifying that a solver or design-code
+execution; and a task that does not require analysis can fin-
+                                                                            checker has run.
+ish without a solver artifact.
+Table 4. Evidence-chain semantics. Each stage adds inspectable              A.3. Artifact Envelope and Runtime Mapping
+evidence or an explicit reason that the next stage should not run.
+                                                                            The logical artifact contract separates engineering content
+   Stage         Recorded evidence             Continuation                 from its audit envelope. It defines draft state, design basis,
+                                               condition
+                                                                            normalized model, validation record, analysis model, raw
+   Input and     User request, project         The user intent and a        and postprocessed analysis results, code-check result, draw-
+   route         inputs, inferred structural   compatible capability
+                 family, and selected          are identified, and
+                                                                            ing artifact, and report artifact as distinct kinds. Common
+                 capability                    required information         envelope fields include artifact identity, kind, scope, status,
+                                               is available                 revision, producer and provider identifiers, run identifier,
+   Modeling      Nodes, members,               A model is complete          timestamps, upstream references, dependency fingerprint,
+                 properties, supports,         enough for the
+                 loads, and associated         requested operation          schema version, provenance and warnings, and a kind-
+                 model metadata when                                        specific payload. For a normalized structural model, the
+                 produced                                                   payload carries units and project context; structural system
+   Validation    Deterministic diagnostics     Prescribed workflow          and site conditions; nodes, elements, materials, sections,
+                 and any repaired model        resolves blocking
+                 state                         diagnostics before           and boundary restraints; loads and combinations; analysis
+                                               execution                    controls; metadata; and extensions. The protocol is broader
+   Execution     Selected provider,            The provider is              than the current runtime mapping: not every conceptual en-
+                 analysis or checking          available and returns
+                                                                            velope is materialized in every run.
+                 invocation, returned          the required evidence
+                 artifacts, and errors                                          The lower part of Figure 8 should therefore be read as an
+   Reporting     Report artifact linked to     Claims are written           artifact-and-patch dependency graph, not as a list of conver-
+                 the available workflow        from the artifacts           sational messages or a complete taxonomy. A design basis
+                 state                         actually present
+                                                                            records structural criteria such as material grade, seismic in-
+                                                                            tensity, site category, and requested design scope. A model
+   The shared structural model is the principal handoff be-
+
+
+                                                                       13
+                                                                                                     dency on the normalized model. An accepted, conflict-free
+                                    Steel frame case
+                                                                                                     patch can produce an updated normalized model only when
+                                    Regular 3D steel frame                                           its base revision matches. Validation records preserve de-
+                                    2 stories × 3.6m 2 × 2 bays × 6m                                 terministic diagnostics linked to the model. Analysis-model
+                                    Q235B Intensity: 7 Site class Ⅱ                   …
+                                                                                                     and raw-result artifacts add mass, boundary conditions, load
+                                                                                                     cases, eigenvalues, eigenvectors, forces, and displacements.
+                                                                                                     Postprocessed results summarize derived quantities such as
+      Reusable skill schema                                                                          periods, modal participation, drift, and envelopes, and code-
+             Identity &                    id domain source name                                     check results record utilization, stability, and status against
+             Discovery                     description triggers
+                                                                                                     the selected design basis and model. Report artifacts link
+           Engineering                     stages: intent draft analysis design
+            Guidance                       stage-specific markdown content
+                                                                                                     their claims to the workflow evidence actually present.
+           Capability &                    capabilities requires conflicts
+                                                                                                         The schema permits a dependency fingerprint derived
+           Compatibility                   priority skill API version                                from upstream artifact references and provider bindings.
+              Runtime                      role consumes provides                                    This supports dependency-aware audit: a code-check result
+              Contract                     provider slot engine/tool hints
+                                                                                                     can identify the design basis, model, and postprocessed re-
+                                                                                                     sult used when it was produced, while a later patch creates
+                                                                                                     an updated path rather than silently replacing the evidence
+                                  Frame skill instance                                               behind the existing check. The dashed feedback in Figure 8
+       Id: frame        Domain: structure-type     Role: entry       Provides: design basis          denotes this protocol affordance, not an automatic itera-
+                                                                                                     tion executed by the benchmark. In the current implemen-
+         Intent                    Draft                 Analysis                Design              tation, the envelope remains partly declarative: the execu-
+      Applicability /
+        Required
+                                 Sections /
+                                 Materials /
+                                                        Model fidelity /
+                                                         Calculation
+                                                                               Member check /
+                                                                                 Iteration
+                                                                                                     tion graph records draft, model, validation, analysis, code-
+      seismic inputs              Loads                   settings               guidance            check, and report payloads in dedicated state channels and
+                                                                                                     streams compact tool summaries, but it does not materialize
+                                                                                                     every conceptual envelope in every run.
+       Artifact
+                                                          Design Basis
+                                                         Structural criteria                         A.4. Provider Binding and Execution
+                                  update                                                             Execution remains tool-controlled. The agent can clarify,
+                                                      Normalized Model
+           Model Patch                                                                               construct, validate, repair, execute, or stop, but declaring
+                                                  Nodes / Members / Sections
+                                                                                                     analysis or design guidance in a skill does not authorize
+                                                        Analysis Model                               computation. Nor does the runtime silently redefine a miss-
+                                                 Mass / Boundary / Load cases
+                                                                                                     ing provider or an invalid model as a successful computa-
+                                                                                                     tion.
+     Feedback                                       Raw Analysis Result
+        &                                        Modal / Forces / Displacements                          Provider identity is part of the execution evidence.
+      Revise                                                                                         Analysis-provider contracts consume an analysis model and
+                                                   Postprocessed Result                              provide raw results; code-check-provider contracts con-
+                                                    Drift / Envelopes / modes
+                                                                                                     sume the design basis, normalized model, and postpro-
+                                                                                                     cessed results required by the selected check. Availabil-
+                                                     Code-check Result
+                                                  Utilization / Stability / Status                   ity is checked before a provider-dependent action, and the
+                                                                                                     selected analysis engine or design-code capability can be
+Figure 8. Steel-frame example of the declarative skill and artifact                                  compared with scenario expectations. This distinction mat-
+protocol. The frame manifest instantiates reusable metadata and                                      ters because a solver-shaped response is not equivalent to
+parallel guidance scopes; typed tools and bound providers, rather                                    a recorded solver invocation. It also bounds the evidence:
+than the guidance itself, materialize the request-dependent artifact                                 a trace can show which backend returned an artifact, but
+path. The lower panel illustrates a selected analysis-and-checking                                   backend correctness still depends on the adapter, solver,
+path rather than the complete artifact taxonomy. Solid arrows de-                                    units, and input model being valid.
+note artifact dependencies defined by the contract. Dashed feed-                                         The automatic and generic-only settings alter the capa-
+back may motivate a subsequent model patch, which can yield
+                                                                                                     bility guidance available to the agent. The former exposes
+an updated normalized model only after acceptance, base-revision
+validation, and conflict checks.
+                                                                                                     the structured selection path and its specialized artifact ex-
+                                                                                                     pectations. The latter retains the generic structural capabil-
+patch is a separate state-transition record for a proposed or                                        ity and the requested analysis capability but removes the au-
+accepted model change, not an artifact kind or a completed                                           tomatic specialization path. This comparison therefore eval-
+model; it appears in the same panel only to show its depen-                                          uates two workflow configurations, not an isolated prompt
+
+
+                                                                                                14
+token or a single validation rule; the execution matrix is            fixture when artifact comparison is required, and the evi-
+specified in Appendix C.                                              dence that one run must produce or withhold.
+A.5. Validation, Repair, and Terminal States                          B.1. Scenario Specification and Coverage
+The prescribed workflow places validation between artifact            Conceptually, scenario s is represented as
+construction and provider execution. When a deterministic
+check exposes a correctable defect, the agent may repair the                               s = (xs , ms , rs , Areq
+                                                                                                                s ),                 (2)
+current artifact and validate it again within the same run.
+                                                                      where xs contains the prompt and any project file, ms
+This within-run recovery is different from rerunning a com-
+                                                                      records family, language, structural category, and input
+pleted benchmark case. The evaluation harness disables au-
+                                                                      modality, rs is an optional reference fixture, and Areq
+                                                                                                                            s con-
+tomatic case reruns, while the workflow remains able to val-
+                                                                      tains the typed assertions listed by the fixture. Equation 2
+idate and repair an artifact before reaching a terminal state.
+                                                                      is a conceptual schema rather than an additional benchmark
+    The trace distinguishes four terminal decisions. Com-
+                                                                      score. Every listed assertion contributes to the binary sce-
+pletion means that the artifacts required by the request are
+                                                                      nario outcome. The diagnostic views are marginal aggrega-
+available. Clarification means that material information re-
+                                                                      tions of these same assertion results and scenario metadata;
+mains missing or ambiguous. Safe non-execution means
+                                                                      they provide neither partial credit nor an alternative success
+that analysis should not proceed because an input is invalid
+                                                                      criterion.
+or inconsistent. Unsupported termination means that the re-
+                                                                          The released suite contains 150 scenarios, allocated as
+quested provider or operation is unavailable in the evalu-
+                                                                      shown in Table 5. Each family is balanced between 25 En-
+ated environment. These states are judged from positive and
+                                                                      glish and 25 Chinese prompts, yielding 75 prompts in each
+negative evidence together. In particular, the mere absence
+                                                                      language overall. The multimodal family contains 35 image
+of an analysis artifact is not a successful safety response:
+                                                                      cases and 15 DXF cases. This stratification ensures cover-
+a negative case must also satisfy its scenario-specific clar-
+                                                                      age of the three intended workflow regimes, but it does not
+ification or semantic requirement and show that neither an
+                                                                      make the fixtures a random sample of structural-engineering
+analysis result nor an analysis-tool invocation was recorded.
+                                                                      practice. Family, language, structure, category, and modal-
+Appendix B gives the corresponding assertion rules.
+                                                                      ity subsets are therefore interpreted as controlled diagnos-
+A.6. Scope of Traceability                                            tics.
+Traceability supports several diagnostic questions. It can            Table 5. Released scenario coverage. Language is balanced within
+                                                                      every family; image and DXF counts refer to the multimodal fam-
+establish whether a recorded action occurred, whether the
+                                                                      ily.
+expected artifact type was present, and whether stage-local
+checks accepted that artifact. Combining these observations            Family                   Cases    EN/ZH    Input
+can localize a broken handoff, such as correct routing fol-            Standard workflow         50      25/25    Text
+lowed by a missing model or a model followed by an absent              Interactive robustness    50      25/25    Text
+analysis result. These observations are stronger than final-           Multimodal                50      25/25    35 image, 15 DXF
+                                                                       reconstruction
+text inspection because they refer to the executed state.
+   They are not a proof of engineering correctness. The                Total                    150      75/75    100 text, 50
+                                                                                                                  multimodal
+trace does not expose unrecorded reasoning, certify that a
+validator is complete, or guarantee that a reference fixture              Standard-workflow scenarios provide sufficiently spec-
+covers every engineering-equivalent solution. It also does            ified text requests and require the designated modeling,
+not independently verify the numerical implementation of              execution, and reporting path. Interactive scenarios intro-
+an external solver. Accordingly, StructureClaw-Bench uses             duce missing, conflicting, invalid, unrealistic, ambiguous,
+the trace as evidence within a controlled diagnostic testbed.         multi-turn, recovery, unsupported, and static-analysis con-
+Construction suitability, exhaustive code compliance, and             ditions and test whether the agent clarifies, recovers, or
+equivalence to professional review remain outside the eval-           withholds execution as specified. Multimodal scenarios add
+uated claim.                                                          a perception-and-reconstruction stage before the same ar-
+                                                                      tifact checks. Keeping the families separate prevents per-
+B. Benchmark Construction and Assertions                              formance on well-specified text requests from concealing
+StructureClaw-Bench is a controlled fixture suite for eval-           unsafe execution or inaccurate reconstruction.
+uating workflow outcomes. Its unit of evaluation is a sce-
+                                                                      B.2. Reference Fixtures
+nario, not an isolated question or a field project. Each sce-
+nario specifies an input, evaluation metadata, a reference            The term reference fixture denotes the released artifact
+                                                                      against which a scenario is evaluated. It is a reproducible
+
+
+                                                                 15
+engineering target, not an assertion that one discretization           Table 6. Principal assertion rules. Thresholds are operational defi-
+is the unique correct design. A fixture records the expected           nitions, not independent certificates of engineering validity.
+scale and loading quantities needed by the implemented                    Assertion role         Recorded pass condition
+comparator; scenario metadata can also specify accepted                   Structure              The recorded structural type belongs to the
+structural-type aliases, alternative capability identifiers, or           recognition            fixture’s accepted set.
+comparison tolerances.                                                    Capability selection   The selected capability belongs to the
+    This terminology is important for construct validity. A                                      fixture’s allowed identifiers.
+                                                                          Model existence        A model artifact meets the scenario’s
+model can be engineering-equivalent to the intended system                                       minimum node and element counts;
+while using a different discretization, grouping convention,                                     defaults are two nodes and one element.
+or idealization. Conversely, a coarse comparator can accept               Model matching         Counts are no smaller than the reference
+                                                                                                 counts; coordinate ranges on each axis
+an artifact that agrees in aggregate quantities while differing
+                                                                                                 meet the span tolerance; and aggregate or
+in a consequential local property. The benchmark reduces                                         specified-axis load meets the load
+ambiguity by publishing fixtures and operational rules, but                                      tolerance.
+fixture agreement should be read as satisfaction of those                 Analysis and           A result contains displacement, reaction, or
+                                                                          backend                force data; backend matching additionally
+rules rather than proof of complete structural equivalence.                                      requires the recorded engine and analysis
+                                                                                                 capability requested by the fixture.
+B.3. Assertion Roles and Operational Rules                                Safe non-execution     No analysis result and no analysis-tool
+For an evaluated configuration c, scenario s, and assertion                                      invocation are recorded; when required, no
+                                                                                                 computable model is present and
+type a, the archived outcome is assigned one of four states:                                     clarification or the specified semantic
+                                                                                                 response also passes.
+    oc,s,a ∈ {pass, fail, inapplicable, unavailable}.      (3)            Report and             Report presence requires more than 100
+                                                                          semantics              markdown characters; scenario-specific
+The vocabulary in Equation 3 separates evaluation mean-                                          natural-language behavior is evaluated by
+                                                                                                 the fixed judge described above.
+ing from data availability. A pass or fail is a recorded result
+for an assertion evaluated on that run. Inapplicable means
+that the fixture does not request that assertion type; it is           B.4. Model-Matching Semantics and Limits
+not a failure. Unavailable means that an expected observa-             The model-matching rule in Table 6 is a deterministic,
+tion could not be recovered because the run, trace, or result          tolerance-based comparison. It first requires at least as many
+parsing was incomplete. An unavailable required outcome                nodes and elements as the reference fixture. It then com-
+makes the scenario unsuccessful. In assertion-level diag-              pares the ranges of the model coordinates in the x, y, and z
+nostics it is excluded from the pass/fail denominator and              directions. The default absolute tolerance for each range is
+disclosed through the observed count, as formalized in Ap-             0.5 m. Finally, it compares approximate total applied load,
+pendix C. This policy avoids conflating semantic inapplica-            or selected directional totals when the scenario requests
+bility with missing evidence.                                          them, using a default relative tolerance of 20%. The calcu-
+    Table 6 records the principal operational rules. Most              lation aggregates recognized nodal, distributed, and story-
+rules are deterministic over the archived agent state. The             level load fields; recognized force units are normalized be-
+natural-language condition is the exception: a separate                tween newtons and kilonewtons. A scenario may override
+judge evaluates the scenario-specific semantic description             either tolerance.
+with zero sampling temperature, a 500-token response limit,                These checks deliberately favor reproducibility over an
+and a 30-second timeout. Its provider-side snapshot and                underspecified notion of visual similarity. They do not per-
+evaluator-prompt revision fall within the exact-rerun bound-           form graph isomorphism, member-by-member connectivity
+ary stated in Appendix C.                                              matching, support-equivalence proof, or exhaustive com-
+                                                                       parison of section and material properties. Node and ele-
+                                                                       ment counts are lower bounds rather than exact equality.
+                                                                       The report-presence rule likewise establishes only that a
+                                                                       substantial report artifact exists, while the semantic judge
+                                                                       checks its stated condition; neither rule alone proves numer-
+                                                                       ical faithfulness of every report claim. These limitations ex-
+                                                                       plain why the paper reports model matching as an assertion-
+                                                                       level diagnostic and reserves broader claims of engineering
+                                                                       equivalence for future evaluators with topology-, support-,
+                                                                       property-, and load-level annotations.
+                                                                           Negative scenarios require similar care. Absence of a
+
+
+                                                                  16
+model or analysis may reflect safe abstention, but it may               missing, or parsing failed. Applicability is determined by
+also reflect an execution failure. The benchmark therefore              the fixture and is not inferred from whether a run happens
+pairs negative evidence with a positive scenario require-               to contain evidence. This distinction prevents missing evi-
+ment, such as a clarification trace or a semantic explanation.          dence from being relabeled as semantic inapplicability.
+This conjunction prevents non-action from receiving credit                 Let Areq
+                                                                                  i  be the assertions required by scenario i, and let
+merely because no computation was recorded.                             zc,i,a = 1 only when assertion a passes for configuration c.
+                                                                        For required assertions, both failure and unavailability give
+C. Evaluation Protocol and Metric Definitions                           zc,i,a = 0. The scenario outcome is
+This appendix fixes the evaluation unit, outcome                                             sc,i =
+                                                                                                      Y
+                                                                                                           zc,i,a ,               (4)
+states, aggregation rules, and reproducibility boundary.
+                                                                                                    a∈Areq
+                                                                                                       i
+StructureClaw-Bench is a controlled diagnostic testbed:
+it measures whether an agent completes the assertion set                and the primary metric for task family F is
+attached to a released scenario, not whether the resulting
+artifact is suitable for construction or professional approval.                                  100% X
+                                                                          Success Ratec,F =             sc,i ,        NF = 50.      (5)
+                                                                                                  NF
+                                                                                                        i∈F
+C.1. Execution Matrix and Attempt Semantics
+The evaluation matrix is shown in Table 7. The 10 text-only             Thus, every family-level denominator remains 50 for each
+configurations are evaluated on both standard-workflow                  configuration, and an incomplete required outcome cannot
+modes and on interactive robustness. Six agent/vision con-              disappear from the primary metric. Assertion success pro-
+figurations are evaluated on multimodal reconstruction.                 vides no partial credit toward Eq. 5.
+When the perception and agent models differ, a slash-                   C.3. Diagnostic Denominators and Missingness
+separated name reports agent model / vision model, as in
+Table 3. Each configuration–setting block contains the same             Diagnostic rates answer a different question: among
+50 scenarios for that setting, yielding 36 blocks and 1,800             recorded outcomes for which an assertion is fixture-
+configuration–scenario executions.                                      applicable, how often does it pass? For an assertion a
+                                                                        and analysis group G, let Na,G be the expected applicable
+Table 7. Evaluation matrix. Cases are counted per configuration;        count, let vc,i,a = 1 when the recorded outcome is pass or
+an execution is one configuration–scenario pair.
+                                                                        fail, and let vc,i,a =
+                                                                                             P0 when it is unavailable. The observed
+      Family        Mode           Configs. Cases Executions            count is na,G =         (c,i)∈G vc,i,a , the observed pass count
+                                                                                    P
+      Standard      Automatic          10     50        500             is pa,G = (c,i)∈G vc,i,a zc,i,a , and the reported diagnostic
+      Standard      Generic-only       10     50        500             rate is
+      Interactive   Automatic          10     50        500                                  P
+      Multimodal    Automatic           6     50        300
+                                                                                               (c,i)∈G vc,i,a zc,i,a          pa,G
+      Total         –                  36      –       1,800               Da,G = 100%                               = 100%        . (6)
+                                                                                                      na,G                    na,G
+    The evaluation harness launches each configuration–                 Semantically inapplicable evaluations are outside G. Un-
+scenario pair once and does not relaunch a failed or timed-             available evaluations are excluded from the diagnostic de-
+out case. This harness-level no-rerun policy is distinct                nominator but remain failures when the assertion is required
+from repair within a scenario execution. During that single             by Eq. 4. Diagnostic results should consequently be read as
+benchmark execution trace, the agent may validate an ar-                p/n together with coverage n/N , not as a percentage alone.
+tifact, revise it, or recover from a tool error; those actions          Appendix D reports missing-as-failure sensitivity checks
+are part of the evaluated workflow rather than additional               for the principal gaps. A gray cell with a dash in an asser-
+benchmark attempts. A child process enforces a 15-minute                tion figure means that no recorded applicable outcomes are
+per-case limit, and a timeout is an execution failure. Tool-            available; it is not a measured zero.
+call counts and wall-clock durations are read from the same                Configuration-level diagnostics use Eq. 6 within one
+traces. There is therefore no averaging over repeated sam-              configuration. Pooled diagnostics sum pass and observed
+ples for a configuration–scenario pair.                                 counts before division. Means of configuration-level Suc-
+                                                                        cess Rates weight configurations equally; because every
+C.2. Outcome States and Primary Metric                                  configuration has 50 cases in a setting, this is numerically
+An assertion outcome has one of four meanings: pass, fail,              equivalent to pooling scenario outcomes for that setting.
+inapplicable, or unavailable. Inapplicable means that the
+scenario fixture does not call for that assertion. Unavailable
+                                                                        C.4. Mode Comparison
+means that an expected outcome cannot be recovered, for                 Automatic mode allows the agent to select the applica-
+example because execution timed out, a result or trace is               ble structural capabilities and execute the artifact-centered
+
+
+                                                                   17
+workflow. Generic-only mode is evaluated only on stan-                       variability, and matched fixtures are required to isolate lan-
+dard scenarios. It retains the broad environment but restricts               guage or input-format effects.
+the structural path to the generic structural skill and the re-                 The public release provides the system code, benchmark
+quested analysis capability. For each of the 10 paired con-                  harness, scenarios, fixtures, evaluation logic, and analysis
+figurations, the reported lift is                                            scripts required for independent reruns. The supplemen-
+                                                 generic-only
+                                                                             tary records preserve the aggregate outcomes and analysis
+ ∆c = Success Rateautomatic
+                      c,standard − Success Ratec,standard .                  procedure used to regenerate the reported tables and fig-
+                                                            (7)              ures. Exact trace reproduction additionally depends on the
+The same scenario fixtures are used on both sides. Nev-                      archived code revision, provider access, execution environ-
+ertheless, the comparison jointly changes specialized rout-                  ment, and provider-side agent and judge snapshots; rerun
+ing, structural priors, artifact expectations, and validation                traces therefore need not be byte-identical.
+guidance. It is therefore a paired system comparison, not
+a causal estimate for a classifier, prompt, validator, repair                D. Diagnostic Analyses and Validity
+policy, or reporting component.
+                                                                             This appendix examines patterns that are obscured by a sin-
+C.5. Descriptive Evaluation Profile                                          gle end-to-end number. Unless stated otherwise, rates pool
+Figure 4 is a compact profile of evaluated settings, not                     the relevant configuration–scenario outcomes, differences
+a capability score or ranking. Table 8 gives the plotted                     are percentage points, and assertion diagnostics use the ob-
+quantities. The Model/Exec and MM recon axes are un-                         served denominator defined in Eq. 6. The analyses localize
+weighted visual summaries; their constituent diagnostics                     evidence for follow-up; they do not certify an artifact or es-
+need not have the same applicability coverage and should                     tablish a universal ordering of models. Table 9 states the
+be inspected separately for substantive conclusions. The In-                 boundaries that govern all subsequent interpretations.
+teraction and MM task axes use end-to-end Success Rate                       Table 9. Validity boundaries and the evidence needed to address
+directly, avoiding double-counting an overall rate together                  them.
+with its subsets.                                                              Threat        Present consequence       Needed study
+Table 8. Axes in the descriptive evaluation profile. All means are             Fixture       Matching is not exhaus- Engineer-reviewed alterna-
+unweighted and are used only for visualization.                                equivalence   tive engineering equiva- tives and comparisons of
+  Axis            Definition                                                                 lence.                      topology and physical re-
+                                                                                                                         sponse.
+  Workflow        Standard Success Rate in automatic mode.                     Attribution   Automatic            versus Matched component abla-
+  Generic         Standard Success Rate in generic-only mode.                                generic-only       changes tions with fixed models,
+  Model/Exec      Mean of standard automatic structure-type recog-                           several workflow ele- prompts, tools, and cases.
+                  nition, skill selection, model matching, and engine                        ments.
+                  matching.                                                    Sampling      The 150 designed scenar- Larger balanced suites
+  Interaction     Interactive Success Rate in automatic mode.                                ios are not a random sam- and repeated executions
+  MM task         Multimodal Success Rate in automatic mode.                                 ple; each pair is run once. that separate case and run
+  MM recon        Mean of multimodal structure-type recognition,                                                         variability.
+                  skill selection, and model matching.                         External      Controlled fixtures and Larger projects, additional
+                                                                               scope         backends omit project- solvers, code checks, and
+   Raw evaluated values remain on a 0–100 scale. The dis-                                    scale coordination and independent engineering
+                                                                                             code review.                review.
+played radius expands the 50–100 interval for legibility and                   Versioning    Display model names Snapshot identifiers, de-
+maps values at or below 50 to the inner ring. An unevaluated                                 do not fully identify coding settings, repository
+multimodal axis is left as a gap rather than assigned a zero.                                provider-side behavior commits, solver versions,
+Radar area and average radius are not computed, because                                      over time.                  and containerized environ-
+                                                                                                                         ments.
+either would mix heterogeneous outcomes and depend on
+axis order and the display transformation.
+                                                                             D.1. Paired Standard-Workflow Difference
+C.6. Statistical and Reproducibility Boundaries                              Figure 9 places the four evaluated settings on a com-
+Structure-family, interaction-category, locale, and input-                   mon grid. Gray cells with dashes are unevaluated model–
+format rates are descriptive subsets of a fixed, deliberately                setting combinations, not failures. Across the 10 paired
+constructed suite. Some subsets are small and composition-                   standard configurations, mean Success Rate is 88.6% in
+ally different. A scenario-level interval or bootstrap would                 automatic mode and 56.8% in generic-only mode, a mean
+describe sensitivity to the observed scenario composition                    lift of 31.8 points. Every configuration improves, and the
+only under additional sampling assumptions; it cannot re-                    configuration-level lifts range from 24 to 46 points, showing
+cover within-scenario run-to-run variability from one ex-                    a consistent difference across the evaluated configurations.
+ecution. Repeated runs are required to estimate stochastic                   Its scope remains system-level, however: Eq. 7 changes a
+
+
+                                                                        18
+                  Success Rate across settings                                                      Assertion-level diagnostics
+                                                      100                                                                                100
+      Claude Opus 4.8    90    52    94     84                                            Struct. type    98     --   100    94
+
+   DeepSeek-V4-Flash     96    50    90     --        90
+                                                                                                  Skill   100    --   100    96          95
+
+     DeepSeek-V4-Pro     84    54    90     --
+                                                      80                                 Model match      91    70     --    85
+                                                                                                                                         90
+
+
+
+
+                                                                                                                                               Success Rate (%)
+      Gemini 3.5 Flash   88    62    88     78
+
+
+
+
+                                                            Success Rate (%)
+                                                                                            Has model     96    92     97    91
+                                                      70
+          GLM-5-Turbo    92    62    94     --
+                                                                                          Has analysis    95    81     95    90          85
+                         96    66    90     94        60
+              GLM-5.2
+                                                                                                Engine    93    85     --     --
+
+              GPT-5.5    86    58    90     72                                                                                           80
+                                                      50
+                                                                                                Clarify    --    --    90   100
+
+            Kimi-K2.6    100   68    94     88
+                                                      40                                No bad model       --    --    91   100          75
+          MiniMax-M3     66    32    88     60
+                                                                                           No analysis     --    --    91   100
+                                                      30
+         Qwen3.7-Max     88    64    92     --                                                                                           70
+                                                                                                          to    ric  ive    dal
+                                                                                                      . au Gene eract ltimo
+                         to    ric  ive    dal                                                     Std        Int   Mu
+                     . au Gene eract ltimo
+                  Std        Int   M u
+                                                                                    Figure 10. Assertion-level diagnostics by setting. Gray cells with
+Figure 9. Success Rate across evaluated settings. Gray cells with                   dashes contain no recorded applicable outcomes and are not inter-
+dashes denote combinations that were not evaluated.                                 preted as zero.
+
+bundle of skill specialization, structural priors, artifact re-                     become 449/500 (89.8%) and 344/500 (68.8%), leaving a
+quirements, and validation guidance.                                                21.0-point gap. The levels change slightly, but the inference
+    The paired gain is not uniform across structure fami-                           that artifact existence is substantially more common than
+lies. Continuous-beam cases regress from 48/50 (96.0%)                              reference-fixture consistency does not depend on excluding
+in generic-only mode to 38/50 (76.0%) in automatic mode.                            those unavailable outcomes. The primary Success Rate al-
+Five configurations decrease by 40 points on this five-case                         ready counts incomplete required outcomes as failures.
+subset and five are unchanged. This concentration motivates                             Multimodal diagnostics permit a direct aggregate com-
+investigation of a shared path-specific regression, but the                         parison because structure-type recognition, skill selection,
+aggregate data cannot identify whether the source is mod-                           and model matching share the same observed denominator.
+eling assumptions, validation, execution, or reporting. This                        They pass 263/281 (93.6%), 271/281 (96.4%), and 238/281
+counterexample is important: a higher overall average does                          (84.7%) times, respectively. Model matching therefore
+not imply that automatic execution dominates on every sce-                          trails skill selection by 11.7 points and structure-type recog-
+nario family.                                                                       nition by 8.9 points without a denominator change. At the
+                                                                                    aggregate level, this pattern is consistent with weaker arti-
+D.2. Artifact Existence, Reference Consistency, and
+                                                                                    fact reconstruction than broad recognition and routing; be-
+      Missingness
+                                                                                    cause these are marginal rates, it does not establish that the
+Figure 10 separates assertion-level outcomes. In standard                           same traces passed the earlier assertions or locate a sequen-
+automatic mode, has-model passes 480/500 times (96.0%)                              tial failure stage. The current matcher also cannot distin-
+and model matching passes 454/500 times (90.8%), an                                 guish perception errors, count/span/load reconstruction er-
+existence–reference-consistency gap of 5.2 points. Here,                            rors, and limitations of its own rules. Topology, supports,
+has-model records that a model artifact is present; it does                         and member semantics remain outside this diagnostic; fu-
+not establish that the artifact is well formed or equivalent to                     ture trace annotation should expose those stages separately.
+the reference fixture.                                                                  End-to-end Success Rate remains necessary because
+    The corresponding generic-only diagnostics have 488                             high diagnostic rates need not co-occur in one trace. A run
+observed outcomes because 12 executions do not provide                              may select the scenario-specified analysis path and produce
+a recoverable assertion result. On the observed denomina-                           a model artifact yet fail the reference-fixture comparison or
+tor, has-model is 449/488 (92.0%) and model matching is                             execution assertion. In a negative scenario, correct behav-
+344/488 (70.5%), a 21.5-point gap. If all 12 unavailable                            ior may instead require clarification and the absence of a
+outcomes are conservatively counted as failures, the rates                          computable model. The required-assertion conjunction pre-
+
+
+                                                                               19
+                                            Success Rate by structure family                                                                                                                                                          Language split
+                                                                                                                        100
+            Beam                      94               37                      88                 92                                                                                                                                                   96.0
+                                                                                                                                                                              100
+                                                                                                                                                                                                           90.0 87.2
+
+
+
+
+                                                                                                                              Success Rate (%)
+          Column                      97               87                     100                    --
+                                                                                                                                                                                                                                                                86.7
+   Concrete frame                     72               53                      96                 50                    80                                                                                                                                                     80.0 78.7
+
+
+
+
+                                                                                                                                                      Success Rate (%)
+ Continuous beam                      76               96                      75                 80                                                                                  80
+          Generic                 100                  100                     97                 100
+                                                                                                                        60                                                                                                            60.2
+      Portal frame                    95               82                      98                 95                                                                                  60                                       56.3
+       Steel frame                    84               53                      90                 69
+             Truss                100                  37                      88                 88                    40
+                                                                                                                                                                                      40
+                                   to               eri
+                                                        c
+                                                                             tiv
+                                                                                e                 al
+                             .   au                n                   ac                       od
+                         Std                    Ge                 ter                     ltim
+                                                                 In                  Mu                                                                                               20
+
+
+                                                   Interactive categories                                                                                                                   0
+
+  Static analysis                                                                                                  100.0
+                                                                                                                                                                                                        . au
+                                                                                                                                                                                                             to               eric                     iv   e                    dal
+                                                                                                                                                                                                     Std                   Gen                     ract                      imo
+  Unit ambiguity                                                                                                   100.0                                                                                                                       Inte                    Mult
+    Unsupported                                                                                                   97.5
+      Unrealistic                                                                                                 97.5
+          Missing                                                                                                 97.5
+                                                                                                                  97.4
+                                                                                                                                                                                                                                          EN                ZH
+        Recovery
+      Conflicting                                                                                          90.0
+       Multi-turn                                                                                         88.8                                                                                                                    Multimodal input
+   Invalid values                                                                   70.9                                                                                      100
+
+
+
+
+                                                                                                                                                      Success Rate (%)
+                                                                                                                                                                                                                        80.0                                           79.0
+                     0                     20             40                 60            80                    100
+                                                                                                                                                                                      75
+                                                            Success Rate (%)
+
+                                                                                                                                                                                      50
+                                                   Multimodal structures
+         Generic                                                                                                   100.0                                                              25
+    Portal frame                                                                                                 95.2
+           Beam                                                                                             91.7                                                                            0
+           Truss                                                                                          88.1
+                                                                                                                                                                                                                        DXF                                            Image
+Continuous beam                                                                               80.0
+     Steel frame                                                                    69.4
+                                                                                                                                                      Figure 12. Success Rate by recorded locale and multimodal input
+ Concrete frame                                                       50.0
+                                                                                                                                                      format. Both panels use the full 0–100 scale; the comparisons are
+                     0                     20             40                 60            80                    100
+                                                                                                                                                      descriptive rather than matched language or format interventions.
+                                                            Success Rate (%)
+
+Figure 11. Success Rate by standard structure family, interactive                                                                                                                                                  Success Rate versus recorded duration
+                                                                                                                                                                                            100
+category, and multimodal structure family. Bars use a zero base-
+line. Hatching distinguishes the two bar panels in grayscale and                                                                                                                                90
+has no inferential meaning.
+                                                                                                                                                                                                80
+
+
+
+
+                                                                                                                                                                         Success Rate (%)
+serves these dependencies; the diagnostics identify where to
+                                                                                                                                                                                                70
+inspect them.
+                                                                                                                                                                                                60
+D.3. Structure and Interaction Heterogeneity
+                                                                                                                                                                                                50
+Figure 11 shows that aggregate performance hides targeted                                                                                                                                                                                                                     Std. auto
+                                                                                                                                                                                                                                                                              Generic
+                                                                                                                                                                                                40
+regressions and small stress-test subsets. The continuous-                                                                                                                                                                                                                    Interactive
+                                                                                                                                                                                                                                                                              Multimodal
+beam reversal is qualitatively different from the large over-                                                                                                                                   30
+all automatic-mode gain. It should therefore be treated as a                                                                                                                                                      100             200                 300              400             500
+
+release-specific regression target, not averaged away. Mul-                                                                                                                                                                           Avg. duration (s)
+
+timodal concrete- and steel-frame subsets are also weaker                                                                                             Figure 13. Success Rate versus recorded mean wall-clock dura-
+than several other displayed families, but the family sizes                                                                                           tion. Marker shape distinguishes the evaluated setting.
+are unequal and do not support a stable ranking.
+    Invalid numerical values are the clearest interactive                                                                                             D.4. Locale and Input-Format Interactions
+weakness. Interactive Success Rate is 455/500 (91.0%)                                                                                                 The locale differences in Figure 12 change direction across
+overall, whereas invalid-value cases pass 56/79 observed                                                                                              settings. English versus Chinese Success Rate is 90.0%
+configuration–scenario evaluations (70.9%). The intended                                                                                              versus 87.2% for standard automatic, 56.3% versus 60.2%
+invalid-value coverage is 80; treating the one unavailable                                                                                            for generic-only, 96.0% versus 86.7% for interactive, and
+outcome as a failure gives 56/80 (70.0%). The conclusion is                                                                                           80.0% versus 78.7% for multimodal execution. This rever-
+therefore insensitive to this missing outcome. By contrast,                                                                                           sal argues against interpreting the observed differences as
+perfect rates for unit-ambiguity and static-analysis subsets                                                                                          an intrinsic language effect. Twelve generic-only and two
+are based on only 40 and 10 evaluations. These counts fa-                                                                                             interactive executions lack locale metadata; wording, cate-
+vor targeted expansion of numerical-constraint tests, not a                                                                                           gory composition, and mode also remain entangled.
+broad safety claim.                                                                                                                                      Pooled DXF (72/90, 80.0%) and image (166/210,
+                                                                                                                                                      79.0%) rates conceal opposing configuration-level differ-
+                                                                                                                                                      ences: GPT-5.5 is 21.0 points higher on DXF than on im-
+
+
+
+                                                                                                                                                 20
+ages, whereas GLM-5.2 / GLM-4.6V is 10.4 points lower
+on DXF than on images. Format, scenario content, and
+agent/vision pairing are not crossed independently, so nei-
+ther difference is causal. A matched study would encode the
+same structures in both formats while holding the agent and
+perception models fixed.
+D.5. Recorded Runtime Co-occurrence
+Figure 13 plots Success Rate against recorded duration.
+Mean duration is 89.8 s in standard automatic mode and
+190.1 s in generic-only mode; the corresponding mean call
+counts are 6.70 and 7.55. Every generic-only configura-
+tion is slower. The median generic-only-to-automatic ratio
+is 2.11 for duration (IQR 1.48–2.38) and 1.07 for call count.
+    This is co-occurrence, not intrinsic efficiency. Provider
+latency, load, prompt length, tool behavior, and failure
+timing remain confounded; a low call count can also re-
+flect early failure. Controlled latency, token, and matched-
+success analyses are required for an efficiency claim. The
+validity boundaries in Table 9 apply to these runtime results
+as well as the preceding diagnostic analyses.
+
+
+
+
+                                                                21
+
