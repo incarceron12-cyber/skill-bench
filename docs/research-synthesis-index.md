@@ -221,6 +221,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
 | [Chiron field study](../papers/agent-benchmarks/2026-07-17-human-ai-software-delivery-field-validity.md) | B | Separates recorded delivery measures from scenario-derived labor and exposes why field-cell identity, stable bridge units, actual resource exposure, external consequences, and a credible comparator are prerequisites for workflow-value claims |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
+| [Bridge Evidence](../papers/agent-benchmarks/2026-07-17-bridge-evidence-causal-use-validity.md) | B | Uses matched document omission to falsify static relevance as a sufficient proxy for one search agent's trajectory dependence, while separating source-at-state transition effects from semantic uptake, necessity, portable utility, and professional consequence |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
 | [DeskCraft](../papers/agent-benchmarks/2026-07-14-deskcraft-interactive-workflow-validity.md) | B | Adds native professional-artifact checks and phased requirement delivery while separating authored interaction opportunity, trigger realization, authority, adoption, state-preserving repair, endpoint effect, burden, recipient uptake, and consequence |
@@ -417,6 +418,23 @@ separates raw-history success, summary omission, stale adoption, required-state
 failure, collateral mutation, and unavailable-evaluator invalidity in one
 deterministic synthetic fixture only; it is implementation evidence, not empirical
 support for the planted causal story or any workplace claim.
+
+Bridge Evidence adds a narrower **source-at-state transition boundary**:
+`available source → displayed view → observed/adopted cue or proposition → next
+operation → changed evidence/state → artifact/action consequence`. A source can be
+terminal support, transition support, verification support, boundary support,
+redundant, harmful, or unexercised at one state; none is a permanent document label.
+Its matched omission design is stronger than citation or overlap as evidence of use,
+but the reported CTU sum compensates final-answer F1, gold-next-query nDCG, and turns
+after sample-wide normalization. Preserve the effect vector and use unchanged replay,
+neutral replacement, cue masking, stale/equivalent-source substitution, and joint
+omission controls before claiming semantic uptake or necessity. The paper's one
+Qwen/HotpotQA package, reachable-gold and multi-step selection, nested unclustered
+observations, weak static reader, 58.84% proxy-agreement exclusion, inconclusive
+bridge-specific mechanism, and absent release support configured trajectory-
+dependence evidence—not portable source utility, professional benefit, capability,
+or readiness. Existing evidence-state, trace, artifact/state, metric, and validity
+records are the durable homes; no retrieval-specific schema follows.
 
 Longitudinal claims need a further **volume → access → necessity → consequence**
 ladder. Many prior records establish history volume; finding an old fact establishes
