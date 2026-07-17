@@ -1119,6 +1119,51 @@ argument, metric-monitoring, expert-participation, and future elicitation-sessio
 records; do not create a parallel schema or implement the blocked session contract
 without a real consented session.
 
+#### Field workflow value requires stable bridge units and typed transformations
+
+A complete field table can still mix non-equivalent evidence. Preserve the chain:
+
+```text
+configured workflow and actual exposure
+  → authoritative events plus artifact/state transitions
+    → derived duration, rate, coverage, and quality measures
+      → observed resource use or explicitly modeled resource scenario
+        → independent acceptance and delayed consequence
+          → matched comparison and bounded workflow-value claim
+```
+
+First define what every field cell physically represents: source/work snapshot,
+requirements or consequence opportunities, calendar window, people and configured
+agents, versioned components, assignment, and whether the value is contemporaneous
+telemetry, durable artifact evidence, retrospective reconstruction, or an assumption.
+Repeated project names, platform-version labels, or equal task counts are not
+comparison identity. When an intervention changes task decomposition, stage routing,
+scope, or acceptance, preserve both the native units and stable **bridge units** such
+as frozen requirements, accepted capabilities, defect opportunities, downstream
+decisions, or stakeholder consequences.
+
+For every rate, retain raw numerator and denominator and decompose their changes.
+Post-treatment task count cannot silently normalize issue load or weight requirement
+coverage. Likewise, elapsed time multiplied by nominal headcount is a scenario
+transformation, not observed labor: record actual active, idle, waiting, review,
+correction, restart, compute, latency, and shared-resource exposure separately. A
+scenario model may remain useful when its assumptions, version, sensitivity, and
+claim ceiling are explicit; it cannot inherit productivity, staffing, replacement-
+value, cost-saving, or economic-value status.
+
+The Chiron retrospective is useful descriptive evidence that three named programs
+have lower tabulated duration and improved reported issue/coverage measures under its
+later V4 package, while early V1/V2 cells are faster but worse on downstream measures
+[CH]. Its cell ontology, dates, source lineage, task/requirement equivalence, actual
+labor, external acceptance, post-release outcomes, and empirical release are absent;
+platform version, model/tool changes, organizational learning, and time are
+inseparable. It therefore supports the bridge-unit and typed-transformation
+requirement—not an orchestration effect, defect reduction, productivity, economic
+value, professional capability, production fitness, or readiness claim. Existing
+configured-system, trace, artifact/state, metric-monitoring, cost, task-health,
+longitudinal/production-validation, and validity records are the durable homes; no
+software-delivery schema follows.
+
 ### 2.5f An analytical witness is not an operational consequence oracle
 
 Real source material, a verified label, an executable reference path, an accepted
@@ -4378,6 +4423,16 @@ them:
   paths and hashes are recorded there. The private 94-task corpus, source-to-task
   deltas, results, and full labels remain unavailable; production, occupational,
   causal-scaffold, readiness, and economic-value claims are unsupported.
+- **[CH]**
+  `papers/agent-benchmarks/2026-07-17-human-ai-software-delivery-field-validity.md`;
+  reviewed immutable v1 PDF/text, exact printed-table arithmetic, official current
+  product-page evidence, and release-search provenance are recorded there. The
+  paper's 15 project-version cells have no disclosed physical/calendar ontology,
+  cell-level source lineage, actual labor, stable requirement/issue bridge, external
+  acceptance, post-release outcomes, or empirical release. Evidence supports a
+  vendor-authored retrospective pattern and typed-transformation warning—not a causal
+  orchestration, defect-reduction, productivity, economic-value, professional,
+  production-fitness, or readiness claim.
 - **[IC]**
   `papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md`;
   reviewed immutable v1 PDF/text hashes are recorded there. Five selected

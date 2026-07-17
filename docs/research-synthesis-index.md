@@ -188,6 +188,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [HealthAdminBench](../papers/agent-benchmarks/2026-07-16-healthadminbench-workflow-projection-validity.md) | A | Converts observed cross-system administrative work into 135 inspectable tasks and 1,698 checks while showing why path evidence, intermediate state, final consequence, prerequisite masking, strict conjunction, and occupational reliability are non-substitutable |
 | [WindowsWorld](../papers/agent-benchmarks/2026-07-17-windowsworld-process-checkpoint-validity.md) | A | Makes 181 cross-application Windows task strings and 899 trajectory-wide milestone judgments inspectable while showing that free-path state appearance is not durable stage completion or process validity; flat checks, screenshot-only evidence, invalid records, unenforced setup, and an empty/final-`FAIL` L4 shortcut block occupational, reliability, safety, and readiness claims |
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
+| [Chiron field study](../papers/agent-benchmarks/2026-07-17-human-ai-software-delivery-field-validity.md) | B | Separates recorded delivery measures from scenario-derived labor and exposes why field-cell identity, stable bridge units, actual resource exposure, external consequences, and a credible comparator are prerequisites for workflow-value claims |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
@@ -281,6 +282,32 @@ costs attached to passing items do not establish saved cost, output, revenue,
 profit, productivity, or value. Preserve task cost, score, acceptance probability,
 review/correction cost, use, and consequence as separate observations; no scalar
 score-to-dollar transform is admissible without downstream evidence.
+
+Field records add a complementary **workflow-value and bridge-unit boundary**:
+`configured exposure → authoritative events/artifact-state → derived measures with
+stable opportunities → observed resource use or typed scenario → independent
+acceptance/delayed consequence → credible comparison and bounded value claim`.
+Define what each field cell physically is and preserve source/work snapshot,
+calendar, assignment, configuration, and evidence type. If the intervention changes
+task granularity, stage routing, scope, or acceptance, retain raw numerators and
+denominators plus a stable external bridge such as requirements, accepted
+capabilities, defect opportunities, decisions, or consequences. Repeated project
+labels and equal task counts are not equivalence; nominal headcount × elapsed time is
+not observed labor.
+
+The reviewed Chiron paper reports an internally coherent descriptive pattern across
+three named modernization programs: later V4 cells are faster and better on its
+reported validation-issue and first-release-coverage measures, while early V1/V2
+cells trade speed against those downstream measures. But the 15 cells have no
+disclosed calendar/physical ontology, cell-level provenance, stable task/requirement
+mapping, actual labor, external acceptance, post-release outcome, or empirical
+release; workflow version, model/tool changes, organizational learning, and time are
+inseparable. This strengthens—not replaces—the AlphaEval, $OneMillion-Bench, AstaBench,
+and benchmark-to-decision boundaries. Existing configured-system, trace,
+artifact/state, metric, cost, task-health, production-validation, and validity records
+are the durable homes; no software-specific schema or orchestration, defect,
+productivity, value, professional-validity, production-fitness, or readiness claim
+follows.
 
 Executable composition is therefore a construction mechanism, not a construct
 argument. A composite task needs a typed obligation DAG with prerequisites,
