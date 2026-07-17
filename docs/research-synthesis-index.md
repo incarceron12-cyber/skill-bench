@@ -212,6 +212,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Demonstrates large-scale expert-authored multimodal occupational task acquisition while exposing sampling, weighting, witness, and inference limitations |
 | [XpertBench](../papers/agent-benchmarks/2026-07-15-xpertbench-scaled-expert-task-validity.md) | B | Narrates a large cross-domain expert-task and one-shot judge pipeline, while its absent contributor/attrition ledger, observed Education task–rubric mismatch, unidentifiable CDR, unreleased instrument, and unverified release leads show that acquisition scale and a scored exemplar do not establish ecological, criterion, grader, professional, or participation validity |
 | [KINA](../papers/agent-benchmarks/2026-07-16-kina-incentive-representativeness-validity.md) | B | Makes a submodular coverage proxy and reviewer-tournament assumptions explicit while showing that a cardinality theorem does not govern quota/duplicate-constrained repair and neither theorem establishes realized coverage, representativeness, contributor behavior, or validity without an instantiation witness |
+| [OmniaBench](../papers/agent-benchmarks/2026-07-17-omniabench-broad-scenario-construct-validity.md) | B | Releases 644 large explicit-state tasks across four generation routes and 354 named level-2 domains while showing that category, task, environment, observer, and inference breadth are separate: source/projection/selection records and item labels are absent, two environment programs do not parse, and a public hardest-item slice is neither a representative population nor contamination-resistant |
 | [OccuBench](../papers/agent-benchmarks/2026-07-15-occubench-language-simulator-validity.md) | A | Demonstrates cheap cross-domain synthetic tool-environment packaging while separating occupational labels and closed-loop simulator/verifier agreement from transition validity, professional authority, matched fault resilience, and real-environment transport |
 | [AutomationBench](../papers/agent-benchmarks/2026-07-15-automationbench-workflow-projection-validity.md) | A | Adds broad executable multi-app state, strict conjunction with negative guards, task-local reset, and tool-discoverability interventions while separating synthetic contract conformance from work-demand provenance, production transition transport, complete consequence coverage, and readiness |
 | [HealthAdminBench](../papers/agent-benchmarks/2026-07-16-healthadminbench-workflow-projection-validity.md) | A | Converts observed cross-system administrative work into 135 inspectable tasks and 1,698 checks while showing why path evidence, intermediate state, final consequence, prerequisite masking, strict conjunction, and occupational reliability are non-substitutable |
@@ -244,6 +245,17 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [Web/tool/computer benchmark evolution](concepts/web-tool-computer-benchmark-evolution.md) | B | Compares GAIA, WebArena, ToolBench, API-Bank, τ-bench, OSWorld, AndroidWorld, and BrowseComp; shows that interactive realism migrates the oracle into authored state, simulators, lifecycle hooks, and selected predicates |
 
 **Repository consequence:** The charter remains cross-domain; pilots must state their general hypothesis, suite assembly needs explicit coverage evidence, and results must bound their inference population. A nonempty occupation/subdomain/activity cell is coverage, not representativeness or readiness. Map each task many-to-many to target, required, incidental, and explicitly omitted work activities, retaining the source frame and reviewer disposition rather than freezing one occupational vocabulary. Expert submission, engineer implementation, grader construction, and post-transformation expert disposition require separate authority records.
+
+OmniaBench sharpens coverage into a five-part graph: **coverage frame →
+category → realized task/environment → measurement → inference**. Report the
+source/version and inclusion rule for the frame; projection and reviewer lineage
+for each task; work-shape, artifact, interaction, consequence, language, and
+observer diversity; candidate/admission/rejection history for challenge slices;
+and the eligible population, cluster structure, weights, and uncertainty for each
+claim. One longest generated chain per category is broad category occupancy, not
+within-domain reliability or work prevalence. Withholding a parent pool protects
+that pool, not a permanently public challenge set; sealed/rotating forms and an
+exposure lifecycle are separate requirements.
 
 Tested-setting choices are interventions on the supported claim. Preselected
 sources, prescribed output forms, clean workspaces, one-shot interaction,
