@@ -9,15 +9,24 @@ import importlib.util
 import json
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.validate_provenance_boundary import validate_historical_contract_reference
+
 HERE = Path(__file__).resolve().parent
 MANIFEST = HERE / "manifest.json"
 EXECUTION = HERE / "execution"
 BASE_PATH = ROOT / "scripts/vendor_incident_isolated_launcher.py"
 STAGES = ("candidate_quality", "test_selection_and_execution", "contradictory_evidence_adoption", "bounded_conclusion", "authorized_consequence")
+TASK_HEALTH_PATH = "schemas/task-health.schema.json"
+TASK_HEALTH_BOUNDARY = ROOT / "schemas" / "task-health-v0.1-provenance-boundary.json"
+TASK_HEALTH_ROLE = "task_health_identifier_contract"
 REQUIRED_OUTPUT_FIELDS = {
     "observation_source_ids", "primary_hypothesis", "primary_initial_status", "rival_hypothesis",
     "selected_test_id", "predicted_discrimination", "adopted_evidence_ids", "updated_primary_status",
@@ -101,6 +110,15 @@ def validate_manifest(doc: dict[str, Any], check_paths: bool = False) -> list[st
         errors.append("stopping/cost policy drift")
     if check_paths:
         for ref in doc.get("frozen_public_components", []) + doc.get("parent_snapshot", []) + doc.get("contract_reuse", []):
+            if ref.get("path") == TASK_HEALTH_PATH:
+                boundary = validate_historical_contract_reference(
+                    ref,
+                    TASK_HEALTH_BOUNDARY,
+                    expected_path=TASK_HEALTH_PATH,
+                    expected_role=TASK_HEALTH_ROLE,
+                )
+                errors.extend(boundary["errors"])
+                continue
             path = ROOT / ref.get("path", "")
             if not path.is_file() or sha(path) != ref.get("sha256"): errors.append(f"missing or stale frozen path: {ref.get('path')}")
         if sha(BASE.HERMES_RUNTIME / "hermes") != doc.get("configured_system", {}).get("runtime_sha256"):

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import tempfile
 import unittest
@@ -8,7 +9,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
-from scripts.validate_evidence_acquisition import DEFAULT_SCHEMA, ValidationFailure, semantic_errors, validate_file
+from scripts.validate_evidence_acquisition_historical import DEFAULT_SCHEMA, ValidationFailure, semantic_errors, validate_file
 
 ROOT = Path(__file__).resolve().parents[1]
 VALID = ROOT / "tests/fixtures/valid-evidence-acquisition-episodes.json"
@@ -91,6 +92,21 @@ class EvidenceAcquisitionEpisodeTests(unittest.TestCase):
             json.dump(package, handle)
             handle.flush()
             with self.assertRaisesRegex(ValidationFailure, "provenance hash mismatch"):
+                validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
+
+    def test_rejects_refreshing_historical_task_health_pin_to_live_hash(self) -> None:
+        package = copy.deepcopy(self.valid)
+        reference = next(
+            item for item in package["provenance"]
+            if item["path"] == "schemas/task-health.schema.json"
+        )
+        reference["sha256"] = hashlib.sha256(
+            (ROOT / reference["path"]).read_bytes()
+        ).hexdigest()
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as handle:
+            json.dump(package, handle)
+            handle.flush()
+            with self.assertRaisesRegex(ValidationFailure, "historical contract reference hash"):
                 validate_file(Path(handle.name), DEFAULT_SCHEMA, check_paths=True)
 
 

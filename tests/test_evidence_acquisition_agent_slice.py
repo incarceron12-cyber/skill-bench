@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-from scripts.validate_evidence_acquisition import validate_file
+from scripts.validate_evidence_acquisition_historical import validate_file
 
 ROOT = Path(__file__).resolve().parents[1]
 PILOT = ROOT / "pilots/evidence-acquisition-matched-agent-v1"

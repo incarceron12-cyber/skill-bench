@@ -169,6 +169,40 @@ def load_and_validate(path: Path, *, expected_path: str, expected_role: str) -> 
     return validate_record(record, expected_path=expected_path, expected_role=expected_role)
 
 
+def validate_historical_contract_reference(
+    reference: dict[str, Any],
+    boundary_path: Path,
+    *,
+    expected_path: str,
+    expected_role: str,
+) -> dict[str, Any]:
+    """Resolve one legacy path/hash pin through an immutable Git snapshot.
+
+    Historical packages keep their original ``path`` and ``sha256`` bytes. The
+    boundary supplies the matching commit/blob identity and narrowly bounded live
+    semantics. Requiring the package hash to equal the historical snapshot hash
+    prevents a mutable-current-file refresh from reidentifying an old dependency.
+    """
+    errors: list[str] = []
+    try:
+        boundary = json.loads(boundary_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"valid": False, "errors": [f"cannot load provenance boundary: {exc}"]}
+
+    report = validate_record(
+        boundary, expected_path=expected_path, expected_role=expected_role
+    )
+    errors.extend(report["errors"])
+    historical = boundary.get("historical_snapshot", {})
+    if reference.get("path") != expected_path:
+        errors.append(f"historical contract path substitution: expected {expected_path}")
+    if historical.get("path") != reference.get("path"):
+        errors.append("historical contract reference path differs from boundary snapshot")
+    if historical.get("sha256") != reference.get("sha256"):
+        errors.append("historical contract reference hash differs from boundary snapshot")
+    return {"valid": not errors, "errors": errors, "boundary": report}
+
+
 def validate_frozen_component_set(
     protocol_path: Path,
     boundary_path: Path,

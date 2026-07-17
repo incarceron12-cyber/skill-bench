@@ -1,3 +1,4 @@
+import copy
 import importlib.util
 import unittest
 from pathlib import Path
@@ -39,6 +40,16 @@ def valid_report(attempt_id="fixture"):
 class AnalyticalHypothesisLifecycleV2Tests(unittest.TestCase):
     def test_frozen_manifest_and_parent_snapshot_validate(self):
         self.assertEqual([], MODULE.validate_manifest(MODULE.load(MODULE.MANIFEST), True))
+
+    def test_live_task_health_hash_cannot_reidentify_historical_contract(self):
+        manifest = copy.deepcopy(MODULE.load(MODULE.MANIFEST))
+        reference = next(
+            item for item in manifest["contract_reuse"]
+            if item["path"] == "schemas/task-health.schema.json"
+        )
+        reference["sha256"] = MODULE.sha(MODULE.ROOT / reference["path"])
+        errors = MODULE.validate_manifest(manifest, True)
+        self.assertTrue(any("historical contract reference hash" in error for error in errors), errors)
 
     def test_oracle_leakage_mutation_is_rejected(self):
         errors = MODULE.public_boundary_errors({"public-task.md": 'Use "discriminating_test" from grader.'})
