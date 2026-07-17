@@ -49,6 +49,8 @@ Most relevant sources:
 | [PaperBench](../papers/agent-benchmarks/2026-07-15-paperbench-replication-rubric-validity.md) | A | Makes author-assisted long-horizon decomposition and executable artifact evidence inspectable while showing that dense hierarchical local credit is not a validated completion claim |
 | [Consulting cognitive traps](../papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md) | A | Shows how naive paths, expert-visible cues, operations, consequences, and checks can form testable critical incidents across domains |
 | [Data Therapist](../papers/agent-benchmarks/2026-07-11-data-therapist-tacit-knowledge-elicitation.md) | A | Makes the elicitation instrument and its path-dependent selection effects visible; separates annotation yield from corroboration, scope, transformation fidelity, and benchmark utility |
+| [YIELD](../papers/agent-benchmarks/2026-07-17-yield-information-elicitation-validity.md) | A | Separates historical next-question style fit from model-caused respondent evidence, objective-relevant claim update, legitimate consequence, and claim-based stopping; its release audit bounds evidence to configured fixed-context adaptation |
+| [Organizational tacit-knowledge simulation](../papers/agent-benchmarks/2026-07-17-organizational-tacit-knowledge-simulation-validity.md) | A | Makes planted claim routing and complete traces inspectable while separating possession, referral awareness, topology, exercised contact, authority, semantic preservation, and artifact consequence; it does not validate tacit expertise or organizations |
 | [SimInstruct](../papers/agent-benchmarks/2026-07-11-siminstruct-simulated-novice-elicitation.md) | B | Treats simulated interlocutor behavior as an elicitation treatment; motivates productive-friction probes, phase labels, correction lineage, and separate participation-versus-utility outcomes |
 | [EnterpriseClawBench](../papers/agent-benchmarks/2026-07-11-enterpriseclawbench-session-derived-validity.md) | A | Separates observed workplace demand from the rewritten counterfactual task; requires projection deltas, hindsight controls, equivalence review, and a claim licensed to the evidence actually preserved |
 | [AlphaEval](../papers/agent-benchmarks/2026-07-11-alphaeval-production-grounded-validity.md) | A | Separates current company-demand provenance from requirement projection, grader validity, configured-package comparison, occupational inference, and economic value |
@@ -65,6 +67,33 @@ Most relevant sources:
 | [c-CRAB](../papers/agent-benchmarks/2026-07-17-c-crab-review-test-projection-validity.md) | A | Makes a real human-feedback→fail/pass-test→repair-agent consequence chain unusually inspectable while showing that outcome-informed projection, selection on the evaluation mediator, missing finding-to-action attribution, and unscored false positives bound the result to a configured selected chain rather than review quality generally |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
+
+Objective-grounded elicitation adds a narrower **question-to-consequence chain**:
+`question opportunity/form → caused respondent observation or refusal → supported
+claim adoption/revision → objective progress → artifact/check uptake or legitimate
+consequence`. The objective is itself versioned evidence: beneficiary, decision/use,
+required and optional claims, authority, permissible/prohibited questions,
+constraints, stop/escalation, burden budget, and loss. Track `confirmed`,
+`contradicted`, `unknown`, `inaccessible`, `unauthorized`, `out_of_scope`, and
+`escalated` claim states; report premature and unsupported closure separately from
+excess-contact/disclosure/time/cost burden.
+
+Network search requires distinct possession, referral-belief, formal-relation,
+informal-relation, agent-observed-topology, exercised-route, disclosure-authority/
+willingness, semantic-preservation, and downstream-use records. YIELD measures
+mostly historical question-distribution fit: generated turns receive no respondent
+answer, entity count/progression/length are weak objective proxies, overlapping
+windows and speaker/source reuse weaken inference, and unseeded/defective release
+paths plus unresolved rights and consent constrain reuse. The organizational study
+measures same-family synthetic planted-identifier routing: incomplete seeds,
+graph/referral and start-policy mismatches, only three stochastic repetitions per
+factorial cell, pooled configuration/topic dependence, weak identifier/model-judge
+proxies, and absent metric code block mechanism claims.
+Both are useful cross-domain conformance evidence, but neither licenses tacit-
+expertise, causal policy-benefit, ecological, professional-validity, or readiness
+claims, and neither unblocks the consented real-session gate. Existing evidence,
+trace, participation, metric, task-health, and validity machinery suffices; no
+elicitation- or organization-specific schema follows.
 
 Executable consequence projection adds another required boundary: if a candidate artifact is scored only after a second agent acts on it, preserve candidate→mediator uptake→action→check attribution, a no-candidate control, mediator identity/sensitivity, and source/projectable/mediator-valid/scored denominators. Endpoint success is otherwise a configured mediation-package observation, not direct candidate correctness. Positive projected checks must be paired with false-positive, collateral-change, and burden evidence; selecting cases on the same mediator's prior success cannot stand in for the source expert-work population.
 

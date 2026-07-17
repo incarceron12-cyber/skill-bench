@@ -158,6 +158,86 @@ held-out task/check utility are different outcomes. SimInstruct's 18 paid expert
 reactivity and bounded feasibility in one higher-education network—not tacit-cue
 capture, burden reduction, near-zero-cost recruitment, or real-user validity [SI].
 
+#### Objective-grounded elicitation is a claim-routing episode, not question style
+
+An occupational or dialogue-family label cannot stand in for an elicitation
+objective. Before asking, freeze a versioned objective record containing the
+beneficiary and affected parties; intended decision or use; required and optional
+claims; authority for asking, answering, adopting, and using each claim;
+permissible and prohibited question classes; evidence, privacy, time, and resource
+constraints; stop, clarification, and escalation rules; burden budget; and the
+loss attached to omission, unsupported adoption, unauthorized disclosure, delay,
+and unnecessary contact. Preserve objective revisions rather than silently
+changing what counts as useful information.
+
+The minimum causal and semantic lineage is:
+
+```text
+question opportunity + prior evidence → selected target + question form
+  → realized question exposure → caused respondent observation/refusal/nonresponse
+    → supported claim adoption, correction, contradiction, or status revision
+      → required/optional claim coverage and objective progress
+        → artifact/check uptake or another authorized, legitimate consequence
+```
+
+Question-form resemblance, an answer associated with a historical human question,
+new names or longer speech, semantic adoption, and downstream utility are different
+observations. Record answerability, respondent realization, disclosure authority
+and willingness, evidence locator, unsupported additions, scope/valid-time fidelity,
+and burden at their actual links. A correct refusal or bounded unknown may be a
+successful governed observation; a fluent answer may be inadmissible.
+
+Networked search adds independently versioned layers: claim possession and access
+basis; belief or awareness that a holder possesses it; formal organizational
+relation; informal relation; agent-observed roles, people, and topology; exercised
+route/contact; holder disclosure authority and willingness; response-to-claim
+semantic preservation; and artifact/check consequence. An edge in one layer must
+not silently populate another. In particular, dissemination reachability is not
+referral visibility, contact is not authority, and identifier presence is not
+meaning preservation [OTK].
+
+Stopping is a claim-state decision. Required and optional claims should end as
+`confirmed`, `contradicted`, `unknown`, `inaccessible`, `unauthorized`,
+`out_of_scope`, or `escalated`, with provenance and reason. Distinguish sufficient
+completion, justified escalation, and justified impossibility from **premature
+closure** (a required claim remains resolvable within authority and budget),
+**unsupported closure** (the artifact treats an unresolved claim as established),
+and **excess burden** (contacts, questions, disclosure, time, or cost continue after
+the decision threshold or exceed the authorized budget). A self-score on prose
+completeness cannot supply these states.
+
+YIELD supports a large, inspectable historical-dialogue corpus and configured
+next-turn style adaptation, not information acquisition: its generated question
+receives no model-caused answer, its entity-count reward is a weak observational
+proxy, its fixed windows share dialogues/speakers/collections across a weakly
+controlled and unseeded split, and release inspection found clustered windows,
+an ORL endpoint-index defect, incomplete result identity, and unresolved
+license/consent/sensitive-person governance [YIELD]. The organizational study
+supports synthetic planted-atom routing only: one model family generates the
+reference, holders, questions, responses, summaries, and critics; column-name
+coverage and same-family judgments are weak semantic proxies; three runs per
+factorial cell, incomplete seeding, graph/referral and start-policy implementation
+mismatches, and absent metric code block clean mechanism claims [OTK]. Neither
+source establishes tacit expertise, human burden, causal policy benefit,
+cross-domain ecological transport, professional validity, or readiness. Public or
+synthetic data also cannot exercise current consent, read-back, withdrawal, or
+downstream approval; the consented-session gate remains blocked.
+
+**Invariant:** an elicitation claim stops at the strongest observed link in the
+chain; style fit, reachability, acquisition, authorized adoption, objective
+progress, and consequence never inherit one another. **Validation experiment:**
+on two unlike frozen synthetic claim packs, cross formal-only, hidden-dissemination,
+referral-visible, and authority-conflict/stale conditions; compare random,
+referral-following, uncertainty-seeking, authority-aware, and oracle policies under
+equal respondent realizations and budgets. Cluster by pack/episode and measure
+question discrimination, supported claim gain, contradictions, unauthorized and
+unsupported adoption, semantic preservation, stop error, burden/cost, and
+artifact/check utility separately. This is conformance evidence only; real burden
+and expertise projection still require a consented session. Existing bundle,
+evidence-chain, trace, participation, metric, task-health, and validity contracts
+are the durable homes; do not create an elicitation- or organization-specific
+schema.
+
 ### 2.1c An artifact edit is evidence of a delta, not an approved domain claim
 
 Before/after native artifacts can expose expertise that an interview misses, but an
@@ -4412,6 +4492,18 @@ them:
   reviewed immutable v3 PDF/text and inspected paper-linked OSF materials are
   recorded there. The source exposes mixed-initiative elicitation mechanics but
   does not identify capture fidelity, burden reduction, or benchmark utility.
+- **[YIELD]**
+  `papers/agent-benchmarks/2026-07-17-yield-information-elicitation-validity.md`;
+  reviewed immutable v1 PDF/text plus pinned code, dataset, adapter, and evaluator
+  release evidence are recorded there. The release supports corpus and configured
+  next-turn inspection, not model-caused information acquisition, objective
+  progress, consent validity, professional transport, or readiness.
+- **[OTK]**
+  `papers/agent-benchmarks/2026-07-17-organizational-tacit-knowledge-simulation-validity.md`;
+  reviewed immutable v1 PDF/text plus the complete checksum-verified Figshare v1
+  code, prompt, and 864-run archive are recorded there. It supports synthetic
+  planted-information routing and identifier recovery, not tacit expertise,
+  human/organizational validity, calibrated stopping, or readiness.
 - **[CMDA]**
   `papers/agent-benchmarks/2026-07-16-context-mediated-domain-adaptation-edit-validity.md`;
   reviewed immutable v2 PDF/text plus the complete author-linked OSF snapshot and
