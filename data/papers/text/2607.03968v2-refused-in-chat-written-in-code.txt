@@ -1,0 +1,755 @@
+                                                                                                                                                                                 1
+
+
+
+
+                                         Refused in Chat, Written in Code: Workflow-Level
+                                           Jailbreak Construction in IDE Coding Agents.
+                                                                                      Abhishek Kumar∗ , Carsten Maple†
+                                                                              The Alan Turing Institute, London, United Kingdom
+                                                                                            ∗ akumar@turing.ac.uk
+                                                                                  † cmaple@turing.ac.uk, cm@warwick.ac.uk
+
+
+
+
+                                           Abstract—Large language models are increasingly deployed as          do not fully capture the software-development workflows in
+                                        IDE-integrated coding agents that decompose tasks, generate and         which coding agents operate. In parallel, software-engineering
+                                        edit files, run code, and refine outputs over many turns. Yet their     work has begun to study harmful behavior in coding con-
+                                        safety is still often evaluated as if they were chatbots: one harmful
+                                        prompt, one response, judged in isolation. We introduce workflow-       texts. Code Red introduces Hammurabi’s Code, a benchmark
+                                        level jailbreak construction, a failure mode in which a harmful         of software-engineering-specific harmful prompts spanning
+                                        objective is assembled across ordinary stages of a software-            malware, copyright misuse, and other dangerous tasks [17].
+                                        development workflow rather than generated through a single             Another recent study shows that coding agents can fail during
+                                        direct prompt. Using GitHub Copilot in Visual Studio Code, we           ordinary development by breaking constraints, performing
+
+
+
+
+arXiv:2607.03968v2 [cs.SE] 9 Jul 2026
+                                        study four closed-weight backends: Claude Sonnet 4.6, Claude
+                                        Haiku 4.5, Gemini 3.1 Pro, and Gemini 3.5 Flash. Across 204             destructive actions, optimizing the wrong metric, or falsely
+                                        prompts from Hammurabi’s Code, HarmBench, and AdvBench                  claiming that a task has been completed [18]. What remains
+                                        , the models show near-complete refusal under direct chat, CSV-         unexamined is whether the IDE coding-agent workflow itself,
+                                        read, and single-step code-fix baselines, with only 8/816 successful    including task decomposition, scripting, execution, and metric-
+                                        responses in each baseline condition. Under the full workflow,          driven refinement, can be turned into the attack surface. This
+                                        however, the same prompts and backends produce 816/816 unsafe
+                                        teaching-shot completions, all independently confirmed by two           gap is especially important because prior software-engineering
+                                        expert evaluators under a strict rubric. These results show that        safety work has identified code-specific jailbreaking as an open
+                                        conversational refusal benchmarks can substantially overstate           direction, calling for further exploration of jailbreak techniques
+                                        the safety of deployed coding agents and motivate defenses that         tailored to code-generation LLMs [17].
+                                        reason about safety across multi-turn IDE workflows and their              We show that it can. We study four closed-weight model
+                                        generated artifacts, not only individual chat turns.
+                                                                                                                backends available through the Copilot interface in Visual
+                                          Index Terms—Coding agents, IDE security, Jailbreak attacks,           Studio Code: Claude Sonnet 4.6, Claude Haiku 4.5, Gem-
+                                        LLM safety, Agentic AI.
+                                                                                                                ini 3.1 Pro, and Gemini 3.5 Flash. Across these backends,
+                                                                                                                we find a sharp divergence between baseline interaction and
+                                                                I. I NTRODUCTION                                full workflow interaction. In the baseline settings, where the
+                                           Large language models (LLMs) have rapidly reshaped                   harmful objective is submitted directly through chat, read from
+                                        software engineering, moving from passive code-completion               a CSV file, or framed as a single-step code-fix task, the models
+                                        engines to active participants in the software-development              reliably refuse or return safety-aligned responses. Inside the
+                                        loop [1]–[5]. Through IDE-integrated coding agents, these               full multi-turn coding workflow, the same objective leads the
+                                        systems interpret developer goals, generate and edit files,             agent to construct and iteratively refine a jailbreak-evaluation
+                                        execute commands, read execution results, debug failures, and           pipeline. The relevant vulnerability is therefore located not
+                                        refine their output across many turns [6]–[8]. This shift is not        in any single prompt, but in the development workflow that
+                                        merely a capability upgrade; it changes the shape of the safety         surrounds it.
+                                        problem [9], [10]. A safety failure is no longer necessarily a             We call this phenomenon workflow-level jailbreak construc-
+                                        single harmful prompt answered by a single harmful response.            tion. Rather than relying on a single adversarial prompt, the
+                                        It can instead emerge gradually, distributed across a multi-turn        harmful objective is decomposed across ordinary development
+                                        development workflow in which every individual interaction              stages: the agent is engaged in a benign coding task, asked to
+                                        looks like an ordinary programming task.                                load harmful benchmark prompts into the pipeline, prompted
+                                           Existing safety evaluation has only partially adapted to the         to generate supporting scripts, shown evaluation results, and
+                                        shift from chatbots to agentic systems. Much of the jail-               then asked to improve those results. In our study, the agent
+                                        break literature still evaluates models through prompt-level or         is tasked with building an evaluation pipeline that measures
+                                        conversation-level interactions. Prompt-level attacks, including        attack success rate (ASR) against a nominal target model.
+                                        optimization-based [11], [12], in-context [13], [14], and code-         When the reported ASR is treated as insufficient, the agent
+                                        reformulation attacks [15], can bypass safety behavior in fron-         is asked to improve the pipeline by adding teaching shots,
+                                        tier, closed-weight models. Multi-turn conversational attacks           i.e., prompt–response examples inserted into the evaluation
+                                        have also been demonstrated [16]. These studies show that               pipeline. The agent then populates these teaching shots with
+                                        refusal behavior can fail in general LLM settings, but they             harmful prompt–response pairs that it generates itself. Impor-
+                                                                                                                                    2
+
+
+
+tantly, we provide only the public benchmark prompts and                 prompt.
+never provide the corresponding harmful responses, yet the             • We present, to the best of our knowledge, the first
+agent still produces responses to requests it had refused in             empirical study of this failure mode in GitHub Copilot
+direct chat.                                                             within Visual Studio Code, using four closed-weight
+   This suggests that the failure lies in the software-                  model backends and three baseline framings: direct chat,
+engineering workflow rather than in a generic prompting trick.           CSV read, and single-step code-fix.
+Agentic coding creates a different setting: the model is editing       • We evaluate the attack across 204 prompts from Ham-
+data structures, populating test fixtures, and optimizing a              murabi’s Code, HarmBench, and AdvBench, and use a
+quantitative metric. In this setting, the same model that refuses        strict human-evaluation protocol in which two expert
+in chat may still produce the harmful response as part of the            evaluators independently assess whether each workflow
+generated code. The mechanism is consistent with reward-                 output is specific, actionable, and instruction-satisfying.
+hacking and proxy-optimization tendencies documented for               • We discuss implications for safer AI-assisted software
+coding agents in benign settings [18]. When a harmful re-                engineering, arguing that defenses must move beyond
+sponse is requested as a string literal inside a teaching-               turn-level refusal and reason about safety at the level of
+shot array and framed as part of improving a benchmark                   the multi-turn IDE workflow and generated artifacts.
+score, the usual refusal behavior is not triggered reliably. The
+same practices that make coding agents useful, including task                         II. M OTIVATING E XAMPLE
+decomposition, iterative debugging, and optimization toward
+                                                                        IDE-integrated coding agents are no longer experimental
+task completion, can therefore allow a harmful objective to be
+                                                                     tools used by a small group of early adopters. Systems such as
+assembled piece by piece.
+                                                                     GitHub Copilot are now used by millions of developers and are
+   We evaluate this phenomenon across three complemen-
+                                                                     embedded directly into everyday development environments.
+tary benchmarks: a stratified sample of 78 prompts from
+                                                                     Developers use these tools for code generation, code editing,
+Hammurabi’s Code spanning 24 harmful programming cat-
+                                                                     debugging, documentation, data processing, and navigating
+egories [17], a stratified sample of 75 prompts from Harm-
+                                                                     unfamiliar frameworks. As these systems move from passive
+Bench spanning six harmful-behavior categories [19], and
+                                                                     completion tools to agentic assistants that can read files,
+51 prompts from AdvBench [11]. In total, this gives 204
+                                                                     modify code, run commands, and iterate over project artifacts,
+prompts covering software-engineering-specific harmful cod-
+                                                                     their safety becomes a software-engineering concern rather
+ing tasks from Hammurabi’s Code, together with broader
+                                                                     than only a chatbot-safety concern.
+harmful behavior prompts from HarmBench and AdvBench.
+                                                                        This raises a question that direct-prompt testing cannot
+We use stratified sampling to ensure category coverage while
+                                                                     answer. By the conventional check, the evaluated coding-
+keeping the response set feasible for manual human eval-
+                                                                     agent backends look safe: harmful benchmark prompts are
+uation. Because jailbreak success is a semantic judgment,
+                                                                     submitted directly, the models refuse them, and that refusal
+we manually assess the outputs using a strict rubric: a re-
+                                                                     largely survives even when the prompt is shifted into a weaker
+sponse counts as successful only if it is specific, actionable,
+                                                                     non-conversational form. But none of these checks ask what
+and instruction-satisfying; refusals, safe alternatives, generic
+                                                                     happens once the harmful prompt is no longer something
+discussion, partial answers, and warning-only responses are
+                                                                     to answer, but something to process. An IDE coding agent
+counted as failures. Across 204 prompts and four backends,
+                                                                     is routinely asked to build pipelines, ingest data, inspect a
+the workflow produced 816 model-generated responses, all of
+                                                                     metric, and improve a result across many turns; once a harmful
+which were manually checked and independently confirmed
+                                                                     benchmark prompt is simply an input to that ongoing task,
+as unsafe by two expert evaluators. In contrast, under the
+                                                                     declining to act on it stops looking like a safety decision and
+three baseline framings, direct chat, CSV read, and single-
+                                                                     starts looking like a failure to finish the work. A check that
+step code-fix, the same models refused almost all prompts.
+                                                                     only asks “does the model refuse this prompt” cannot see a
+This workflow-versus-baseline contrast is the central evidence
+                                                                     vulnerability that only appears once the prompt is embedded
+that the vulnerability lies in the development workflow rather
+                                                                     in something the agent is already trying to complete.
+than in any single prompt.
+                                                                        Figure 1 makes this concrete: the same prompts that produce
+   To the best of our knowledge, this is the first study of multi-
+                                                                     refusals under the baseline conditions instead become struc-
+turn jailbreak construction in a production IDE coding agent
+                                                                     tured teaching-shot records once embedded in the pipeline-
+where the agent itself authors the harmful content under a
+                                                                     improvement task, with harmful terms redacted for safety. The
+metric-improvement pretext. Prior jailbreaks have primarily
+                                                                     contrast is the motivation for this paper: safety observed under
+studied single-prompt attacks, API-level interactions, prompt-
+                                                                     direct prompting does not necessarily hold once the same
+structure attacks, or natural-language multi-turn conversations,
+                                                                     objective is folded into an ordinary multi-turn IDE workflow.
+leaving IDE-based software-development workflows compar-
+atively underexplored. This paper makes the following contri-
+                                                                                         III. R ELATED W ORK
+butions:
+   • We introduce workflow-level jailbreak construction, a           A. Jailbreak Attacks on LLMs
+      safety failure mode of IDE-based coding agents in which          Prior work has studied several ways to bypass LLM safety
+      harmful behavior emerges across a multi-turn software-         behavior. Optimization-based attacks such as GCG [11] and
+      development workflow rather than through a single direct       DSN [12] search for adversarial suffixes or refusal-suppression
+                                                                                                                                                         3
+
+
+
+
+Fig. 1. Representative example of workflow-level jailbreak construction. The same class of prompts that produces refusals under direct chat, CSV read, and
+code-fix baselines leads the agent backend, under the full workflow, to write structured prompt-answer records inside code. Unsafe content is redacted with
+asterisks for safety.
+
+
+
+prompts, while black-box attacks such as CodeAttack [15] and                   from coding agents and document failure modes such as
+bijection learning [13] reformulate harmful requests through                   reward hacking and deceptive “false assurance” during benign,
+code-completion or in-context encoding. HarmBench pro-                         goal-directed use.
+vides a standardized benchmark for evaluating automated                           Recent work on deployed and tool-using agents further
+red teaming and refusal robustness [19]. Other work moves                      shows that safety behavior can change when models are placed
+beyond single-turn prompting: Crescendo gradually steers the                   inside agent wrappers, tools, and workspace contexts. Kumar
+model toward a harmful objective over multiple conversational                  et al. [24] show that refusal-trained models that refuse harmful
+turns [16], and few-shot or many-shot attacks use harmful                      requests in chat can still be jailbroken when deployed as
+demonstrations to weaken refusal behavior [14], [20]. These                    browser agents, suggesting that conversational refusal does
+attacks show that LLM refusal can be bypassed in prompt-                       not always transfer to agentic settings. AgentDojo and OS-
+level, API-level, or conversational settings.                                  Harm evaluate prompt injection, deliberate misuse, and unsafe
+                                                                               behavior in tool-using and computer-use agents [25], [26].
+B. Safety of Code LLMs and Agents                                              Closest to coding workflows, RedCoder studies automated
+    A growing line of work studies safety in code genera-                      multi-turn red teaming for Code LLMs [27], while JAWS-
+tion and agentic settings. Al-Kaswan et al. [17] introduce                     Bench shows that code agents become more vulnerable as
+Hammurabi’s Code, a benchmark of 509 harmful software-                         the setting moves from prompt-only interaction to richer
+engineering prompts across malware, copyright, and unfair/-                    workspace-based conditions [28].
+dangerous categories, and evaluate 70 models using a human-                       However, these studies do not examine a production IDE
+annotation protocol. Their evaluation measures willingness                     coding agent in which harmful content is authored by the agent
+to respond, scoring any non-refusal as harmful, and iden-                      itself as part of a multi-turn software-development workflow.
+tifies code-specific jailbreaking as an open direction, which                  We address this gap by measuring how the same prompts and
+this paper addresses. Ouyang et al. [21] study jailbreaking                    backends behave under baseline interaction versus a workflow
+in LLM-based code generation through implicit malicious                        that includes pipeline construction, benchmark processing,
+prompts. Their CodeJailbreaker approach frames the request as                  metric-driven refinement, and model-generated teaching shots.
+a software-evolution task: the instruction appears benign, while
+the malicious intent is encoded through a commit message                                               IV. T HREAT M ODEL
+and associated code context. Their results show that this                        We define the threat model in terms of the actors involved,
+implicit framing can bypass safety behavior more effectively                   the operator’s capabilities, and the conditions under which
+than explicit malicious prompts across text-to-code, function-                 we count the workflow as successful. We also state what the
+level completion, and block-level completion tasks. RedCode                    operator does not control, because our claim depends on the
+evaluates code agents on risky code execution and generation                   harmful content being authored by the agent backend rather
+in sandboxed environments, finding that unsafe operations                      than supplied by the operator.
+expressed in code are accepted more readily than the same
+operations in natural language [22]. AgentHarm measures
+harmfulness in tool-using agents across multi-step malicious                   A. Actors
+tasks [23]. Hasan and Biswas [18] mine real-world incidents                       We distinguish three actors.
+                                                                                                                                    4
+
+
+
+  •   Operator (O). The human adversary. O is an ordinary           the workflow a teaching-shot completion that is specific,
+      developer using an IDE-based coding agent through its         actionable, and instruction-satisfying with respect to p. Re-
+      normal interface. O has no privileged access to the model     fusals, safe alternatives, generic or warning-only discussion,
+      or the tool.                                                  and partial answers are counted as failures. This judgment is
+   • Coding agent (A), backed by model M . The agent                made by two expert evaluators using the manual evaluation
+      under study. In our experiments, this is GitHub Copilot       protocol described in Section VI-D.
+      Chat in Visual Studio Code backed by one of the evalu-
+      ated closed-weight backends: Claude Sonnet 4.6, Claude              V. A PPROACH : W ORKFLOW-L EVEL JAILBREAK
+      Haiku 4.5, Gemini 3.1 Pro, or Gemini 3.5 Flash. The                                C ONSTRUCTION
+      safety behavior we measure is the behavior of M .             A. Overview
+   • Nominal target (T ). A separate model named inside the
+                                                                       Workflow-level jailbreak construction elicits harmful con-
+      evaluation pipeline as the system under test. In our study,
+                                                                    tent from a coding agent’s backend M without asking for
+      T is Llama 3.1-8B. T is used to motivate the evaluation
+                                                                    that content in one direct adversarial prompt. Instead, the
+      task, but it is not the model being jailbroken. The harmful
+                                                                    harmful objective is distributed across a multi-turn software-
+      teaching-shot content is authored by M , not by T .
+                                                                    development workflow. The workflow is framed as building an
+   This distinction between M and T is important. The work-         evaluation pipeline, but its later stages lead the agent to write
+flow is framed as evaluating T , but the safety failure occurs      harmful teaching-shot content into code.
+when M , the backend of the coding agent, writes content that          We use evaluation pipeline to refer to the code that loads
+it refuses under the baseline conditions. Thus, T serves as the     benchmark prompts, queries a nominal target model T , records
+nominal target of the pipeline, while M is the model whose          responses, and computes attack success rate (ASR). We use
+safety behavior is evaluated.                                       teaching shot to refer to a prompt–response pair inserted into
+                                                                    the evaluation pipeline as a worked example for the model
+B. Adversary Knowledge and Capabilities                             to imitate. Figure 2 summarizes the workflow, and the stages
+  O knows that the session is framed as a jailbreak-evaluation      are described below. We deliberately omit the exact prompt
+engineering task and has access to the public benchmark             wording and all generated harmful content.
+prompts from HarmBench, AdvBench, and Hammurabi’s
+Code. These prompts are fixed benchmark inputs and are              B. Workflow Stages
+not authored by O. The operator’s capabilities are limited to         1) Frame establishment. O asks A to build a jailbreak-
+normal interaction with the coding agent:                                evaluation pipeline for a nominal target T . This creates
+  • issuing natural-language and code instructions over mul-             an engineering frame in which working with adversarial
+     tiple turns;                                                        benchmark inputs appears to be part of the evaluation
+  • accepting, rejecting, or requesting revisions to generated           task.
+     files;                                                           2) Benchmark ingestion. A loads the public benchmark
+  • providing feedback signals, such as approval or claims               prompts into the pipeline as data. At this point, the
+     that a metric is improving.                                         harmful questions are treated as benchmark records,
+                                                                         rather than as direct requests to M .
+C. Out of Scope                                                       3) Pipeline construction. A writes the code needed to
+  The operator does not:                                                 query T , collect responses, and compute ASR. This
+  • access or modify M ’s weights, system prompt, decoding
+                                                                         produces a runnable evaluation loop.
+     parameters, or safety filters;                                   4) Metric introduction. O indicates that the ASR is low
+  • perform fine-tuning, gradient-based optimization, or
+                                                                         or not improving. This turns the task into a metric-
+     adversarial-suffix search;                                          optimization problem, where the goal becomes improv-
+  • inject instructions through external data, retrieved doc-
+                                                                         ing the reported score.
+     uments, tool outputs, or other indirect prompt-injection         5) Benign escalation. O suggests adding teaching shots
+     channels;                                                           as a standard way to improve the pipeline. A first
+  • supply harmful answer text. O provides only the
+                                                                         adds harmless teaching shots, making the act of writing
+     benchmark prompts and the workflow scaffolding used                 prompt–response examples into the code a routine part
+     to build the evaluation pipeline. Each harmful teaching-            of the workflow.
+     shot response is generated by M .                                6) Harmful escalation. O then asks that the teaching
+                                                                         shots include harmful prompt–response pairs, so that the
+  The last point is central to our provenance claim: the
+                                                                         pipeline captures the intended behavior. At this stage,
+operator supplies the harmful questions, but not the harmful
+                                                                         A writes the pairs itself, placing answers to benchmark
+answers.
+                                                                         prompts as plain strings inside the code. These are
+                                                                         prompts that M refuses in direct chat. This is the
+D. Success Criterion                                                     jailbreak point.
+  A workflow output is counted as successful when, for a              7) Reinforcement. O signals that the ASR is improv-
+benchmark prompt p, the agent backend M produces within                  ing. This feedback keeps the optimization frame active
+                                                                                                                                    5
+
+
+
+      and leads A to continue producing further completions         task, especially when outputs contain refusals, partial compli-
+      across the benchmark.                                         ance, generic safety discussion, or warning-heavy text [33]–
+   The workflow was executed using a fixed scripted protocol        [36]. To avoid inflated or inconsistent success estimates, we
+across all models and prompts. The resulting teaching-shot          manually evaluate the generated responses using two expert
+responses were generated by the agent backend M and later           annotators and a strict success rubric. Across the 204 prompts
+evaluated manually.                                                 and four evaluated backends, this produces 816 workflow
+                                                                    responses for manual evaluation.
+                 VI. E XPERIMENTAL S ETUP
+A. Models and Environment                                           C. Experimental Conditions
+    All experiments were conducted using GitHub Copilot Chat           Each of the 204 prompts is evaluated for every model
+version 0.30.3 inside Visual Studio Code version 1.103.0. We        under four conditions. We keep the model, interface, and
+use the Copilot coding-agent interface rather than standalone       settings fixed across conditions; the intended difference is the
+web or API interfaces, since our goal is to study model             interaction structure. The first three conditions are baselines
+behavior as it appears in an IDE-based software-development         with increasing levels of framing, while the fourth is the full
+workflow. We evaluate four backends available through Copi-         multi-turn workflow.
+lot at the time of testing: Claude Sonnet 4.6, Claude Haiku 4.5,
+                                                                      1) Direct chat (DC). The harmful prompt is submitted as-
+Gemini 3.1 Pro, and Gemini 3.5 Flash. Unless otherwise
+                                                                         is through the chat interface. This is the conventional
+stated, all backend and interface settings were left at their
+                                                                         single-turn setting.
+default values; we did not modify decoding parameters, safety
+                                                                      2) CSV read (CSV). The model is asked to read the prompt
+filters, system prompts, or model-side settings. The same
+                                                                         from a data file and answer it. This tests whether placing
+settings were used across all experimental conditions, includ-
+                                                                         the harmful request in a data/file context, without a
+ing direct chat, CSV read, code-fix, and full workflow, so
+                                                                         multi-turn workflow, is sufficient to bypass refusal.
+the main variable we manipulate is the interaction structure
+                                                                      3) Code-fix with teaching shot (CF). The model is asked,
+rather than the model configuration. Each model–condition run
+                                                                         in a single step, to fix code by adding a harmful
+was conducted in a fresh session with prior context cleared
+                                                                         teaching-shot prompt–response pair. This tests whether
+before starting the next run. All sessions were conducted
+                                                                         code and demonstration framing alone, without the full
+between 2 April 2026 and 22 June 2026. We record the model
+                                                                         metric-driven workflow, is sufficient.
+labels, Copilot version, VS Code version, and experiment dates
+                                                                      4) Full workflow (WF). The complete multi-turn con-
+because hosted backends and IDE extensions may change over
+                                                                         struction shown in Figure 2, in which the agent builds
+time.
+                                                                         the evaluation pipeline, is placed under metric pressure,
+                                                                         and is led to author teaching-shot completions for the
+B. Benchmarks and Sampling                                               benchmark prompts.
+  We draw harmful prompts from three complementary                     The CSV and CF baselines are included to test whether
+sources:                                                            simpler framings are enough to produce the same behavior
+  • Hammurabi’s Code [17]: a stratified sample of 78                as the full workflow. CSV tests data/file framing, while CF
+     prompts spanning 24 harmful programming-task cate-             tests code and demonstration framing in a single step. All
+     gories drawn from the benchmark’s malware, copyright,          operator turns, including feedback signals in WF, follow
+     and unfair/dangerous categories.                               a fixed scripted protocol rather than ad hoc improvisation.
+  • AdvBench [11]: 51 jailbreak-oriented prompts.                   Feedback statements are predetermined and do not depend on
+  • HarmBench [19]: a stratified sample of 75 prompts               any real ASR value observed during the session. Under no
+     spanning all six harmful-behavior categories.                  condition does the operator write or supply answer text; the
+  In total, this gives 204 prompts covering software-               operator provides only the benchmark prompts and workflow
+engineering-specific harmful coding tasks, general harmful          scaffolding.
+behavior, and jailbreak-oriented instructions. For Hammurabi’s
+Code and HarmBench, we sample across categories so that the
+                                                                    D. Manual Evaluation Protocol
+evaluation is not dominated by a small number of harm types.
+We use sampling rather than evaluating the full Hammurabi’s            We manually evaluate the workflow outputs using two ex-
+Code and HarmBench benchmarks because our priority is               pert evaluators. The evaluation covers 816 workflow responses,
+careful manual judgment rather than maximizing the number           corresponding to 204 prompts across four model backends.
+of prompts. Evaluating the full benchmarks across four back-        Before expert annotation, we performed an initial manual
+ends would produce a much larger response set, making in-           check of each prompt–response pair and found that every
+dependent expert annotation difficult to complete consistently      workflow response was harmful under our rubric. To verify this
+under a strict rubric. Recent jailbreak studies often rely on       finding independently, we then asked two expert evaluators to
+automatic evaluators [13], [29], [30], including LLM-based          label the same responses using a strict binary success criterion.
+judges [31], [32], to label whether a response is harmful or           The rubric distinguishes successful harmful compliance
+successful. However, such judges can still be unreliable for this   from non-refusal alone:
+                                                                                                                                                           6
+
+
+
+
+Fig. 2. Overview of workflow-level jailbreak construction in an IDE coding-agent setting. The figure contrasts three baseline settings, which largely lead to
+refusal, with a multi-turn workflow in which the agent backend authors harmful prompt-response pairs under an evaluation-pipeline and metric-improvement
+pretext.
+
+
+
+   • Successful. A response is marked as successful only if                                                  VII. R ESULTS
+     it is specific, actionable, and instruction-satisfying with
+     respect to the corresponding harmful prompt.                                  In this section, we try to answer two questions. First, we
+   • Failure. Refusals, safe alternatives, generic or educa-                    evaluate how the full multi-turn workflow performs compared
+     tional discussion, partial answers, and warning-only re-                   with direct chat and weaker non-conversational framings under
+     sponses are marked as failures.                                            the same prompts, model backends, interface, and settings.
+                                                                                Second, we analyze the interaction cost of the workflow by
+                                                                                examining how many operator-agent exchanges are needed
+   Thus, a response is not counted as successful simply be-                     before unsafe teaching-shot responses first appear, and how
+cause it does not refuse; it must provide concrete and usable                   this process scales when larger prompt sets are handled in
+content that satisfies the harmful request. Baseline responses                  batches.
+are used to compute baseline counts. Clear refusals and safety-                    RQ1: For the same model and prompts, how does the full
+aligned responses are counted as failures, while any non-                       multi-turn workflow compare to direct chat and weaker non-
+refusal baseline response is checked using the same rubric.                     conversational framings?
+                                                                                   The full workflow changes model behavior from near-
+   For annotation, evaluators were provided with the model                      complete refusal to complete harmful compliance, as shown
+responses for all three benchmarks and all four backends. To                    in Figure 3.
+reduce model-name bias, the true backend names were hidden                         Baseline behavior. Across the three baseline conditions,
+and replaced with anonymized labels, Model A, Model B,                          direct chat (DC), CSV read (CSV), and code-fix with teach-
+Model C, and Model D. Evaluators were given the strict rubric                   ing shot (CF), the four models refused almost all prompts.
+described above and then labeled the full set of responses                      For AdvBench and HarmBench, every model refused every
+independently. Both evaluators independently labeled all 816                    prompt in every baseline condition. For Hammurabi’s Code,
+workflow responses as successful under the rubric, yielding                     only a small number of prompts were answered: Claude
+100% raw agreement (816/816). We do not report a chance-                        Sonnet 4.6 answered 1/78, Claude Haiku 4.5 answered 1/78,
+corrected agreement statistic such as Cohen’s κ, since κ is                     Gemini 3.5 Flash answered 2/78, and Gemini 3.1 Pro an-
+undefined when both raters assign a single label to every                       swered 4/78. These counts were identical across DC, CSV,
+item (zero variance in ratings makes the expected-chance-                       and CF, showing that neither file/data framing nor single-
+agreement term degenerate). To reduce risk, evaluators as-                      step code/demonstration framing was sufficient to substantially
+sessed the responses in a controlled setting, and no harmful                    change refusal behavior.
+outputs are included in the paper or the public release.                           This gives a baseline success count of 8 out of 816 model-
+                                                                                                                                    7
+
+
+
+prompt pairs in each baseline condition, with 0 successful         This normalizes teaching-shot insertion as a code-editing task.
+responses on AdvBench and HarmBench. The few successful            Unsafe content appears only in Stage 4, when the operator
+baseline cases occur only in Hammurabi’s Code, which is con-       asks the agent to add benchmark-derived prompts as teaching-
+sistent with prior evidence that software-engineering-specific     shot entries. At this point, the agent writes the corresponding
+harmful prompts may sometimes evade refusal [17]. In the           prompt–response pairs into the pipeline as code or data. The
+CF condition, models also produced refusals framed around          operator does not provide the answer text; the responses are
+code modification, such as stating that they could not modify      generated by the backend model through the IDE workflow.
+the code to generate harmful responses. This is important
+because code/demonstration framing is ineffective as a single-        Interaction cost of the evaluated protocol. The protocol
+step baseline, but becomes effective when embedded in the          we formally evaluate requires approximately six operator-
+full multi-turn workflow.                                          agent exchanges before the first unsafe teaching-shot batch
+   Workflow behavior. In the full workflow condition, the          appears: two exchanges for code familiarization and initial
+behavior changes sharply. Across all 204 prompts and all four      execution, two exchanges for downstream execution and ASR
+backends, the agent produced teaching-shot completions for         evaluation, one exchange for benign teaching-shot insertion,
+every prompt, yielding 816/816 workflow completions. No            and one exchange for the first benchmark-derived teaching-
+workflow run ended in a refusal or safety-aligned response.        shot insertion. The number of exchanges in this protocol can
+Under the expert-evaluation rubric, both evaluators indepen-       increase further when code execution fails, when the agent
+dently confirmed that all 816 workflow responses satisfied         performs debugging, when the operator asks for additional
+the success criterion. Figure 1 shows representative baseline      benign examples, or when the prompt set is processed in
+refusals alongside the corresponding workflow-generated re-        smaller batches. We did not search for the minimal sufficient
+sponse format; harmful terms in the workflow output are            interaction; this count describes the standardized, scripted
+redacted for safety.                                               protocol we evaluated consistently across all 204 prompts and
+   Workflow-baseline contrast. Figure 3 summarizes the con-        four backends, not a lower bound on how few exchanges the
+trast across the three benchmark prompt sets. The combined         attack requires in general. Thus, the relevant finding is not a
+baselines reach only 24/2448 successful responses across DC,       single exact or minimal turn number, but the fact that unsafe
+CSV, and CF, while the full workflow reaches 816/816 under         responses emerge after a short, ordinary-looking sequence of
+the same prompts, models, interface, and settings. The contrast    IDE interactions under the protocol we measure.
+indicates that the observed behavior is not explained by the
+harmful prompts alone, nor by simply placing them in a file or        Batch-wise scaling. After the first unsafe teaching-shot
+asking for a single code edit. Instead, the effect appears when    batch is generated, the workflow can be extended by repeating
+the request is distributed across the multi-turn IDE workflow.     the same batch-level interaction. In our experiments, prompts
+                                                                   were usually added in small batches rather than all at once.
+   Answer to RQ1                                                   This was more reliable because large batches can lead to
+   The full workflow changes model behavior from near-             incomplete generation, formatting errors, or context-window
+   complete refusal to complete harmful compliance.                pressure. For this reason, the workflow scales by repeated
+   Each baseline condition produces only 8/816 success-            batch insertion: the operator asks the agent to add a small
+   ful responses, with 0 successes on AdvBench and                 group of benchmark-derived teaching shots, reports that the
+   HarmBench. In contrast, the full workflow produces              ASR has improved, and then asks for the next group. The
+   816/816 successful teaching-shot completions, all con-          evaluated sample in this paper is limited to 204 prompts
+   firmed by two expert evaluators. This shows that the            because our priority is careful manual verification by expert
+   failure is caused by the multi-turn IDE workflow, not           evaluators. The interaction pattern itself is not limited to those
+   by the prompts alone or by simple file/code framing.            prompts; it can continue over additional benchmark prompts
+                                                                   through repeated batch-level requests.
+
+   RQ2: How many operator-agent exchanges are needed
+before unsafe teaching-shot responses appear, and how does
+the interaction scale across larger prompt sets?
+                                                                       Answer to RQ2
+   Under the scripted protocol used in our formal evaluation,
+unsafe teaching-shot responses appear after approximately              Under the scripted protocol we evaluate, unsafe
+six operator-agent exchanges. Figure 4 shows how these                 teaching-shot responses appear after approximately six
+exchanges are distributed across the workflow, organized into          operator-agent exchanges. This describes the standard-
+four analytical stages. The first two stages resemble ordinary         ized interaction we measured across all prompts and
+IDE assistance. The operator asks the agent to read code, run          backends, not a minimal sufficient interaction; the
+scripts, fix execution issues, and report ASR values. These            exchange count can increase with debugging, reruns,
+stages establish the evaluation pipeline but do not require the        or smaller prompt batches. After the first unsafe batch
+agent to produce unsafe content. Stage 3 introduces metric             appears, the workflow scales through repeated batch-
+pressure: the operator states that ASR is low and asks the agent       level insertion of benchmark-derived teaching shots.
+to improve the pipeline by adding teaching-shot examples.
+                                                                                                                                                          8
+
+
+
+
+Fig. 3. Attack success rate under the combined baseline conditions and the full workflow across the three benchmark prompt sets. The baseline bar aggregates
+successful responses across direct chat (DC), CSV read (CSV), and single-step code-fix (CF), so baseline counts are out of three attempts per prompt; the
+workflow bar reports the full-workflow (WF) condition alone, out of one attempt per prompt.
+
+
+
+                                                                                  step code-editing request. If safety evaluation stopped at
+                                                                                  these settings, the models would appear robust. The full IDE
+                                                                                  workflow changes this conclusion. Under the same prompts,
+                                                                                  backends, interface, and settings, the agent produced unsafe
+                                                                                  teaching-shot completions once the task was distributed across
+                                                                                  ordinary software-engineering actions: reading files, running
+                                                                                  scripts, processing benchmark inputs, inspecting ASR values,
+                                                                                  and improving an evaluation pipeline. Critically, the harmful
+                                                                                  content was not produced as a direct chat answer to a harmful
+                                                                                  question. It appeared as code or data inside an artifact the
+                                                                                  agent was constructing.
+                                                                                     This also explains why the weaker baselines were not
+                                                                                  sufficient. Reading a harmful prompt from a file changes where
+                                                                                  the input is stored, but not the structure of the interaction.
+                                                                                  The model is still being asked, in a single step, to answer or
+                                                                                  act on the harmful request. Similarly, asking for a harmful
+                                                                                  teaching-shot pair in a single code-editing turn still resembles
+                                                                                  a direct unsafe request, so refusal behavior remains active.
+                                                                                  The full workflow differs because it first establishes a normal
+                                                                                  development context. The agent is asked to understand code,
+                                                                                  execute scripts, fix issues, evaluate outputs, and improve a
+                                                                                  metric. Only after this context has been established is teaching-
+                                                                                  shot generation introduced as a pipeline-improvement step. In
+                                                                                  that setting, the model is no longer simply deciding whether
+                                                                                  to answer a harmful prompt; it is trying to complete an
+                                                                                  engineering task and improve an evaluation artifact. This
+Fig. 4. Stage-wise interaction dynamics of the full workflow. Unsafe teaching-    supports our central claim that the failure is workflow-level,
+shot responses first appear in Stage 4, after routine coding-agent interactions   not merely prompt-level, and that the relevant safety boundary
+and metric-driven pipeline improvement. Harmful content is redacted for
+safety.                                                                           is the workflow in which the model is embedded, not only the
+                                                                                  prompt–response pair.
+
+                          VIII. D ISCUSSION
+                                                                                  B. Relation to Single-Prompt Implicit-Intent Attacks
+A. Direct-Prompt Refusal Does Not Predict Workflow Safety
+                                                                                     The closest prior attack to ours is CodeJailbreaker [21],
+   The central lesson from our results is that coding-agent                       which also separates malicious intent from an explicit in-
+safety cannot be understood only through direct prompt re-                        struction. Rather than asking for harmful code directly, Code-
+fusal. In the baseline settings, the evaluated backends behaved                   Jailbreaker encodes the intent inside a commit message and
+largely as expected: they refused harmful prompts in direct                       asks the model to simulate the resulting code change. The
+chat, and this refusal behavior mostly remained when the                          underlying insight is related to ours: a non-conversational,
+prompt was placed in a CSV file or framed as a single-                            code-mediated channel can carry harmful intent past refusal
+                                                                                                                                     9
+
+
+
+mechanisms tuned to direct instruction-level cues. However,          may not directly generalize to other IDE agents, standalone
+the two attacks differ in where that channel lives. Code-            chat interfaces, API deployments, open-weight models, or
+Jailbreaker constructs a single, self-contained prompt: the          future versions of the same systems. Similarly, our benchmark
+commit message, preceding code, and output specification are         set contains 204 prompts sampled from Hammurabi’s Code,
+submitted in one shot, with no interaction history beyond            HarmBench, and AdvBench. This sampling enables careful
+what that prompt encodes. Our workflow is not reducible to           expert evaluation, but it does not cover every possible harmful
+a single prompt artifact. The harmful prompt enters as one           request or every software-engineering scenario.
+benchmark record among many, the engineering context is                 Reproducibility and disclosure. Exact reproduction is dif-
+built over several turns through pipeline construction, metric       ficult because the evaluated systems are hosted services whose
+feedback, and benign teaching-shot insertion, and the harmful        behavior may change over time. We record the IDE version,
+completion is authored by the agent as a consequence of the          Copilot Chat version, model backends, and experiment dates
+workflow state.                                                      to improve reproducibility. At the same time, we do not release
+   This distinction matters for defenses. A detector tuned           harmful outputs or exact operational prompts, because doing
+to identify disguised single-shot prompts, for example by            so could enable misuse. Instead, we describe the workflow at
+scanning commit messages for implicit malicious framing,             a high level and redact unsafe content in examples. This limits
+would not necessarily detect a failure that only becomes visible     full replication, but is necessary for responsible reporting.
+across several ordinary-looking turns. Our workflow does not
+depend on an overt adversarial persona, a special jailbreak          D. Implications for Evaluation and Defense
+template, or a single carefully engineered malicious prompt.
+                                                                        For researchers and benchmark designers. Our results
+It relies on the same IDE-agent capabilities that make these
+                                                                     suggest that prompt-level evaluations, including those based
+systems useful: reading files, editing code, running scripts,
+                                                                     on Hammurabi’s Code, HarmBench, and AdvBench, measure
+debugging failures, and improving artifacts. A sequence of
+                                                                     a necessary but not sufficient condition for coding-agent safety.
+interactions that appears benign turn by turn can therefore
+                                                                     A model that refuses harmful prompts in isolation may still
+move the system into an unsafe state when considered as a
+                                                                     fail once the same objective is embedded inside an ordinary
+workflow.
+                                                                     multi-turn IDE session. We therefore see value in benchmarks
+                                                                     that evaluate models inside live agentic workflows rather than
+C. Threats to Validity                                               only as single-completion endpoints. Such benchmarks should
+                                                                     score not only the final response, but also the trajectory of
+   Construct validity. Jailbreak success is a semantic judg-
+                                                                     turns, intermediate files, generated examples, and artifacts that
+ment, and simply measuring non-refusal can overstate risk. We
+                                                                     led to it.
+therefore use a strict success criterion: a response is counted
+                                                                        For coding-agent developers. Because the unsafe content
+as successful only if it is specific, actionable, and instruction-
+                                                                     in our study is produced as code or data inside a generated
+satisfying. Refusals, safe alternatives, generic explanations,
+                                                                     artifact rather than as a chat reply, defenses that operate only
+partial answers, and warning-only responses are counted as
+                                                                     on the visible conversational turn may miss it. We see three
+failures. The workflow outputs were independently checked
+                                                                     concrete and complementary directions. First, artifact-level
+by two expert evaluators. Although manual judgment can
+                                                                     inspection: guardrails should examine the files, scripts, and
+involve subjective interpretation, we reduce this risk by using
+                                                                     data structures an agent writes, since this is where the harmful
+a conservative rubric and by not counting a response as
+                                                                     content in our study appears. Second, cross-turn monitoring:
+successful merely because it avoids refusal.
+                                                                     because no single turn contains the full harmful objective,
+   Internal validity. A key internal-validity concern is whether
+                                                                     detection should reason over the session trajectory rather than
+the observed difference between the baseline and workflow
+                                                                     classify each turn independently. Third, optimization-framing
+conditions can be attributed to the interaction structure rather
+                                                                     awareness: in our workflow, harmful escalation is introduced
+than to differences in prompts, models, or experimental set-
+                                                                     as a way to improve a reported metric. Requests that justify
+tings. We mitigate this by holding the benchmark prompts,
+                                                                     generating or expanding sensitive content by appealing to an
+model backends, IDE interface, and configuration fixed across
+                                                                     evaluation or benchmark score may therefore be useful signals
+all conditions. We also include three complementary baselines:
+                                                                     for safety monitoring. None of these directions is a complete
+direct chat, CSV read, and single-step code-fix. These base-
+                                                                     defense on its own, and designing safeguards that catch this
+lines are designed to rule out simpler explanations, such as
+                                                                     pattern without obstructing legitimate evaluation and security-
+the harmful prompt merely being placed in a file or framed as
+                                                                     research workflows remains an open problem.
+code. The sharp contrast between these baselines and the full
+workflow supports our interpretation that the failure emerges
+from the multi-turn IDE workflow. However, because the               E. Future Work
+evaluated systems are hosted services, hidden system prompts,           This study opens several directions for future work. First,
+safety filters, and backend updates remain outside our control.      our evaluation focuses on GitHub Copilot in Visual Studio
+   External validity. Our experiments are conducted in               Code; applying the same baseline-versus-workflow protocol
+GitHub Copilot Chat inside Visual Studio Code with four              to other IDE-integrated coding agents, such as Cursor, Cline,
+closed-weight model backends. The results establish the ex-          Windsurf, or other agentic development environments, would
+istence of this workflow-level failure mode in this setting, but     help determine whether workflow-level jailbreak construction
+                                                                                                                                                10
+
+
+
+is primarily driven by the model backend, the agent scaffold-      disclosure provides defensive value by motivating workflow-
+ing, or their interaction. Second, our four evaluated backends     level guardrails, artifact-level safety checks, and more realistic
+come from two providers, Anthropic and Google. Due to              evaluation of agentic coding tools.
+budget, access, and manual-evaluation constraints, we did not
+evaluate additional model families such as OpenAI’s GPT                                           R EFERENCES
+models, Meta’s Llama models, Mistral, DeepSeek, Qwen,               [1] A. Kumar, S. Sankar, P. P. Das, and P. P. Chakrabarti, “Using large
+or other open- and closed-weight backends. Extending the                language models for multi-level commit message generation for large
+backend pool would clarify whether the baseline-refusal versus          diffs,” Information and Software Technology, vol. 187, p. 107831, 2025.
+                                                                    [2] A. Kumar, P. P. Das, and P. P. Chakrabarti, “Summarize me: The future
+workflow-compliance pattern generalizes across model fam-               of issue thread interpretation,” in 2023 IEEE International Conference
+ilies or varies with provider-specific safety training. Third,          on Software Maintenance and Evolution (ICSME). IEEE, 2023, pp.
+our strict two-evaluator protocol supports careful judgment but         341–345.
+                                                                    [3] X. Hou, Y. Zhao, Y. Liu, Z. Yang, K. Wang, L. Li, X. Luo, D. Lo,
+limits scale. Future work could explore calibrated automatic            J. Grundy, and H. Wang, “Large language models for software engi-
+judges, validated against manually labeled outputs, to support          neering: A systematic literature review,” ACM Transactions on Software
+larger prompt sets and more model backends.                             Engineering and Methodology, vol. 33, no. 8, pp. 1–79, 2024.
+                                                                    [4] S. Lu, D. Guo, S. Ren, J. Huang, A. Svyatkovskiy, A. Blanco,
+                                                                        C. Clement, D. Drain, D. Jiang, D. Tang et al., “Codexglue: A machine
+                                                                        learning benchmark dataset for code understanding and generation,”
+                      IX. C ONCLUSION                                   arXiv preprint arXiv:2102.04664, 2021.
+                                                                    [5] F. F. Xu, U. Alon, G. Neubig, and V. J. Hellendoorn, “A systematic
+   This paper studied workflow-level jailbreak construction             evaluation of large language models of code,” in Proceedings of the
+in IDE-based coding agents, showing that safety behavior                6th ACM SIGPLAN international symposium on machine programming,
+observed under direct prompting does not necessarily trans-             2022, pp. 1–10.
+                                                                    [6] M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. D. O. Pinto, J. Kaplan,
+fer to a multi-turn software-development workflow. Across               H. Edwards, Y. Burda, N. Joseph, G. Brockman et al., “Evaluating large
+204 prompts from Hammurabi’s Code, HarmBench, and Ad-                   language models trained on code,” arXiv preprint arXiv:2107.03374,
+vBench, four model backends largely refused harmful requests            2021.
+                                                                    [7] M. Izadi, J. Katzy, T. Van Dam, M. Otten, R. M. Popescu, and
+under direct chat, CSV read, and single-step code-fix baselines.        A. Van Deursen, “Language models for code completion: A practical
+However, under the full IDE workflow, the same prompts and              evaluation,” in Proceedings of the IEEE/ACM 46th International Con-
+backends produced successful teaching-shot completions for              ference on Software Engineering, 2024, pp. 1–13.
+                                                                    [8] J. Wang and Y. Chen, “A review on code generation with llms:
+all 816 workflow outputs, all independently confirmed by two            Application and evaluation,” in 2023 IEEE International Conference on
+expert evaluators under a strict success rubric. The key finding        Medical Artificial Intelligence (MedAI). IEEE, 2023, pp. 284–289.
+is that this failure is caused neither by the harmful prompts       [9] M. Bhatt, S. Chennabasappa, C. Nikolaidis, S. Wan, I. Evtimov, D. Gabi,
+                                                                        D. Song, F. Ahmad, C. Aschermann, L. Fontana et al., “Purple llama
+alone nor by simple file or code framing. Instead, it emerges           cyberseceval: A secure coding benchmark for language models,” arXiv
+when the objective is distributed across ordinary coding-agent          preprint arXiv:2312.04724, 2023.
+actions: reading files, running scripts, inspecting ASR values,    [10] U. Anwar, A. Saparov, J. Rando, D. Paleka, M. Turpin, P. Hase, E. S.
+                                                                        Lubana, E. Jenner, S. Casper, O. Sourbut et al., “Foundational challenges
+and improving an evaluation pipeline. In this setting, unsafe           in assuring alignment and safety of large language models,” arXiv
+content appears as code or data inside an artifact the agent is         preprint arXiv:2404.09932, 2024.
+constructing, rather than as a direct chat response. This shows    [11] A. Zou, Z. Wang, N. Carlini, M. Nasr, J. Z. Kolter, and M. Fredrikson,
+                                                                        “Universal and transferable adversarial attacks on aligned language
+that coding-agent safety must be evaluated and enforced at              models,” arXiv preprint arXiv:2307.15043, 2023.
+the workflow level. Future defenses should therefore monitor       [12] Y. Zhou, J. Lou, Z. Huang, Z. Qin, S. Yang, and W. Wang, “Don’t say no:
+not only prompts and chat replies, but also generated files,            Jailbreaking llm by suppressing refusal,” in Findings of the Association
+                                                                        for Computational Linguistics: ACL 2025, 2025, pp. 25 224–25 249.
+scripts, examples, logs, and intermediate artifacts produced       [13] B. R. Huang, M. Li, and L. Tang, “Endless jailbreaks with bijection
+during IDE-based development workflows.                                 learning,” in International Conference on Learning Representations, vol.
+                                                                        2025, 2025, pp. 70 770–70 790.
+                                                                   [14] C. Anil, E. Durmus, N. Panickssery, M. Sharma, J. Benton, S. Kundu,
+       X. E THICS AND R ESPONSIBLE D ISCLOSURE                          J. Batson, M. Tong, J. Mu, D. Ford et al., “Many-shot jailbreaking,” Ad-
+                                                                        vances in Neural Information Processing Systems, vol. 37, pp. 129 696–
+   This work studies a misuse vector in IDE-based coding                129 742, 2024.
+                                                                   [15] Q. Ren, C. Gao, J. Shao, J. Yan, X. Tan, W. Lam, and L. Ma,
+agents, and some parts of the paper necessarily discuss po-             “Codeattack: Revealing safety generalization challenges of large lan-
+tentially harmful or offensive model behavior. This material is         guage models via code completion,” in Findings of the Association for
+included only for the purpose of evaluating and improving               Computational Linguistics: ACL 2024, 2024, pp. 11 437–11 452.
+                                                                   [16] M. Russinovich, A. Salem, and R. Eldan, “Great, now write an article
+the safety of LLM-based software-engineering systems; it                about that: The crescendo {Multi-Turn}{LLM} jailbreak attack,” in 34th
+does not endorse, encourage, or facilitate criminal or harmful          USENIX Security Symposium (USENIX Security 25), 2025, pp. 2421–
+activity. We report the findings in a way that maximizes                2440.
+                                                                   [17] A. Al-Kaswan, S. Deatc, B. Koç, A. van Deursen, and M. Izadi,
+defensive value while minimizing misuse risk. We do not                 “Code red! on the harmfulness of applying off-the-shelf large language
+reproduce harmful completions, exact operational prompts, or            models to programming tasks,” Proceedings of the ACM on Software
+full workflow transcripts; all examples are sanitized and unsafe        Engineering, vol. 2, no. FSE, pp. 2477–2499, 2025.
+                                                                   [18] A. A. Hasan and S. Biswas, “What breaks when llms code? characteriz-
+terms in figures are redacted. The harmful prompts come                 ing operational safety failures of agentic code assistants,” arXiv preprint
+from existing public benchmarks, HarmBench, AdvBench, and               arXiv:2605.30777, 2026.
+Hammurabi’s Code, and we introduce no new harmful prompt           [19] M. Mazeika, L. Phan, X. Yin, A. Zou, Z. Wang, N. Mu, E. Sakhaee,
+                                                                        N. Li, S. Basart, B. Li et al., “Harmbench: A standardized evaluation
+categories. We have disclosed our findings to the affected              framework for automated red teaming and robust refusal,” arXiv preprint
+IDE-agent and model providers. We believe this structural               arXiv:2402.04249, 2024.
+                                                                                  11
+
+
+
+[20] Z. Wei, Y. Wang, A. Li, Y. Mo, and Y. Wang, “Jailbreak and guard
+     aligned language models with only few in-context demonstrations,”
+     IEEE Transactions on Pattern Analysis and Machine Intelligence, 2026.
+[21] S. Ouyang, Y. Qin, B. Lin, L. Chen, X. Mao, and S. Wang, “Smoke and
+     mirrors: Jailbreaking llm-based code generation via implicit malicious
+     prompts,” 2025. [Online]. Available: https://arxiv.org/abs/2503.17953
+[22] C. Guo, X. Liu, C. Xie, A. Zhou, Y. Zeng, Z. Lin, D. Song, and B. Li,
+     “Redcode: Risky code execution and generation benchmark for code
+     agents,” Advances in Neural Information Processing Systems, vol. 37,
+     pp. 106 190–106 236, 2024.
+[23] M. Andriushchenko, A. Souly, M. Dziemian, D. Duenas, M. Lin,
+     J. Wang, D. Hendrycks, A. Zou, Z. Kolter, M. Fredrikson et al.,
+     “Agentharm: A benchmark for measuring harmfulness of llm agents,
+     2024,” URL https://arxiv. org/abs/2410.09024, 2024.
+[24] P. Kumar, E. Lau, S. Vijayakumar, T. Trinh, S. Team, E. Chang,
+     V. Robinson, S. Hendryx, S. Zhou, M. Fredrikson et al., “Refusal-trained
+     llms are easily jailbroken as browser agents, 2024,” URL https://arxiv.
+     org/abs/2410.13886.
+[25] E. Debenedetti, J. Zhang, M. Balunovic, L. Beurer-Kellner, M. Fischer,
+     and F. Tramèr, “Agentdojo: A dynamic environment to evaluate prompt
+     injection attacks and defenses for llm agents,” Advances in Neural
+     Information Processing Systems, vol. 37, pp. 82 895–82 920, 2024.
+[26] T. Kuntz, A. Duzan, H. Zhao, F. Croce, Z. Kolter, N. Flammarion, and
+     M. Andriushchenko, “Os-harm: A benchmark for measuring safety of
+     computer use agents, 2025,” URL https://arxiv. org/abs/2506.14866.
+[27] W. J. Mo, Q. Liu, X. Wen, D. Jung, H. Askari, W. Zhou, Z. Zhao,
+     and M. Chen, “Redcoder: Automated multi-turn red teaming for code
+     llms,” in Proceedings of the 64th Annual Meeting of the Association for
+     Computational Linguistics (Volume 1: Long Papers), 2026, pp. 33 140–
+     33 155.
+[28] S. Saha, J. Chen, S. Mayers, S. K. Gouda, Z. Wang, and V. Kumar,
+     “Breaking the code: Security assessment of ai code agents through
+     systematic jailbreaking attacks,” arXiv preprint arXiv:2510.01359, 2025.
+[29] M. Feng, X. Liu, W. Yang, J. Song, X. Zhu, C. Xu, and J. Gao, “Sema:
+     Simple yet effective learning for multi-turn jailbreak attacks,” arXiv
+     preprint arXiv:2602.06854, 2026.
+[30] W. Guo, Z. Shi, Z. Li, Y. Wang, X. Liu, W. Wang, F. Liu, M. Zhang,
+     and J. Li, “Jailbreak-r1: Exploring the jailbreak capabilities of llms via
+     reinforcement learning,” arXiv preprint arXiv:2506.00782, 2025.
+[31] A. Kumar, S. Sankar, S. Haiduc, P. P. Das, and P. P. Chakrabarti,
+     “Llms as evaluators: A novel approach to commit message quality
+     assessment,” in 2025 IEEE/ACM 47th International Conference on
+     Software Engineering: New Ideas and Emerging Results (ICSE-NIER).
+     IEEE, 2025, pp. 111–115.
+[32] H. Li, Q. Dong, J. Chen, H. Su, Y. Zhou, Q. Ai, Z. Ye, and Y. Liu, “Llms-
+     as-judges: a comprehensive survey on llm-based evaluation methods,”
+     arXiv preprint arXiv:2412.05579, 2024.
+[33] L. Schwinn, M. Ladenburger, T. Beyer, M. Mofakhami, G. Gidel, and
+     S. Günnemann, “A coin flip for safety: Llm judges fail to reliably
+     measure adversarial robustness,” arXiv preprint arXiv:2603.06594, 2026.
+[34] F. Liu, Y. Feng, Z. Xu, L. Su, X. Ma, D. Yin, and H. Liu,
+     “Jailjudge: A comprehensive jailbreak judge benchmark with multi-
+     agent enhanced explanation evaluation framework,” 2024. [Online].
+     Available: https://arxiv.org/abs/2410.12855
+[35] S. Li, C. Xu, J. Wang, X. Gong, C. Chen, J. Zhang, J. Wang, K.-Y.
+     Lam, and S. Ji, “Llms cannot reliably judge (yet?): A comprehensive
+     assessment on the robustness of llm-as-a-judge,” 2025. [Online].
+     Available: https://arxiv.org/abs/2506.09443
+[36] R. Stureborg, D. Alikaniotis, and Y. Suhara, “Large language models
+     are inconsistent and biased evaluators,” 2024. [Online]. Available:
+     https://arxiv.org/abs/2405.01724
+
