@@ -1993,6 +1993,84 @@ claims. Existing criterion/grader, evidence-view, metric, task-health, response-
 matrix, participation, production-validation, and validity records compose the
 required episode; no outcome-validity schema follows.
 
+### 3.2e Learned observations, proxy scores, and consumer policies are separate validity targets
+
+A learned critic or evaluator is not one instrument-quality scalar. Preserve the
+complete, non-inheriting chain:
+
+```text
+eligible work episode → session/conversation → authored segment or credit unit
+  → highest-leakage actor/task/source/incident/time cluster and split firewall
+    → raw observer view → transformation, omitted channels, and truncation
+      → feature vector with authority, availability, accuracy, and reliability
+        → sparse outcome/proxy definition, join, timing, reversal, missingness, audit
+          → checkpoint, target/output map, objectives, masks, and score vector
+            → rank / stop / curate / escalate / monitor consumer policy
+              → policy-specific outcome, cost, consequence, and transport boundary
+```
+
+Segmentation is a credit-assignment choice, not an independence guarantee. Every
+segment must retain its parent episode, session/conversation, task, actor, source or
+artifact, incident, and downstream state; split and infer at the highest unit that
+could share behavior, labels, content, or outcomes. The observer record must hash
+raw and transformed views, role/channel conversion, dropped ranges, and truncation
+side. Feature authority (`direct_event`, `artifact_state`, `trace_inference`,
+`normative_judgment`, `user_state_proxy`, or `causal_hypothesis`), required versus
+available channels, abstention, accuracy against an authorized reference, and
+repeated-label reliability are different fields. A teacher's internally consistent
+label is not feature truth.
+
+Keep the dense feature and sparse proxy channels independent. Each proxy binds its
+source and authority; eligible units and join path; score time and observation
+window; overwrite, reversal, and adverse-outcome policy; unmatched, ambiguous, and
+unlabeled rows; manual join audit; and prohibited interpretations. A learned score
+then binds exact checkpoint and code/environment, ordered output-name map, proxy
+encoding, auxiliary targets, loss weights, missing-target masks, training population,
+checkpoint-selection objective, and untouched confirmation clusters. An unmapped
+output index or unreleased split/training lineage makes empirical correspondence
+insufficient even when weights exist.
+
+Evaluate each consumer independently. Ranking requires a declared candidate pool
+and reports all-success, all-fail, mixed, invalid, and provider-failure strata;
+mixed-only gains estimate opportunity-conditioned selection, not portfolio
+capability. Stopping additionally requires order, threshold calibration, maximum
+budget, false-accept/reject loss, and total attempts/tokens/time/cost including critic
+overhead. Curation is a data-composition intervention requiring an out-of-sample
+selector, matched source/volume/duplication composition, repeated training seeds,
+and held-out downstream and regression outcomes. Escalation and monitoring require
+eligible traffic, capacity, subgroup and severe-case overrides, human burden,
+accepted/missed failures, and realized loss. A score may usefully regularize one
+policy despite invalid feature semantics or weak proxy prediction; conversely,
+accurate imitation or discrimination need not improve any policy.
+
+The rubric-supervised-critic study supplies bounded evidence for this asymmetry: on
+148 SWE-bench Verified tasks selected because eight completed candidates include
+both success and failure, one reported rubric-supervised score ranks candidates
+better than reported random and success-only comparators [RSC]. It does not validate
+the rubric features as process truth or sparse production proxies as quality. The
+production rows, joins, labels, split clusters, training implementation, per-task
+evaluations, and costs are unreleased; trace left-truncation is unaudited;
+paper/package/model feature counts and the output map conflict; ranking tables are
+not fully reconciled; early stopping omits the full portfolio and total resource
+ledger; and curation is a one-run, under-specified contrast. No feature-authority,
+causal-process, population-capability, production-utility, cross-domain,
+professional-validity, fitness, or readiness claim follows [RSC].
+
+**Invariant:** policy utility licenses only the exact score-policy-population pair
+tested; it never back-propagates truth to auxiliary features or proxies and never
+forward-propagates to another consumer. **Validation experiment:** on at least two
+materially different artifact families, freeze episode/cluster populations and
+sparse outcome joins; cross full, truncated, artifact-only, and state-query views;
+train otherwise matched success-only, authorized-rubric, model-teacher,
+shuffled/prevalence-matched, and reduced-feature critics; then test feature
+observation, proxy prediction, calibration, and rank/stop/escalate policies
+separately over full-population strata. Report clustered uncertainty, missingness,
+subgroups, abstention, false acceptance/rejection, tokens/time/cost, review burden,
+reversals, and consequences. Existing configured-system, trace/evidence-view,
+criterion/grader, metric-monitoring, task-health, response-matrix, validity, and
+decision-policy contracts are the durable homes; no critic- or coding-specific
+schema follows.
+
 ### 3.2c Evaluator retry repairs an attempt record, not its substantive validity
 
 Treat selective re-execution as selection over an append-only attempt population:
@@ -4315,6 +4393,16 @@ them:
   score–payment associations and a dimension-heterogeneity warning, not judge
   validity, prospective/incremental prediction, causality, outcome authority,
   decision utility, professional validity, production fitness, or readiness.
+- **[RSC]**
+  `papers/agent-benchmarks/2026-07-17-rubric-supervised-critic-sparse-outcomes-validity.md`;
+  reviewed immutable v1 PDF/text plus a timing-bounded exact-commit annotation-
+  package and exact-revision model audit are recorded there. The package's 10 tests
+  pass and immutable weights exist, but production rows/joins/labels, training and
+  evaluation code/data, split clusters, target/output map, and total cost are absent;
+  paper, package, and model label counts conflict. Evidence supports one bounded,
+  opportunity-conditioned ranking package contrast—not feature truth, proxy
+  validity, causal process quality, population capability, production utility,
+  cross-domain transport, professional validity, fitness, or readiness.
 - **[CE]**
   `papers/agent-benchmarks/2026-07-15-claw-eval-multichannel-trajectory-validity.md`;
   reviewed immutable v3 PDF/text/HTML plus a complete pinned post-v3 official release

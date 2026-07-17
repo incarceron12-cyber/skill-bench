@@ -1073,6 +1073,7 @@ specific schema or pilot follows.
 | [Stochastic Agent Evaluations](../papers/agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md) | B | Makes task-level repeats and released response matrices inspectable while showing that the published variance-of-task-means ratio is not ICC(1,1), omitted invalids change the estimand, and repeat budgets are decision- and population-specific |
 | [Performance-optimization benchmark reliability](../papers/agent-benchmarks/2026-07-15-performance-optimization-benchmark-reliability.md) | B | Separates executable artifacts from environment-sensitive criterion validity; four-profile/three-round replay and fixed-output rescoring expose reference-signal loss, near-zero margins, and score leverage, while the absent study release and bounded design do not establish machine-invariant transport, causal rank effects, portfolio capability, saturation, or professional validity |
 | [Criterion validity against business outcomes](../papers/agent-benchmarks/2026-07-16-criterion-validity-business-outcomes.md) | A/B | Adds a direct score→verified-payment association study and dimension heterogeneity warning, while its whole-dialogue observer, outcome-dependent eligibility, case enrichment, unvalidated judge, small selected reweighting, and absent phase-2 rows separate concurrent association from prediction, intervention benefit, customer value, and readiness |
+| [Rubric-supervised critic from sparse outcomes](../papers/agent-benchmarks/2026-07-17-rubric-supervised-critic-sparse-outcomes-validity.md) | A/B | Separates learned feature observation, sparse-proxy prediction, and consumer-policy utility; one mixed-task SWE-bench ranking contrast shows useful auxiliary supervision can coexist with unvalidated feature authority and proxy semantics, while unreleased production/training/evaluation rows, split clusters, output-map conflicts, post-selection, missing uncertainty, and incomplete cost block population, production, causal, professional, or readiness claims |
 | [LiveBench](../papers/agent-benchmarks/2026-07-11-livebench-contamination-limited-lifecycle.md) | B | Makes benchmark renewal operational through rotating recent-source forms, temporary private roles, deterministic checks, and reruns, while exposing equivalent-form, outcome-conditioned selection, exposure, and grader-drift limits |
 | [WorkBench Revisited](../papers/agent-benchmarks/2026-07-12-workbench-revisited-longitudinal-lifecycle.md) | B | Shows why repaired current measurement and longitudinal continuity need linked forms and task-level score bridges rather than one homogeneous time series |
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
@@ -1102,6 +1103,39 @@ rows block judge-accuracy, predictive, causal, customer-value, professional-vali
 production-fitness, and readiness claims. Existing grader, metric, validity,
 task-health, participation, and production-validation records are the durable homes;
 the missing work is a frozen pre-outcome empirical episode, not a new schema.
+
+Learned evaluators add a **supervision-to-consumer chain** inside the grader/metric
+boundary: `eligible episode/session/segment and highest-leakage cluster → exact
+observer view/transformation/truncation → feature authority, availability, accuracy,
+and reliability → sparse proxy definition/join/window/reversal/missingness/audit →
+checkpoint, target/output map, objectives, masks, and score vector → rank, stop,
+curate, escalate, or monitor policy → policy-specific full-population outcome, cost,
+loss, consequence, and transport`. Feature observation, proxy prediction, and policy
+utility are separate validity targets. A policy gain can validate one exact
+score-policy pair while auxiliary labels remain useful regularizers rather than
+authoritative process truth; teacher imitation or proxy AUC can likewise fail to
+improve any decision. Consumer selection changes the estimand: mixed candidates
+support opportunity-conditioned ranking, stopping adds ordering/threshold/resource
+loss, curation changes training composition, and monitoring targets natural traffic.
+
+The full [rubric-supervised-critic review](../papers/agent-benchmarks/2026-07-17-rubric-supervised-critic-sparse-outcomes-validity.md)
+finds the strongest bounded evidence on 148 outcome-selected SWE-bench Verified
+mixed tasks, where one reported rubric-supervised score improves candidate ranking.
+It does not validate the 24-feature taxonomy, teacher labels, PR-merge/code-survival
+proxies, or production utility. Production data and outcome joins, annotation rows,
+group/time split firewall, training implementation, target map, per-task policy rows,
+and total costs are unreleased; left truncation is unmeasured; paper/package/model
+output counts conflict; table values are not fully reconciled; uncertainty ignores
+task and production hierarchy; stopping omits all-fail/all-success strata and critic
+overhead; and SFT curation is an under-specified single run. Preserve negative
+transfer and full-population strata. Validate cross-domain critics by crossing
+authorized, model-teacher, shuffled/prevalence-matched, reduced-feature, and
+success-only supervision under identical compute and frozen clusters, then evaluate
+feature accuracy, proxy discrimination/calibration, and rank/stop/escalate outcomes
+separately with uncertainty, missingness, cost, burden, and consequence. Existing
+configured-system, evidence-view, criterion/grader, metric, task-health, response-
+matrix, validity, and decision-policy records suffice; no coding- or critic-specific
+schema or current empirical claim follows.
 
 FinResearchBench II adds a reusable **criterion-health and outcome-selection
 firewall**: `candidate provenance → authority/public basis → admissible evidence view
