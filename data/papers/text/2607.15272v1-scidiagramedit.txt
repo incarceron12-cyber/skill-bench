@@ -1,0 +1,1251 @@
+                                                              SciDiagramEdit: Learning to Edit Scientific Diagrams
+                                                                            from Paper Revisions
+
+        Yasheng Sun1 , Zezi Zeng2 , Yifan Yang2,* , Chong Luo2 , Wenyi Wang1 , Ziwei Liu3 , Jürgen Schmidhuber1
+    1
+      King Abdullah University of Science and Technology 2 Microsoft Research 3 Nanyang Technological University
+                               yasheng.sun@kaust.edu.sa yifanyang@microsoft.com
+                                                   *
+                                                     Corresponding author
+
+
+
+                                             Organize as two-stage.                                                      70
+                                                                                                                                    best-so-far
+                                                                                                                         65         score per iteration
+                                                                                                                                    Autofigure-Edit           4) Element-wise verify untargeted
+                                                                                                                         60                                   elements stayed unchanged
+
+
+
+
+                                                                                                      Success Rate (%)
+                                                                       Vectorized Assets
+                                                                                                                         55   2) Math super/subscript typesetting
+                                                                                                                              via dx-reset and tspan
+                                                                      > Layout_Plan
+                                                                      > Svg_Render                                       50
+                                                                                                                                                                               3) Strict self-review + double
+
+
+
+
+    arXiv:2607.15272v1 [cs.CL] 16 Jul 2026
+                                                                      > Aesthetic_Verifier
+                                                                      > _...                                                                                                   check replacement
+                                                                      > Svg_Render                                       45
+                                                                                                                                                     1) When adding elements: scale
+                                                                      Trace 1 Trace 2   ... Trace N                      40                          comparably + reuse existing rasters
+
+                                                                                Update                                   35
+                                              Human Revision                                                             0      1             2        3        4         5         6         7         8       9   10
+                                                Repository               Agentic Learning                                                                     Evolution Iteration
+
+                                             Figure 1: Overview of SciDiagramEdit. Left: the Human Revision Repository, naturally occurring before/after
+                                             figure pairs mined from arXiv paper revisions, where each pair encodes an edit the original authors performed during
+                                             manuscript refinement. Middle: Agentic Learning via Skill Evolution — an SVG-editing agent edits the source
+                                             figure, and execution traces are distilled into an evolving skill specification that drives future editing behaviour.
+                                             Right: success rate over evolution iterations on a held-out validation split. The best-so-far skill snapshot rises
+                                             monotonically; callouts illustrate representative learned skill rules.
+
+                                                                       Abstract                                                                   adopt agentic learning via skill evolution: an
+                                                                                                                                                  agentic proposer continually refines the agent’s
+                                                 Editing the figures in a research paper is a rou-
+                                                                                                                                                  skill specification from execution traces over
+                                                 tine and time-consuming part of everyday re-
+                                                                                                                                                  multiple epochs. Experiments show that the
+                                                 search practice: authors relabel components,
+                                                                                                                                                  agent learns meaningful editing skills from pa-
+n                                                rearrange panels, and restyle visuals as they re-
+                                                                                                                                                  per revisions and substantially improves edit
+                                                 vise their manuscripts. Automating this editing
+                                                                                                                                                  quality over strong single-pass baselines.
+                                                 workflow under a natural-language instruction,
+                                                 however, is challenging, because a scientific
+                                                 figure is a dense infographic in which heteroge-                                         1       Introduction
+                                                 neous visual elements such as schematics, plots,
+                                                 photos, captions, and arrows are composed un-                                            Scientific figures often determine whether a paper’s
+                                                 der a tight visual grammar to advance a specific                                         contribution is grasped at a glance, and researchers
+                                                 argument. To address this, we present SciDi-                                             refine them through many cycles of revision before
+                                                 agramEdit, a benchmark and skill-evolution                                               camera-ready submission: relabelling components,
+                                                 framework that learns from natural paper re-                                             rearranging panels, restyling visuals. These edits
+                                                 visions and operates on the figure’s editable                                            are typically driven by natural-language feedback
+                                                 vector source, where users can inspect and co-
+                                                                                                                                          from coauthors and reviewers, making instruction-
+                                                 edit individual primitives alongside the agent.
+                                                 Our benchmark mines before/after figure pairs                                            driven figure editing one of the most common
+                                                 from arXiv version histories, each grounded in                                           figure-related operations in everyday research prac-
+                                                 the authors’ own revision intent. To accommo-                                            tice. Existing automated tools, however, target
+                                                 date the diversity of editing instructions, we                                           diagram generation from text (Zhu et al., 2026b,a;
+
+                                                                                                                                      1
+Huang et al., 2026) and its evaluation (Liao et al.,          the figure’s editable vector source, which has the
+2026; Chang et al., 2025), offering little support            additional benefit of keeping every primitive open
+for the editing regime.                                       for users to inspect and co-edit alongside the agent.
+    Automating instruction-driven editing of scien-              Our contributions are threefold: 1) We intro-
+tific figures presents a central challenge: a scien-          duce S CI D IAGRAM E DIT, an editing benchmark
+tific figure is a dense infographic in which het-             of 364 before/after figure pairs mined from real
+erogeneous visual elements such as schematics,                arXiv paper revisions across 23 subjects, annotated
+plots, photos, captions, and arrows are composed              with 2,628 atomic editing claims that capture the
+under a tight visual grammar to advance a spe-                authors’ own revision intent. 2) We build a self-
+cific argument. Editing such a figure therefore de-           improving scientific figure-editing agent that learns
+mands localised, compositional operations on its              from paper revisions via skill evolution, distilling
+primitives that combine many sub-skills, making               execution traces and the authors’ demonstrations
+one-shot hand-engineered scaffolds brittle across             into a portable skill specification. 3) Experiments
+the long tail of edit types. Existing commer-                 show that our agent learns meaningful editing skills
+cial text-to-image editors such as Nano Banana                from paper revisions and substantially improves
+Pro (Google DeepMind, 2025) and GPT-Image-                    edit quality over strong single-pass baselines.
+2 (OpenAI, 2025) can re-render a complex figure
+from a natural-language prompt, but they operate at           2     Related Work
+the raster level in a single pass and expose no com-
+                                                              2.1    Scientific Diagram Generation
+positional handle for the targeted local operations a
+researcher actually performs during revision, such            A first line of work generates a scientific diagram
+as adding or removing a sub-panel, relabelling a              from a textual description. Recent systems in-
+specific component, or re-routing arrows. Natu-               clude AUTO F IGURE (Zhu et al., 2026b), PAPER -
+ral paper revisions, which capture genuine author-            BANANA (Zhu et al., 2026a), and S CI F IG (Huang
+written edit intent at scale, remain a largely un-            et al., 2026), which build on general SVG genera-
+tapped source of supervision for scientific-figure            tion backbones such as S TARV ECTOR (Rodriguez
+editing.                                                      et al., 2025), LLM4SVG (Xing et al., 2025), and
+    To address this challenge, we present SciDia-             O MNI SVG (Yang et al., 2025). A parallel line
+gramEdit, a skill-evolution framework that learns             evaluates such systems: AIB ENCH (Liao et al.,
+to edit scientific diagrams from natural paper revi-          2026) and S RID B ENCH (Chang et al., 2025) adopt
+sions. Our key insight is that author-drawn figure            rubric-based protocols whose checklist style in-
+revisions encode the implicit visual grammar of               spires the judge we use for the editing setting. All
+scientific communication, and that an agent can               of these systems and benchmarks address diagrams
+distil this grammar by contrasting each of its ed-            produced from scratch; none takes an existing dia-
+its against the author-drawn target. This insight             gram plus an editing instruction as input.
+plays out in two parts. First, the publication record
+itself already contains a long trail of natural editing       2.2    Scientific Diagram Editing
+pairs: between two arXiv versions of the same pa-             The work closest to ours is AUTO F IGURE -
+per, the same figure is often re-rendered by the au-          E DIT (Lin et al., 2026), a one-shot pipeline that
+thors. Mining these pairs yields a benchmark of be-           converts a raw illustration into an editable SVG but
+fore/after figures against which a rubric-grounded            does not itself learn how to edit given an instruction.
+judge scores an agent’s edit by directly compar-              C HAT 2SVG (Wu et al., 2025) performs iterative
+ing it to the author-drawn target. Second, because            instruction-driven editing on generic SVGs. In the
+the space of editing instructions is too diverse for          raster domain, I NSTRUCT P IX 2P IX (Brooks et al.,
+any fixed scaffold to anticipate, we adopt agentic            2023) and commercial editors such as Nano Banana
+learning via skill evolution: by contrasting each             Pro (Google DeepMind, 2025) and GPT-Image-
+rollout against the author-drawn target, an agentic           2 (OpenAI, 2025), together with native-unified
+proposer continually distils the drawing patterns             VLMs such as S ENSE N OVA -U1 (Diao et al., 2026),
+observed in those targets into the agent’s skill spec-        re-render the image in a single pass and expose
+ification over multiple epochs, lifting edit accuracy         no addressable vector primitives for targeted lo-
+without requiring a hand-engineered pipeline. To              cal edits. Among editing benchmarks, SVGE DIT-
+implement this loop, the editor operates directly on          B ENCH V2 (Nishina and Matsui, 2025) and SVG E -
+
+                                                          2
+Benchmark                                     Task    Domain                   Source                            #
+Scientific-illustration evaluation
+AIBench (Liao et al., 2026)                   Eval    Sci illustration         Papers, top venues 2025         300
+SridBench (Chang et al., 2025)                Eval    Sci illustration         Papers, 13 disciplines        1,120
+Scientific-illustration generation
+SVGEditBench V2 (Nishina and Matsui, 2025)    Edit    Generic SVG (emojis)     Emoji icons, GPT-4o prompts   1,683
+AutoFigure (Zhu et al., 2026b)                Gen     Sci illustration         Papers, surveys, blogs        3,300
+AutoFigure-Edit (Lin et al., 2026)            Gen     Sci illustration         Papers, AutoFigure subset       200
+PaperBananaBench (Zhu et al., 2026a)          Gen     Methodology diag.        Papers, NeurIPS 2025            292
+SciDiagramEdit (ours)                         Edit    Sci illustration         Papers, arXiv revisions         364
+
+Table 1: Benchmarks adjacent to our setting, all spanning 2024–2026. Task: Gen = text→figure generation; Eval
+= evaluation of generated figures; Edit = instruction-grounded edit of an existing figure. Only S CI D IAGRAM E DIT
+combines instruction-driven editing with scientific diagrams sourced from real author-written paper revisions.
+
+
+NIUS (Chen et al., 2025) evaluate instruction-based         natural-language-instructed edits, but it operates
+SVG editing on generic content, with neither tar-           on generic emoji SVGs rather than scientific dia-
+geting scientific diagrams.                                 grams. Our benchmark is the only one combining
+                                                            (i) the editing regime, (ii) scientific-diagram do-
+2.3    Self-Improving LLM Agents                            main, (iii) paired before/after figures, and (iv) nat-
+A line of work improves LLM-agent behaviour                 urally occurring author-written instructions, with
+through natural-language feedback over execu-               paper revisions as the data source.
+tion traces, varying in the unit of evolution.
+                                                            Distribution and Diversity. Figure 2 (a) breaks
+T EXT G RAD (Yuksekgonul et al., 2024) operates
+                                                            down edits into four semantic groups: Content
+at the level of textual gradients through a com-
+                                                            (relabeling text), Structure (adding, removing,
+pound AI system; VOYAGER (Wang et al., 2023),
+                                                            moving, re-laying-out, or re-routing elements),
+GEPA (Agrawal et al., 2025), T RACE 2S KILL (Ni
+                                                            Visual (restyling colours, fonts, strokes), and
+et al., 2026), and E VO S KILL (Alzubi et al., 2026)
+                                                            Misc. Content-level renaming (R ELABEL, 22.8%)
+evolve prompts and skill artifacts; and M ETA -
+                                                            and structural additions (A DD ELEMENT, 21.4%)
+H ARNESS (Lee et al., 2026) evolves the surround-
+                                                            jointly account for 44% of edits, while connec-
+ing coding harness. We adopt the same patch-and-
+                                                            tion rewiring is the rarest operation (4.2%). Fig-
+merge philosophy and specialise it to scientific-
+                                                            ure 2 (b) summarises the source-paper distribution:
+diagram editing, where the unit of evolution is a
+                                                            papers span 23 arXiv primary subjects, with the
+skill specification consumed by an SVG-editing
+                                                            four largest categories (CS .LG, CS .CL, CS .CV,
+agent operating on editable vector primitives.
+                                                            CS .RO) accounting for 73.6% of samples and a
+
+3     Dataset Curation                                      long tail of 15 further categories adding disciplinary
+                                                            breadth. Sample years (Figure 2 c) skew toward
+We construct SciDiagramEdit, a benchmark of                 recent revisions, with 47% drawn from 2023–2024.
+364 natural before/after figure-edit pairs mined
+from arXiv paper revisions. Each pair places the            Annotation. Scientific         figures      combine
+same figure across two arXiv versions (vold and             schematic elements that are naturally vectorisable
+vnew ) of a paper, providing a naturally occurring          (arrows, frames, text labels, connectors) with
+edit grounded in real research practice.                    raster regions (photos, complex plots, dense
+                                                            sub-schematics) that resist lossless vectorisation.
+Relation to Prior Benchmarks. Table 1 situ-                 To enable instruction-driven editing at the primitive
+ates S CI D IAGRAM E DIT relative to adjacent bench-        level, we decompose each figure into these two
+marks. Among scientific-illustration benchmarks             layers via the pipeline of AUTO F IGURE -E DIT (Lin
+(FigureBench, PaperBananaBench, AIBench, Srid-              et al., 2026). (i) A region segmenter identifies
+Bench), all target generation or evaluation of fig-         the raster panels and returns a set of bounding
+ures produced from scratch and lack paired be-              boxes covering them. (ii) An LLM writes an SVG
+fore/after data. Among instruction-based SVG edit-          template that vectorises the surrounding schematic
+ing benchmarks (SVGEditBench V2, AutoFigure-                elements as native SVG primitives, leaving a
+Edit), only SVGEditBench V2 provides paired                 placeholder slot at each bounding box. (iii) The
+
+                                                        3
+                        (a) Edit types
+            Content      Structure        Visual        Misc          (b) arXiv subjects                                              (c) Publication years
+                                                                                                                               30
+       Relabel                             22.8%                        Other
+                                                                                                                                                 24.3%
+                                                                    cs.HC             cs.LG                                    25                     22.7%
+   Add element                            21.4%
+
+
+
+
+                                                                                                        Share of samples (%)
+                                                                eess.IV     9.6% 19.9%
+        Restyle                 14.1%                            cs.AI                                                                      19.1%
+                                                                                                                               20
+        Layout                 12.7%                           cs.IR 7.6%                                                              15.9%
+                                                                                                                               15 13.9%
+Remove element              10.2%                                                         18.7% cs.CL
+          Move             9.2%                                         16.7%                                                  10
+                                                                cs.RO             18.3%
+         Other         5.4%                                                                                                     5                           4.0%
+    Connection        4.2%                                                          cs.CV
+                                                                                                                                0
+                  0       10         20            30                                                                               2020 2021 2022 2023 2024 2025
+                       Share of edits (%)                                                                                                       Year
+
+Figure 2: Dataset statistics. (a) Edit-type distribution over 2,628 atomic claims across the 364 samples, grouped
+into Content / Structure / Visual / Misc semantic categories. (b) Source papers span 23 arXiv primary categories;
+the four machine-learning categories (CS .LG, CS .CL, CS .CV, CS .RO) jointly cover 73.6% of samples, with the
+remainder distributed across a long tail. (c) Publication years skew toward recent revisions.
+
+
+original raster crop of each panel is inserted back                         Architecture Overview. Our architecture (Fig-
+into its placeholder as an embedded <image> node.                           ure 3) centres on the Editor E, an agentic system
+Formally, we represent each processed figure as a                           that uses code-level tools to perform the various ed-
+pair                                                                        its on the SVG figure under a skill specification S.
+                                                                            To progressively improve the Editor’s ability across
+         F = (V, A),              A = {ak }m
+                                           k=1 ,                (1)         instructions, we further introduce a Judge J that
+                                                                            evaluates the Editor’s current performance, and a
+where V is the SVG source (vectorised primitives                            Coach C that reads past traces and Judge verdicts
+plus <image> reference nodes) and A is the set of                           to upgrade the Editor by emitting patches to S.
+m embedded raster panels indexed by placeholder.                            Iterating this loop refines S across training steps.
+  Beyond the figure pair itself, each sample is an-
+                                                                            4.2     Scientific Diagram Editor E
+notated at curation time with a natural-language
+editing instruction and a per-sample checklist                              The Editor is an agentic system, realised as a code-
+                                                                            writing subprocess with file-system and Python
+                                               n
+                            (qj , Cj , a⋆j ) j=1 ,                          tool access. Given (F in , I, S), it issues a sequence
+                        
+              Q =                                               (2)
+                                                                            of tool calls (at , ot )Tt=1 that manipulate the SVG,
+where qj is a natural-language question grounded                            yielding an edited figure F out and an execution
+in the instruction (e.g., “Was the panel-(C) cap-                           trace τ = (at , ot )Tt=1 . The Editor loads the top-
+tion added below the rightmost block?”), Cj is                              level SKILL.md verbatim into its system prompt
+the admissible-answer set (binary {YES, NO} or                              and reads any referenced workflows/ or tools/
+a multi-choice list), and a⋆j ∈ Cj is the ground-truth                      file on demand via its file-system tool, so context
+answer. Across the 364 samples we collect 2,628                             cost is independent of the skill directory’s size.
+such questions in total (Figure 2 a). The questions                         Skill Specification. Formally, S is a finite map
+are designed to cover both surface-level instruction-                       from relative paths to file contents,
+following (whether each named change appears
+                                                                                                 |S|
+                                                                                S = (pi , ci ) i=1 , pi ∈ R, ci ∈ Σ∗ ,
+                                                                                       
+in the output) and the figure’s overall logical co-                                                                       (3)
+herence (whether the edit preserves the diagram’s
+reasoning structure).                                                       where R is the set of admissible relative paths (a
+                                                                            top-level SKILL.md plus optional workflows/ and
+4     Methodology                                                           tools/ subdirectories), and Σ∗ denotes arbitrary
+                                                                            unicode content. Following recent work on agentic
+4.1    Problem Formulation                                                  skills (Alzubi et al., 2026; Ni et al., 2026), we
+                                                                            treat S as a learnable artefact and evolve it from
+Given an editable scientific figure F in = (V in , Ain )
+                                                                            execution traces rather than authoring it by hand.
+and a natural-language editing instruction I, the
+goal is to produce a figure that satisfies I while pre-                     Tool Primitives. To save the Editor from rein-
+serving figure content unrelated to the instruction.                        venting common utilities and to shorten its ex-
+
+                                                                        4
+    Reorganize from a three-row vertical layout into a two-column horizontal layout, with the right column
+ holding Element Attributes / Image Annotation / Textual Choices top-to-bottom.
+
+
+                                             > Layout_Plan
+                                             > Svg_Render
+                                             > Aesthetic_Verifier
+                                             > ...
+                                       ℰ
+
+                                       𝒮
+                          𝐹   ()           𝑟$%&             𝐹 *+,                                𝐹 -%.
+                                                             Multi-Choice Question 𝑞             Expected Answer 𝑎 ∗   Judge
+                                                       "Element Attributes" panel moved?     Bottom-left → top-right    ✅
+                               𝒞                  𝒯    Purple "Image Annotation" moved?      Right-middle               ✅
+                                                                         ⋯                               ⋯              ⋯
+                                   𝒫       𝑟&%'
+           𝑟
+Figure 3: Overview of the SciDiagramEdit training loop on a representative sample. Given an input figure F in
+and a natural-language editing instruction, the Editor E uses the current skill specification S to produce an edited
+figure F out and an execution trace τ . The Judge J scores the output along two axes: an aesthetic preference raes
+from a pairwise comparison against the author’s revision F ref , and a semantic faithfulness rsem from a per-sample
+multiple-choice checklist. The Coach C consumes the trace, the scores, and F ref as a demonstration, emitting a
+patch that updates S. The loop iterates over training minibatches from Dtrain with validation gating on Dval .
+
+
+ploration, we expose several optional CLI prim-                     queried with (F out , F in , F ref , I, qj ) and returns a
+itives that it can call on demand: render-svg pro-                  predicted answer âj ∈ Cj for each question, yield-
+       Input Diagram
+vides headless-Chromium      SVG rendering with full                ing the verification accuracy
+SVG/CSS/font support, layout-lint runs deter-                                             n
+           Type equation   here.                                                       1 Which
+                                                                                         X
+                                                                                             ⊮is â
+                                                                                                 more aesthetic
+                                                                                                         ⋆      and comprehensible?   Generate
+                                                                                                          
+ministic geometric    checks  on the rendered output,                        rsem =                j = aj ∈ [0, 1].       (4)
+and gen-icon synthesises small raster icons of real-                                   n
+                                                                                           j=1
+world objects (e.g. a sensor, a server rack) that SVG Aesthetic Preference. Pointwise VLM scoring
+                                                  Evolve
+primitives cannot naturally draw. When and how
+         Instruction                              Agent
+                                                      of a single figure’s aesthetic quality is known to
+                                                                                   Expected Revision
+to invoke these   primitives is encoded in S.         be noisy, whereas pairwise comparison between
+                                                      two figures yields a more reliable preference sig-
+4.3 Aesthetic-Aware Judge JSkill
+                                                 Generated   Coachet al., 2025). We therefore evaluate aes-
+                                                      nal (Wang
+The Judge is a vision-language model that assignsRevision        Updatethe VLM to compare the Editor’s
+                                                      thetics by asking
+a scalar score r ∈ [0, 1] to each edit, combining     output F out directly against the author’s revision
+a semantic-faithfulness term that quantifies how      F ref in randomised order to control position bias,
+well the edit realises the changes specified in the  yielding a binary preference
+instruction with an aesthetic-preference term that                            h
+                                                                                  out     ref
+                                                                                              i
+gates the score on whether the output matches the                  raes   =  ⊮  F     ⪰ F       ,       (5)
+target’s visual polish.                                             where ⪰ denotes “judged at least as polished as”
+                                                                    under the comparison.
+Semantic Faithfulness. We assess instruction-
+following, factual, and logical fidelity at sub-                    Composite Score. An edit is only useful in prac-
+instruction granularity through the per-sample                      tice if it is both semantically faithful and visually
+checklist Q of Eq. 2 rather than free-form scor-                    presentable. We therefore gate verification accu-
+ing: constraining the VLM to a small admissible                     racy on aesthetic preference, rather than averaging
+answer set raises answer-level precision and yields                 the two components:
+an interpretable per-question breakdown, in line
+                                                                                       r = raes · rsem ,                    (6)
+with the question-answering protocol used by re-
+cent academic-illustration evaluators (Liao et al.,                 so an edit must reach the target’s aesthetic threshold
+2026). Given an edited figure F out , the VLM is                    before any verification credit accrues to it.
+
+                                                              5
+4.4      Demonstration-Aware Coach C                                 rules, capturing the compositional and stylistic con-
+The Coach progressively improves the Editor’s abil-                  ventions the author followed rather than sample-
+ity by editing the skill specification S in light of                 specific fixes.
+past Editor trajectories. We realise it as a coding-
+                                                                     5     Experiments
+agent subprocess with file-system and shell access,
+dropped into a workspace that exposes the cur-                       5.1    Experiment Setup
+rent skill directory S, the per-sample trajectory                    Evaluation Protocol. We measure the quality
+bundles, the author’s revised figure F ref , and a                   of the agent’s edits along two axes. Semantic
+feedback-history file H summarising prior accep-                     Faithfulness is scored by the per-sample checklist
+t/reject decisions so previously rejected ideas are                  success rate rsem and a blind-pairwise instruction-
+not re-litigated.                                                    following win rate. Aesthetic Quality is scored
+Patch Operator. Let B ⊂ Dtrain be a minibatch                        by U NI P ERCEPT’s Image Aesthetic Assessment
+of M training samples, with τ , r the per-sample                     (IAA) and Image Structure and Texture Assess-
+traces and judge scores produced by the Editor on                    ment (ISTA) on a 0–100 scale (Liao et al., 2026),
+B. The Coach outputs a patch of at most L edits,                     and a blind-pairwise aesthetic win rate raes . Both
+                                                                     pairwise comparisons use the author’s revised fig-
+                                   
+            P = C S, B, τ , r, H ,             (7)                   ure as the reference. All scores are computed on
+                                                                     the test split of the S CI D IAGRAM E DIT corpus (§3),
+where each edit π = (ACTION, p, OP, c) specifies                     split 2:1:3 into Dtrain , Dval , Dtest ; skill evolution
+an action (CREATE _ FILE or EDIT _ FILE), a target                   runs for two epochs on Dtrain , with candidates ac-
+path p, an operator OP drawn from standard file-                     cepted only when they do not regress the running
+modification primitives (CREATE, REWRITE, AP -                       validation score on Dval .
+PEND , INSERT _ AFTER , REPLACE , DELETE ), and
+                                                                     Comparison Approaches. We compare against
+new content c. The schema lets a single edit intro-
+                                                                     two families of approaches drawn from Figure 4.
+duce a new workflows/ file rather than append to
+                                                                     (i) AUTO F IGURE -E DIT-style Editors (Lin et al.,
+SKILL.md, keeping the always-loaded core concise
+                                                                     2026): the LLM is shown the input SVG source
+as expertise accumulates.
+                                                                     and the editing instruction and emits the full edited
+Training Loop. The Coach is invoked iteratively                      SVG in a single pass. We evaluate three frontier
+on minibatches drawn from Dtrain and each candi-                     LLM backbones (GPT-5.3, GPT-5.4, GPT-5.5).
+date is scored on a held-out validation split Dval .                 (ii) Raster Regenerators: GPT-I MAGE -1.5 and
+We maintain a top-K frontier of the best-scoring                     GPT-I MAGE -2 (OpenAI, 2025), which accept the
+skills seen so far and propose new candidates from                   figure and instruction as a raster pair and re-render
+frontier entries in round-robin order; once training                 an edited raster. We include GPT-I MAGE -2, the
+terminates, the highest-scoring entry of the frontier                strongest closed-source image editor available, as
+is returned:                                                         our demanding raster-regime reference.
+
+               S ⋆ = arg max r̄(S; Dval ) ,               (8)        5.2    Quantitative Results
+                              S
+                                                                     Comparison with Baselines. The raster regener-
+where the argmax ranges over candi-                                  ators set a high bar on the aesthetic axis: on UniPer-
+dates seen during        training and r̄(S; D)  :=                  cept’s IAA and ISTA, both GPT-I MAGE -1.5 and
+E(F in ,I,F ref )∼D J (E(F in , I; S), F in , F ref , I) is
+                   
+                                                                     GPT-I MAGE -2 score strongly, even surpassing the
+the expected per-sample score.1                                      author’s revised figure (Target), consistent with
+                                                                     their position as state-of-the-art closed-source im-
+Beyond Trace and Score. The trace τ and score
+                                                                     age editors. On the semantic axis, however, Ours
+r tell the Coach what the Editor attempted and
+                                                                     attains the highest score on the semantic checklist,
+how well it fared, but neither shows what the edit
+                                                                     surpassing both raster regenerators and all single-
+should look like. The author’s revised figure F ref
+                                                                     pass AUTO F IGURE -E DIT backbones, and is essen-
+supplies this missing demonstration: comparing
+                                                                     tially tied with GPT-I MAGE -2 on the instruction-
+F ref against the Editor’s output F out lets the Coach
+                                                                     following win rate. On the aesthetic axis, Ours
+distil the systematic gaps into generalisable skill
+                                                                     is the strongest vector-aware method and nearly
+   1
+       Full pseudocode appears as Algorithm 1 in the appendix.       matches Target on both IAA and ISTA, though it
+
+                                                                 6
+                                                                                        Semantic                                           Aesthetic
+                          Method
+                                                                         Success Rate ↑              Win Rate ↑            IAA ↑           ISTA ↑           Win Rate ↑
+GPT-I MAGE -1.5 (OpenAI, 2025)                                                 0.516                    0.347               50.77           46.60               0.349
+GPT-I MAGE -2 (OpenAI, 2025)                                                   0.882                    0.778               49.60           45.78               0.637
+AUTO F IGURE -E DIT (GPT-5.3) (Lin et al., 2026)                               0.828                    0.528               45.30           41.24               0.389
+AUTO F IGURE -E DIT (GPT-5.4) (Lin et al., 2026)                               0.823                    0.520               45.08           41.35               0.317
+AUTO F IGURE -E DIT (GPT-5.5) (Lin et al., 2026)                               0.844                    0.573               44.87           41.37               0.400
+Ours                                                                           0.932                    0.756               47.93           45.58               0.515
+Target (GT)                                                                      —                         —                48.25           46.49                 —
+
+Table 2: Quantitative comparison on the test set. Both win rates are blind-pairwise versus the author’s revised figure.
+Semantic: checklist success rate and instruction-following win rate. Aesthetic: UniPercept’s Image Aesthetic
+Assessment (IAA) and Image Structure and Texture Assessment (ISTA) on a 0–100 scale (Liao et al., 2026), and
+aesthetic win rate. Higher is better; Target (GT) reports UniPercept on the author’s revision.
+
+                                  w/o skill                                       w/ evolved skill                                    w/ transferred skill
+  Model
+                   Semantic ↑               Aesthetic ↑                Semantic ↑                  Aesthetic ↑                 Semantic ↑                  Aesthetic ↑
+GPT-5.1                0.224                    0.168                 0.252 +0.028                0.205 +0.037                0.257 +0.033                0.199 +0.031
+GPT-5.3                0.659                    0.285                 0.713 +0.054                0.358 +0.073                0.706 +0.047                0.366 +0.081
+GPT-5.4                0.700                    0.360                 0.724 +0.024                0.436 +0.076                0.718 +0.018                0.425 +0.065
+GPT-5.5                0.745                    0.466                 0.756 +0.011                0.515 +0.049                     —                           —
+
+Table 3: Effect of skill across backbones. Each column group reports semantic and aesthetic win rates under one
+skill setting: w/o skill, w/ evolved skill, and w/ transferred skill (the skill evolved with GPT-5.5 reused here).
+Superscripts on the w/ skill columns show the change (∆) relative to the w/o skill baseline in the same row.
+
+       Reorganize from 2-column vertical to 2-row horizontal layout split by dashed line. Top row: "1. Scene Graph Generation" (image +
+       Task Prompt → LMM → scene graph). Bottom row: "2. Response Generation" (image + Scene Graph → LMM → Response). Swap
+       example to books/mouse/laptop; add curved arrow from scene graph (row 1) into bottom row's input.
+
+
+
+
+           Input                           AutoFigure-Edit (GPT-5.3)                      AutoFigure-Edit (GPT-5.4)                           GPT-Image-1.5
+
+
+
+
+         Target                                       GPT-Image-2                          AutoFigure-Edit (GPT-5.5)                               OURS
+
+Figure 4: Qualitative comparison on a representative editing instance. The panels present the input figure, the
+author’s target revision, and the outputs of baseline editors (AUTO F IGURE -E DIT with GPT-5.3, GPT-5.4, GPT-5.5;
+GPT-I MAGE -1.5; GPT-I MAGE -2) alongside our method (Ours).
+    Reorganize from 2-column vertical to 2-row horizontal layout, split by a dashed line, with underlined headings. Row 1 (Scene Graph Generation): green Task Prompt
+    panel → LMM → scene graph panel. Row 2 (Response Generation): green Scene Graph+Task Prompt panel → LMM → Response box. Replace frisbee-man example
+    with books/mouse/laptop on a table; scene-graph nodes become "pink mouse → on → table" + "books → on → laptop". Add curved arrow from row 1 scene graph into
+trails the raster regenerators on the blind pairwise
+    row 2 input.                                                                       the skill evolved on GPT-5.5 fixed and apply it to
+aesthetic gate.                                                                        each backbone in turn. The transferred skill yields
+                                                                                       gains on both axes, with the aesthetic axis benefit-
+Effect of Skill Across Backbones. Table 3 tests                                        ing more. It is also comparable to each backbone’s
+whether the procedural knowledge captured by the                                       self-evolved skill (w/ evolved skill); we conjecture
+evolved skill transfers across backbones. We hold                                      that GPT-5.5’s greater capacity lets it explore a
+
+                                                                                   7
+          Replace waveform+spectrogram with a single blue waveform; relabel center "+" → "Normalizing Flow"; insert "CNN" before
+          percentages; swap 3D plot ↔ mannequins; recolor connectors to dark blue.
+
+
+
+                                                       Input
+
+                                                                                                                         wo/ skills
+
+
+
+                                                        Target
+
+                                                                                                                         w/ skills
+
+          Aesthetic-Composition Gate triggered → per-item visual self-check → passed blind A/B.
+
+
+Figure 5: Qualitative skill ablation on a representative editing instance. Left: the input figure (top) and the author’s
+        Reflow 1×4 panels into 2×2 grid (LS/BS top, FA/EM bottom) and drop the per-thumbnail % labels.
+revised target (bottom); right: our method’s outputs without the evolved skill (top) and with it (bottom).
+                                               Input
+wider space of skill rules during evolution, produc-                    O URS vs.                            Aesthetic       Semantic
+ing rules that generalise well to weaker backbones.                     GPT-I MAGE -2                           0.54         0.59
+                                                                        AUTO F IGURE -E DIT (GPT-5.5)             wo/ skills 0.68
+                                                                                                                0.63
+
+5.3      Qualitative Results                                            Table 4: We report the win rate of O URS against each
+                                                                        baseline on 30 instances sampled from Dtest , with five
+Comparison Against Baselines. Figure 4Target      shows                 participants under a blinded protocol.
+our qualitative comparison on a scene-graph figure
+                                                              5.4 User Study
+that the author rearranged from a 2-column vertical
+layout into a 2-row horizontal layout with a dashed           Beyond the automated scores, wew/run     skills
+                                                                                                           a human
+separator and a curved arrow leading from the row- pairwise study against the two strongest baselines,
+1 scene graph back into the row-2 input. GPT- GPT-I MAGE -2 and AUTO F IGURE -E DIT (GPT-
+I MAGE -2   trades  logical fidelity  for reflow
+                                           visual→polish:     5.5). We sample 30 instances uniformly from Dtest
+         Tighten viewBox after structural          no leftover blank bands → passed blind A/B.
+the rendering is clean, but the curved arrow lands            and recruit five volunteer participants who each rate
+on the wrong target panel. The AUTO F IGURE - O URS against each baseline along two axes, aes-
+E DIT variants make the opposite trade, getting the           thetic and instruction following, in separate rounds.
+semantic content of the instruction right but at the          Each trial shows the input figure F in , the natural-
+cost of aesthetic quality, with the new connector             language instruction, and two anonymised outputs
+crossing the surrounding label text. Ours navigates           in randomised left/right order; the author’s revision
+this trade-off: the curved arrow lands on the correct         F ref is withheld. Table 4 reports the win rate of
+target panel, and the connector does not cross the            O URS against each baseline along each axis.
+surrounding label text.  2
+                                                                        6    Conclusion
+                                                                        We presented S CI D IAGRAM E DIT, a skill-evolution
+Effect of the Evolved Skill. Figure 5 compares
+                                                                        framework for editing scientific diagrams that op-
+our method’s outputs without (wo/ skills, top right)
+                                                                        erates on the figure’s editable vector source and
+and with (w/ skills, bottom right) the evolved skill
+                                                                        acquires a library of editing rules from execu-
+on a single editing instance. Without the skill, the
+                                                                        tion traces and author-drawn targets, so its outputs
+inserted CNN box and the percentage labels are
+                                                                        are SVG the user can continue editing, not a flat-
+crammed against each other and the panel reads
+                                                                        tened raster. Alongside the framework, we release
+as visually cramped. With the skill in place, the
+                                                                        a benchmark mined from arXiv paper revisions,
+Aesthetic-Composition Gate rule (annotated in or-
+                                                                        where each before/after pair is grounded in the au-
+ange) triggers a per-item visual self-check that
+                                                                        thors’ own revision intent. On this benchmark, the
+rebalances the inter-element spacing into a more
+                                                                        agent matches the strongest closed-source raster
+breathable composition.
+                                                                        editor on semantic faithfulness while keeping the
+                                                                        figure’s structure editable, and its learned skill fur-
+   2
+       See the appendix for additional visual examples.                 ther transfers across backbones.
+
+                                                                    8
+Limitations                                                 Potential for misuse. Like any figure-editing
+                                                            tool, our system could in principle be used to mis-
+Our benchmark focuses on editing instructions               represent experimental visuals. Its intended use
+whose intent is stated explicitly: each edit clause         is to support legitimate authoring during revision,
+is spelled out in the natural-language prompt. We           where the author retains editorial authority and
+have not yet explored edits that require multi-step         every model-suggested modification is left as in-
+reasoning over the figure’s underlying argument,            spectable SVG primitives rather than baked into
+nor the harder regime where the agent must infer            pixels.
+authorial intent from the surrounding paper con-
+text rather than from the prompt itself. In the             AI assistants. The GPT-5. X and C LAUDE mod-
+same spirit, the skill-evolution loop in this work is       els are integral components of our method. Sep-
+still externally orchestrated; a more product-grade         arately, we used an AI assistant in two human-
+pipeline would self-refine autonomously, weighing           supervised roles. First, during dataset curation,
+research taste alongside the explicit metric signal         as a co-author of the natural-language editing in-
+and progressively reducing human supervision in             struction, with every released annotation human-
+the loop. Finally, the experiments we report oper-          confirmed. Second, for prose polishing of the paper
+ate at a relatively modest scale, with a few hundred        itself, namely paraphrasing and grammar refine-
+training pairs and a few dozen evolution steps. Scal-       ment of author-written passages, without it suggest-
+ing either axis substantially, by mining many more          ing new technical content.
+revision pairs or running the loop for many more
+iterations, may surface emergent agent behaviours
+and more abstract skill rules than the current com-
+                                                            References
+pute budget affords.                                        Lakshya A Agrawal, Shangyin Tan, Dilara Soylu,
+                                                              Noah Ziems, Rishi Khare, Krista Opsahl-Ong, Ar-
+                                                              nav Singhvi, Herumb Shandilya, Michael J Ryan,
+Ethical Considerations                                        Meng Jiang, and 1 others. 2025. Gepa: Reflec-
+                                                              tive prompt evolution can outperform reinforcement
+Data sources and licensing. The benchmark is                  learning. arXiv preprint arXiv:2507.19457.
+mined from publicly available arXiv preprints. The
+underlying papers and figures retain their original         Salaheddin Alzubi, Noah Provenzano, Jaydon Bingham,
+                                                              Weiyuan Chen, and Tu Vu. 2026. Evoskill: Auto-
+licences and we use them under fair use for non-              mated skill discovery for multi-agent systems. arXiv
+commercial research. We will release the curated              preprint arXiv:2603.02766.
+instruction–revision pairs and our atomic-claim an-
+notations under CC BY-NC 4.0 for research use               Tim Brooks, Aleksander Holynski, and Alexei A Efros.
+                                                              2023. Instructpix2pix: Learning to follow image edit-
+only; the source figures themselves are not redis-            ing instructions. In Proceedings of the IEEE/CVF
+tributed and must be fetched from arXiv under each            conference on computer vision and pattern recogni-
+paper’s original licence.                                     tion, pages 18392–18402.
+
+Content and privacy. All figures in the bench-              Yifan Chang, Yukang Feng, Jianwen Sun, Jiaxin Ai,
+                                                              Chuanhao Li, S Kevin Zhou, and Kaipeng Zhang.
+mark are technical scientific diagrams such as plots,         2025. Sridbench: Benchmark of scientific research il-
+scene graphs, and network or pipeline diagrams.               lustration drawing of image generation model. arXiv
+During curation we manually inspected every pair              preprint arXiv:2505.22126.
+and did not encounter personally identifying infor-         Siqi Chen, Xinyu Dong, Haolei Xu, Xingyu Wu, Fei
+mation beyond the author bylines already present              Tang, Hang Zhang, Yuchen Yan, Linjuan Wu, Wenqi
+in arXiv metadata, which we do not include in the             Zhang, Guiyang Hou, and 1 others. 2025. Svgenius:
+model inputs. We also did not encounter offensive             Benchmarking llms in svg understanding, editing and
+                                                              generation. In Proceedings of the 33rd ACM Inter-
+content.
+                                                              national Conference on Multimedia, pages 13289–
+                                                              13296.
+Reproducibility. Because the framework relies
+on closed-weight GPT-5. X backbones, training-              Haiwen Diao, Penghao Wu, Hanming Deng, Jiahao
+time access is gated by API cost. We release the              Wang, Shihao Bai, Silei Wu, Weichen Fan, Wenjie
+                                                              Ye, Wenwen Tong, Xiangyu Fan, and 1 others. 2026.
+benchmark and the skill specification produced by             Sensenova-u1: Unifying multimodal understanding
+the evolution loop so that future work can reuse the          and generation with neo-unify architecture. arXiv
+distilled rules without re-running training.                  preprint arXiv:2605.12500.
+
+
+                                                        9
+Google DeepMind. 2025. Nano banana pro (Gemini                 Ximing Xing, Juncheng Hu, Guotao Liang, Jing Zhang,
+  image). Image generation and editing model.                    Dong Xu, and Qian Yu. 2025. Empowering llms
+                                                                 to understand and generate complex vector graphics.
+Siyuan Huang, Yutong Gao, Juyang Bai, Yifan Zhou,                In Proceedings of the Computer Vision and Pattern
+  Zi Yin, Xinxin Liu, Rama Chellappa, Chun Pong Lau,             Recognition Conference, pages 19487–19497.
+  Sayan Nag, Cheng Peng, and 1 others. 2026. Sci-
+  fig: Towards automating scientific figure generation.        Yiying Yang, Wei Cheng, Sijin Chen, Xianfang Zeng,
+  arXiv preprint arXiv:2601.04390.                               Fukun Yin, Jiaxu Zhang, Liao Wang, Gang Yu,
+                                                                 Xingjun Ma, and Yu-Gang Jiang. 2025. Omnisvg:
+Yoonho Lee, Roshen Nair, Qizheng Zhang, Kangwook                 A unified scalable vector graphics generation model.
+  Lee, Omar Khattab, and Chelsea Finn. 2026. Meta-               arXiv preprint arXiv:2504.06263.
+  harness: End-to-end optimization of model harnesses.
+  arXiv preprint arXiv:2603.28052.                             Mert Yuksekgonul, Federico Bianchi, Joseph Boen,
+                                                                Sheng Liu, Zhi Huang, Carlos Guestrin, and James
+Zhaohe Liao, Kaixun Jiang, Zhihang Liu, Yujie Wei,              Zou. 2024. Textgrad: Automatic "differentiation" via
+  Junqiu Yu, Quanhao Li, Hong-Tao Yu, Pandeng                   text. arXiv preprint arXiv:2406.07496.
+  Li, Yuzheng Wang, Zhen Xing, and 1 others. 2026.
+  Aibench: Evaluating visual-logical consistency in            Dawei Zhu, Rui Meng, Yale Song, Xiyu Wei, Sujian
+  academic illustration generation. arXiv preprint               Li, Tomas Pfister, and Jinsung Yoon. 2026a. Pa-
+  arXiv:2603.28068.                                              perbanana: Automating academic illustration for ai
+                                                                 scientists. arXiv preprint arXiv:2601.23265.
+Zhen Lin, Qiujie Xie, Minjun Zhu, Shichen Li, Qiyao
+  Sun, Enhao Gu, Yiran Ding, Ke Sun, Fang Guo,                 Minjun Zhu, Zhen Lin, Yixuan Weng, Panzhong Lu,
+  Panzhong Lu, and 1 others. 2026. Autofigure-edit:              Qiujie Xie, Yifan Wei, Sifan Liu, QiYao Sun, and
+  Generating editable scientific illustration. arXiv            Yue Zhang. 2026b. Autofigure: Generating and re-
+  preprint arXiv:2603.06674.                                     fining publication-ready scientific illustrations. In
+                                                                The Fourteenth International Conference on Learn-
+Jingwei Ni, Yihao Liu, Xinpeng Liu, Yutao Sun,                   ing Representations.
+   Mengyu Zhou, Pengyu Cheng, Dexin Wang, Er-
+   chao Zhao, Xiaoxi Jiang, and Guanjun Jiang.                 Appendix
+   2026. Trace2skill: Distill trajectory-local lessons
+   into transferable agent skills.     arXiv preprint          A     Additional Technical Details
+   arXiv:2603.25158.
+                                                               A.1    Annotation Interface
+Kunato Nishina and Yusuke Matsui. 2025. Svgedit-               Raw paired-figure mining from arXiv revisions is
+  bench v2: A benchmark for instruction-based svg
+  editing. arXiv preprint arXiv:2502.19453.                    noisy: two versions of the same figure often differ
+                                                               only in a re-rendered raster or a font swap with no
+OpenAI. 2025. GPT-Image: Image generation and edit-            semantic intent, and a small fraction are wholesale
+  ing. Image generation and editing model.
+                                                               replacements that share no structure with the orig-
+Juan A Rodriguez, Abhay Puri, Shubham Agarwal, Is-             inal. We keep only the meaningful middle band,
+  sam H Laradji, Pau Rodriguez, Sai Rajeswar, David            in which the author has added a panel, renamed
+  Vazquez, Christopher Pal, and Marco Pedersoli. 2025.         a label, re-routed an arrow, or re-laid out a block
+  Starvector: Generating scalable vector graphics code
+  from images and text. In Proceedings of the Com-             of elements while retaining enough of the original
+  puter Vision and Pattern Recognition Conference,             scaffold for the change to read as an edit rather
+  pages 16175–16186.                                           than a redraw. Even within this band the raw visual
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Man-                diff seldom makes the author’s intent explicit on
+  dlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan, and               its own: the same surface change can encode dif-
+  Anima Anandkumar. 2023. Voyager: An open-ended               ferent revision intents, and disambiguating which
+  embodied agent with large language models. arXiv             is meant requires reading the surrounding paper
+  preprint arXiv:2305.16291.
+                                                               context. A useful editing instruction therefore has
+Yibin Wang, Zhimin Li, Yuhang Zang, Yujie Zhou, Jiazi          to be authored, not just extracted, which is what
+  Bu, Chunyu Wang, Qinglin Lu, Cheng Jin, and Jiaqi            Figure 6 is designed to support.
+  Wang. 2025. Pref-grpo: Pairwise preference reward-              The interface in Figure 6 covers the instruction-
+  based grpo for stable text-to-image reinforcement
+  learning. arXiv preprint arXiv:2508.20751.                   annotation stage of curation. The before/after fig-
+                                                               ure pair is rendered at the top of the panel. The
+Ronghuan Wu, Wanchao Su, and Jing Liao. 2025.                  curator first applies two filtering decisions: a binary
+  Chat2svg: Vector graphics generation with large lan-
+  guage models and image diffusion models. In Pro-
+                                                               keep/drop verdict on whether the pair is suitable
+  ceedings of the Computer Vision and Pattern Recog-           for the benchmark, and a binary accurate/inaccu-
+  nition Conference, pages 23690–23700.                        rate verdict on whether the candidate instruction
+
+                                                          10
+Figure 6: Gradio interface used to annotate the natural-language editing instruction for each S CI D IAGRAM E DIT
+pair. The before/after figure pair is shown side-by-side, followed by binary verdicts on whether to keep the pair and
+whether the candidate instruction is accurate, an editable instruction field, and a chat panel for iteratively refining
+the instruction with a vision LLM.
+
+
+faithfully describes the visual edit. The candidate            ther, or discard. The loop typically converges in
+instruction itself is shown in an editable text field          two to three rounds. The Save button commits the
+that the curator can revise directly. Below it, a chat         final instruction together with the curator’s tags;
+panel backed by a vision LLM, GPT-5.5, lets the                the Reset button reverts to the last saved version.
+curator iteratively refine the instruction by describ-         Two parallel panels share this layout but are not
+ing what is missing or wrong; the assistant returns            shown for brevity: one filters SVG vectorisations
+a revised draft that the curator can accept, edit fur-         whose rendering drifts noticeably from the source
+
+                                                          11
+raster, since the AUTO F IGURE -E DIT vectoriser of             Algorithm 1 Skill-Evolution Training Loop
+§3 occasionally produces SVG that diverges visu-                Require: Splits Dtrain , Dval ; initial skill S0 ; Edi-
+ally from the original figure and we drop those                     tor E, Judge J , Coach C; total steps T ; mini-
+samples; the other authors the per-sample check-                    batch size M ; edit budget L; frontier size K
+list of Eq. 2. All editing instructions and checklist           Ensure: Best-so-far skill S ⋆
+questions are written in English; the source figures             1: s0 ← r̄(S0 ; Dval )
+are drawn from English-language arXiv preprints.                 2: Initialise frontier F ← {(S0 , s0 )}, H ← ∅
+                                                                 3: for t = 1, . . . , T do
+A.2   Skill Evolution                                            4:      (S, s) ← next entry of F in round-robin
+Training Loop. Algorithm 1 formalises the skill-                    order                          ▷ round-robin parent
+evolution loop sketched in §4.4. The loop main-                  5:      Sample            minibatch        B            =
+                                                                          in        ref   M
+                                                                    {(Fi , Ii , Fi )}i=1 ∼ Dtrain
+tains a top-K frontier F that stores the highest-
+scoring skills seen so far, in the spirit of the Pareto-         6:      for i = 1, . . . , M do
+frontier search of Alzubi et al. (2026). Each iter-              7:           (Fiout , τi ) ← E(Fiin , Ii ; S)
+ation picks a parent from F in round-robin order,                8:           ri ← J (Fiout , Fiin , Firef , Ii )
+runs the Editor on a fresh training minibatch with               9:      end for
+that skill, lets the Judge score the resulting outputs,         10:      P ← C(S, B, τ , r, H)                   ▷ |P| ≤ L
+and asks the Coach to write a patch from the traces,            11:      S̃ ← apply P to S
+scores, and the running feedback history H. The                 12:      s̃ ← r̄(S̃; Dval )
+patched skill is re-evaluated on Dval and admitted              13:      if |F| < K then          ▷ room in the frontier
+to F whenever the frontier still has room or its                14:           F ← F ∪ {(S̃, s̃)}
+score strictly exceeds the frontier’s worst entry, in           15:           H ← H ∪ {(P, ACCEPT, s̃)}
+which case that worst entry is evicted; otherwise               16:      else if s̃ > min(S,s′ )∈F s′ then          ▷ beats
+the candidate is rejected. Either way the accept/re-                current worst
+                                                                              F ← F \ {arg min(S,s′ )∈F s′ } ∪
+                                                                                                                       
+ject verdict is appended to H so the Coach does                 17:
+not re-propose a rejected idea.                                     {(S̃, s̃)}
+                                                                18:           H ← H ∪ {(P, ACCEPT, s̃)}
+Settings. Table 5 lists the concrete configuration              19:      else
+used to instantiate this loop in our main experi-               20:           H ← H ∪ {(P, REJECT, s̃)}
+ments, and a few choices there are worth motivat-               21:      end if
+ing. The Editor uses a GPT-5. X backbone while                  22: end for
+the Coach and Judge use C LAUDE O PUS 4.7: the                  23: (S ⋆ , s⋆ ) ← arg max(S,s′ )∈F s′
+cross-family pairing keeps the Editor from gaming               24: return S ⋆
+a same-family Judge’s idiosyncratic preferences,
+Claude Opus’s code competence suits the Coach’s
+role of authoring skill-rule patches, and the capac-            applied as patches over the prior skill rather than
+ity gap between a stronger Coach and a weaker                   as full rewrites, which empirically avoids forget-
+Editor lets procedural knowledge distilled by the               ting rules the Coach had previously introduced for
+Coach lift students of varying capacity, including              unrelated failure modes.
+GPT-5.1, 5.3, and 5.4. The search itself is multi-
+frontier: evolution maintains a top-K=3 frontier                Compute Resources. All model inference is per-
+of candidate skills rather than a single best-so-far,           formed through hosted APIs; we do not train any
+since a frontier of one plateaued quickly in early ex-          model weights and do not use any GPU compute.
+periments while multi-frontier search consistently              The Editor calls GPT-5. X through the C ODEX CLI,
+escaped local optima. The reward governing admis-               and the Coach and Judge call C LAUDE O PUS 4.7
+sion to that frontier is the multiplicative composite           through the C LAUDE C ODE CLI. Orchestration,
+r = raes ·rsem from Eq. 6 rather than an average; be-           SVG rendering, and trajectory bookkeeping run on
+cause vector-aware editing tends to under-perform               a single CPU-only workstation. Across all reported
+on aesthetics, multiplying rather than averaging                experiments in this paper, spanning four Editor
+raises the bar there, gating out semantically faithful          backbones together with the skill-evolution, trans-
+edits whose aesthetics still fall short and steering            fer, and ablation runs and the development cycles
+the loop to focus on that axis. Skill updates are               that preceded them, total API spend was on the
+
+                                                           12
+Component                      Value                           in randomised left/right order: one pairs O URS
+  Models                                                       against GPT-I MAGE -2 and one pairs O URS against
+Editor E (student)             GPT-5.5                         AUTO F IGURE -E DIT (GPT-5.5); for each trial the
+Editor backbones (transfer)    GPT-5.1/5.3/5.4/5.5
+Coach C (analyst)              C LAUDE O PUS 4.7 (1M ctx)
+                                                               participant answers “Which output is more vi-
+Judge J (vision)               C LAUDE O PUS 4.7               sually polished?”. The semantic round repeats
+  Evolution loop                                               the same per-instance setup with the question
+Frontier size                  3 (multi-frontier)             “Which output more faithfully realises the instruc-
+Frontier strategy              round-robin parent              tion?”. Each trial displays the input figure F in , the
+Epochs                         2
+Batch size                     8                               natural-language editing instruction, and the two
+Max analyst rounds per step    3                               anonymised outputs; the author’s revision F ref is
+Edit budget per skill update   8 patches                       withheld throughout, and no “tie” option is pro-
+Skill update mode              patch (vs. rewrite)
+Initial skill scaffold         basic tool usage and guide      vided. Table 4 reports the proportion of votes in
+ Reward                                                        favour of O URS per baseline and per axis, com-
+Composite r (Eq. 6)            raes · rsem                     puted over the resulting 150 votes per cell.
+Semantic rsem                  checklist accuracy ∈ [0, 1]
+Aesthetic raes                 binary, pairwise vs. target        B     Further Analysis
+ Inference
+Coach rewrite max tokens       64,000                             B.1    Typical Learned Skills
+Coach parallelism              4 workers
+Editor rollout parallelism     8 workers                          To give a concrete sense of what the skill-evolution
+Editor call timeout            600 s                              loop actually produces, we first show one evolved
+                                                                  skill at work, then describe the broader library that
+Table 5: Settings used for the skill-evolution loop and           the final skill pack S ⋆ contains.
+the results reported in §5.
+                                                                     Figure 7 shows one such skill in action. The wo/
+                                                                  skills output gets the panel reflow right but the SVG
+order of US $20,000 at standard rate-card pricing.                viewBox still encloses the original 1×4 footprint,
+We use headless C HROMIUM for SVG → PNG ren-                      so visible bands surround the new content and the
+dering, the C ODEX CLI for the Editor, the C LAUDE                aesthetic gate fails. With the evolved skill, the rule
+C ODE CLI for the agentic Coach, and the official                 “tighten the viewBox after any structural reflow”
+anthropic SDK for the Judge.                                      fires and the bands disappear.
+                                                                     Beyond this single rule, the pack is not a single,
+A.3    User Study Protocol                                        general-purpose prompt: the agent instead accumu-
+The user study reported in §5.4 was conducted                     lates a structured library of trigger-plus-rule entries,
+with five volunteer participants from the authors’                each targeting a specific recurring failure mode the
+institution; all participants are graduate students in            Coach observed in Editor traces. On disk the pack
+computer science / electrical engineering and par-                has the following layout:
+ticipated without compensation. Before each ses-                  SKILL/
+sion, participants were informed verbally that their              |-- SKILL.md
+                                                                  `-- workflows/
+anonymised preferences would be aggregated and                        |-- safe-string-replace.md
+reported in a research paper, and they consented be-                  |-- math-notation.md
+fore proceeding. The protocol collects only anony-                    |-- post-restructure-compactness.md
+                                                                      |-- deliverable.md
+mous A/B preferences over already-public scien-                       |-- workspace.md
+tific figures, does not record any personally iden-                   |-- available_cli_tools_call_via_bash.md
+                                                                      `-- ...
+tifying information, and was determined to be ex-
+empt from formal IRB review by our institution on                 The top-level SKILL.md groups rules by their trig-
+that basis.                                                       ger; longer sub-routines are factored out into indi-
+    Each participant judges every one of the 30 sam-              vidual files under workflows/. Below we highlight
+pled instances against each of the two baselines on               five representative entries that span the abstrac-
+each of the two axes, giving 30 × 2 × 2 = 120                     tion range: a top-level verification loop, a visual-
+forced-choice trials per participant and 600 tri-                 fidelity rule, two concrete edit-execution idioms
+als across the five participants. The trials are                  covering string replacement and math typesetting,
+presented in two rounds. In the aesthetic round,                  and a structural-edit verification rule whose entry
+for each instance the participant sees two trials                 doubles as a meta-comment on the typical shape
+
+                                                             13
+                                                                                                                             w/ skills
+
+ Aesthetic-Composition Gate triggered → per-item visual self-check → passed blind A/B.
+
+
+
+     Reflow 1×4 panels into 2×2 grid (LS/BS top, FA/EM bottom) and drop the per-thumbnail % labels.
+                                          Input
+
+
+
+                                                                                                                       wo/ skills
+
+
+
+
+                                                      Target
+
+
+                                                                                                                        w/ skills
+
+
+
+
+      Tighten viewBox after structural reflow → no leftover blank bands → passed blind A/B.
+
+Figure 7: Effect of an evolved skill. The instruction reflows a 1×4 panel grid into a 2×2 layout and drops the
+per-thumbnail percentage labels. Without the skill, the Editor leaves leftover blank bands around the new content;
+with the skill, the learned rule “tighten the viewBox after structural reflow” eliminates them and the output passes
+the blind aesthetic A/B against the author’s target.
+
+
+committed rules take. Two patterns recur across                        lished version of the input. Anchor a new element’s size
+these entries. The verification rules cover distinct                   to a comparable existing element’s bounding box, and
+                                                                       reuse the source’s representation (the existing <image>
+scopes, with a whole-image check after every edit                      reference, or the matching <g> subtree anchored by a dis-
+and a separate scoped check after structural edits,                    tinctive fill colour) when the instruction names a known
+rather than collapsing into a single “check every-                     icon. Surface correctness is necessary but not sufficient.
+thing” rule. The concrete edit idioms in turn target
+                                                                       Anchored String Replace                     E DIT EXECUTION
+SVG-specific traps, such as overlapping string re-
+placements, <tspan> ordering, and viewBox tight-                       Trigger. Edits that swap two labels (A↔B) or rewrite a
+                                                                       label that recurs across symmetric panels (e.g., MAML
+ening, that a generic “be careful” instruction would                   vs. O URS, before vs. after).
+never surface.                                                         Failure. A naive Path.read_text() → .replace()
+ Render-and-Verify Loop                           V ERIFICATION        →     write_text() idiom has two sharp edges:
+                                                                       .replace(A,B) followed by .replace(B,A) undoes
+ Trigger. Every editing task, before writing summary.txt.              the first edit, and a bare .replace(label,new) silently
+ Failure. A single “looks done” judgment from the Editor               rewrites the label in both panels when only one was
+ is the most common path to a failed eval: shipped outputs             named.
+ either miss an instruction clause or carry an aesthetic re-           Rule. For two-way swaps, route both sides through a
+ gression the Editor did not notice in the SVG source.                 @@hash@@ placeholder pass. For symmetric-panel relabels,
+ Rule. Always render output.png and pass it through                    anchor each .replace() with the element’s x=". . . "
+ a strict vision-LLM reviewer that returns a JSON                      coordinate (or any other unique neighbouring context) so
+ ship/revise verdict alongside an enumerated list of miss-             the rewrite is panel-scoped instead of file-wide.
+ ing clauses and aesthetic issues; if the verdict is revise,
+ fix the listed items and re-render before writing the sum-            Math-Notation Typesetting                   V ISUAL FIDELITY
+ mary. Never accept a single optimistic self-check.
+                                                                       Trigger. Sub/superscripts on the same symbol (e.g., πtAlice ,
+                                                                        (un)p
+ Match the Visual Register                   V ISUAL FIDELITY          Iu     ) or an inline math legend listing several notations.
+                                                                       Failure. Sequential <tspan baseline-shift> calls flow
+ Trigger. Edits that add a new element (icon, label, panel,            the subscript after the superscript rather than under it;
+ callout) or rewrite a notation that recurs across the figure.         Unicode super/subscript codepoints render at the wrong
+ Failure. Technically-correct additions still lose the blind           scale and break the surrounding font register.
+ A/B when they do not visually belong: under-sized so                  Rule. Emit real <tspan> elements with dx="-N em" to
+ they read as decoration rather than as a diagram element,             back-shift the subscript under the superscript, and rewrite
+ or drawn as crude SVG primitives where the source uses                any Unicode super/subscripts into the same tspan idiom.
+ polished raster or vector icons.
+ Rule. Aim for an output that could plausibly be the pub-
+
+
+
+
+                                                                  14
+ Layered Structural Review                     V ERIFICATION          Demonstration-Aware Analyst (with F ref )
+ Trigger. Instruction contains any of delete, remove,                 Each sample folder is described to the analyst as con-
+ swap, replace . . . with, move . . . into,                           taining input.png (rendered input), output.png (ren-
+ restructure, reorganize.                                             dered output), target.svg (ground-truth SVG authored
+ Failure. The strict whole-image reviewer judges                      as the edit), and target.png (rendered ground truth). The
+ the output plausible and returns ship, but the blind                 prompt then instructs:
+ A/B against F ref still fails on four category-specific
+ side-effects the holistic pass misses: duplicated content                 1. Read both PNGs input.png, output.png, and
+ where a move was requested, blank regions left after a                       target.png: “your Read tool supports images; see
+ deletion, shrunken replacements, and wrong-coloured                          visually what changed and what didn’t.”
+ replacements.                                                             2. Examine target.svg source: “how did the ground-
+ Rule. Chain a scoped second vision-LLM pass                                  truth author solve the same edit?”
+ (workflows/post-restructure-compactness.md)
+ that audits only those four side-effect categories under                  3. Decompose what makes target.svg into skill
+ a JSON schema; treat each non-empty category as a                            rules.
+ separate revise signal even when the first pass already                Figure 8 shows the resulting contrast. With the
+ shipped.
+                                                                     demonstration in hand, the Coach can ground each
+ Why this is the typical shape. The Coach commits the
+ specific reviewer-shipping pattern (whole-image reviewer            patch on the author’s resolution and produce rules
+ + structural-edit triggers + four named side-effects) rather        that downstream Editor runs realise more reliably,
+ than the abstract principle “check layout after structural
+ edits.” Across iterations, committed rules follow this
+                                                                     as the marked details show. As an empirical obser-
+ shape: a precise trigger paired with a scoped sub-routine,          vation across our runs, the two variants also tend to
+ not a general exhortation.                                          commit qualitatively different kinds of rules. With-
+                                                                     out a direct aesthetic signal, the demonstration-free
+                                                                     Coach has no easy way to tell which parts of the
+B.2   Demonstration-Aware Coach Ablation                             output read well and which do not, so its proposed
+                                                                     rules lean toward process-level patterns such as
+A central design choice for the Coach is whether                     verification loops, restructuring checks, and panel-
+to expose the author’s revised figure F ref as a                     level reorganisation. With the demonstration avail-
+worked demonstration, or to rely on the trajecto-                    able, the Coach can compare the Editor’s output to
+ries alone. We ablate this choice by comparing a                     the author’s resolution at the pixel level, and the
+demonstration-aware Coach that sees F ref against                    rules it proposes become more sensitive to render-
+a demonstration-free Coach that does not, with ev-                   ing specifics such as math typesetting, colour, and
+erything else about the loop held fixed.                             stroke choices. In effect, the demonstration lowers
+   Both variants are C LAUDE C ODE subpro-                           the evolution difficulty by letting the Coach read
+cesses with filesystem access to each sample                         concrete improvements off the author’s solution
+folder; the analyst uses its Bash and Read                           rather than infer them from trajectories alone.
+tools to inspect trajectories and writes proposed
+patches to analyst_response.json. They dif-                          B.3     Additional Qualitative Examples
+fer only in whether the author’s target files are
+in the workspace: the demonstration-aware vari-                      Figures 9, 10, and 11 extend the qualitative compar-
+ant places target.png and target.svg alongside                       ison in §5.3 with more editing instances spanning
+input.png/output.png so the analyst can Read                         different figure types and edit complexities. Across
+them as multimodal input, while the demonstration-                   them the same trade-off recurs. GPT-I MAGE -2
+free variant omits the targets, leaving only the in-                 keeps individual elements visually polished but
+put/output renders and trajectory transcripts. Their                 tends to lose fidelity on the embedded text and sym-
+system prompts also differ:                                          bols, so labels, superscripts, and tabular numbers
+                                                                     drift from the source even when the surrounding
+ Demonstration-Free Analyst
+                                                                     layout looks plausible. Because it regenerates the
+ “You will be given MULTIPLE failed agent trajectories               whole figure as a raster, it also imposes its own aes-
+ from a single minibatch and the current skill document.
+ Your job is to identify the most important COMMON
+                                                                     thetic prior on parts the instruction does not target,
+ failure patterns across the batch and propose a concise             restyling colours, fonts, and line weights that the au-
+ set of skill edits.” The analyst has filesystem access              thor left untouched. The strongest AUTO F IGURE -
+ to input.png and output.png for each sample via its
+ Read tool; only the author’s target files (target.png,              E DIT variant, GPT-5.5, preserves the text and sym-
+ target.svg) are withheld from the workspace.                        bols correctly because it edits the SVG source, but
+                                                                     the visual register is noticeably weaker: new shapes
+
+                                                                15
+Restructure 2-row → 3-panel (A/B/C) layout: remove top headers and right-side abnormal-tray columns; add per-row captions ("Normal Images" / "Few Labeled
+Images" / "Normal Images"); rename "Part Seg" → "Part Segmentation"; add new panel C with 4 stacked photo + part-segmentation pairs on yellow background.
+
+
+
+
+                  Input                                   Target                                 wo / demo-aware                        w / demo-aware
+
+ Merge the lower-branch "Evol-Instruct" document icon + OpenAI circle into a single green rounded tile (white swirl logo + "Instruction Generation Template"
+ text); reroute the input arrow + right brace to this tile. Simplify "evolved dataset round 1" by removing its two inner sub-panels (keep only the pill). Enlarge the
+ OpenAI circle on the upper "re-generate output" branch.
+
+
+
+
+                  Input                                   Target                                 wo / demo-aware                        w / demo-aware
+
+ Replace small "FM" with wide "Factorization Machine Layer" box. In both User-/Item-Net columns, remove the stacked-MLPs+bidirectional e vector inside the
+ dashed box; relocate e_u/e_i outside (bottom-left/right) and route two MLPs from each into the Graph Representation Learning box and the ⊕. Add labels
+ m_u/m_i at ⊕ inputs and 𝒢_u/𝒢_i inside graph boxes. Widen figure to landscape.
+
+
+
+
+                  Input                                   Target                                 wo / demo-aware                        w / demo-aware
+
+Add "Real Image" label with dashed leader to bottom rabbit thumbnail. Remove dotted border around the bottom binarization sub-panel (step-function icon + "1 0
+1 0" sit free). Move "Binarization" label from above-right to below the step-function group.
+
+
+
+
+                  Input                                   Target                                 wo / demo-aware                         w / demo-aware
+
+Drop "Task:" prefix and add volcano icon to top heading. Replace document icon with stacked-folders icon. Lowercase all "S1/S2/S3" → "s1/s2/s3" (and
+"E1"→"e1"). Highlight panel (A) border red-dashed; thin out panel (C) border + un-bold its caption. Lighten panel (B) middle node and bottom-tree e1 box to
+pale blue.
+
+
+
+
+                  Input                                   Target                                wo / demo-aware                         w / demo-aware
+
+
+Figure 8: Qualitative ablation of the demonstration-aware Coach (§4.4). Each row presents an editing instruction
+with its input figure, the author’s revised target, the Editor’s output under a skill evolved without access to the author’s
+revision (F ref withheld from the Coach; wo/ demo-aware), and the Editor’s output under our full demonstration-
+aware Coach (w/ demo-aware). Orange arrows mark places where the demonstration-aware variant realises an
+instruction detail that the demonstration-free variant misses.
+
+
+
+
+                                                                                16
+Add 3 bold sans-serif headers above top edge: 'Stage 1' over left video-frame thumbnails; 'Stage 2' over Summarization Prompt+LLM+Summary; 'Stage 3' over
+Prediction Prompt+LLM+Reason/Confidence. Same height; layout grows taller. Else unchanged.
+
+
+
+
+                Input                           AutoFigure-Edit (GPT-5.3)                          AutoFigure-Edit (GPT-5.4)                 GPT-Image-1.5
+
+
+
+
+                Target                           GPT-Image-2                       AutoFigure-Edit (GPT-5.5)                                OURS
+
+Reorganize from 1×4 vertical column → 2×2 grid: Lung Size (top-L), Bone Size (top-R), Fat Amount (bottom-L), Emphysema (bottom-R). Remove all
+percentage labels above thumbnails. Keep thumbnails, arrows, endpoint labels, and panel titles unchanged.
+
+
+
+
+        Input                                  AutoFigure-Edit (GPT-5.3)                                         AutoFigure-Edit (GPT-5.4)
+
+
+
+
+                         Target                                                  GPT-Image-2
+
+
+
+
+  AutoFigure-Edit (GPT-5.5)                                             OURS                                                     GPT-Image-1.5
+
+
+Delete 'θ_0' + ⊕ node between PINN x̂ and ⊖ (upper branch); arrow from x̂ runs straight up into ⊖ (y still enters ⊖ from left). Histogram legend: green 'y − x̂ −
+θ_0' → 'y − x̂'; blue EBM unchanged. Else unchanged.
+
+
+
+
+                    Input                                             AutoFigure-Edit (GPT-5.3)
+
+
+
+
+                                                                                                                                   GPT-Image-1.5
+                   Target                                              AutoFigure-Edit (GPT-5.4)
+
+
+
+
+        AutoFigure-Edit (GPT-5.5)                                              OURS                                                GPT-Image-2
+
+     Figure 9: Additional qualitative examples. Orange arrows mark notable discrepancies between methods.
+
+
+
+
+                                                                              17
+3-col layout: L=ATOMIC 2020+Triple Template+Relation Categories; C=Data Prep (KG-To-Text→Verbalization)→MLM Pretraining (BERT+RoBERTa)→Eval
+(TCR+COPA+BCOPA-CE); R=new GLUCOSE+Connectives (Causes/Enables/Motivates/Results in/Causes-Enables)→arrow to Verbalization.
+
+
+
+
+            Input                       AutoFigure-Edit (GPT-5.3)                    AutoFigure-Edit (GPT-5.4)                           GPT-Image-1.5
+
+
+
+
+                   Target                         GPT-Image-2                       AutoFigure-Edit (GPT-5.5)                               OURS
+
+Add dashed 'Tool Collection' around left col. Merge Multi-Agent+Solution Annotation as 'Golden Solution Annotation'. Init→Initial (Query, Annotation); Refined
+Results→Refined Annotation. Move 'Final Output' under Refined Annotation. GPT-3.5 on outgoing arrow.
+
+
+
+
+          Input                               AutoFigure-Edit (GPT-5.3)                     AutoFigure-Edit (GPT-5.4)                    GPT-Image-1.5
+
+
+
+
+          Target                                  GPT-Image-2                 AutoFigure-Edit (GPT-5.5)
+                                                                                                                                  OURS
+Add 4 serif labels above orange internal nodes: 'Fruit' (Apple/Orange/Banana parent, above-left); 'Vegetable' (veg subtree, above-right); 'Green Leaf'
+(Kale/Spinach/Lettuce parent, above-left); 'Root Vegetable' (Carrot/Beetroot parent, above-right).
+
+
+
+
+           Input                             AutoFigure-Edit (GPT-5.3)                      AutoFigure-Edit (GPT-5.4)                   GPT-Image-1.5
+
+
+
+
+          Target                                  GPT-Image-2                      AutoFigure-Edit (GPT-5.5)                            OURS
+
+Rename table 'Secret Word Embedding Table T'; reorder words. New Unwatermarked/Watermarked passages (troops/Kuma/jungle); Watermarked has highlighted
+insertions. Right: 'Cosine+Top-K₁ Selection' set, 'Top-K₂ Semantic Filtering' set. Add step '7' on I→Watermarked arrow.
+
+
+
+
+               Input                            AutoFigure-Edit (GPT-5.3)                    AutoFigure-Edit (GPT-5.4)                   GPT-Image-1.5
+
+
+
+
+             Target                                  GPT-Image-2                         AutoFigure-Edit (GPT-5.5)                           OURS
+
+
+    Figure 10: Additional qualitative examples. Orange arrows mark notable discrepancies between methods.
+
+
+
+
+                                                                              18
+Replace 4-box "System Demo" with 2-row layout (User Input ŷ_t / Response R_t with speech bubbles). MA-LLM: add "Memory" to History/State labels, reorder
+flow. Rename "Big Eyes"→"Big eyes", "Relevance Parameter"→"Vector", arrow "Translate"→"Edit".
+
+
+
+
+               Input                           AutoFigure-Edit (GPT-5.3)                    AutoFigure-Edit (GPT-5.4)                  GPT-Image-1.5
+
+
+
+
+              Target                           GPT-Image-2                      AutoFigure-Edit (GPT-5.5)                              OURS
+Drop "Dental engine" outer box. Restructure inputs as 2-cube dashed group + Down-sample(x4) → Coarse seg/det. Merge Global/Local crop → single Crop block + 3-
+cube dashed group → Refinement/Detection. Rename Merge→"Merge & Zero fill".
+
+
+
+
+             Input                           AutoFigure-Edit (GPT-5.3)                     AutoFigure-Edit (GPT-5.4)                  GPT-Image-1.5
+
+
+
+
+           Target                                GPT-Image-2                    AutoFigure-Edit (GPT-5.5)                           OURS
+Restructure 2-col + bottom captions → 3-col with vertical side captions (blue rotated CCW left, orange rotated CW right). Move narrow black column from far-
+left to center.
+
+
+
+
+             Input                          AutoFigure-Edit (GPT-5.3)                   AutoFigure-Edit (GPT-5.4)                      GPT-Image-1.5
+
+
+
+
+            Target                           GPT-Image-2                 AutoFigure-Edit (GPT-5.5)                              OURS
+Replace Profile/User → Request/Display connectors with single vertical double-headed arrow from User's feet to E-commerce panel top, centered between
+Request and Display.
+
+
+
+
+           Input                           AutoFigure-Edit (GPT-5.3)                AutoFigure-Edit (GPT-5.4)                     GPT-Image-1.5
+
+
+
+
+           Target                                GPT-Image-2                        AutoFigure-Edit (GPT-5.5)                          OURS
+
+    Figure 11: Additional qualitative examples. Orange arrows mark notable discrepancies between methods.
+
+                                                                           19
+In all three panels, prepend a dark-gray "BOS" node to each active (solid-arrow) chain and shorten that chain to four white circles so the total node
+count stays the same. Add a sequence-index superscript to every node: 𝑦 ! in the top panel; 𝑦 ! (f-row) and 𝑧 " (g-row) in the middle panel; 𝑦 " (f-
+row) and 𝑧 " (g-row) in the bottom panel. Render each lower panel's inactive (dashed) chain — its circles, labels, dashed arrows, and left-margin
+"f"/"g" letter — entirely in light gray, keeping five white circles and no BOS prefix. Leave the blue dashed diagonals 𝑑" . . 𝑑# unchanged.
+
+
+
+
+                    Input                                          Target                                          OURS
+Restructure into a horizontal left-to-right flow: 𝑆 → 𝜑 stack → Relevance → green bar → Select MAS → AM+Init. Replace the inline "Relevancy
+scores 𝑟𝑗,𝑐 " label with a new red box "Relevance 𝑟𝑗,𝑐 " right of the 𝜑 stack, with arrows from each 𝜑𝑗 and from the Random Subset feeding in and one
+output to the green bar. Shrink the Random Subset oval and place it between 𝑆 and the new Relevance box. Remove the Input Attribution and Decoder
+ovals; move AM + Partial Initialization to the right of Select MAS. Rename bottom-of-stack 𝜑𝑗 to 𝜑𝐽 .
+
+
+
+
+                    Input                                          Target                                          OURS
+Lowercase titles to "teacher network" / "student network" (drop "(fixed)"); strip "ResBlock" from all 8 rounded rectangles. Left: replace "augmented
+sample" with a rotated 90° CCW "updated learning materials" label spanning the face images. Center: add "same architecture" with yellow double-
+headed arrow between the words. Right: rename "MSE" to "mean squared error loss"; remove "self distillation..." and the diagonal
+"CrossEntropy(𝑦′ , 𝑦𝑖 )" arrow; add purple "softmax" box right of 𝑞𝑠 with arrows 𝑞𝑠 → softmax → "cross entropy loss".
+
+
+
+
+                    Input                                          Target                                            OURS
+
+Figure 12: Three editing instances where our model captures the explicit instruction but misses an implicit edit the
+author also makes. First, nodes are renumbered as requested, but stale nodes that the renumbering leaves behind are
+not removed. Second, the explicit edit lands but an already-present connection between elements is dropped. Third,
+a new frame is added but is not rotated to match the surrounding visual style.
+
+
+are drawn as crude primitives, panel positions sit
+off-grid, and the added elements do not blend
+with the source figure’s style. O URS keeps the
+same SVG structure as AUTO F IGURE -E DIT while
+matching the surrounding visual register closely
+enough that the output reads as a continuation of
+the original figure rather than a sketch on top of it.
+
+B.4    Case Study of Imperfect Outputs
+Figure 12 highlights three representative instances
+where our model captures the explicit edit but
+misses an implicit one that the author also makes.
+These misses point to limitations the current frame-
+work does not yet address, such as reasoning over
+the figure’s underlying argument and the kind of
+aesthetic taste a human reader brings to revision.
+
+
+                                                                        20
+
