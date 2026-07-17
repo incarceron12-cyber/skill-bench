@@ -4,6 +4,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -33,6 +34,7 @@ runner = module("replacement_runner_test", HERE / "runner.py")
 freeze = module("replacement_freeze_test", HERE / "freeze_protocol.py")
 validator = module("replacement_validator_test", ROOT / "scripts/validate_public_interface_campaign.py")
 grader = module("replacement_grader_test", HERE / "grade.py")
+executor = module("replacement_executor_test", HERE / "execute.py")
 
 
 class ActionBoundaryReplacementTests(unittest.TestCase):
@@ -118,6 +120,56 @@ class ActionBoundaryReplacementTests(unittest.TestCase):
         result = grader.grade(alias, expected)
         self.assertEqual("fail", result["classification"])
         self.assertTrue(result["schema_errors"])
+
+    def test_execution_adapter_verifies_pushed_freeze_and_retained_rows(self):
+        verification = executor.verify_pushed()
+        self.assertTrue(verification["passed"], verification["errors"])
+        self.assertEqual(7, verification["component_hashes_verified"])
+        retained = load(ROOT / "pilots/action-boundary-composition/v2/protocol.json")
+        for intention in self.protocol["intended_rows"]:
+            cell = executor.source_cell(intention, retained)
+            self.assertEqual(intention["row_id"], cell["cell_id"])
+            self.assertEqual(intention["form"], cell["form"])
+            self.assertEqual(intention["condition"], cell["condition"])
+
+    def test_execution_materialization_uses_replacement_interface_and_pinned_turns(self):
+        retained = load(ROOT / "pilots/action-boundary-composition/v2/protocol.json")
+        with tempfile.TemporaryDirectory(prefix="replacement-materialize-") as raw:
+            paths, _ = executor.materialize(Path(raw) / "trial", self.protocol["intended_rows"][0], retained)
+            self.assertEqual((HERE / "public-task.md").read_bytes(), (paths["inputs"] / "public-task.md").read_bytes())
+            self.assertEqual((HERE / "public-output.schema.json").read_bytes(),
+                             (paths["inputs"] / "public-output.schema.json").read_bytes())
+            self.assertIn("max_turns: 50", (paths["profile"] / "config.yaml").read_text())
+            manifest = load(paths["inputs"] / "manifest.json")
+            self.assertIn("public-output.schema.json", manifest["visible_files"])
+            self.assertEqual("action-boundary-composition/replacement-v1", manifest["instrument"])
+
+    def test_one_shot_execution_retains_exact_itt_and_artifact_hashes(self):
+        report = load(HERE / "execution/study-report.json")
+        self.assertEqual("complete_itt_frame", report["status"])
+        self.assertEqual(6, report["strict_denominators"]["intended"])
+        self.assertEqual(2, report["strict_denominators"]["attempted_once"])
+        self.assertEqual(4, report["strict_denominators"]["not_launched_due_stop"])
+        self.assertEqual({"pass": 1, "fail": 0, "invalid": 5}, report["classification_counts"])
+        self.assertFalse(any(report["claim_boundaries"].values()))
+        campaign = {
+            "strict_denominator": 6,
+            "retries": report["strict_denominators"]["retries"],
+            "intended_rows": [{"row_id": row["row_id"]} for row in report["rows"]],
+            "rows": [{key: row[key] for key in ("row_id", "intention_to_evaluate", "materialized",
+                     "launcher_invocations", "service_valid", "environment_valid", "substantively_graded",
+                     "invalidity", "status")} for row in report["rows"]],
+        }
+        self.assertEqual([], validator.campaign_errors(campaign))
+        self.assertEqual(["completed_valid", "service_invalid"] + ["not_launched_due_stop"] * 4,
+                         [row["status"] for row in report["rows"]])
+        for row in report["rows"][:2]:
+            attempt = HERE / "execution/attempts" / f"{row['order']:02d}-{row['row_id']}"
+            retained = load(attempt / "trial-report.json")
+            self.assertEqual(row["attempt"], retained)
+            for relative, expected in retained["artifacts"].items():
+                self.assertEqual(expected, sha(attempt / "trial/outputs" / relative))
+            self.assertEqual(retained["trace"]["sha256"], sha(attempt / retained["trace"]["path"]))
 
 
 if __name__ == "__main__":

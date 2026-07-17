@@ -37,6 +37,26 @@ campaign control can remove those instrument threats before capability testing.
   generated zero-model-call evidence for exact interface coverage and normal,
   service-failure, environment-failure, timeout, and interruption paths.
 
+## Executed campaign
+
+The pushed freeze was executed exactly once by `execute.py`. The adapter verifies
+`protocol.json`, all seven frozen component hashes, the adjudication design
+basis, and retained v2 task-pack protocol against `origin/main`; lazily exposes
+the replacement task/schema with the retained two-form source packs; runs an
+in-namespace file-tool canary; and delegates stop/finalization to the frozen
+campaign controller. Evidence is retained under `execution/`.
+
+The first vendor/current-authorized row was environment/service valid and passed
+all five exact-interface checks. The second LH/stale-or-revoked row passed its
+isolation canary but was service-invalid after three provider calls; as frozen,
+the controller stopped before row three and finalized the remaining four rows as
+`not_launched_due_stop`. The denominator is six: one pass, zero substantive
+fails, and five invalid rows. This licenses only exact internal synthetic
+instrument observations—not capability, treatment-effect, cross-domain,
+expert/professional-validity, safety, production, readiness, or historical
+repair claims. Retry, substitution, deletion, and execution of remaining rows
+are forbidden for replacement v1.
+
 ## Reproduction
 
 ```bash
@@ -48,13 +68,12 @@ python scripts/validate_public_interface_campaign.py \
 
 The last command uses `interface-campaign-control.json`, a combined CLI control
 created from the frozen interface report and normal synthetic campaign.
-Regeneration must be byte-stable and reports `model_calls: 0`.
+Regeneration must be byte-stable and reports `model_calls: 0`. Do **not** invoke
+`execute.py` again: `execution/` is the immutable one-shot campaign record.
 
-## Claim boundary and continuation
+## Claim boundary
 
 This package licenses no capability, treatment-effect, cross-domain,
 expert/professional-validity, safety, production, readiness, or historical
-repair claim. A later worker may execute only after the exact protocol and all
-component hashes are pushed and reverified. Execution must retain all six rows,
-make at most one attempt per row, and stop/finalize exactly as frozen; this run
-makes no model calls.
+repair claim. All six intended rows remain in the execution denominator, with
+four explicitly unlaunched after the service-invalid stop trigger.
