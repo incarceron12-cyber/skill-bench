@@ -1,0 +1,793 @@
+                                           LQCDMaster: Agentic Scientific Computing
+                                           for Lattice Quantum Chromodynamics Research
+
+                                                 Haofei Gao1,2,3† , Tingjia Miao4,5† , Wenkai Jin4,7 ,
+                                               Muhua Zhang1,2,3 , Hanzhang Wang1,2,3 , Jie Ran1,2,3 ,
+                                            Jinxin Tan1,2,3 , Zhentao Zhang1,5 , Bo Tang1,5 , Leiyi Li1,2,3 ,
+                                            Jun Hua8 , Xiangyu Jiang9 , Qi’an Zhang6*, Siheng Chen4,5*,
+                                                                    Wei Wang1,2,3*
+                                           1
+                                               School of Physics and Astronomy, Shanghai Jiao Tong University,
+                                                                     Shanghai, 200240, China.
+                                           2
+                                             Tsung-Dao Lee Institute, Shanghai Jiao Tong University, Shanghai,
+                                                                           200240, China.
+
+
+
+
+arXiv:2607.15001v1 [hep-lat] 16 Jul 2026
+                                           3
+                                             State Key Laboratory of Dark Matter Physics, Shanghai Jiao Tong
+                                                              University, Shanghai, 200240, China.
+                                               4
+                                                 School of Artificial Intelligence, Shanghai Jiao Tong University,
+                                                                     Shanghai, 200030, China.
+                                           5
+                                             Zhiyuan College, Shanghai Jiao Tong University, Shanghai, 200240,
+                                                                               China.
+                                                6
+                                                  School of Physics, Beihang University, Beijing, 102206, China.
+                                                               7
+                                                                 SciLand, Shanghai, 200030, China.
+                                               8
+                                                 Institute of Quantum Matter, South China Normal University,
+                                                                    Guangzhou, 510006, China.
+                                             9
+                                               Department of Physics, Indiana University, Bloomington, Indiana
+                                                                            47405, USA.
+
+
+                                               *Corresponding author(s). E-mail(s): zhangqa@buaa.edu.cn;
+                                                       sihengc@sjtu.edu.cn; wei.wang@sjtu.edu.cn;
+                                                    †
+                                                      These authors contributed equally to this work.
+
+
+                                                                             Abstract
+                                           Lattice quantum chromodynamics (LQCD) provides a first-principles framework
+                                           for computing hadronic observables, but its practical use remains limited by the
+
+
+
+                                                                                  1
+     substantial expertise required to turn research motivation into reliable comput-
+     ing workflows. Here we present LQCDMaster, a tool-augmented, skill-guided
+     and domain-specialized scientific computing agent that converts natural-language
+     LQCD research tasks into executable PyQUDA computing workflows, includ-
+     ing measurement scripts, job-submission artifacts, execution logs and numerical
+     outputs. The system combines agentic planning, expert-annotated LQCD skills
+     and a deterministic Wick-contraction tool to constrain the algebraically fragile
+     components of code generation. We evaluate LQCDMaster on a benchmark
+     at the forefront of scientific research, comprising 70 LQCD computing tasks,
+     with observables covering local and nonlocal two-point functions, Wilson loops,
+     meson and baryon three-point functions. The generated workflows exactly repro-
+     duce expert-written implementations in 63 of 70 tasks at machine precision, with
+     three additional discrepancies attributable to convention mismatches. Across rep-
+     resentative observables, the agent reduces implementation time from hours to
+     minutes while preserving end-to-end numerical validation. Further, we present
+     a typical case of LQCDMaster-driven exploration: a lattice computation of
+     light-cone distribution amplitudes with diagonal Wilson-line, a quantity acces-
+     sible with standard methods but never before computed, and computation of
+     the spectrum of proton, deuteron, triton, hyperon (Λ), hyperdeuteron (pΛ) and
+     hypertriton (pnΛ). This work pioneers the paradigm of agentic scientific comput-
+     ing by automating the end-to-end scientific computing workflows in lattice QCD
+     research, lowering its barrier and facilitating the exploration and verification of
+     non-standard scientific ideas.
+
+     Keywords: Lattice QCD, LLM agents, Scientific computing, Wick contractions, AI
+     for science
+
+
+
+
+1 Introduction
+1.1 The Barrier to Entry in Lattice QCD
+Lattice quantum chromodynamics (LQCD) provides a first-principles definition of
+the strong nuclear force directly from the QCD Lagrangian [1]. Over the past four
+decades, it has matured into a precision tool for calculating hadron masses [2, 3],
+studying nucleon structure [4], and probing new physics [5, 6]. A typical LQCD work-
+flow proceeds through several stages: defining the physics observable, designing the
+computational scheme, writing code in libraries such as Chroma [7] or PyQUDA [8],
+debugging on test configurations, scaling to production on GPU clusters, and analyzing
+the resulting correlators.
+    Among these stages, converting a physics idea into a runnable script is the most
+challenging. It requires simultaneous expertise in LQCD physics (Wick contractions,
+γ -matrix algebra, parity projectors), API conventions (gauge context management,
+lattice field layouts, MPI reduction), and numerical methods (multi-grid solvers, gauge
+smearing). Human experts typically require from hours to days per observable, and
+sometimes longer, with three to five debugging cycles before code can be trusted in
+production.
+
+
+                                             2
+    A subtler but equally important barrier is cognitive: the high engineering cost
+of implementing a new idea discourages exploration. Many physically interesting but
+non-standard computations, such as those involving different γ -matrix combinations,
+unconventional source-sink separations, and systematic scans over operator definitions,
+are conceptually trivial but practically prohibitive. As a result, such computations are
+often not attempted, producing a form of exploration bias in the LQCD literature:
+only the most conventional observables are computed, not because other ideas lack
+physical merit, but because they lack engineering justification.
+
+1.2 Related Work
+Machine learning has already become a useful numerical ingredient in lattice QCD.
+Existing work primarily uses models within established computational pipelines, for
+example to accelerate gauge-field generation through flow-based sampling [9–12] or to
+learn effective actions. In such cases, AI serves as a numerical tool, but the surrounding
+workflow remains human-centered.
+     Beyond AI as a numerical tool, LLM-based agents have demonstrated further
+capabilities in automating real scientific research. Agentic systems like Robin and
+Kosmos integrate literature retrieval, experimental iteration, and result reporting,
+realizing an end-to-end research workflow [13, 14]. Meanwhile, the diversity of scien-
+tific domains has motivated the development of powerful domain-specialized agents.
+For example, ML-Master demonstrates expert-level performance on machine-learning
+research tasks, highlighting the potential of AI for AI [15]. LQCDMaster further
+extends the paradigm of agentic scientific research to Lattice QCD, a frontier domain
+in high-energy physics with a high knowledge barrier.
+     General-purpose code-generation systems such as Codex [16] and Claude Code [17]
+can accelerate software drafting, but are not designed to guarantee the algebraic and
+field-theoretic correctness required by lattice computations. In LQCD, a program may
+be syntactically valid, execute without runtime errors, and nevertheless produce an
+invalid observable because of an incorrect spin–color contraction, flavor assignment,
+or fermionic sign. The central challenge for scientific program generation is therefore
+generating executable workflows that are grounded in domain theory, constrained by
+expert-defined skills, and coupled to deterministic tools for symbolic manipulation.
+
+1.3 Contributions of This Work
+We present LQCDMaster, a tool-augmented, skill-guided, domain-
+specialized scientific computing agent for LQCD code generation. Its core contribu-
+tions are as follows:
+1. Lowering the barrier to LQCD research: LQCDMaster converts natural-
+   language research tasks (e.g., Calculate the two-point function of a pion with the
+   operator ūγ5 d. Use the point source at position [0,0,0,0].) into executable LQCD
+   computing workflows, allowing physicists to start LQCD research without manually
+   writing implementation code. This reduces the required implementation workload,
+   accelerates research, and broadens access to this technically demanding frontier of
+   high-energy and nuclear physics.
+
+
+                                            3
+2. Providing a comprehensive LQCD benchmark and rigorous evaluation.
+   We construct a comprehensive LQCD coding benchmark comprising 70 representa-
+   tive tasks spanning five observable classes, all drawn from the forefront of scientific
+   research. We conduct a rigorous quantitative evaluation. Using GPT-5.4 as the
+   backbone model, our system successfully reproduces the human-expert implemen-
+   tation results for 63 of the 70 tasks at machine precision. The remaining cases
+   exhibit either convention mismatches, such as phase mismatches, or algorithmic
+   and numerical errors.
+3. Pioneering the paradigm of agentic scientific computing: LQCDMaster
+   automates end-to-end scientific computing workflows in lattice QCD research with
+   expert-level accuracy, while substantially improving efficiency and reducing the per-
+   observable implementation cost from hours to minutes. As concrete case studies, we
+   present the first lattice computations of LCDAs using diagonal Wilson lines, which
+   are accessible with standard methods but have not previously been computed, and
+   multi-hadron spectroscopy, for which Wick-contraction complexity grows rapidly
+   with hadron number. LQCDMaster automates these studies, paving a viable path
+   to agentic scientific research through human–AI collaboration.
+
+2 Results
+2.1 Benchmarking End-to-end Lattice QCD Code Generation
+LQCDMaster is an autonomous scientific computing agent for lattice QCD. Given
+a natural-language research request specifying the target observable, ensemble and
+kinematic setup, the system produces a reviewable PyQUDA workflow comprising
+the measurement script, job-submission artifacts, execution logs and numerical out-
+puts. We evaluated this workflow-generation capability on a benchmark suite spanning
+representative lattice QCD production tasks, with the aim of testing whether the
+generated workflows reproduce expert-written reference implementations at numerical
+precision while retaining comparable computational performance.
+    The benchmark suite consisted of 70 independent tasks on the C24P29 ensemble
+generated by the CLQCD collaboration [18, 19], with lattice spacing a = 0.105 fm
+and lattice volume 243 × 72. The pion mass on this ensemble is about 290 MeV. The
+tasks were selected to cover qualitatively distinct structures in lattice QCD comput-
+ing: they included 20 local two-point functions (2PTs) for mesons and baryons, 10
+nonlocal Wilson-line 2PTs, 13 meson three-point functions (3PTs), 15 baryon 3PTs
+using sequential sources, and 12 Wilson-loop measurements. Together, these work-
+flows probe the main implementation challenges encountered in production LQCD
+code, including spin–color contractions, flavor assignments, gauge-link path ordering,
+source–sink kinematics, sequential-propagator conventions, MPI-parallel data layout,
+and output normalization.
+    All generated scripts in the main benchmark were syntactically valid and completed
+test execution. Because successful execution does not by itself establish scientific cor-
+rectness, each generated workflow was validated by direct numerical comparison with
+a hand-written reference implementation for the same observable, ensemble and kine-
+matic setup. This comparison provides an end-to-end test of whether the generated
+
+
+                                            4
+Table 1 Representative Lattice QCD workflow categories in the benchmark. The table
+summarizes the computational structure that LQCDMaster must recover from natural-language
+task specifications. The listed challenges are not exhaustive; they identify the dominant
+implementation difficulty for each observable class.
+
+
+ Observable    Representative workflow          Challenges
+
+ Local 2pt    Meson and baryon two-point        Correct construction of spin–color contrac-
+              correlators with local source     tions, including meson traces and baryon
+              and sink operators                ϵ-tensor structures.
+ Nonlocal 2pt Gauge-invariant      two-point    Gauge-covariant transport between dis-
+              correlators of spatially sepa-    placed fields, together with a displacement-
+              rated quark fields                dependent phase.
+ Wilson loop Pure-gauge          closed-loop    Path ordering, loop geometry, orientation
+              observables on specified con-     conventions and gauge-link multiplication
+              tours in space and time           along closed contours.
+ Meson 3pt    Three-point correlators of        Sequential-source construction, sink pro-
+              mesons with a local current       jection, current insertion.
+              insertion
+ Baryon 3pt   Three-point correlators of        Spin–color routing through baryon con-
+              baryons with three-quark          tractions, transition-specific index struc-
+              interpolating operators and a     ture and consistency of source, sink and
+              current insertion                 insertion conventions.
+
+
+
+program encodes the intended Wick contractions, γ -matrix structures, flavor channels
+and normalization conventions, rather than merely producing executable Python code.
+
+2.2 Expert-level Accuracy with Improved Implementation
+    Efficiency
+LQCDMaster achieved high implementation-level accuracy on the 70-task bench-
+mark (Table 2). Across local and nonlocal two-point functions, Wilson loops, meson
+three-point functions and baryon three-point functions, 63 generated workflows repro-
+duced expert-written reference implementations at machine precision, with |∆| ≲
+10−12 . The remaining seven cases comprised three convention mismatches and four
+unresolved failures. The three convention mismatches, two in nonlocal two-point func-
+tions and one in baryon three-point functions, were traced to global sign conventions:
+after applying a single overall sign transformation, the full time- and displacement-
+dependent correlators agreed with the reference. The four unresolved failures involved
+baryon three-point functions.
+    The benchmark probes several distinct implementation burdens in lattice QCD
+measurements, including meson traces, baryon ϵ-tensor contractions, gauge-link trans-
+port, Wilson-loop path ordering, sequential-source construction and spin–color routing
+in baryon transition amplitudes. The results therefore evaluate more than executable
+code generation; they test whether the agent can instantiate the domain-specific com-
+putational structure required by heterogeneous observable classes. This distinction is
+
+
+                                            5
+                                   Human expert
+                                   LQCDMaster                                                                    44x faster
+                            500                                                                             8h
+                                                                           54x faster         38x faster
+                                                                      4h                 4h
+                            200                          30x faster
+                                                    2h
+
+
+
+           Time (minutes)
+                            100        17x faster
+                                  1h
+                             50
+
+                             20
+                                                                                                                 10.9 min
+                             10
+                                                                                               6.2 min
+                              5                           4.0 min           4.5 min
+                                        3.5 min
+
+                                  Wilson             Local            Nonlocal          meson 3pt          baryon 3pt
+                                   loop               2pt               2pt
+
+Fig. 1 Implementation-efficiency improvements across representative lattice QCD computing tasks,
+comparing the time required for human experts and LQCDMaster to produce reliable computing
+workflows.
+
+
+essential in lattice QCD, where a single index, phase or contraction error can produce
+plausible but incorrect correlators. Here, numerical validation converted the observed
+discrepancies into explicit convention-level outcomes rather than leaving them as silent
+implementation failures.
+    Further, we assess the extent to which LQCDMaster reduces the implementation
+time required for lattice QCD computing. We therefore compared the per-observable
+time required by lattice QCD experts with the time required by LQCDMaster to
+generate and verify the corresponding workflow (Fig. 1). Expert implementation time
+ranged from 1 hour for Wilson loops to 8 hours for baryon three-point functions, with
+local two-point functions requiring 2 hours and nonlocal two-point and meson three-
+point functions requiring 4 hours each. LQCDMaster completed the corresponding
+workflows in 3.5, 4.0, 4.5, 6.2 and 10.9 minutes, respectively, corresponding to speedups
+of 17×, 30×, 54×, 38×, and 44×. Overall, the speedup tends to increase with the com-
+plexity of the observable, suggesting that LQCDMaster provides more substantial
+time savings for computationally demanding tasks.
+    The four tasks that failed numerical comparison in that run involved specific
+transition-current combinations, such as the p → p vector current, the Λ → Λ vector
+and axial currents, and the Λb → Λc vector current. They passed preliminary static
+checks and test execution but failed at the numerical-comparison stage. These cases
+represent the primary failure mode that the current critique–rewrite pipeline did not
+fully catch.
+    These gains reflect a reduction in marginal implementation effort, not a change
+in the underlying lattice QCD algorithms. Once a workflow is generated, production
+measurements remain governed by solver cost, ensemble size and gauge-configuration
+
+
+
+
+                                                                      6
+ Table 2 Expert-level accuracy of LQCDMaster-generated lattice QCD computing workflows
+ and alignment with expert-written implementations, with GPT-5.4 as the backbone model.
+
+
+  Observables     Tasks   Matched     Convention Mismatch         Failure   Accuracy
+  Local 2pt         20        20                  0                  0        100.0%
+  Nonlocal 2pt      10         8                  2                  0         80.0%
+  Wilson loop       12        12                  0                  0        100.0%
+  Meson 3pt         13        13                  0                  0        100.0%
+  Baryon 3pt        15        10                  1                  4         66.7%
+  Total            70         63                  3                  4        90.0%
+ • Matched: numerical agreement with the expert-written reference imple-
+   mentation at machine precision, |∆| ≲ 10−12 , under identical input data,
+   normalization choices and output conventions.
+ • Convention mismatch: minor discrepancy like single global sign or phase
+   transformation, with the full correlator structure preserved after fixed con-
+   vention alignment.
+ • Failure: any remaining algebraic or numerical discrepancy after convention
+   alignment.
+
+
+statistics. The largest gains arise when a task contains substantial convention, con-
+traction and debugging overhead that can be absorbed by deterministic tools, reusable
+domain skills and automated numerical checks.
+
+2.3 New-observable Exploration Driven by LQCDMaster
+The benchmark suite tests whether LQCDMaster can automate established work-
+flows. A key question is whether lowering the implementation cost changes which
+scientific ideas are practical to explore. To test this, we applied the system to a non-
+standard but well-defined measurement: a meson light-cone distribution amplitude
+constructed with a diagonal Wilson-line geometry.
+    Conventional lattice computations of quasi-distribution amplitudes [20] usually
+employ straight Wilson lines along a spatial lattice axis. Diagonal Wilson lines pro-
+vide an alternative geometry that enlarges the accessible set of path directions and
+effective kinematics on a fixed ensemble. The idea is straightforward at the level of
+the continuum operator, but implementing it by hand requires modifying gauge-link
+transport, displacement bookkeeping, phase conventions and nonlocal contractions as
+shown in Fig. 2. Under a conventional workflow, this cost makes such variants easy to
+postpone unless the expected physics return is already clear.
+    With LQCDMaster, the diagonal Wilson-line measurement was specified as
+a natural-language request and converted into executable PyQUDA code within
+minutes. The generated workflow was then cross-checked against an independently
+written PyQUDA implementation on the same ensemble and agreed within statisti-
+cal uncertainties. The resulting real parts of the reduced matrix element are shown
+
+
+                                           7
+                                                (a) Straight Wilson Line                                         (b) Diagonal Wilson Line
+
+
+
+                                       1
+
+
+
+
+       Quasi-distribution amplitudes
+                                       0
+
+
+
+
+                                       -1
+
+                                            0                              5                                10                              15
+                                                                               Spatial correlation length
+
+
+
+Fig. 2 Physical schematic of the meson LCDA setup with a non-standard diagonal Wilson line
+shown in the upper panels. The real parts of the matrix elements are shown in the lower panel.
+
+
+in Fig. 2. To our knowledge, this is the first lattice QCD evaluation of a meson
+distribution-amplitude observable using a diagonal Wilson-line geometry.
+    A second representative case is multi-hadron spectroscopy, including proton,
+deuteron and triton, the hyperon Λ, hyperdeuteron pΛ and hypertriton pnΛ systems.
+Spectra and interactions of the hypernuclear systems are both extremely important
+in the formation of neutron stars[21]. In conventional hand-written implementations,
+this class of tasks is difficult mainly because the contraction complexity grows rapidly
+with hadron number: as the operator basis grows, the number of Wick-contraction
+topologies increases: there are 2, 36 and 2880, 1, 12, and 576 contraction terms in the
+2PTs. Accordingly, the manual derivation, coding and debugging become increasingly
+error-prone. Using LQCDMaster, we have generated the corresponding workflow
+from a natural-language specification within several minutes. The obtained results for
+the mass of multi-hadron systems are shown in Fig. 3.
+    The significance of these examples is not that the agent independently discov-
+ered new operators. The ideas came from human physics reasoning. The contribution
+of the computational agent was to reduce the engineering cost of testing such ideas
+to the point where they became worth trying. This illustrates a broader mechanism
+
+
+                                                                                           8
+Fig. 3 Multi-hadron mass results generated with LQCDMaster. In contrast to conventional manual
+workflows, which become rapidly intractable as contraction complexity grows with hadron number,
+the agentic workflow keeps the implementation practical.
+
+
+for AI-assisted computational science: reliable workflow generation can expand sci-
+entific exploration by lowering the marginal cost of implementing non-standard but
+theoretically motivated observables.
+
+2.4 Failure Modes Analysis
+A scientific code-generation agent is useful only if its errors can be exposed before
+production use. We therefore analyzed the first-pass issues observed during the solve–
+critique–rewrite process and the subsequent numerical validation (Table 3). Most
+issues were conventional implementation errors, including einsum-index mismatches,
+gauge-context handling mistakes, output-format inconsistencies and array-shape mis-
+matches. These errors were detected by static checks, test execution or automated
+critique, and were corrected before final validation.
+    The remaining failure mode was more domain-specific. Several baryon three-
+point workflows passed syntax checks and test execution but failed direct numerical
+comparison with expert-written references. These cases involved transition-current
+combinations, such as the p → p vector current, the Λ → Λ vector and axial currents
+and the Λb → Λc vector current. They indicate that executable code and static consis-
+tency checks are insufficient for validating baryon contraction logic; direct numerical
+regression against trusted references remains necessary for complex spin–color routing
+and transition-specific conventions.
+
+
+
+
+                                              9
+    To conclude, LQCDMaster reliably removes most routine implementation errors
+through automated critique, checks and executable tests. Meanwhile, for new observ-
+able classes and other novel tasks, reference comparisons and human review remain
+essential components of a robust scientific computing workflow.
+
+Table 3 Observed failure modes during LQCDMaster workflow generation and validation. Most
+routine issues were corrected automatically, whereas the remaining failures required direct
+numerical comparison with expert-written references.
+
+
+ Category       Representative issue         Occurrence      Detection and status
+ Contraction    Inconsistent einsum labels         2         Detected by static analysis,
+ syntax         or index routing                             corrected automatically.
+ Array struc-   Shape handling in nonlocal         1         Detected by static analysis,
+ ture           displaced-field workflows                    corrected automatically.
+ Interface      Output-format or variable-         2         Detected by critique, cor-
+ consistency    naming deviation                             rected automatically or non-
+                                                             impacting.
+ Runtime        Gauge-context lifetime or          1         Detected during test execu-
+ handling       execution-state error                        tion, corrected automatically.
+ Convention     Sequential-propagator sign         2         Detected by numerical com-
+ mismatch       or phase convention                          parison and analysis of the
+                                                             results.
+
+
+
+
+3 Discussion
+LQCDMaster demonstrates that a domain-specialized scientific computing agent
+can generate and execute reliable lattice QCD computing workflows according to
+natural-language research tasks. The present work also clarifies the reliability require-
+ments for agentic scientific computing. The value of LQCDMaster lies in combining
+domain-specialized generation with explicit validation.
+    Benchmark. The scientific computing tasks in LQCD go beyond pure code
+generation, further requiring the capabilities of Wick contractions, spin–color alge-
+bra, gauge-link transport, source–sink kinematics, and phase conventions choices. To
+provide comprehensive and rigorous evaluation on LQCD scientific computing capa-
+bilities, we construct a 70-task benchmark spanning five observable classes, to test
+whether an agent can reproduce the end-to-end scientific computing workflows of
+computing in frontier lattice QCD research.
+    Accuracy. Across five representative observable classes, LQCDMaster repro-
+duced expert implementations on 63 of 70 tasks at machine precision. Part of the
+remaining cases were traced to fixed convention mismatches associated with γ5 -
+hermiticity, rather than algebraic or numerical errors. The impressive accuracy of
+LQCDMaster is enabled by an architecture that integrates domain knowledge with
+
+
+
+                                             10
+robust executive workflow. The expert-annotated skills and deterministic tools con-
+strain the brittle components (contraction structures, gauge-link paths, conventions,
+etc.) in LQCD computing, avoiding physically plausible but incorrect results.
+    Efficiency. For real LQCD research, the main impact of LQCDMaster is the
+reduction of the marginal implementation burden, which accelerates the translation of
+an observable definition into reliable computational code. Tasks that typically require
+several hours of expert coding, debugging and convention checking can be generated
+and tested within minutes. This is particularly valuable for observables with dense
+implementation structures, such as nonlocal correlators, sequential-source three-point
+functions, baryonic contractions and Wilson-loop geometries, where manual errors are
+common and difficult to diagnose.
+    New Paradigm. New-observable exploration further demonstrates that domain-
+specialized agents can accelerate and automate scientific computing and assist real
+scientific research. The physics insights and research motivations came from physicists.
+Meanwhile, LQCDMaster helps reduce the engineering burden of implementing non-
+standard but well-defined observables by executing workflows for diagonal Wilson-line
+LCDA calculations and multi-hadron spectroscopy. Thus, we pioneer a new paradigm
+of human–AI scientific collaboration by lowering the implementation barrier for testing
+theoretically motivated ideas, such as alternative Wilson-line geometries, extended
+operator bases, displacement patterns, and contraction topologies.
+    Limitations. The current benchmark covers representative but not exhaustive
+LQCD computing tasks. More challenging cases, including disconnected diagrams,
+four-point or more-point correlations, finite-temperature observables and large multi-
+particle operators remain to be systematically tested. More advanced tasks and
+fine-grained validation metrics can be developed. Meanwhile, further work should
+expand the agentic capabilities such as automated fitting or physical interpretation
+pipelines, deterministic contraction generation, and more comprehensive skills. Com-
+bining more rigorous evaluation and broader agentic capabilities, our system can evolve
+from code-generation assistance toward an autonomous infrastructure for AI-assisted
+LQCD research.
+
+4 Methods: Agentic Workflow, Specialized Tools and
+  Skills
+4.1 Agentic Workflow
+LQCDMaster is a tool-augmented, skill-guided, domain-specialized scientific com-
+puting agent that turns a natural-language LQCD research request into reviewable
+PyQUDA code. The system grounds generation in research workflows distilled from
+real LQCD tasks and is augmented with expert-annotated domain skills and a
+deterministic Einstein sum generation tool.
+    As shown in Fig. 4, LQCDMaster decomposes LQCD code generation into two
+stages, separating planning from execution.
+    Planning stage: The plan specifies the ensemble, observables, hadrons, prop-
+agators, correlator measurements, and expected output format. The planner agent
+
+
+
+                                          11
+Fig. 4 Agentic workflow of LQCDMaster. The planner converts natural-language LQCD tasks
+into a structured scientific plan; the executor turns the approved plan into PyQUDA and SLURM
+artifacts; expert-annotated domain skills and a deterministic Wick-contraction tool enhance reliability
+and efficiency.
+
+
+operates in a solve–critique–rewrite loop: it conducts physical analysis and proposes a
+detailed technical plan; an independent critique checks whether the observables, prop-
+agators, and settings are reasonable and consistent. If any flaw exists, the plan will be
+revised according to the critique.
+    Before the plan is handed to the executor, a human checkpoint allows physicists
+to review the proposed plan and engage in optional interactions to refine it. This
+acknowledges the current practical limitation that agent systems cannot yet guarantee
+absolute correctness for all LQCD observables.
+    Execution stage: The executor generates code according to the approved
+plan, producing PyQUDA and SLURM submission scripts. This stage is guided by
+PyQUDA-related skills that ensure code reliability by preventing invented API usage.
+Automated verification includes static analysis and LLM critique to catch errors before
+submission.
+    Agents have distinct core responsibilities in the two stages and produce correspond-
+ing artifacts, as illustrated in Table 4.
+
+4.2 The generate einsum Tool
+The primary specialized tool in LQCDMaster is generate einsum, which exposes
+a deterministic engine to the executor, as illustrated in Table 5 . It is designed to
+remove the most algebraically brittle part of correlator code generation—the contrac-
+tion strings—from the language model’s free-form output space. LQCD contraction
+strings encode flavor pairing, fermion signs, gamma insertions, epsilon tensors, and
+
+
+
+                                                  12
+Table 4 LQCDMaster workflow artifacts.
+
+ Stage        Agent role                                 Artifacts
+ Planning     Expose the observable, operators, prop-    Computation plan and concise summary
+              agators, kinematics, and ensemble
+              assumptions
+ Execution    Realize the approved computation plan,     Reliable PyQUDA script, test script,
+              generate the PyQUDA and SLURM              and full-run script
+              scripts, and conduct tests to verify and
+              revise the scripts
+
+
+
+
+spin-color index ordering. A single wrong index or sign can yield code that executes
+successfully while measuring the wrong observable.
+    Instead of writing these scripts directly, the executor requests a contraction in
+physics terms (e.g., meson two-point, baryon two-point, baryon three-point sequential-
+source sink block). generate einsum then enumerates the valid Wick pairings, applies
+sign and topology conventions, constructs the spin-color labels, and returns a ready-to-
+insert contraction specification. The generated PyQUDA script contains the resulting
+einsum strings; it does not depend on generate einsum at runtime.
+    This separation changes the failure mode of the system. The model remains respon-
+sible for high-level scientific choices that require judgment—the observable, source-sink
+setup, current insertion, and solver strategy. Exact symbolic construction, however, is
+delegated to deterministic code. generate einsum is therefore a reliability boundary
+between physical planning and algebraic realization.
+
+Table 5 Contraction families exposed through generate einsum.
+
+ Type                Role in generated LQCD code
+ meson 2pt           Meson two-point contractions with explicit source and sink gamma structures
+ baryon 2pt          Baryon two-point contractions with epsilon tensors, projector, and topology
+                     signs
+ multi hadron 2pt    Multi-hadron two-point contractions
+ meson 3pt           Sequential-source sink block for meson three-point functions
+ baryon 3pt          Sequential-source sink block for baryon three-point functions
+
+
+
+
+4.3 Skill-Guided Agent Specialization
+To enhance reliability and efficiency, LQCDMaster is augmented with expert-
+annotated domain skills. Each skill is a compact prior over a class of LQCD tasks:
+how to translate an observable into operators and propagators, how to implement the
+computation in PyQUDA, or how to handle gauge-only measurements.
+    Skills are stage-routed: the planner is equipped with correlator physics skills
+(observables, interpolating operators, Wick-contraction structure, momentum projec-
+tion, sequential-source requirements); the executor receives PyQUDA skills (source
+
+
+                                               13
+construction, solver parameters, MPI data layout, contraction implementation, output
+formatting); and gauge-only tasks are handled by a dedicated pyquda-gauge skill.
+   The coupling of domain skills and tools makes domain routing operational, aligning
+the agent’s knowledge with the tools valid for the selected physics workflow.
+
+Table 6 Main skills in LQCDMaster.
+
+ Skill                      Content                                            Agent stage
+ lqcd-physics-correlator    Hadronic operators, Wick-contraction conven-         Planner
+                            tions, flavor assignments, and γ5 -hermiticity
+ pyquda-tool                PyQUDA implementation patterns, solver              Executor
+                            setup, contraction use, MPI gather, and com-
+                            mon code-generation mistakes
+ pyquda-gauge               Gauge loading, Wilson loops, Polyakov loops,     Planner/Executor
+                            and gauge-only measurement conventions
+
+
+
+
+5 Data and Code Availability
+All source code for LQCDMaster is available at https://github.com/sjtu-sai-agents/
+LQCD Master, and includes:
+• The core architecture, domain-specialized skills and the generate einsum tool of
+  LQCDMaster.
+• The LQCD benchmark with 70 scientific computing tasks.
+• Generated PyQUDA measurement scripts, SLURM submission scripts, and produc-
+  tion output data in experiments.
+
+Acknowledgements
+We thank Feng Xu, Zhaofeng Liu, Yu Meng, and Yibo Yang for valuable discussions
+regarding manual coding effort involved in constructing the benchmark. This work is
+supported in part by National Natural Science Foundation of China under grants No.
+12125503, 12305103.
+
+Appendix A              Architecture Robustness Validation
+                        with DeepSeek-V4-Pro
+A central question for LLM-based scientific agents is whether their reliability is tied to
+a particular foundation model. To assess this dependence, we repeated the full 70-task
+benchmark using DeepSeek-V4-Pro as the backbone LLM, while keeping the LQCD-
+Master architecture, expert skill files, tool interfaces and solve–critique–rewrite
+pipeline unchanged. Thus, only the chat-completion endpoint was replaced.
+   Table A1 summarizes the cross-backbone validation results. With DeepSeek-V4-
+Pro as backbone, the validation achieved 56/70 exact matches at machine precision,
+
+
+                                             14
+corresponding to an accuracy of 80.0%. Three additional cases exhibited clean global
+sign mismatches consistent with fixed convention choices. Wilson loops reached 100%
+exact agreement, while local 2pt and baryon 3pt functions achieved 80.0% and 86.7%,
+respectively.
+    The remaining discrepancies were concentrated in nonlocal 2pt and meson 3pt
+functions. Manual inspection showed that most nonlocal 2pt mismatches arose from
+output-layout inconsistencies rather than incorrect correlator values, whereas meson
+3pt failures were mainly caused by incorrect quark-flavor assignments in model-
+generated task parameters. These errors identify the limit of the current system:
+syntactic and algebraic constraints are well controlled by the tool layer, but semantic
+validation of observable-specific task parameters remains partially dependent on the
+backbone model.
+    Notably, among the challenging 3pt tasks, DeepSeek-V4-Pro produced more fail-
+ures for meson than for baryon observables, differing from the error distribution
+observed with GPT-5.4. We speculate that this difference may reflect weaker domain-
+specific knowledge of observable-dependent flavor assignments acquired during model
+training.
+    This result further suggests that, the architecture of LQCDMaster provides sub-
+stantial robustness across backbone models, while the residual failures remain sensitive
+to the in-domain knowledge of the backbone LLMs.
+
+ Table A1 Architecture robustness validation of LQCDMaster with DeepSeek-V4-Pro as the
+ backbone model.
+
+
+  Observables     Tasks   Matched     Convention Mismatch        Failure   Accuracy
+  Local 2pt         20        16                  1                 3        80.0%
+  Nonlocal 2pt      10         8                  0                 2         80.0%
+  Wilson loop       12        12                  0                 0        100.0%
+  Meson 3pt         13         7                  1                 5        53.8%
+  Baryon 3pt        15        13                  1                 1        86.7%
+  Total            70         56                  3                 11       80.0%
+ • Matched: numerical agreement with the expert-written reference imple-
+   mentation at machine precision, |∆| ≲ 10−12 , under identical input data,
+   normalization choices and output conventions.
+ • Convention mismatch: minor discrepancy such as a single global sign or
+   phase transformation, with the full correlator structure preserved after fixed
+   convention alignment.
+ • Failure: any remaining algebraic, numerical, formatting or execution-level
+   discrepancy after convention alignment.
+
+
+
+
+                                          15
+Appendix B             Comparison with General Coding
+                       Agent
+To demonstrate the relative efficiency of our LQCDMaster, we further compared it
+with Claude Code, a representative general coding agent. In this baseline, Claude Code
+was provided the same benchmark tasks and access to PyQUDA documentation[8] in
+the working space, but was not equipped with LQCD-specialized skills and tools.
+   As a result, Claude Code failed to yield executable scripts for any of
+the 20 local two-point-function tasks, the simplest class of observables in the
+benchmark.
+   These results indicate that guidebook alone is insufficient for reliable LQCD
+computing workflow generation. It is essential to integrate domain knowledge like
+domain-specialized skills and deterministic algebraic tools into the agentic scientific
+computing system for robust LQCD code generation.
+
+References
+ [1] K. G. Wilson, Phys. Rev. D 10, 2445-2459 (1974) doi:10.1103/PhysRevD.10.2445
+
+ [2] S. Durr et al. [BMW], Science 322, 1224-1227 (2008) doi:10.1126/science.1163233
+     [arXiv:0906.3599 [hep-lat]].
+
+ [3] S.    Borsanyi    et   al.   [BMW],     Science    347,      1452-1455     (2015)
+     doi:10.1126/science.1257050 [arXiv:1406.4088 [hep-lat]].
+
+ [4] C. C. Chang, A. N. Nicholson, E. Rinaldi, E. Berkowitz, N. Garron,
+     D. A. Brantley, H. Monge-Camacho, C. J. Monahan, C. Bouchard and
+     M. A. Clark, et al. Nature 558, no.7708, 91-94 (2018) doi:10.1038/s41586-018-
+     0161-8 [arXiv:1805.12130 [hep-lat]].
+
+ [5] S. Borsanyi, Z. Fodor, J. Guenther, K. H. Kampert, S. D. Katz, T. Kawanai,
+     T. G. Kovacs, S. W. Mages, A. Pasztor and F. Pittler, et al. Nature 539, no.7627,
+     69-71 (2016) doi:10.1038/nature20115 [arXiv:1606.07494 [hep-lat]].
+
+ [6] A. Boccaletti, S. Borsanyi, A. Cotellucci, M. Davier, Z. Fodor, F. Frech, A. Ger-
+     ardin, D. Giusti, A. Y. Kotov and L. Lellouch, et al. Nature 653, no.8114, 373-377
+     (2026) doi:10.1038/s41586-026-10449-z [arXiv:2407.10913 [hep-lat]].
+
+ [7] R. G. Edwards et al. [SciDAC, LHPC and UKQCD], Nucl. Phys. B Proc. Suppl.
+     140, 832 (2005) doi:10.1016/j.nuclphysbps.2004.11.254 [arXiv:hep-lat/0409003
+     [hep-lat]].
+
+ [8] X. Jiang, C. Shi, Y. Chen, M. Gong and Y. B. Yang, [arXiv:2411.08461 [hep-lat]].
+     https://github.com/CLQCD/PyQUDA.
+
+ [9] M. S. Albergo, G. Kanwar and P. E. Shanahan, Phys. Rev. D 100, no.3, 034515
+     (2019) doi:10.1103/PhysRevD.100.034515 [arXiv:1904.12072 [hep-lat]].
+
+
+                                          16
+[10] G. Kanwar, M. S. Albergo, D. Boyda, K. Cranmer, D. C. Hackett, S. Racanière,
+     D. J. Rezende and P. E. Shanahan, Phys. Rev. Lett. 125, no.12, 121601 (2020)
+     doi:10.1103/PhysRevLett.125.121601 [arXiv:2003.06413 [hep-lat]].
+
+[11] L. Wang, G. Aarts and K. Zhou, JHEP 05,                            060    (2024)
+     doi:10.1007/JHEP05(2024)060 [arXiv:2309.17082 [hep-lat]].
+
+[12] G. Aarts, K. Fukushima, T. Hatsuda, A. Ipp, S. Shi, L. Wang and K. Zhou,
+     Nature Rev. Phys. 7, no.3, 154-163 (2025) doi:10.1038/s42254-024-00798-x
+     [arXiv:2501.05580 [hep-lat]].
+
+[13] A. E. Ghareeb, B. Chang, L. Mitchener, A. Yiu, C. J. Szostkiewicz, J. M. Laurent,
+     M. T. Razzak, A. D. White, M. M. Hinks and S. G. Rodriques, arXiv preprint
+     arXiv:2505.13400 (2025) [arXiv:2505.13400].
+
+[14] L. Mitchener, A. Yiu, B. Chang, M. Bourdenx, T. Nadolski, A. Sulovari,
+     E. C. Landsness, D. L. Barabasi, S. Narayanan, N. Evans, et al., arXiv preprint
+     arXiv:2511.02824 (2025) [arXiv:2511.02824].
+
+[15] Z. Liu, Y. Cai, X. Zhu, Y. Zheng, R. Chen, Y. Wen, Y. Wang, S. Chen, et al.,
+     arXiv preprint arXiv:2506.16499 (2025) [arXiv:2506.16499].
+
+[16] Codex. https://openai.com/codex.
+
+[17] Claude Code. https://code.claude.com.
+
+[18] Z. C. Hu et al. [CLQCD], Phys. Rev. D 109, no.5, 054507 (2024)
+     doi:10.1103/PhysRevD.109.054507 [arXiv:2310.00814 [hep-lat]].
+
+[19] Q. A. Zhang, J. Hua, F. Huang, R. Li, Y. Li, C. Lü, C. D. Lu, P. Sun, W. Sun
+     and W. Wang, et al. Chin. Phys. C 46, no.1, 011002 (2022) doi:10.1088/1674-
+     1137/ac2b12 [arXiv:2103.07064 [hep-lat]].
+
+[20] X. Ji, Phys. Rev. Lett. 110, 262002 (2013) doi:10.1103/PhysRevLett.110.262002
+     [arXiv:1305.1539 [hep-ph]].
+
+[21] L. Tolos and L. Fabbietti, Prog. Part. Nucl. Phys. 112, 103770 (2020)
+     doi:10.1016/j.ppnp.2020.103770 [arXiv:2002.09223 [nucl-ex]].
+
+
+
+
+                                         17
+
