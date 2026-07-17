@@ -82,6 +82,10 @@ def campaign_errors(campaign: dict[str, Any]) -> list[str]:
     if observed_ids != intended_ids:
         errors.append("intention_to_evaluate_frame_changed")
     stop_order: int | None = None
+    allowed_statuses = {
+        "completed_valid", "service_invalid", "environment_invalid",
+        "outer_orchestrator_timeout", "interrupted", "not_launched_due_stop",
+    }
     for index, row in enumerate(rows, start=1):
         invocations = row.get("launcher_invocations")
         if invocations not in {0, 1}:
@@ -92,7 +96,12 @@ def campaign_errors(campaign: dict[str, Any]) -> list[str]:
             errors.append(f"launched_after_stop:{row.get('row_id')}")
         service = row.get("service_valid")
         environment = row.get("environment_valid")
-        invalid_attempt = invocations == 1 and (service is False or environment is False)
+        invalidity = row.get("invalidity")
+        invalid_attempt = invocations == 1 and (
+            service is False
+            or environment is False
+            or invalidity in {"outer_orchestrator_timeout", "interrupted"}
+        )
         if invalid_attempt and stop_order is None:
             stop_order = index
         if invocations == 0:
@@ -100,9 +109,21 @@ def campaign_errors(campaign: dict[str, Any]) -> list[str]:
                 errors.append(f"unexplained_not_launched:{row.get('row_id')}")
             if row.get("substantively_graded") is not False:
                 errors.append(f"not_launched_marked_substantive:{row.get('row_id')}")
-        if row.get("invalidity") in {"outer_orchestrator_timeout", "interrupted"}:
+        if invalidity in {"outer_orchestrator_timeout", "interrupted"}:
             if invocations != 1 or row.get("substantively_graded") is not False:
                 errors.append(f"bad_interruption_finalization:{row.get('row_id')}")
+        # Replacement ledgers expose typed status and lazy materialization. Optional
+        # fields keep historical adjudication records exactly replayable.
+        if "status" in row:
+            status = row.get("status")
+            if status not in allowed_statuses:
+                errors.append(f"invalid_row_status:{row.get('row_id')}")
+            if invocations == 0 and status != "not_launched_due_stop":
+                errors.append(f"unlaunched_status_mismatch:{row.get('row_id')}")
+            if invocations == 1 and status == "not_launched_due_stop":
+                errors.append(f"launched_status_mismatch:{row.get('row_id')}")
+        if "materialized" in row and bool(row.get("materialized")) != (invocations == 1):
+            errors.append(f"materialization_invocation_mismatch:{row.get('row_id')}")
     if campaign.get("retries", 0) != 0:
         errors.append("retry_count_nonzero")
     return sorted(set(errors))
