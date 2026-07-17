@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import subprocess
 import tempfile
@@ -65,6 +66,37 @@ class ProvenanceBoundaryTests(unittest.TestCase):
         report = self.validate_mutation(lambda record: record["live_dependency"].update(path="README.md"))
         self.assertFalse(report["valid"])
         self.assertTrue(any("path substitution" in error for error in report["errors"]))
+
+    def test_versioned_locator_allows_heading_move_but_semantic_deletion_fails(self):
+        record = json.loads((DELAYED / "provenance-boundary.json").read_text())
+        baseline = validate_record(
+            record,
+            expected_path=EXPECTED_PATH,
+            expected_role="delayed_obligation_design_basis",
+        )
+        self.assertTrue(baseline["valid"], baseline["errors"])
+        locator = record["live_dependency"]["semantic_locators"][0]
+        self.assertNotEqual(locator["historical_text"], locator["live_text"])
+        locator["live_text"] = "__deleted_delayed_obligation_semantics__"
+        locator["live_text_sha256"] = hashlib.sha256(locator["live_text"].encode()).hexdigest()
+        report = validate_record(
+            record,
+            expected_path=EXPECTED_PATH,
+            expected_role="delayed_obligation_design_basis",
+        )
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("missing live semantic locator" in error for error in report["errors"]))
+
+    def test_unsupported_locator_hash_refresh_fails(self):
+        record = json.loads((DELAYED / "provenance-boundary.json").read_text())
+        record["live_dependency"]["semantic_locators"][0]["live_text_sha256"] = "0" * 64
+        report = validate_record(
+            record,
+            expected_path=EXPECTED_PATH,
+            expected_role="delayed_obligation_design_basis",
+        )
+        self.assertFalse(report["valid"])
+        self.assertTrue(any("live semantic locator hash mismatch" in error for error in report["errors"]))
 
     def test_silent_semantic_role_change_fails(self):
         report = self.validate_mutation(

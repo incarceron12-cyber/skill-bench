@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from scripts.validate_objective_grounded_elicitation import DEFAULT_FIXTURE, validate
+from scripts.validate_provenance_boundary import validate_record
 
 
 class ObjectiveGroundedElicitationTests(unittest.TestCase):
@@ -54,6 +55,17 @@ class ObjectiveGroundedElicitationTests(unittest.TestCase):
         self.assertEqual(report["denominators"]["questions"]["nonresponse"], 1)
         self.assertEqual(report["denominators"]["claim_origins"]["spontaneous"], 2)
         self.assertEqual(report["denominators"]["profile"]["unsupported_attribution_episodes"], 4)
+
+    def test_canonical_boundary_preserves_historical_identity_and_live_semantics(self):
+        ref = self.package["canonical_provenance"]
+        boundary = json.loads((Path(__file__).resolve().parents[1] / ref["path"]).read_text())
+        report = validate_record(
+            boundary,
+            expected_path="docs/benchmark-design-taxonomy.md",
+            expected_role="objective_grounded_elicitation_design_basis",
+        )
+        self.assertTrue(report["valid"], report["errors"])
+        self.assertEqual(report["live_anchor_count"], 3)
 
     def test_private_truth_is_not_in_public_claim_packs(self):
         path = Path(__file__).resolve().parents[1] / self.package["claim_packs"]["path"]

@@ -17,6 +17,7 @@ PACKS_PATH = PILOT / "claim-packs.json"
 OBJECTIVES_PATH = PILOT / "objectives.json"
 EPISODES_PATH = PILOT / "episodes.json"
 ORACLE_PATH = PILOT / "private/oracle.json"
+BOUNDARY_PATH = PILOT / "provenance-boundary.json"
 
 CONDITIONS = [
     "no_elicitation",
@@ -266,7 +267,7 @@ def main() -> int:
     provenance_paths = [
         "papers/agent-benchmarks/2026-07-17-inciteresearch-prequestion-elicitation-validity.md",
         "papers/agent-benchmarks/2026-07-17-organizational-tacit-knowledge-simulation-validity.md",
-        "docs/benchmark-design-taxonomy.md",
+        "pilots/objective-grounded-elicitation-conformance/provenance-boundary.json",
         "pilots/interaction-evidence-conformance/README.md",
         "pilots/interaction-evidence-conformance/episodes.json",
         "pilots/interaction-evidence-conformance/private/oracle.json",
@@ -287,8 +288,9 @@ def main() -> int:
         "design_evidence": [
             {"path": provenance_paths[0], "locators": ["review lines 21-25", "review lines 152-169", "review lines 235-261"], "supports": "profile claim ladder, oracle/corruption conditions, correction and consequence separation"},
             {"path": provenance_paths[1], "locators": ["review lines 158-176", "review lines 223-255"], "supports": "claim routing, authority, claim-state stopping, burden and synthetic claim ceiling"},
-            {"path": provenance_paths[2], "locators": ["lines 161-239"], "supports": "frozen objective, event lineage, terminal claim states, stop errors and separate denominators"},
+            {"path": "docs/benchmark-design-taxonomy.md", "locators": ["Objective-grounded elicitation is a claim-routing episode, not question style"], "supports": "frozen objective, event lineage, terminal claim states, stop errors and separate denominators", "provenance_boundary": provenance_paths[2]},
         ],
+        "canonical_provenance": {"path": str(BOUNDARY_PATH.relative_to(ROOT)), "sha256": file_hash(BOUNDARY_PATH)},
         "provenance": [{"path": path, "sha256": file_hash(ROOT / path)} for path in provenance_paths],
         "episodes": episodes,
     }

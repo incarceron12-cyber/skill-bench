@@ -4,7 +4,10 @@
 This boundary is intentionally narrow: immutable task, source, grader, and runtime
 artifacts still use ordinary byte hashes.  Only an explicitly declared live
 canonical document may evolve, and its cited semantics must remain present both
-in the historical Git object and in the working-tree document.
+in the historical Git object and in the working-tree document. Legacy records use
+shared literal anchors. Versioned locators may name different historical/live text
+(for example after section renumbering), but hash and uniquely resolve each bounded
+locator in its respective document.
 """
 from __future__ import annotations
 
@@ -55,9 +58,17 @@ def validate_record(
     expected_blob = historical.get("git_blob")
     expected_sha = historical.get("sha256")
     anchors = live.get("required_anchors")
-    if not isinstance(anchors, list) or not anchors or any(not isinstance(a, str) or not a for a in anchors):
-        errors.append("live dependency requires nonempty semantic anchors")
+    locators = live.get("semantic_locators")
+    if locators is None:
+        if not isinstance(anchors, list) or not anchors or any(not isinstance(a, str) or not a for a in anchors):
+            errors.append("live dependency requires nonempty semantic anchors")
+            anchors = []
+        locators = []
+    else:
         anchors = []
+        if not isinstance(locators, list) or not locators:
+            errors.append("live dependency requires nonempty semantic locators")
+            locators = []
     if not isinstance(commit, str) or not OID.fullmatch(commit):
         errors.append("historical snapshot has invalid Git commit")
     if not isinstance(expected_blob, str) or not OID.fullmatch(expected_blob):
@@ -106,6 +117,38 @@ def validate_record(
         if live_text is not None and anchor not in live_text:
             errors.append(f"missing live semantic anchor: {anchor}")
 
+    semantic_ids: set[str] = set()
+    for locator in locators:
+        if not isinstance(locator, dict):
+            errors.append("semantic locator must be an object")
+            continue
+        semantic_id = locator.get("semantic_id")
+        historical_locator = locator.get("historical_text")
+        live_locator = locator.get("live_text")
+        historical_locator_sha = locator.get("historical_text_sha256")
+        live_locator_sha = locator.get("live_text_sha256")
+        if not isinstance(semantic_id, str) or not semantic_id or semantic_id in semantic_ids:
+            errors.append("semantic locator ids must be unique and nonempty")
+        else:
+            semantic_ids.add(semantic_id)
+        for label, text, expected_text_sha, document in (
+            ("historical", historical_locator, historical_locator_sha, historical_text),
+            ("live", live_locator, live_locator_sha, live_text),
+        ):
+            if not isinstance(text, str) or not text:
+                errors.append(f"{semantic_id or '<invalid>'}: missing {label} semantic locator text")
+                continue
+            if not isinstance(expected_text_sha, str) or not SHA256.fullmatch(expected_text_sha):
+                errors.append(f"{semantic_id or '<invalid>'}: invalid {label} semantic locator hash")
+            elif hashlib.sha256(text.encode("utf-8")).hexdigest() != expected_text_sha:
+                errors.append(f"{semantic_id or '<invalid>'}: {label} semantic locator hash mismatch")
+            if document is not None:
+                count = document.count(text)
+                if count == 0:
+                    errors.append(f"{semantic_id or '<invalid>'}: missing {label} semantic locator")
+                elif count != 1:
+                    errors.append(f"{semantic_id or '<invalid>'}: ambiguous {label} semantic locator")
+
     return {
         "valid": not errors,
         "errors": errors,
@@ -114,7 +157,7 @@ def validate_record(
         "historical_commit": commit,
         "historical_blob": observed_blob,
         "historical_sha256": expected_sha,
-        "live_anchor_count": len(anchors),
+        "live_anchor_count": len(anchors) + len(locators),
     }
 
 

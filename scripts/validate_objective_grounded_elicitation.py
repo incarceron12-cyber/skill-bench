@@ -13,10 +13,17 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.validate_provenance_boundary import validate_record
+except ModuleNotFoundError:  # Direct `python scripts/...` execution.
+    from validate_provenance_boundary import validate_record
+
 ROOT = Path(__file__).resolve().parents[1]
 PILOT = ROOT / "pilots/objective-grounded-elicitation-conformance"
 DEFAULT_FIXTURE = PILOT / "episodes.json"
 DEFAULT_ORACLE = PILOT / "private/oracle.json"
+CANONICAL_PATH = "docs/benchmark-design-taxonomy.md"
+CANONICAL_ROLE = "objective_grounded_elicitation_design_basis"
 REQUIRED_CONDITIONS = {"no_elicitation", "fixed_probe", "adaptive_probe", "oracle_profile", "inferred_profile", "corrupted_profile"}
 TERMINAL = {"confirmed", "contradicted", "unknown", "inaccessible", "unauthorized", "out_of_scope", "escalated"}
 ORIGINS = {"spontaneous", "probed", "respondent_inferred", "model_inferred", "oracle_supplied"}
@@ -71,6 +78,24 @@ def validate(fixture: Path = DEFAULT_FIXTURE, oracle_path: Path = DEFAULT_ORACLE
         errors.append("condition matrix must contain exactly six frozen conditions")
     if set(package.get("claim_limits", {})) != REQUIRED_FALSE_CLAIMS or any(package.get("claim_limits", {}).values()):
         errors.append("synthetic package cannot promote human, expert, empirical, professional, or readiness claims")
+
+    boundary_ref = package.get("canonical_provenance", {})
+    boundary_path = ROOT / boundary_ref.get("path", "missing")
+    if not boundary_path.is_file():
+        errors.append("missing canonical provenance boundary")
+    elif boundary_ref.get("sha256") != file_hash(boundary_path):
+        errors.append("canonical provenance boundary hash mismatch")
+    else:
+        try:
+            boundary_report = validate_record(
+                json.loads(boundary_path.read_text()),
+                expected_path=CANONICAL_PATH,
+                expected_role=CANONICAL_ROLE,
+            )
+        except json.JSONDecodeError:
+            errors.append("canonical provenance boundary is not valid JSON")
+        else:
+            errors.extend(f"canonical provenance: {error}" for error in boundary_report["errors"])
 
     packs_doc = _load_ref(package, "claim_packs", errors)
     objectives_doc = _load_ref(package, "objectives", errors)

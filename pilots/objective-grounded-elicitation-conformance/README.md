@@ -17,7 +17,7 @@ The package hash-pins:
 
 - `papers/agent-benchmarks/2026-07-17-inciteresearch-prequestion-elicitation-validity.md`, especially review lines 21–25, 152–169, and 235–261, for the profile-claim ladder, true/inferred/corrupted controls, correction, criterion independence, equal resources, and consequence separation;
 - `papers/agent-benchmarks/2026-07-17-organizational-tacit-knowledge-simulation-validity.md`, especially review lines 158–176 and 223–255, for claim routing, authority, claim-state stopping, burden, and the synthetic claim ceiling;
-- `docs/benchmark-design-taxonomy.md`, lines 161–239, for prospectively frozen objectives, terminal claim states, event lineage, stop errors, and separate denominators; and
+- `docs/benchmark-design-taxonomy.md`, the section headed “Objective-grounded elicitation is a claim-routing episode, not question style,” for prospectively frozen objectives, terminal claim states, event lineage, stop errors, and separate denominators. `provenance-boundary.json` preserves the authoring-time Git commit/blob/SHA while checking three bounded live semantic locators, so unrelated canonical edits do not invalidate the fixture; and
 - every retained artifact, validator, and test in `pilots/interaction-evidence-conformance/` through explicit provenance hashes. That prior pilot remains byte-preserved rather than copied or modified.
 
 The reusable implementation is `scripts/validate_objective_grounded_elicitation.py`, a domain-neutral observer over frozen public claim packs, objectives, and episodes. This is a conformance package, not a new repository schema.
@@ -34,6 +34,7 @@ All claims, responses, roles, corrections, profiles, and consequences are builde
 - `objectives.json` — beneficiary/use, required/optional claims, authority, question policy, stop/escalation rules, burden/loss, criterion identity, and consequence for each pack.
 - `episodes.json` — six-condition matrix, public event records, separate claim/progress/uptake/effect/stop/burden records, matched resource envelope, provenance, and false claim flags.
 - `private/oracle.json` — planted truth and expected classifications/final states; excluded from evaluator input.
+- `provenance-boundary.json` — immutable authoring-time taxonomy identity plus hashed historical/live semantic locators; it fails closed on path, historical-object, locator, or locator-hash drift without pinning the entire mutable live taxonomy.
 - `build_fixture.py` — deterministic authoring script; no model, network, or human calls.
 - `../../scripts/validate_objective_grounded_elicitation.py` — public-record validator, observer, denominator report, and post-classification oracle replay.
 - `replay-report.json` — retained real execution output.
