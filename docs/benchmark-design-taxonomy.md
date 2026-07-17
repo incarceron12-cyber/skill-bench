@@ -550,6 +550,19 @@ inversion, normalization, or clipping rule is unresolved. A positive weight alon
 cannot encode this chain. Preserve each preflight finding, repair/version event,
 and rerun decision in task health rather than rewriting historical scores.
 
+The completed signed-criterion conformance slice makes this preflight executable
+without changing older bundles [SCI]. Four provenance-carrying builder controls
+exercise a coherent positive criterion, explicitly inverted desirable-state
+penalty, diagnostic-only violation, and reviewed semantic equivalence. Seven
+focused mutation tests reject the two observed AgenticVBench defect classes—an
+exact 1280×720 public basis paired with a 1920×1080 private semantic value, and a
+desirable-state penalty lacking inversion—plus stale proposition hashes,
+inconsistent signed arithmetic, dangling or cyclic prerequisites, unreviewed
+equivalence, and clipping that may mask a required failure. This establishes
+schema and deterministic semantic-validator behavior only. It does not test an
+artifact observer, criterion authority or expert agreement, score calibration,
+agent behavior, professional quality, generalization, or readiness.
+
 ### 2.3a Dynamic criteria are a separate contingent population
 
 Open-ended artifacts may create facts, dependencies, risks, or side effects that
@@ -1782,13 +1795,25 @@ treatment, category weights, and scale maximum without an anchor bridge [PML].
 Raw-result inspectability therefore does not create analytical-stage validity or
 longitudinal score identity.
 
-The pending `validate-cross-domain-analytical-hypothesis-lifecycle` task is the
-bounded implementation path: freeze two unlike evidence graphs, rivals,
-discriminating and non-discriminating tests, contradictory evidence, update and
-abstention rules, configured identities, repeats, raw observer outputs, typed
-invalidity, and separate stage/consequence scores before calls. Until that slice
-runs, the analytical chain is a design contract derived from evidence and not a
-validated cross-domain instrument. Reuse evidence, projection, artifact,
+The completed analytical-hypothesis lifecycle slice executes that bounded path
+over two unlike builder-authored work shapes: a vendor-incident decision memo and
+a laboratory-quality quarantine handoff [AHL]. Its zero-call replay retains all
+four case×repeat attempts, executes the frozen rate-gap tests, and keeps candidate
+quality, test validity, evidence adoption, final conclusion, and consequence as
+five non-interchangeable score families with criterion evidence and no holistic
+or cross-domain scalar. It detects one non-discriminating test selection, one
+unsupported promotion to truth, two contradictory-evidence non-adoptions, one
+unsupported harmful action, three bounded escalations, and one malformed
+conclusion-observer output. The malformed output remains in the four-attempt
+intended denominator but yields `invalid_output`, `numerator: null`, and a zero
+substantive denominator for that observation; final-conclusion denominators are
+therefore four intended, three evaluator-valid, and one evaluator-invalid, while
+the other four families retain four intended and four valid observations [AHL].
+Hash-pinned replay and mutation tests establish deterministic fixture, provenance,
+stage-separation, and invalid-output behavior only—not observer accuracy, agent
+capability, causal correctness outside the fixture, cross-domain generalization,
+expert/professional validity, an intervention effect, process-mining capability,
+production fitness, or readiness. Reuse evidence, projection, artifact,
 configured-system, metric, task-health, and validity records; do not create a
 code-review, process-mining, or mediated-evaluator subsystem.
 
@@ -3670,7 +3695,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Shared runner breadth vs measurement equivalence | BrowserGym runs heterogeneous families through one interface, but inspected adapters retain different rewards/evaluators and transform observations, trajectories, parsing, errors, retries, and resets; paper results lack native/adapted agreement and clustered repeats [BG]. | From frozen native states, run matched native/adapted cases and compare score, termination, side effects, typed evaluator evidence, invalidity, resets, and all attempts; report family scores until preservation and any common-scale validity are independently supported. |
 | Executable composition vs workflow/planning validity | WorkArena++ composes setup, oracle, and validators and increases horizon, but author-designed variants, history-dependent sequential validation, near-floor agents, a small ServiceNow-heavy human sample, and a later release do not isolate planning or occupational realism [WA]. | Across two provenance-grounded unlike workflows, compare matched atomic and composite conditions with controlled presentation/interface/information budgets; replay terminal invariants independent of polling order, test reversals and resets, and report family-clustered uncertainty plus earliest unsupported dependencies [CW]. |
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
-| Rich temporal observation vs coherent signed criterion semantics | AgenticVBench's later release supplies native/rendered/audio/metadata/model views, yet 13/36 Repurpose briefs conflict with hidden resolution criteria and at least five desirable-state negative-weight items omit the scorer's inversion flag; human/calibration/result records are absent [AVB]. | Before any rollout, mutation-test public/private contradiction, desirable-versus-violation polarity, inversion, dependency/gate, clipping, and normalization. Reject both observed defect classes, admit a reviewed equivalent representation, then calibrate each observer on blinded temporal boundary cases without promoting agreement to professional acceptance. |
+| Rich temporal observation vs coherent signed criterion semantics | AgenticVBench's later release supplies native/rendered/audio/metadata/model views, yet 13/36 Repurpose briefs conflict with hidden resolution criteria and at least five desirable-state negative-weight items omit the scorer's inversion flag; human/calibration/result records are absent [AVB]. The completed internal slice rejects both observed defect classes and five adjacent contract mutations, but is deterministic builder-authored preflight only [SCI]. | On signed, semantically coherent criteria, calibrate each artifact observer against blinded temporal boundary cases and independent authority review; measure criterion and decision error, disagreement, invalidity, and professional acceptance separately rather than promoting schema conformance or observer agreement. |
 | Dashboard simplicity vs reproducible population inference | Amazon links traces, metrics, alerts, and audits operationally but reports no estimands, denominator/missingness rules, uncertainty, alert accuracy, or synthetic-to-real fidelity [AM]. | Backtest a versioned metric over planted agent, grader, environment, and population shifts; retain invalid/delayed events and measure detection delay, false alarms, review burden, and remediation routing. |
 | Judge agreement vs evidence-view parity | AgentRewardBench compares richer human access with final-state-focused model views, preserves mostly single labels, and reports pooled unclustered metrics; disagreement can originate in task policy, trace capture, evidence access, or judgment [ARB]. | Plant temporally scoped success/side-effect cases; cross grader type with artifact-only, full-trace, and environment-query views; duplicate expert labels; adjudicate with explicit lineage; report predicate- and task-clustered error plus audit cost. |
 | Enriched review yield vs representative monitoring and useful intervention | Signals reports more hypothesis-generating labels in a signal-selected queue, but omits the eligible pool, detector/score policy, inclusion probabilities, overlap, labels, reviewer time, clustered inference, confirmed defects, fixes, and downstream outcomes; its later implementation promotes descriptive signals into quality scores [SIG]. | On a frozen cross-domain trajectory pool, run a probability sentinel beside a versioned enriched sampler; preserve overlap and all inclusion probabilities, duplicate plural labels, adjudicate defects, measure reviewer minutes and detector cost, replay accepted fixes on held-out task clusters, and report prevalence/drift, discovery yield, false negatives, recurrence, and downstream utility separately. |
@@ -3704,7 +3729,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Artifact correctness vs handoff usability | The design report argues that persistent products support work claims through receiving workflows, but its three purposive cases contain no recipient-use trial, independent mapping reliability, or downstream validation [DR]. | Across unlike domains, give independent recipients only the produced product; test source, boundary, and destination checks separately and record clarification, repair, rejection, time, error propagation, and legitimate alternate formats before licensing downstream-use claims. |
 | Adaptive diagnostic coverage vs comparable measurement | JADE separates stable skills from response-specific claim checks, but generated criterion counts, dependencies, shared model cues, mutable verification, and a fail-open release path leave common denominators and fusion unvalidated [JADE]. | On matched counterfactual artifacts from two unlike work shapes, mutate one claim/citation/dependency; blind experts to scores when judging criterion legitimacy and verdicts; measure extraction/edge agreement and item/graph/rank stability; report fixed and contingent families separately. |
 | Executable downstream success vs direct candidate quality | c-CRAB's released funnel and final counts are unusually inspectable, but outcome-informed test projection, selection on the same repair mediator later used for scoring, missing finding→patch attribution, no no-review control, and unscored false-positive/collateral burden leave only a configured selected-chain claim [CCR]. The internal 20-cell replay detects five planted attribution/selection failures but is deterministic synthetic conformance only [MEA]. | On source-authorized cases, preserve all funnel denominators; cross no-candidate and candidate arms with unlike mediators; bind proposition→uptake→action→check edges; falsify projected oracles with accepted alternatives; score unsupported findings, collateral changes, burden, and consequences non-compensatorily; repeat by source cluster. |
-| Fluent analytical candidate vs verified inquiry and consequence | PM-LLM inventories broad process-analysis prompts, but one-shot holistic judging ends before discriminating tests, evidence updates, decisions, or consequences; no expert target validates the judge, and the current form/score package lacks an anchor bridge to v1 [PML]. | Execute `validate-cross-domain-analytical-hypothesis-lifecycle`: freeze unlike evidence graphs, unsupported causes, rivals, discriminating/non-discriminating tests, contradictory evidence, update/abstention rules, repeats, raw observers, and typed invalidity; score each stage and consequence separately without one holistic scalar. |
+| Fluent analytical candidate vs verified inquiry and consequence | PM-LLM inventories broad process-analysis prompts, but one-shot holistic judging ends before discriminating tests, evidence updates, decisions, or consequences; no expert target validates the judge, and the current form/score package lacks an anchor bridge to v1 [PML]. The completed internal two-shape replay detects all six planted diagnostic classes, preserves five score families, and keeps one invalid conclusion observation outside the substantive denominator, but supplies no agent, expert, observer-validity, or generalization evidence [AHL]. | On source- and expert-authorized held-out cases, run repeated configured agents and independently calibrated observers through the frozen lifecycle; vary rival/test quality and contradictory evidence, preserve all invalid attempts, and test whether stage diagnoses predict accepted decisions and consequences without collapsing the score vector. |
 
 None of these tensions currently requires a Level 2 strategic decision. The
 first pilot can gather the discriminating evidence before choosing a public
@@ -3853,15 +3878,17 @@ them:
     records are the implementation homes [ACC]. The queue prerequisite audit found
     no admissible confidence/logprob observations and no diverse repeated outcome
     matrix, so the task remains blocked rather than pending.
-23. **Queued signed-criterion conformance, not another artifact subsystem —
-    `build-signed-criterion-conformance-slice`:** the benchmark bundle already binds
-    checks to public requirements, graders, artifacts, positive weights, and optional
-    admissibility envelopes, but it cannot represent or validate desirable/violation
-    polarity, inversion, gate/dependency behavior, or signed aggregation. Add the
-    smallest backward-compatible contract and planted preflight cases needed to reject
-    the two AgenticVBench defect classes before execution. Reuse projection,
-    artifact-view, task-health, metric, and validity machinery; do not infer observer
-    accuracy, expert validity, capability, professional quality, or readiness [AVB].
+23. **Completed signed-criterion conformance, not observer or construct validity —
+    `build-signed-criterion-conformance-slice`:** the benchmark bundle now binds
+    checks to an optional backward-compatible signed contract for proposition hash,
+    public basis, desirable/violation polarity, pass/fail mapping, score role and
+    signed contribution, inversion, dependency/gate, aggregation, clipping, and
+    licensed interpretation. Four coherent builder controls pass; seven focused
+    tests reject public/private semantic conflict, missing penalty inversion, stale
+    proposition, inconsistent arithmetic, dangling/cyclic prerequisites, unreviewed
+    equivalence, and clipping that may mask required failure [SCI]. This is preflight
+    conformance, not observer accuracy, criterion authority, score calibration,
+    expert validity, capability, professional quality, generalization, or readiness.
 24. **Completed mediated-attribution conformance, not candidate-quality or mediator
     validity — `validate-mediated-evaluator-attribution-selection`:** the 20-cell
     cross-domain deterministic replay preserves source/projectable/mediator-valid/
@@ -3870,13 +3897,17 @@ them:
     It detects all five planted attribution and selection failures but supplies no
     source-authority, projection-validity, capability, professional, generalization,
     production, or readiness evidence [MEA].
-25. **Pending analytical-hypothesis lifecycle validation, not a process-mining
-    subsystem — `validate-cross-domain-analytical-hypothesis-lifecycle`:** freeze and
-    execute the two-domain inquiry protocol described in §3.2e. Keep candidate,
-    test, evidence-update, decision, and consequence observations separate; preserve
-    repeats, raw observer output, and typed invalidity; do not create a holistic
-    scalar or infer causal diagnosis, professional validity, capability, or readiness
-    [PML].
+25. **Completed analytical-hypothesis lifecycle conformance, not verified
+    analytical capability — `validate-cross-domain-analytical-hypothesis-lifecycle`:**
+    the zero-call two-domain/two-repeat replay retains four attempts, raw analyst and
+    observer outputs, executable discriminating and non-discriminating tests, rivals,
+    contradictory evidence, update and escalation rules, five separate score families,
+    and typed invalidity [AHL]. It detects all six planted diagnostic classes; one
+    malformed conclusion observation remains in the intended denominator but not the
+    substantive score denominator. This validates frozen fixture and replay behavior,
+    not observer accuracy, causal correctness outside the fixture, agent capability,
+    expert/professional validity, cross-domain generalization, process-mining ability,
+    intervention effect, production fitness, or readiness.
 
 ## Provenance keys
 
@@ -4642,6 +4673,19 @@ them:
   state, alternative, and non-compensatory scorer behavior only. They provide no
   empirical candidate, mediator, expert/professional, cross-domain-generalization,
   production, or readiness evidence.
+- **[SCI]** `schemas/benchmark-bundle.schema.json`,
+  `scripts/validate_benchmark.py`, and signed-criterion controls and mutation tests
+  in `tests/test_validate_benchmark.py`; deterministic builder-authored schema and
+  semantic-preflight conformance only. The fixture contains no trials and provides
+  no observer, expert, professional, capability, generalization, or readiness
+  evidence.
+- **[AHL]** `pilots/analytical-hypothesis-lifecycle-v1/README.md`, `protocol.json`,
+  `observations.json`, `replay.py`, `report.json`, and `report.sha256`, plus
+  `tests/test_analytical_hypothesis_lifecycle.py`; hash-pinned zero-call replay of
+  four builder-authored case×repeat attempts across two unlike work shapes. It
+  establishes deterministic stage separation, planted-diagnostic detection, and
+  typed invalid-output handling only, with the claim ceilings recorded in the
+  protocol and retained report.
 - **[PML]**
   `papers/agent-benchmarks/2026-07-17-pm-llm-process-analysis-judge-validity.md`;
   reviewed immutable v1 PDF/text plus pinned paper-era and current official releases,
