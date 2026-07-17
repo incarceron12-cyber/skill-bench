@@ -1644,6 +1644,19 @@ These sources are important to the compounding system and adaptive-agent evaluat
 
 **Repository consequence:** Private-evidence firewalls, role transitions, safety/compliance checks, workspace mutation authorization, and environment-isolation tests. Rolling forms require four independent clocks—source availability, exposure/visibility, instrument version, and configured-system execution. Difficulty-conditioned replacement keeps challenge alive but changes the administered population; without frozen anchors or equivalent-form bridges, rank stability cannot license absolute capability trends. Grader repair creates linked new observations rather than rewriting historical scores. Context management is itself a time-varying configured treatment: bind each compaction event's input/output, operator, trigger/budget, retained/omitted claims, and decision-time evidence view to the authoritative policy version; keep carriage, semantic survival, adoption, admission, realized effect, and consequence separate. Workflow-level safety additionally requires an intent-assembly graph and honest nested units: preserve session → stage → turn → batch → prompt output → artifact delta → downstream consumption → proposal → admission → effect, and do not promote many strings from shared batch sessions into independent workflow trials. A pinned string neither authenticates a principal nor resolves revocation, precedence, or valid time. Safety observers must bind each verdict to decisive tool arguments, observations, native artifact/state views, and recipient effects; when those views are absent they must return insufficient evidence rather than convert non-completion, incapability, timeout, or empty output into safety. Keep justified refusal/escalation, safe alternative completion, over-refusal, invalid execution, unsafe attempt, policy interception, realized harm, recovery, and benign utility separate. At the proposal-to-execution boundary, preserve field-local authority, exact sink-interpreted effect authority, invocation capability, and their common manifest binding; gate acceptance proves neither validator correctness nor professional task quality, while zero observed gate escapes proves neither bypass closure nor universal safety. Purpose-bound flows additionally require `atom/source/subject × legitimate task use × authorized principal/purpose × minimum sufficient representation × actual recipient/sink/surface × received payload × storage/forwarding state × consequence`. A binary private-atom–tool necessity matrix is a useful conformance projection only after those authority and transformation links are warranted. Detector hits and repeated downstream occurrences must remain detector-relative transmission observations, not causal propagation or risk; call-conditioned opportunity rates must be stress-tested against redundant calls, omitted tools, and valid alternate paths. ToolPrivacyBench's immutable paper reports 2,150 cases, sampled pair-label κ=.86, nine agent rows, and rich sink/free-text/path diagnostics, but its official snapshot is only a 479-byte placeholder; the unavailable policies, detector, runs, and implementation block reproduction and all privacy-compliance, professional, safety, and readiness promotion. SafePro's paper-time release has useful authored task packages, but its 276 public rows do not match the 275-row paper suite, 208 reference files are unbundled/mutable, and no run corpus supports its configured-system rates or mitigations. The inert action-safety slice now separates placement, exposure, adoption, attempted and mock-realized action, recovery, residual harm, invalidity, and benign utility across eight synthetic cases with a passing static preflight. This is executable contract evidence only—not a live containment test, agent-capability result, expert validation, or deployment claim.
 
+Workflow intent assembly sharpens the action-safety chain without replacing it.
+**Assembly opportunity** records that a stage/state made a sensitive edge possible;
+**realized assembly** requires a persistent delta, downstream availability or
+consumption, and attributable continuation toward a proposal or effect. Refused in
+Chat supports the narrower configured-artifact rung only: its 816 output rows may be
+nested in undisclosed shared sessions, the multi-stage treatment is bundled, the
+all-positive evaluator set does not calibrate specificity, empirical artifacts are
+unreleased, and no consumer, action, harm, defense, benign-utility, or readiness
+outcome is observed. A cross-domain test should preserve independent session and
+output denominators, equal resource envelopes, frozen checkpoint ablations, mixed-
+polarity observers, inert artifacts, synthetic recipients, mock admission/effect
+receipts, utility, burden, and clustered uncertainty.
+
 ## 9. Expert scarcity and participation are design problems, not assumptions
 
 **Central insight:** Expert labor should be concentrated at authority-bearing boundaries: elicitation, disagreement, transformation review, calibration, and release approval. The project must measure actual participation cost and fidelity rather than relying on unsupported market estimates.
@@ -1656,9 +1669,28 @@ These sources are important to the compounding system and adaptive-agent evaluat
 | [Consulting cognitive traps](../papers/agent-benchmarks/2026-07-10-consulting-cognitive-traps.md) | A | Shows the potential value of SME-authored critical incidents while its missing released task/grader artifacts limit reuse evidence |
 | [SimInstruct](../papers/agent-benchmarks/2026-07-11-siminstruct-simulated-novice-elicitation.md) | B | Demonstrates paid asynchronous role-play feasibility in one network while leaving recruitment denominators, actual burden, privacy/consent lineage, tacit-knowledge yield, and downstream utility unmeasured |
 | [HAS-Bench](../papers/agent-benchmarks/2026-07-13-hasbench-configurable-human-participation-validity.md) | B | Makes participant roles, authority, channels, and event-conditioned process measures explicit while showing that model-simulated assistance is not evidence about real-human participation or burden |
+| [CentaurEval](../papers/agent-benchmarks/2026-07-17-centaureval-human-ai-collaboration-validity.md) | A | Adds real-participant human-only versus Copilot-assisted hidden-test endpoints and partial direct cost, while unmatched task forms/resource envelopes and absent contribution lineage separate team-package uplift from division of labor, complementarity, necessity, professional value, and readiness |
 | [KINA](../papers/agent-benchmarks/2026-07-16-kina-incentive-representativeness-validity.md) | B | Supplies an explicit bonus-on-bar tournament and payoff assumptions while its bundled pay-plus-audit phase comparison and absent assignments, scores, payments, audits, appeals, attrition, and welfare block incentive-effect, contributor-benefit, affordability, and item-validity claims |
 
 **Repository consequence:** Expert-participation contracts, contributor provenance/authority, measured recruitment and review burden, reciprocal outputs, and continued research into near-zero-cost incentives. Benchmark participants must additionally be typed by realization (`real_human`, model simulator, scripted policy, hybrid, or replay), independently of their assigned social role. Participation is a configured treatment vector—prompt, visible participants, channels/tools, information access, action authority, initiative, control threshold, budget, and observer—not an ordinal “agency level.” Preserve the chain `availability → exercise → uptake → effect`; a graph edge, trace event, apparent adoption, and matched outcome effect license different claims. Simulator steps/tokens do not estimate human active time, waiting, interruption, cognitive demand, correction work, privacy exposure, or accountability. HAS-Bench's 397 reported adaptations and scenario-review study support this vocabulary, but its model-backed users, bundled A1/A3/A4 treatments, single rollout per task, unreported process-judge audit, and unverifiable release block human-participation, simulator-parity, professional-collaboration, burden, and readiness claims.
+
+Real-human participation sharpens rather than removes the identification requirement.
+For every comparison, bind an immutable task form or validated equivalence block to a
+matched information/tool/environment/feedback/time/token/call/retry/intervention
+envelope, then join `contribution opportunity → exercise and authority → receipt →
+semantic uptake/rejection → exact artifact/state consequence → independent
+verification → outcome → burden and complete cost`. Keep team-package uplift,
+division of labor, complementarity, necessity, professional value, and readiness as
+non-inheriting claim rungs. CentaurEval's paper-reported 17/90 versus 28/90
+human-only/team hidden-test passes are meaningful evidence for one selected
+participant/Copilot package, not the later rungs: dynamic forms differ across arms,
+autonomous conditions use a different static set and execution envelope, assignment
+and trace releases are unavailable, clustering and result definitions are not fully
+auditable, and no contribution ablation exists. Treat model-relative collaboration
+necessity as a versioned task-health role. Validation should cross human-only,
+agent-only, team, and selected frozen-state both/neither/component replays over
+unlike work shapes while measuring active/wait/review/correction burden, cost,
+invalidity, and clustered endpoints.
 
 Formal incentive claims add a separate treatment chain: `mechanism assumptions →
 implementation witness → realized assignment/pay/audit/appeal events → effort and

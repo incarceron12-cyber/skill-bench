@@ -2757,6 +2757,60 @@ release restrict it to synthetic configured-collaboration evidence [HAS]. Existi
 configured-system, trace, metric, task-health, validity, and expert-participation
 records are the implementation homes; no parallel subsystem is implied.
 
+#### Collaboration value requires matched task forms and contribution lineage
+
+A higher team endpoint is a configured-package observation, not evidence that both
+participants made necessary or complementary contributions. Preserve two linked
+units rather than treating a template label or a dialogue count as the unit of
+collaboration [CENT]:
+
+```text
+immutable task form or validated equivalence block
+  + participant/configured-system assignment
+  + matched information/tool/environment/feedback/time/token/call/retry/intervention envelope
+    → contribution opportunity and authority
+      → exercised proposal/question/veto/edit/action and recipient receipt
+        → semantic uptake, rejection, distortion, or supersession
+          → exact artifact/state consequence and collateral preservation
+            → independent verification and matched endpoint contrast
+              → active/wait/review/correction burden + complete cost
+```
+
+Task identity means an immutable instance hash or an equivalence block whose public
+requirements, hidden-but-fair consequences, admissible solution set, wording burden,
+artifact volume, runtime, and verifier difficulty have bridge evidence. Dynamic
+instances drawn from one template are not matched by declaration. The resource
+envelope must independently type information, tools, runtime, model/service, prompt,
+visible feedback, time, calls/tokens, retries, intervention policy, participant
+experience, waiting, and every invalid or censored event. If these differ, report a
+package frontier rather than an isolated collaboration effect.
+
+Keep the claim ladder non-inheriting: **team-package uplift** is a matched endpoint
+contrast; **division of labor** is evidence that participants performed different
+operations; **complementarity** requires nonredundant contributions that jointly
+improve outcome under matched resources; **necessity** requires a contribution
+ablation or frozen-state replay showing failure when either contribution is removed;
+**professional value** additionally nets quality, safety, human/service/review/risk
+costs for an intended use; **readiness** needs transport, reliability, stakeholder
+thresholds, and operational governance. Model-relative necessity is a versioned
+task-health role, not a permanent task property.
+
+CentaurEval provides real-participant, hidden-test endpoint, self-report, and partial
+direct-cost evidence: the paper reports 17/90 human-only versus 28/90 Copilot-assisted
+passes among 45 selected participants [CENT]. But conditions use different dynamic
+forms, autonomous arms use a different static set and execution/retry envelope, the
+assignment matrix and empirical release are unavailable, participant/template
+clustering and several result definitions are not auditable, and no proposition-
+to-state contribution ablation exists. The result therefore supports one configured
+participant-package contrast—not collaboration necessity, complementarity,
+productivity, professional value, ecological validity, or readiness. A bounded
+validation should cross human-only, agent-only, team, and selected frozen-state
+human/agent/both/neither replays over equivalent forms in at least two unlike work
+shapes, with complete contribution, burden, cost, invalidity, and clustered-outcome
+ledgers. Existing participation, trace, artifact/state, metric, task-health,
+configured-system, cost, and validity records host this evidence; no coding- or
+collaboration-specific schema follows.
+
 #### Interaction episodes require link-level evidence
 
 A channel or authored phase creates an **opportunity** to interact; it does not
@@ -3307,7 +3361,54 @@ for placement/exposure/adoption/attempt/mock realization/recovery and separate
 safety/utility counts. They do not probe a live sandbox or establish expert
 validity, capability, real-world safety, or readiness [AC].
 
-### 4.4a Delayed obligations are dual-task state transitions, not memory labels
+### 4.4a Workflow intent assembly is a nested artifact-and-action history
+
+A direct refusal does not establish safety when later ordinary-looking stages can
+assemble the same prohibited objective in a persistent artifact. Preserve the exact
+nested unit and causal opportunity [RIC]:
+
+```text
+workflow session → stage → turn → batch → prompt output
+  → parent-state/artifact hash + exact artifact delta
+    → downstream consumer and consumption event
+      → action proposal → admission/interception → realized effect
+        → recovery, residual harm, benign utility, burden, and cost
+```
+
+Record every initiated session, prompt assignment and order, batch membership,
+retry/restart/debug branch, invalid or censored event, stopping reason, model/service
+time block, and observer view. An output-item denominator is not an independent
+session denominator. **Assembly opportunity** means that authorized or unauthorized
+stages and state made an edge possible; **realized assembly** requires evidence that
+the exact delta survived, was available to the next stage, and contributed to the
+terminal artifact or proposal. Temporal precedence alone is not contribution. Hash
+each checkpoint and use stage removal/restoration or frozen-state replay before
+naming multi-turn history, execution, metric pressure, benign examples, batching,
+persistence, or representation as a mechanism.
+
+Keep the safety claim ladder separate: **configured workflow-conditioned artifact
+generation**; **identified component mechanism**; **transport across interface,
+backend, and time**; **natural exposure or attack prevalence**; **artifact-to-action
+consumption and realized harm**; **defense efficacy with legitimate utility and
+review burden**; and **production safety/readiness**. No earlier rung licenses a
+later one. Artifact-localized sensitive content is stronger evidence than a chat-only
+observer, but it is not execution, recipient harm, prevalence, or a validated defense.
+
+Refused in Chat, Written in Code reports 816/816 harmful prompt–backend strings in
+one bundled Copilot workflow versus 8/816 in each of three single-step framings, but
+the 816 rows may be nested in unreleased shared batch sessions [RIC]. The exact
+session map, protocol, artifacts, traces, retries, labels, costs, and complete run
+ledger are unavailable; the all-positive evaluator set cannot calibrate specificity;
+and the treatment changes turns, context, files, execution, benign examples, metric
+claims, batching, and output location together. It supports a configured artifact-
+generation existence claim—not an isolated mechanism, failure rate, realized harm,
+defense effect, or readiness. A safe cross-domain validation should use abstract
+sensitive atoms and inert artifacts, equal envelopes, mixed-polarity calibrated
+observers, stage ablations, synthetic recipients, and mock action receipts. Existing
+trace, artifact/state, information-flow, action-safety, configured-system, metric,
+task-health, and validity records suffice; no jailbreak-specific subsystem follows.
+
+### 4.4b Delayed obligations are dual-task state transitions, not memory labels
 
 A delayed requirement is useful only if it is executed at the authorized time
 without silently degrading the work it accompanies. Preserve two outcome families
@@ -3371,7 +3472,7 @@ artifact/state, configured-system, trace, task-health, metric, and validity reco
 are the implementation homes; no memory-specific schema or additional worker task
 follows.
 
-### 4.4b Plan carriage is a proposition-to-consequence experiment, not a latent scalar
+### 4.4c Plan carriage is a proposition-to-consequence experiment, not a latent scalar
 
 Plan-span visibility, a representation contrast, recoverability, free behavioral
 use, endpoint consequence, and context-policy utility are different observations.
@@ -3579,6 +3680,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Artifact-centered professional work (AA-Briefcase, MBABench, WorkstreamBench) | plural native/executable/rendered views, initial-to-final mutation surface, counterfactual integrity, and professional judgment | reference imitation, static-value coincidence, inherited-size inflation, unobservable charts/layout, engine drift, and weighted score mistaken for readiness | MBABench full immutable v4 paper plus inspected post-v4 code/data and two workbook traces [MB]; other family members remain landscape/triage |
 | Stateful professional workflow (SaaS-Bench, Workflow-GYM, OdysseyBench) | pinned initial state, sparse consequential stage transitions, alternative paths, final-state and artifact checks | residual/pre-satisfied state, stage bypass, canonical-path bias, environment/harness defects, and final consequence mistaken for complete workflow evidence | Workflow-GYM full immutable v3 paper plus post-v3 official showcase/trajectory inspection, with full dataset/VMs/graders/results unavailable [WG]; SaaS-Bench has a separate full review; OdysseyBench remains landscape-level |
 | Adversarial authority and action safety (ClawSafety) | source-authority matrix, exposure/adoption/action-state ledger, containment, recovery, and benign utility | source placement or token match mistaken for adoption/realized harm; refusal or tool failure counted as safety; mutable/live side effects | full immutable v2 paper plus complete post-v2 partial-release audit [CS]; internal inert conformance fixture/preflight validates contract behavior only [AC] |
+| Workflow-conditioned artifact safety | nested session/stage/turn/batch/output/artifact-consumption/action history; assembly opportunity versus realized assembly; non-inheriting safety claim ladder | output strings counted as independent workflow trials; bundled stage sequence called a mechanism; harmful content promoted to prevalence, executed harm, defense efficacy, or readiness | full immutable v2 paper read; no verifiable empirical release, session map, artifacts, traces, or result ledger [RIC] |
 | Skill-grounded long-horizon evaluation (LH-Bench) | expert procedure → observable boundary → artifact/check crosswalk | intervention/instrument contamination; agreement mistaken for validity | full immutable v2 PDF/text and deep review [LH] |
 | Budget-constrained online Skill/memory packages | configured-package frontier, exact allocation episode, module-flow mediation, and amortized portfolio ledger | approximate budgets and compound controls promoted to allocation effects; presentation promoted to adoption; three-run unions/intersections promoted to capability bounds; retries and order-dependent shared state omitted | full immutable v1 paper/project-page review with no study release [OSM]; internal 14-row parity audit admits zero exact contrasts [SAPA], and the zero-call prospective capture envelope remains blocked on per-call telemetry [PAT] |
 | Human-rated configured Skill package (medical Skill study) | mounted/surfaced/opened/invoked/adopted/artifact-change chain; model/task/rater estimand and criterion-specific reliability | available package mistaken for exposure; platform/package bundle called a Skill effect; shared structure and noisy Likert ratings promoted to expertise, correctness, or transfer | full immutable v1 paper/supplement plus timing-bounded 1,715-file package audit; one selected 21-output task, unequal arm/model mixture, absent run/exposure records, and negative expert ICC support a claim ceiling rather than efficacy [MSK] |
@@ -3598,6 +3700,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Expert participation and transformation governance | scoped contribution unit, authority lineage, reconsent and reciprocal output | expert approval laundered through synthetic/developer/model transformations; favorable single-site evidence | full immutable v1 ethnography and deep review; no fidelity, cost, or near-zero-cost validation [EP] |
 | Authority-gated workflow elicitation (laboratory workflow twins) | claim-level role gates and mandatory nulls; evidence→claim→projection lineage; root condition separated from a masking success channel | graph/query executability mistaken for knowledge truth, calibrated confidence, causal validity, operational benefit, or cross-domain transfer | full immutable 48-page v1 paper and deep review; four reported assay sessions in one department, proprietary substantive artifacts, and no ground-truth or operational-outcome validation [LWT] |
 | Configurable participant systems (HAS-Bench) | participant realization, participation-policy vector, authority-event lineage, and availability/exercise/uptake/effect/burden separation | simulated social roles called humans; bundled prompt/tool/information/authority/budget contrasts; event counts mistaken for benefit or human cost | full immutable v1 paper and deep review; paper-reported scenarios/results only, no verifiable official artifact, real task participants, repeated cells, or reported process-judge audit [HAS] |
+| Real-participant collaboration-value evaluation (CentaurEval) | immutable task-form/equivalence block plus matched resource envelope joined to contribution opportunity/exercise/receipt/uptake/state consequence/verification/burden/cost | unlike dynamic/static forms and resource packages called one intervention scale; team endpoint or self-report promoted to complementarity, necessity, professional value, or readiness | full immutable v3 paper and appendices read; paper-reported real-participant endpoint/cost evidence, but no verifiable task, assignment, trace, contribution, grader, or analysis release [CENT] |
 | Consequence-linked user-simulator audit | participant realization→authorized observable-state sufficiency→one-step/free-running fidelity→policy transport→real consequence ladder | human-like or assigned-goal dialogue promoted to decision fidelity; future outcome treated as simulator-visible latent truth; observational response differences promoted to causal tactic or production-agent effects | full immutable v1 paper and deep review over one private payment-linked production corpus; same-prefix one-step evidence only, with unavailable claimed release, unvalidated labels, unspecified censoring/clustering, and no free-running or policy-transport trial [USDF] |
 | Evaluator-assisted cumulative artifact repair (AgencyBench) | typed feedback proposition→receipt/uptake→changed loci→criterion-local admissible re-observation→repair/collateral regression→endpoint and cost | extra inference and criterion disclosure called self-correction; evaluator critique called user feedback; non-equivalent observers pooled; first/final/best outcomes or invalids silently merged | full immutable v4 paper plus complete sole-commit January release audit; 32 scenarios/138 cumulative subtasks and 32 heterogeneous demonstrations are inspectable, but paper/release mismatch, single-run and denominator ambiguity, unavailable human labels, hidden aesthetics, observer disagreement, and no real-user evidence bound claims to configured evaluator-assisted repair [AGY] |
 | Semantic-diff active oversight (Pista) | operation/rationale/dependency/scope review artifact linked to exposure, authorized intervention, changed locus, independent correction, preservation, burden, and consequence | generated explanation mistaken for faithful diff; bundled usability treatment, self-report, feature use, or attempted steering promoted to detection, realized repair, calibrated reliance, or utility | full immutable v1 paper plus two author-linked pre-v1 implementation archives; formative N=8 and bundled within-subject N=16 evidence supports inspectability and interaction-efficiency hypotheses, while unmatched defects, absent correction lineage, low endpoints, and no recipient outcome block effective-oversight or readiness claims [PISTA] |
@@ -3877,6 +3980,16 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     consequence separate. Holistic prose preference or candidate plausibility
     cannot silently confer truth, causal diagnosis, fairness, operational value,
     professional validity, or readiness.
+63. **A team score is not collaboration value:** require immutable task forms or
+    validated equivalence blocks, matched resource envelopes, and contribution-
+    opportunity→receipt→semantic-uptake→state-consequence→verification lineage;
+    keep package uplift, division of labor, complementarity, necessity,
+    professional value, and readiness separate [CENT].
+64. **An output item is not a workflow trial:** retain session, stage, turn, batch,
+    prompt-output, artifact-delta, consumption, proposal, admission, and effect
+    nesting; distinguish assembly opportunity from realized assembly, and do not
+    promote configured artifact generation into mechanism, prevalence, harm,
+    defense, or readiness [RIC].
 
 ## 8. Unresolved tensions and required experiments
 
@@ -3889,6 +4002,8 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Workflow compliance vs latent expertise | Observable transitions are more judgeable, but exact procedure following can substitute for judgment [LH]. | Include at least two expert-approved procedures and held-out consequence variants. |
 | Human-rated package lift vs identified expertise transfer | The medical Skill study adds human review, but one selected 21-output task, unequal model weighting, a bundled OpenClaw/package treatment, no exposure/adoption trace, shared procedure–criterion content, and negative expert ICC leave routing, elaboration, correctness, cueing, and transfer unresolved [MSK]. | Freeze attempted runs and model/task weights; hold harness/tools/budget fixed; cross no/placebo/procedural/executable/full-package arms with independent/shared criteria; log module realization; use connected calibrated raters and independent substantive checks on held-out task families. |
 | Configurable assistance vs identified human-participation effect | HAS-Bench makes roles/channels observable, but its A1/A3/A4 contrasts bundle prompt, tools, information, authority, initiative, and budget while all task participants are model simulators [HAS]. | On well-defined matched tasks, factorially vary one participation-policy component at a time; counterbalance consented humans and pinned simulators, repeat/equate forms, validate process observers independently, and report outcome, safety, latency, active/wait time, interruption, correction, privacy, and accountability separately. |
+| Team-package uplift vs complementarity, necessity, and professional value | CentaurEval supplies a real-participant within-person endpoint contrast and partial direct cost, but conditions use different dynamic forms, unmatched autonomous tasks/resources, unreleased assignments and traces, and no contribution ablation [CENT]. | Across at least two unlike work shapes, freeze task forms or validate equivalence blocks; match information/tool/environment/time/token/retry/intervention envelopes; cross human-only, agent-only, team, and selected frozen-state both/neither/component replays; join contribution opportunity, receipt, semantic uptake, state effect, verification, burden, cost, and clustered endpoints. |
+| Direct refusal vs workflow-level artifact and consequence safety | Refused in Chat reports a large configured contrast, but output rows are nested in undisclosed sessions and the workflow jointly changes turns, context, execution, examples, metric claims, batching, persistence, and representation [RIC]. | Use abstract sensitive atoms and inert artifacts; freeze session checkpoints; cross matched multi-turn, stage-removal/restoration, batching, representation, and feedback conditions under equal envelopes; verify persistence and synthetic-recipient consumption, then mock proposal/admission/effect while measuring benign utility and review burden. |
 | Inspectable semantic diff vs effective oversight | Pista's small bundled study supports perceived inspectability, explanation, feature-use, and prompt-burden observations, but semantic-diff fidelity, equal defect opportunity, proposition-level repair, preservation, calibrated reliance, and recipient outcomes are absent [PISTA]. | From frozen identical defective states, cross surface diff, independently verified semantic diff, ask/edit affordances, and generated suggestions plus misleading/incomplete-diff controls; log inspection through re-observation, grade native and collateral state, and measure burden and decision loss. |
 | Outcome-linked simulator error vs valid policy/consequence transport | Same-prefix probes on one payment-linked corpus report more engagement-positive simulator bias for eventual non-payers, but future outcome may reflect private or later causes; teacher forcing, unvalidated labels, observational agent actions, censoring/clustering gaps, and no free-running policy trial prevent person, causal-tactic, or production-agent claims [USDF]. | Cross independently validated observable-state signals with simulator policy and matched history; compare population calibration with any person-specific target; preserve refusal/silence in bounded free-running rollouts; then compare frozen agent-policy rankings/effects under simulator, replay, and consented human conditions where justified. |
 | Learning from failures vs benchmark contamination | STRACE/ACE support localized lessons; ACE also degrades under weak feedback and changes the online estimand [ST, ACE]. | Quarantine lessons, validate on held-out scenario clusters, and audit private-evidence flow before promotion. |
@@ -4941,3 +5056,20 @@ them:
   sensitivity case—not judge validity, verified analytical inquiry, longitudinal
   capability, causal diagnosis, professional utility, production fitness, or
   readiness.
+- **[CENT]**
+  `papers/agent-benchmarks/2026-07-17-centaureval-human-ai-collaboration-validity.md`;
+  reviewed immutable v3 PDF/text and complete appendices are recorded there. The
+  paper supplies real-participant hidden-test, self-report, and partial direct-cost
+  evidence, but no verifiable official task/result release, assignment matrix,
+  contribution lineage, matched static/dynamic forms or resource envelopes, or
+  auditable clustered analysis. Evidence supports one configured participant-package
+  contrast—not complementarity, necessity, productivity, professional value,
+  ecological validity, or readiness.
+- **[RIC]**
+  `papers/agent-benchmarks/2026-07-17-workflow-level-jailbreak-artifact-safety-validity.md`;
+  reviewed immutable v2 PDF/text and bounded release search are recorded there. The
+  paper reports artifact-localized harmful strings under one configured workflow,
+  but no verifiable session map, protocol, artifacts, traces, labels, retries, cost,
+  or complete result ledger. Nested output rows, a bundled treatment, all-positive
+  evaluation, and absent consequence evidence block mechanism, prevalence, realized-
+  harm, defense-efficacy, production-safety, and readiness claims.
