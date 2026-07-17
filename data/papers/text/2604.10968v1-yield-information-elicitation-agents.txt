@@ -1,0 +1,982 @@
+                                         YIELD: A Large-Scale Dataset and Evaluation Framework for Information
+                                                                  Elicitation Agents
+
+                                                                           Victor De Lima and Grace Hui Yang
+                                                                           InfoSense Lab, Georgetown University
+                                                                          {vad49, grace.yang}@georgetown.edu
+
+
+
+                                                               Abstract                                    Traditional Agent                  Elicitation Agent
+
+
+
+
+arXiv:2604.10968v1 [cs.CL] 13 Apr 2026
+                                             Most conversational agents (CAs) are designed
+                                             to satisfy user needs through user-driven inter-
+                                             actions. However, many real-world settings,
+                                             such as academic interviewing, judicial pro-
+                                             ceedings, and journalistic investigations, in-
+                                             volve broader institutional decision-making
+                                             processes and require agents that can elicit in-
+                                             formation from users. In this paper, we in-
+                                             troduce Information Elicitation Agents (IEAs)
+                                                                                                                           Conversational Initiative
+                                             in which the agent’s goal is to elicit informa-           Primarily reactive; responds to    Primarily active; aims to
+                                             tion from users to support the agent’s insti-             user requests without pursuing     obtain information to meet
+                                             tutional or task-oriented objectives. To en-              its own agenda.                    broader institutional goals.
+                                                                                                                                  Objectives
+                                             able systematic research on this setting, we              Aiming to satisfy user needs;      Aiming to satisfy broader
+                                             present YIELD, a 26M-token dataset of 2,281               providing information on user      institutional goals; surfacing
+                                             ethically sourced, human-to-human dialogues.              demand.                            information from users.
+                                                                                                                              Use Case Examples
+                                             Moreover, we formalize information elicita-               A travel booking agent, a movie    A recruiter agent, a detective
+                                             tion as a finite-horizon POMDP and propose                recommendation agent, or a         agent questioning suspects,
+                                             novel metrics tailored to IEAs. Pilot exper-              programming coding agent.          or a journalist agent public
+                                                                                                                                          figure interview.
+                                             iments on multiple foundation LLMs show
+                                             that training on YIELD improves their align-             Figure 1: Traditional vs. information elicitation agents.
+                                             ment with real elicitation behavior and find-
+                                             ings are corroborated by human evaluation.
+                                                                                                      across three dimensions: conversational initiatives,
+                                             We release YIELD under CC BY 4.0. The                    agent’s objectives, and common use cases. Table 1
+                                             dataset, project code, evaluation tools, and fine-       shows sample dialogues between human elicitors
+                                             tuned model adapters are available at: https:            and human respondents in various domains, includ-
+                                             //github.com/infosenselab/yield.                         ing oral history and judicial proceedings. The goal
+                                                                                                      of this paper is to support the study and creation of
+                                                                                                      agents that can behave like human elicitors. How-
+                                         1   Introduction
+                                                                                                      ever, little research has been done for this purpose.
+                                         Most conversational agents (CAs) are designed                   IEAs differ fundamentally from other conversa-
+                                         to satisfy user needs through user-driven interac-           tional agents in both whose goals they serve and
+                                         tions. However, many real-world settings, such               how success is defined. Conversational agents are
+                                         as academic interviewing (Taherzadeh, 2016), ju-             generally designed to help users accomplish user-
+                                         dicial proceedings (Supreme Court of the USA,                initiated tasks, with the user controlling the agenda
+                                         2024), and journalistic investigations (Van Sus-             and direction of the interaction. IEAs, by contrast,
+                                         teren, 2018), involve broader institutional decision-        act on behalf of an external institutional objective
+                                         making processes and require agents that can elicit          and use conversation as a means to extract informa-
+                                         information from users. In this paper, we propose            tion from the respondent. Crucially, at any point in
+                                         to study and support Information Elicitation Agents          the dialogue there is not a single optimal question
+                                         (IEAs), a new class of conversational agents de-             or expected answer; instead, there are many possi-
+                                         signed to meet these goals. Figure 1 illustrates the         ble directions, each potentially yielding valuable
+                                         core distinctions between traditional CAs and IEAs           information. The agent’s task is therefore to choose
+
+                                                                                                  1
+ Oral History (Oglesby, 2009)                                         Judicial Proceeding (Supreme Court of the USA, 2024)
+ Elicitor: "OK, then think back to when you went into the             Elicitor: "Is there any aspect of social media that you think
+ Peace Corps. What were you doing the year before you went            is protected by the First Amendment?"
+ in?"                                                                 Respondent: "Yes, Your Honor. I can certainly imagine
+ Respondent: "I was in high school when I went in. I was              platforms that would be subject to this law that indeed have
+ one of the eighteen year olds that went into the Peace Corps."       First Amendment rights."
+ Elicitor: "Did you have any particular country or any place          Elicitor: "But why is it different?"
+ that you wanted to go?"                                              Respondent: "Well – well, there’s a lot in there, Your Honor.
+ Respondent: "South America always had a calling for me. I            Maybe I can start with the Hurley case."
+ didn’t have any particular country at all."
+ Academic Interview (Taherzadeh, 2016)                                Journalistic Investigation (Van Susteren, 2018)
+ Elicitor: "I was just wondering your opinion on whether              Elicitor: "This is your second trip to Mexico, but why are
+ biodiversity offsetting is likely to lead to more stringent or       you here now in Mexico?"
+ less stringent regulations around infrastructure projects?"          Respondent: "So, as the new government makes this transi-
+ Respondent: "It’s ill-informed people not understanding the          tion beginning on Dec. 1, we’re working diligently to make
+ system properly because at the end of the day biodiversity           sure we have a solid foreign policy relationship with them."
+ offsetting doesn’t affect any existing protections."                 Elicitor: "That caravan that is coming up from Guatemala
+ Elicitor: "What’s been the reception of businesses to biodi-         heading to Mexico and then presumably maybe some place
+ versity offsetting extending the mitigation hierarchy?"              else, maybe the United States: What’s Mexico say about
+ Respondent: "Well, the reception that I’ve had when I’ve             that?"
+ been speaking to them has been really quite positive."               Respondent: "So Mexico agrees that it is not constructive to
+                                                                      have unlawful migration transit from these Northern Triangle
+                                                                      countries through Mexico into the United States."
+
+ Table 1: Shortened examples of information elicitation dialogues. Sources are included next to domain names.
+questions that are likely to surface informative and                         standard, full dialogue version of the dataset
+relevant facts, maximizing the cumulative value                              and a rolling-window segmented version used
+of what is uncovered rather than converging on a                             for the experiments in this study.
+single correct outcome.                                                    • We propose and operationalize a few IEA-
+   The task of creating IEAs is challenging for                              specific evaluation metrics: Conformity, Pro-
+several reasons. First, the agent must act in an                             gression, and Turn-Length Ratio.
+extremely high-dimensional action space, where
+                                                                           • We further formalize information elicitation as
+every utterance can shift the trajectory of the dia-
+                                                                             a finite-horizon Partially Observable Markov
+logue. Second, defining what makes information
+                                                                             Decision Process (POMDP) and use offline
+“informative” is inherently nuanced and context-
+                                                                             reinforcement learning (ORL) with a minimal
+dependent, bringing subjectivity into both training
+                                                                             proxy reward to show that dialogue-level op-
+and evaluation. These difficulties are further ampli-
+                                                                             timization with YIELD is competitive with
+fied in long dialogues, where agents must maintain
+                                                                             supervised fine-tuning (SFT).
+topic coherence over many turns while responding
+adaptively to unpredictable or even adversarial user                       • Pilot experiments across multiple foundation
+replies. Additionally, the amount of publicly avail-                         LLMs show that fine-tuning on YIELD im-
+able data for training IEAs is limited. To the best                          proves distributional and behavioral alignment
+of our knowledge, no existing dataset is available                           with human elicitation dialogues. These find-
+to support the development of IEAs. In this paper,                           ings are confirmed by human evaluations.
+we make the following contributions:                                      The remainder of the paper is organized as fol-
+                                                                       lows. Section 2 reviews related work. Section 3 de-
+   • We introduce IEAs as a distinct conversational                    scribes the YIELD dataset. Section 4 introduces the
+     paradigm and release YIELD: Information-                          formalization of the information elicitation prob-
+     Elicitation Learning Dialogues (YIELD),                           lem. Section 5 presents IEA evaluation metrics.
+     the first large-scale, ethically sourced IEA                      Section 6 details the pilot experiments and human
+     dataset. YIELD consists of real, human-to-                        evaluation; and Section 7 concludes the paper.
+     human, English information-elicitation dia-
+     logues sourced exclusively from repositories                      2    Related Work
+     with clear public domain or Creative Com-                         Dialogue datasets are instrumental in advancing
+     mons licenses. YIELD contains four do-                            research in conversational agents. Annotated cor-
+     mains and is larger than existing task-oriented                   pora were central to the development of CAs. Early
+     datasets (See Table 2). We publish both the                       work like the ATIS corpus used labeled intents to
+
+                                                                  2
+                                                   Avg. Turns      Avg. Tokens
+           Dataset    # Domains     # Dialogues                                      # Turns    # Tokens
+                                                  Per Dialogue        Per Turn
+          DSTC2            1              1,612          14.49            8.54        23,354      199,431
+         MultiWOZ          7              8,438          13.46           13.13       113,556    1,490,615
+           SGD            16             16,142          20.44            9.75       329,964    3,217,149
+          YIELD            4              2,281         171.07           67.27       390,205   26,249,014
+
+                               Table 2: Commonly used dialogue dataset statistics.
+
+drive system research (Hemphill et al., 1990), while       of these trends. IEAs obtain information from hu-
+more recent ones, such as the Dialog State Tracking        man respondents to support the agents’ information
+Challenge (DSTC) series (Henderson et al., 2014;           needs, such as information needs to serve for insti-
+Williams et al., 2013), shifted attention toward di-       tutional goals. Yet, despite increasing interest in
+alogue state tracking. This emphasis on interac-           these capabilities, no existing dataset has been de-
+tion laid the groundwork for exploring multi-turn          signed to support IEAs. To our knowledge, YIELD
+information-seeking, where systems make progress           is the first large-scale, ethically sourced benchmark
+through user feedback rather than executing static         created to enable the training and evaluation of
+plans (Tang and Yang, 2017). More recent datasets,         IEAs across multiple domains.
+such as Schema-Guided Dialogue (SGD)(Rastogi
+et al., 2019) and MultiWOZ (Budzianowski et al.,           3     Dataset Construction
+2018), expanded in size and domain coverage, with          Our dataset construction process consists of three
+16,142 and 8,438 dialogues, respectively. Nonethe-         stages: data acquisition, annotation, and dataset
+less, these existing datasets typically have short         standardization.
+dialogues. For instance, DSTC2, SGD, and Mul-
+tiWOZ averaged 14.49, 20.44, and 13.46 turns               3.1    Data Acquisition
+per dialogue, respectively. In contrast, the pro-
+                                                           We chose the data sources with the following aims:
+posed YIELD dataset offers substantially longer
+                                                           (1) to maximize coverage of elicitation settings and
+dialogues, averaging 171 turns per dialogue. Ta-
+                                                           (2) to ensure legal usability through public domain
+ble 2 provides a comparison among these popular
+                                                           or Creative Commons licensing. Many of the files,
+dialogue datasets and YIELD.
+                                                           particularly PDF and DOCX transcripts, to the best
+   There is growing interest in role-aware CAs,            of our knowledge, had not previously been pro-
+which adopt defined personas and pursue struc-             cessed into any dialogue dataset. We categorized
+tured goals. These agents have gained popularity           the identified sources into four domains of elicita-
+in a range of applications, from mental health sup-        tion dialogues. For a full description of the data
+port (Fitzpatrick et al., 2017) to legal assistance        sources, see Appendix A.1.
+(Thomson Reuters, 2025). Common development
+approaches use foundation LLMs fine-tuned with             3.2    Annotation
+domain-specific datasets, often combined with re-
+                                                           The collected transcripts appeared in various for-
+inforcement learning and human feedback to main-
+                                                           mats, including HTML, TXT, PDF, and DOCX.
+tain role consistency and behavioral alignment
+                                                           Unifying these different formats and heterogeneous
+(Kong et al., 2023). In parallel, research on proac-
+                                                           materials required extensive pre-processing. Au-
+tive CAs explores how conversational systems can
+                                                           tomated text extractors regularly introduced errors
+drive interactions forward, such as initiating ques-
+                                                           during conversion and sources contained individ-
+tions, shifting topics, and helping users make deci-
+                                                           ual issues such as speaker names that appeared
+sions (Deng et al., 2024; Liao et al., 2023). These
+                                                           without distinguishing markers and often varied in
+systems have been used in exploratory search and
+                                                           form within the same document. These and other
+evaluative tasks such as LLM-as-an-Interviewer
+                                                           issues made automatic parsing and tagging unreli-
+(Kim et al., 2024) and LLM-as-a-Judge (Zheng
+                                                           able. Therefore, we manually corrected and anno-
+et al., 2023). Both role-aware and proactive agents
+                                                           tated the transcripts over several weeks, removing
+benefit from curated dialogue datasets tailored to
+                                                           extraneous text, standardizing speaker references,
+their specific domains and objectives.
+                                                           and marking turns and speaker roles. Further de-
+  The Information Elicitation Agents (IEAs) pre-           tails on the annotation and preprocessing pipeline
+sented in this paper represent a natural extension         are provided in the dataset documentation.
+
+                                                       3
+       Field              Description                         is unobservable by the elicitor, such as knowledge,
+       dialogue_id        Unique dialogue identifier.         opinions, or preferences, that the elicitor aims to
+                          Metadata varies by collec-          infer from conversational interaction. This setup
+       metadata
+                          tion.
+       broad_source       Collection’s primary archive.
+                                                              aligns naturally with the framework of a POMDP.
+       domain             General content category.              At each turn, the environment has a latent state
+       title              Dialogue name (if available).       Xt ∈ X that represents the respondent’s hidden
+       elicitors          Speaker’s names/identifiers.
+       respondents        Speaker’s names/identifiers.        information. The elicitor takes an action At ∈ A
+       languages          Dialogue languages.                 in the form of a natural language utterance, after
+       turns              Conversation turns sequence.        which the environment responds with a respondent
+       turns.turn_id      Unique turn identifier .
+       turns.timestamp    Turn timestamp, if any.             utterance (observation) Ot+1 ∈ O that depends on
+       turns.speaker      Speaker name/identifier.            both the latent state Xt and the elicitor’s action At ,
+       turns.role         "elicitor" or "respondent".         leading to the next elicitor utterance At+1 . This
+       turns.utterance    The turn’s spoken content.
+                                                              dynamic continues until the conversation is over.
+                  Table 3: Dataset schema.                    The conversation history at time t is a sequence of
+                                                              elicitor and respondent utterances
+3.3    Dataset Standardization
+We then passed the manually tagged files through                    Ht = (At−w , Ot−w+1 , . . . , At−1 , Ot ),   (1)
+standardization scripts to enforce a uniform schema           where w is the window size in turns that is avail-
+(Table 3). The resulting dataset includes 148 dia-            able to the agent at time t when producing its next
+logues from the Academic Interviews domain, 129               utterance. When the conversation history includes
+Journalistic Investigations, 621 Judicial Dialogue,           the elicitor’s latest utterance At , we denote it Hts .
+and 1,383 Oral History; with a total of 2,281 dia-               In the traditional POMDP formulation, the agent
+logues, 390,205 turns, and 26,249,014 tokens. Ta-             maintains a belief state St , which is a probabil-
+ble 4 shows a breakdown of YIELD’s dataset statis-            ity distribution over possible hidden environment
+tics by domain and source. We split the dialogues             states Xt . This distribution encodes the agent’s
+into training, development, and test sets using strat-        available information about the hidden variables
+ified sampling for each domain. The development               governing the environment at time t and serves
+and test sets each contain 10% of the data (228 and           as the agent’s basis for decision making. In the
+229 dialogues, respectively), while the training set          dialogue setting, however, explicitly maintaining
+contains the remaining 80% (1,824). We grouped                such a distribution is not feasible as Xt represents
+the dialogue files into sets of 128 dialogues each.           unbounded and continuously changing informa-
+The last file in a set may contain fewer than 128             tion (everything the respondent might know, think,
+dialogues. The unzipped size of YIELD is 201.06               or believe). To make the problem tractable, we
+MB. All dialogues are organized around two roles              represent the information available to the elici-
+(elicitor and respondent), but may include multiple           tor at time t with token-level hidden representa-
+speakers within a role (e.g., group interviews). In           tions St = fθ (Hts ) produced by a causal language
+this work, all implementations are done at the role           model, where fθ (Hts ) denotes the model’s forward
+level, while the released dataset preserves speaker           pass over the full segment Hts parameterized by θ.
+identities to enable future multi-speaker modeling.           Because the model is autoregressive, each token’s
+                                                              representation depends only on the tokens preced-
+4     IEA Formulation and Implementation
+                                                              ing it, meaning that the hidden states corresponding
+We formalize information elicitation as a finite-             to the context Ht encode everything the model has
+horizon POMDP and use offline reinforcement                   “seen” in the current turn’s context. St provides
+learning with Advantage-Weighted Regression                   the sufficient context from which the likelihood
+(AWR) (Peng et al., 2019) to fine-tune the model.             of At can be evaluated, functionally mirroring the
+                                                              role of the belief state in the traditional POMDP
+4.1    States, Actions, and Observations                      formulation.
+We model the process of elicitation as a sequence of
+interactions between an elicitor (interviewer) and            4.2   Reward Signals
+a respondent (interviewee), where the elicitor is             Each elicitor action At is associated with a scalar
+the agent and the respondent is part of the environ-          reward Rt+1 = r(Ht , At , Ot+1 ) reflecting the in-
+ment. The respondent possesses information that               formational value of the respondent’s subsequent
+
+                                                          4
+                Broad       Dia-      Turns        Tokens        mize the likelihood the model assigns to the of-
+  Domain
+                Source     logues    (×103 )       (×103 )       fline dataset’s utterances At . We employ parameter-
+  Academic      Harvard       136       26.3        654.4
+                                                                 efficient fine-tuning (PEFT) using Low-Rank Adap-
+                                                                 tation (LoRA) adapters (Hu et al., 2021) to enable
+  Academic       Other         12        1.2         56.7
+                                                                 efficient learning, in which the base causal lan-
+ Journalistic    VOA           73        2.2        150.2
+                                                                 guage model remains frozen, and trainable low-
+ Journalistic   Wikinews       56        3.2        172.5
+                                                                 rank matrices are inserted into its attention projec-
+   Judicial      Oyez         621      162.9       7,655.5
+                                                                 tion layers. During AWR optimization, only these
+      Oral       JFK          270       83.0       3,056.4
+                                                                 adapter parameters and the value head receive gra-
+      Oral       JSC        1,012      102.0   13,626.4
+                                                                 dient updates. The model processes the full seg-
+      Oral      NARA          101        9.5        876.9
+                                                                 ment Hts = (Ht , At ), predicting token probabili-
+      Total                 2,281      390.2   26,249.0          ties autoregressively. Then, we mask and remove
+                                                                 context and padding tokens so that gradients con-
+          Table 4: Domain and source statistics.                 sider only the At . The weighted policy loss is:
+
+response Ot+1 . We convert the reward signals into                                    1 X
+                                                                        Lπ (θ) = −           w̄i log πθ (Ai | Si ), (2)
+return-to-go format, in which Rt+1 at each elic-                                     |B|
+                                                                                        i∈B
+itor turn is computed in reverse temporal order
+                                              tg                 where each w̄i scales the contribution of sample i
+as
+PTthe   discounted sum of future rewards, Rt =
+    −t k                                                         within the mini-batch B according to its estimated
+   k=0 γ Rt+k+1 , where γ is a discount factor. Un-
+                                                                 advantage, departing from standard supervised fine-
+like supervised fine-tuning, incorporating returns-
+                                                                 tuning where all examples contribute equally re-
+to-go allows the learning process to take into ac-
+                                                                 gardless of their quality.
+count the effects of the agent’s utterance on the
+                                                                   The critic (value head) is trained jointly with the
+entire remaining dialogue, even if the agent only
+                                                                 policy network to minimize the mean-squared error
+sees a dialogue window at each time step.
+                                                                 between predicted and empirical returns:
+4.3     Value Function and Advantage Estimation
+                                                                                     1 X                  tg 2
+We follow Advantage-Weighted Regression (AWR)                            Lv (ψ) =           vψ (Si ) − Ri .        (3)
+                                                                                    |B|
+(Peng et al., 2019) to train the elicitor policy in an                                 i∈B
+offline setting to bias learning toward elicitor utter-              The combined optimization objective is:
+ances that yield higher long-term informational re-
+turn. AWR estimates a state-value function vψ (St )                          L(θ, ψ) = Lπ (θ) + Lv (ψ),            (4)
+and computes advantages as the difference between
+                                                                 which jointly updates the actor (policy) and critic
+empirical returns-to-go and the value prediction. In
+                                                                 (value head).
+our implementation, the value function is realized
+as a linear value head on top of the LLM’s hidden                5     Evaluation for Information Elicitation
+representations. Because dialogue windows are                          Agents
+padded to a fixed length, we use the hidden state of
+the end-of-sequence token following the elicitor’s               In this section, we propose a set of key dimen-
+utterance At as input to the value head instead of               sions for evaluating IEAs. These dimensions go be-
+the final hidden state.                                          yond conventional dialogue evaluation approaches,
+                                                                 such as BLEU (Papineni et al., 2001), task suc-
+4.4     Policy and Policy Optimization
+                                                                 cess (Walker et al., 1997), or response appropriate-
+The elicitor’s policy πθ is implemented by the                   ness (See et al., 2019), by focusing on the goals and
+same causal language model that produces the                     dynamics of information elicitation. We release an
+state representations St = fθ (Hts ). The policy                 open-source Python package for computing all pro-
+defines an autoregressive distribution over token                posed evaluation metrics (included in the project
+sequences representing the elicitor’s next utterance             repository).
+At , conditioned onQ    the preceding dialogue context:
+πθ (At | Ht ) = L                                                5.1    Conformity
+                         ℓ=1 πθ (yℓ | Ht , y<ℓ ), where
+At = (y1 , . . . , yL ) denotes the sequence of output           Conformity measures whether an IEA agent could
+tokens for the elicitor’s turn.                                  generate dialogue output that follows the distri-
+   During policy optimization, we aim to maxi-                   butional patterns typical of real human elicitation
+
+                                                             5
+dialogues. We identify two dimensions that are                  (the conversation becomes a chain of pairs) and
+particularly informative as to whether the agent ac-            γ = 1 (no decay) can make   the formula symmet-
+                                                                                                              
+quired the data’s characteristics: (1) perplexity com-          ric: P (U ) = L−1 t=1 1 − ∥uut ∥t ·u∥ut+1
+                                                                               1 PL−1
+                                                                                                        t+1 ∥
+                                                                                                                . Since
+puted by evaluating real human utterances from the              cosine distance lies in [0, 2], so does P .
+testing set under the trained IEA model and (2) Re-
+sponse length, measured as a simple token count.                5.3    Turn-Length Ratio
+Perplexity reflects how well the model captures the             Turn-Length Ratio (TLR) compares the average
+linguistic content of human dialogue, while utter-              verbosity of the respondent against that of the elici-
+ance length captures a critical stylistic property that         tor. In effective elicitation settings, the agent should
+varies significantly across large language models               speak concisely and strategically to draw out longer,
+and strongly influences conversational behavior.                content-rich responses from the user. This asymme-
+   For perplexity, we condition the models on the               try suggests a successful elicitation dynamic. The
+dialogue history and score the real human elici-                ratio is defined as:
+tor utterance for each block in the test set. We
+                                                                                                1 Pnr
+restrict the loss calculation to elicitor tokens so that                                       nr    i=1 Tr,i
+                                                                           T LR(Tr , Te ) = 1 Pne             ,      (6)
+context tokens do not affect the score and com-                                                ne    i=1 Te,i
+pute perplexity in the standard manner as the ex-
+ponential   of the token-level cross-entropy:   PPL =           where Tr = (Tr,1 , ..., Tr,nr ) is the sequence
+                                                                of token counts for respondent turns, Te =
+                                      
+          1 PN
+exp − N t=1 log pθ (yt | y<t , x) , where x de-
+                                                                (Te,1 , ..., Te,ne ) is the sequence of token counts for
+notes the dialogue context and yt denotes the t-th
+                                                                elicitor turns, and nr , ne are their respective turn
+token of the elicitor’s reference utterance. We re-
+                                                                counts. A ratio T LR > 1 indicates that respon-
+port micro perplexity, which consists of pooling
+                                                                dents are producing more verbose turns than elici-
+across all target tokens before exponentiation. Re-
+                                                                tors.
+sponse length is measured as the number of tokens
+produced by the model’s tokenizer.                              6     Pilot Experiments
+5.2   Progression                                               We conduct pilot experiments to evaluate model-
+Progression (P) measures the extent to which a con-             generated elicitor utterances conditioned on fixed
+versation moves forward rather than stagnating on               dialogue states and assess policy alignment with
+the same topic. For IEAs, this is a crucial behav-              expert behavior without introducing live respon-
+ioral indicator that an effective agent should guide            dents, establishing necessary precursors to inter-
+the dialogue toward new, relevant information,                  active evaluation. We selected the (1) Meta AI
+rather than looping over already-covered ground.                Llama-3.1-8B-Instruct (Meta Llama, 2024a) as our
+Traditional metrics often focus on utterance coher-             primary model due to computational considera-
+ence or intent-matching, but these do not account               tions and its open-source status. To explore per-
+for forward momentum in the interaction. We quan-               formance across related open-source variants, we
+tify Progression as the average (decayed) cosine                also employed (2) DeepSeek-R1-Distill-Llama-8B
+distance between each utterance embedding and a                 (DeepSeek-AI et al., 2025), a distilled variant of
+window of preceding utterance embeddings:                       comparable size, and (3) Llama-3.2-3B-Instruct
+                                                                (Meta Llama, 2024b), a smaller-scale variant.
+                                                     
+                                  j 1 − ut−j ·ut
+                         Pk
+                    L           γ
+             1     X        j=1          ∥ut−j ∥∥ut ∥           6.1    ORL Models
+P (U ) =                           Pk                   ,
+          L−k                        j=1 γ
+                                           j                    The agents trained with offline reinforcement learn-
+                  t=k+1
+                                                    (5)         ing (ORL) follow the formulation in Section 4. All
+where U = (u1 , ..., uL ) is the sequence of em-                experiments were executed using the accelerate
+beddings of the dialogue’s utterances, ut is the                framework for distributed training across three
+embedding of the t-th utterance, and L is the to-               NVIDIA RTX A6000 GPUs. We used T = 1
+tal number of utterances. k is the context win-                 and α = 0.25 for computing the AWR weights for
+dow size and γ ∈ (0, 1] is a decay factor that                  all models. Models were trained using YIELD’s
+reduces the importance of older utterances. Pa-                 training split formatted as described in Section 6.3.
+rameters k > 1 or γ < 1 give a direction to the                 We used the PEFT library (Mangrulkar et al., 2022)
+metric by introducing asymmetry. Setting k = 1                  to configure and apply LoRA.
+
+                                                            6
+                                             Tokens /   Token       Reward     Reward                 RTG
+       Domain        Segments    Tokens                                                  RTG Avg
+                                             Segment    Range        Avg       Range                  Range
+      Academic        11,036    2,255,573     204.4     81-512       0.3        0-29        2.5       0-36.5
+      Journalistic     1,331     414,870      311.7     99-511       1.3       0-26        8.7       0-117.1
+       Judicial       48,679    14,920,246    306.5     91-512       0.5        0-18        4.7       0-40.4
+         Oral         42,408    12,156,466    286.7     83-512       1.6       0-223       13.6      0-453.0
+        Total        103,454    29,747,155    277.3     81-512       0.9       0-223        7.4      0-453.0
+
+Table 5: Experimental YIELD dataset statistics. Reward outliers in Oral History are due to prompts that led to the
+respondent sharing stories of significant length.
+
+
+6.2   Reward Signal                                           consistent utterance length. We removed segments
+As a first-step reward formulation to validate the            ending with an elicitor utterance of two words or
+proposed elicitation framework, we operationalize             fewer as we found these generally impacted train-
+rewards r using a factual novelty signal as proxy             ing negatively by oversampling backchannel state-
+for informational gain, measuring how much pre-               ments (e.g., “Okay”, “Hmm”, “Got it”). Then, we
+viously unmentioned content an elicitor action sur-           computed rewards and returns-to-go with a γ = 0.9
+faces. We apply a spaCy-based NER model (Hon-                 discount factor on the full dialogues and annotated
+nibal et al., 2020) to each utterance and maintain            them. There are a total of 103,454 segments with
+a cumulative set of previously mentioned entities,            83,181 on the training set and 9,988 and 10,285
+events, or facts. After the elicitor’s turn, the re-          on the development and testing sets, respectively.
+spondent’s reply is scanned for entities not yet ob-          Descriptive statistics are available in Table 5, while
+served; the elicitor is rewarded in proportion to             a sample line is available in Appendix A.4.
+each newly introduced entity. Formally, the reward            6.4   Prompted and SFT Models
+is Rt+1 = Et+1 \ E≤t , where Et+1 denotes the set
+                                                              We compare against two versions of the founda-
+of entities extracted from the respondent’s response,
+                                                              tional models: (1) prompt-only and (2) supervised
+E≤t the accumulated set from all prior turns, and
+                                                              fine-tuning (SFT). Prompt-only models use the
+\ denotes the set difference operator. To mitigate
+                                                              same base system instruction as ORL and SFT,
+potential reward-gaming behaviors, we compute
+                                                              plus an additional model-agnostic prompt (Ap-
+factual novelty under several constraints. Entities
+                                                              pendix A.5). For SFT, we apply PEFT with LoRA
+produced by the elicitor are also added to the cumu-
+                                                              adapters using the SFTTrainer (von Werra et al.,
+lative entity set, but they do not contribute reward,
+                                                              2020).
+so that entities subsequently repeated by the respon-
+dent are not misattributed. Repeated entities yield           6.5   Evaluation
+no additional credit, therefore, agents that allow
+                                                              For evaluation, each six-turn segment is truncated
+conversations to linger on the same content accrue
+                                                              by removing the final elicitor turn, and the model is
+fewer reward. While entity count alone could be
+                                                              tasked with generating that turn given the preceding
+gamed in unconstrained settings (e.g., a model pro-
+                                                              five turns. This is repeated for all segments in the
+viding a list of entities as utterance), this risk is
+                                                              testing set, which models have not seen yet. Sample
+mitigated here because rewards are computed on
+                                                              outputs are demonstrated in Appendix A.7.
+curated, real human–human dialogues.
+                                                              6.5.1 Conformity
+6.3   Experimental Dataset                                    Table 6 shows a clear gap between prompt-only
+We adapted YIELD to fit the experimental setup by             models and those adapted to information elicitation
+segmenting the dialogues into fixed length blocks             via SFT or ORL (e.g., the prompted Llama-3.1-8B
+using a sliding window of six turns. Each block               averaged a micro perplexity of 46.9 in Academic
+ends with an elicitor utterance, with the preceding           Interviews, while the ORL model averaged 12.5).
+five turns serving as conversational context. We              This effect is especially strong for DeepSeek-R1,
+added a base system instruction to each block (“Act           since its reasoning baseline prefaces responses with
+as an information elicitation agent for                       meta-level deliberation. Fine-tuning suppresses
+{domain}.”). We removed blocks exceeding 512                  this pattern and brings its outputs in line with hu-
+tokens to maintain computational feasibility and              man data. Among adapted models, SFT achieves
+
+                                                          7
+ Model                    Ac       Jo      Ju      Or          Model                     Ac      Jo       Ju      Or
+      Micro Perplexity (models vs real utterances)                                   Progression
+ Llama-3.1-8B Base       46.9     29.3     22.6    30.4        Real                    0.713 0.751      0.744    0.755
+ Llama-3.1-8B SFT        10.9     13.0     10.9    11.0        Shuffled                0.824 0.848      0.800    0.821
+ Llama-3.1-8B ORL        12.5     13.2     11.3    11.6
+                                                               Llama-3.1-8B Prompt     0.660    0.629   0.663    0.653
+ DeepSeek-R1 Base        78.5     60.5    38.0    62.8         Llama-3.1-8B SFT        0.688    0.776   0.732    0.743
+ DeepSeek-R1 SFT         12.4     15.6    12.3    12.4         Llama-3.1-8B ORL        0.680    0.734   0.725    0.734
+ DeepSeek-R1 ORL         14.7     15.9    13.2    13.3
+                                                               DeepSeek-R1 Prompt      0.671    0.643   0.685    0.714
+ Llama-3.2-3B Base       46.0     34.4    29.3    34.8         DeepSeek-R1 SFT         0.701    0.755   0.736    0.741
+ Llama-3.2-3B SFT        13.1     15.8    13.0    13.0         DeepSeek-R1 ORL         0.697    0.743   0.752    0.732
+ Llama-3.2-3B ORL        15.0     16.1    14.0    13.9
+                                                               Llama-3.2-3B Prompt     0.669    0.632   0.669    0.667
+           Response Length (Llama 3 Tokens)                    Llama-3.2-3B SFT        0.676    0.731   0.725    0.735
+ Real                   16.9    20.1    38.9      18.9         Llama-3.2-3B ORL        0.688    0.732   0.745    0.732
+ Llama-3.1-8B Prompt     39.5     49.1    53.0    42.9
+ Llama-3.1-8B SFT        11.2     12.2    29.1    11.6        Table 7: Progression results (Ac = Academic, Jo =
+ Llama-3.1-8B ORL        11.6     16.6    35.1    12.6        Journalistic, Ju = Judicial, Or = Oral). Real and Shuffled
+ DeepSeek-R1 Prompt      414.5   424.6   472.1    416.4       denote human dataset utterances.
+ DeepSeek-R1 SFT         12.9    13.9    37.6     14.0
+ DeepSeek-R1 ORL         11.2    13.4    20.3     12.1
+ Llama-3.2-3B Prompt     52.6     61.6    61.6    58.0         Model                     Ac      Jo       Ju      Or
+ Llama-3.2-3B SFT        11.1     12.4    31.6    11.9
+ Llama-3.2-3B ORL        11.8     15.9    29.2    13.0                            Turn-length Ratio
+                                                               Real                    1.672 3.051      1.227    3.187
+            Prompt Length (Llama 3 Tokens)                     Shuffled                0.969 1.002      0.883    0.954
+ Prompted Models         540.4   648.9   626.9    632.4        Llama-3.1-8B Prompt     1.160    2.071   1.088    2.222
+ SFT and ORL             180.4   288.9   266.9    272.4        Llama-3.1-8B SFT        1.878    3.496   1.346    3.671
+                                                               Llama-3.1-8B ORL        1.864    3.231   1.270    3.595
+Table 6: Conformity results (Ac = Academic, Jo = Jour-         DeepSeek-R1 Prompt      0.191    0.402   0.249    0.389
+nalistic, Ju = Judicial, Or = Oral).                           DeepSeek-R1 SFT         1.813    3.392   1.241    3.499
+                                                               DeepSeek-R1 ORL         1.877    3.421   1.476    3.632
+the lowest perplexity, while ORL is slightly higher,
+                                                               Llama-3.2-3B Prompt     0.986    1.820   1.018    1.866
+consistent with advantage-weighted training pri-               Llama-3.2-3B SFT        1.882    3.487   1.314    3.647
+oritizing longer-horizon behavior over token-level             Llama-3.2-3B ORL        1.856    3.274   1.345    3.571
+likelihood.
+   In terms of response length, prompted models               Table 8: Turn-length ratio results (Ac = Academic, Jo =
+                                                              Journalistic, Ju = Judicial, Or = Oral). Real and Shuffled
+consistently produce elicitor turns far longer than
+                                                              denote human dataset utterances.
+those observed in real dialogues (e.g., the prompted
+Llama-3.1-8B averaged 39.5 tokens in Academic
+Interviews, while the ORL model averaged 11.6 to-             ily decrease the importance of non-generated ut-
+kens). Beyond misalignment, prompting is also ex-             terances. We include as a comparison baseline a
+pensive, as it relies on substantially longer prompts         version of the test set where turns within a dia-
+(system instructions and dialogue context) and                logue have been randomly shuffled. Progression
+higher token usage (e.g., the prompted models av-             embeddings are obtained using the all-MiniLM-
+eraged 540.4 tokens in Academic Interviews, while             L12-v2 model from Sentence Transformers (Sen-
+SFT and ORL models averaged 180.4 tokens). Al-                tence Transformers, 2021). The real and randomly
+though answer length could be constrained through             shuffled references in Table 7 show that the Pro-
+even longer prompting, doing so is inherently unre-           gression metric captures the intended semantic
+liable because it requires the model to deviate from          drift within the dialogues. Real human elicitation
+its default behavior. In contrast, SFT and ORL pro-           dialogues consistently fall within a lower range
+duce elicitor turns much closer to real elicitation           (0.713–0.755), while randomly shuffled dialogues
+behavior with far shorter prompts.                            yield much higher values (0.800–0.848). Within
+                                                              this reference frame, both SFT and ORL mod-
+6.5.2    Progression
+                                                              els closely track real dialogues across domains,
+Given that there are 6 turns, we compute Progres-             whereas prompt-only models are uniformly lower.
+sion with k = 5, and since only the last utter-               This pattern indicates that prompted models tend
+ance is generated we set γ = 0.5 to more heav-                to linger on previously covered topics.
+
+                                                          8
+              P      CC       OR      PE        C            even though their absolute ratings are lower. This
+   Real      3.89    3.75    3.92     3.71    3.97           outcome is particularly interesting, as it suggests
+  Prompted   4.25    4.07    4.25     4.17    4.20           that crowd workers rewarded fuller elicitor utter-
+    SFT      3.65    3.64    4.01     3.57    3.96
+   ORL       3.70    3.67    3.89     3.45    3.99
+                                                             ances, which prompted models reliably generate.
+                                                             However, this behavior departs from real dialogue
+Table 9: Human evaluation results per response source.       as prompted responses tend to be more verbose,
+Metrics: P = Progression, CC = Conversational Control,       leading, and polished as shown in Section 6.5.
+OR = Outcome Relevance, PE = Probing Effectiveness,          By contrast, fine-tuned models, while receiving
+C = Conformity.                                              lower absolute scores, overwhelmingly align more
+6.5.3    Turn-Length Ratio                                   closely with the distribution of real utterances.
+
+Table 8 presents turn-length ratio results, with the         6.6.1   Potential Misuse and Mitigations
+shuffled dataset also included. In the shuffled base-
+                                                             Information elicitation agents raise ethical con-
+line, elicitor and respondent turns are randomly
+                                                             cerns due to their goal of guiding conversations
+reassigned, causing answers to appear as questions
+                                                             toward information that serves external objectives,
+and vice versa. This role mixing neutralizes the sys-
+                                                             which can introduce risks of biased or leading ques-
+tematic asymmetry present in real dialogues, lead-
+                                                             tioning, power imbalances, and undue influence,
+ing to ratios close to 1. Meanwhile, real dialogues
+                                                             particularly in domains such as journalism, legal
+show ratios well above 1 across domains, reflect-
+                                                             proceedings, or public opinion polling where neu-
+ing the elicitation dynamic in which elicitor turns
+                                                             trality is critical. These risks are compounded in
+prompt longer respondent utterances. Both SFT
+                                                             settings involving sensitive personal information
+and ORL closely reproduce this asymmetry, learn-
+                                                             (e.g., healthcare or counseling), where issues of
+ing to limit elicitor verbosity in proportions similar
+                                                             data privacy, storage, and potential misuse arise.
+to human interviewers, a behavior that prompted
+                                                             Mitigations include enforcing constraints on ques-
+models largely fail to exhibit. As with response
+                                                             tioning strategies (e.g., prompt-level guidelines or
+length, this gap cannot be reliably closed through
+                                                             post-generation filtering) and extending evaluation
+additional prompting, since doing so does not make
+                                                             protocols to detect and penalize biased behavior.
+models internalize elicitor behavior.
+                                                             Systems should also implement data minimization,
+6.6     Human Evaluation                                     secure storage, and clear user consent and trans-
+                                                             parency practices. In high-stakes or sensitive con-
+We collected human ratings of elicitor question              texts, IEAs should only be deployed under appro-
+quality using Amazon Mechanical Turk. For each               priate institutional and regulatory oversight (e.g.,
+HIT, workers reviewed the five-turn dialogue con-            IRB or clinical governance), with human monitor-
+text followed by corresponding real, prompted,               ing and auditing to ensure compliance with ethical
+SFT, and ORL responses. We randomized the order              and legal standards, rather than relying solely on
+of the response sources across HITs to prevent or-           model-level safeguards.
+der effects. Workers scored questions on five-point
+scales representing different aspects of elicitation.        7   Conclusion
+The full set of instructions given to participants
+is available in Appendix Table A.6. In total, 300            Our evaluation demonstrates YIELD effectively
+dialogue evaluations were collected (100 dialogue            supports the development of models for the elici-
+blocks sampled with stratified sampling, rated by            tation setting and our finite-horizon POMDP for-
+three workers). Workers were required to have                mulation with offline reinforcement learning shows
+more than 500 prior HITs and approval rate above             that dialogue-level optimization is competitive with
+90%. Workers were compensated at a rate consis-              SFT even when trained with a minimal reward sig-
+tent with U.S. minimum wage, based on estimated              nal. This work opens several directions for future
+task completion time.                                        research including extended reward formulations
+   The results in Table 9 show that fine-tuned mod-          that capture domain-specific notions of informa-
+els more closely approximate the distribution of             tional value, interactive evaluation with live respon-
+real utterances than prompted models, supporting             dents, and additional evaluation dimensions that
+automatic evaluation findings. Fine-tuned model              capture a broader range of elicitation characteris-
+scores track the real responses more consistently,           tics.
+
+                                                         9
+8   Limitations                                                   ings of the 47th International ACM SIGIR Confer-
+                                                                  ence on Research and Development in Information
+The reward formulation used in offline reinforce-                 Retrieval, SIGIR ’24, page 807–818, New York, NY,
+ment learning is intentionally minimal and may not                USA. Association for Computing Machinery.
+adequately capture informational value across elic-
+                                                                Kathleen Kara Fitzpatrick, Alison Darcy, and Molly
+itation contexts. Additionally, evaluation is limited             Vierhile. 2017. Delivering Cognitive Behavior Ther-
+to offline, next-turn generation on fixed contexts                apy to Young Adults With Symptoms of Depression
+rather than interactive settings. Moreover, some                  and Anxiety Using a Fully Automated Conversational
+proposed metrics are sensitive to design choices                  Agent (Woebot): A Randomized Controlled Trial.
+                                                                  JMIR Mental Health, 4(2):e19.
+(e.g., Progression depends on the choice of embed-
+ding model and hyper-parameters) and may not                    Amy Girard. 2019. DFC_tanzania qualitative tran-
+capture all aspects relevant to effective elicitation            scripts round 2 Oct 2017. Section: 2019-11-04
+                                                                 11:06:32.953.
+behavior. Finally, this work focuses on modeling
+the base elicitor agent and does not address conver-            Charles T. Hemphill, John J. Godfrey, and George R.
+sation management. While a fine-tuned LLM can                     Doddington. 1990. The ATIS Spoken Language Sys-
+serve as the core of an elicitation system, it is likely          tems Pilot Corpus. In Speech and Natural Language:
+                                                                  Proceedings of a Workshop Held at Hidden Valley,
+insufficient on its own for sustaining structured and
+                                                                  Pennsylvania, June 24-27,1990.
+effective long-horizon interactions.
+                                                                Matthew Henderson, Blaise Thomson, and Jason D.
+Ethical Considerations                                           Williams. 2014. The third Dialog State Tracking
+                                                                 Challenge. In 2014 IEEE Spoken Language Tech-
+We have taken all reasonable steps to ensure that the            nology Workshop (SLT), pages 324–329, South Lake
+content in this dataset either resides in the public             Tahoe, NV, USA. IEEE.
+domain or adheres to applicable licenses, such as               Matthew Honnibal, Ines Montani, Sofie Van Lan-
+Creative Commons. We encourage users to notify                   deghem, and Adriane Boyd. 2020. spaCy: Industrial-
+us of any content that may be subject to restrictions            strength Natural Language Processing in Python.
+not accounted for so that we can address the matter
+                                                                Edward J. Hu, Yelong Shen, Phillip Wallis, Zeyuan
+appropriately and update the dataset as necessary.                Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang, and
+                                                                  Weizhu Chen. 2021. LoRA: Low-Rank Adaptation
+Acknowledgments                                                   of Large Language Models.
+This research was supported by U.S. National Sci-               Eunsu Kim, Juyoung Suk, Seungone Kim, Niklas Muen-
+ence Foundation grant number IIS-2336768. Any                     nighoff, Dongkwan Kim, and Alice Oh. 2024. LLM-
+opinions, findings, conclusions, or recommenda-                   as-an-Interviewer: Beyond Static Testing Through
+                                                                  Dynamic LLM Evaluation. arXiv preprint.
+tions expressed in this paper are of the authors and
+do not necessarily reflect those of the sponsor.                Aobo Kong, Shiwan Zhao, Hao Chen, Qicheng Li, Yong
+                                                                  Qin, Ruiqi Sun, Xin Zhou, Enzhi Wang, and Xiao-
+                                                                  hang Dong. 2023. Better Zero-Shot Reasoning with
+References                                                        Role-Play Prompting. arXiv preprint.
+
+Paweł Budzianowski, Tsung-Hsien Wen, Bo-Hsiang                  Henry Lachman. 2022. Interview Transcripts. Section:
+  Tseng, Iñigo Casanueva, Stefan Ultes, Osman Ra-                 2022-07-01 10:36:33.691.
+  madan, and Milica Gašić. 2018. MultiWOZ – A
+  Large-Scale Multi-Domain Wizard-of-Oz Dataset for             Lizi Liao, Grace Hui Yang, and Chirag Shah.
+  Task-Oriented Dialogue Modelling. arXiv preprint.               2023. Proactive Conversational Agents in the Post-
+                                                                  ChatGPT World. In Proceedings of the 46th Inter-
+DeepSeek-AI, Yao Li, Yao Zhao, Yaofeng Sun, Yao-                  national ACM SIGIR Conference on Research and
+  hui Wang, Yi Yu, Yichao Zhang, Yifan Shi, Yiliang               Development in Information Retrieval, pages 3452–
+  Xiong, Ying He, Yishi Piao, Yisong Wang, Yixuan                 3455, Taipei Taiwan. ACM.
+  Tan, Yiyang Ma, Yiyuan Liu, Yongqiang Guo, Yuan
+  Ou, Yuduan Wang, Yue Gong, and 39 others. 2025.               Sourab Mangrulkar, Sylvain Gugger, Lysandre Debut,
+  DeepSeek-R1: Incentivizing Reasoning Capability in              Younes Belkada, Sayak Paul, and Benjamin Bossan.
+  LLMs via Reinforcement Learning. arXiv preprint.                2022. PEFT: State-of-the-art Parameter-Efficient
+  ArXiv:2501.12948.                                               Fine-Tuning methods.
+
+Yang Deng, Lizi Liao, Zhonghua Zheng, Grace Hui                 Meta Llama. 2024a. Llama-3.1-8B-Instruct.
+  Yang, and Tat-Seng Chua. 2024. Towards human-
+  centered proactive conversational agents. In Proceed-         Meta Llama. 2024b. Llama-3.2-3B-Instruct.
+
+
+                                                           10
+National Aeronautics and Space Administration - John-            Hui Yong Tay. 2024b. Replication Data for AI feed-
+  son Space Center. 2021. Oral History Project Partici-            back: Moving beyond the hype. Section: 2024-06-05
+  pants through January 31, 2020.                                  18:37:58.332.
+
+Larry Oglesby. 2009. Oral history interview with Larry           The John F. Kennedy Library. 2025. Returned Peace
+  Oglesby.                                                         Corps Volunteer Collection.
+Kishore Papineni, Salim Roukos, Todd Ward, and Wei-
+  Jing Zhu. 2001. BLEU: a method for automatic eval-             The U.S. National Archives and Records Administra-
+  uation of machine translation. In Proceedings of the             tion. 2023. National Personnel Records Center Oral
+  40th Annual Meeting on Association for Computa-                  History Interviews.
+  tional Linguistics - ACL ’02, page 311, Philadelphia,
+  Pennsylvania. Association for Computational Lin-               The U.S. National Archives and Records Administra-
+  guistics.                                                        tion. 2024a. National Archives Assembly’s Legacy
+                                                                   Project.
+Xue Bin Peng, Aviral Kumar, Grace Zhang, and Sergey
+  Levine. 2019. Advantage-Weighted Regression: Sim-
+  ple and Scalable Off-Policy Reinforcement Learning.            The U.S. National Archives and Records Administra-
+  arXiv preprint.                                                  tion. 2024b. Veterans Oral History Interviews.
+
+Sara Policastro. 2017. Relationship Building Around              The U.S. National Archives and Records Administra-
+  Farmers’ Market Incentive Programs: A D.C. Case                  tion. 2025. National Archives History Office Inter-
+  Study Dataverse.                                                 views.
+
+Timothy Price, Elaine McColl, and Shelina Visram.                Thomson Reuters. 2025. Casetext - CoCounsel.
+  2022. Barriers and facilitators of childhood flu vacci-
+  nation: the views of parents in North East England.
+  Journal of Public Health, 30(11):2619–2626.                    Greta Van Susteren. 2018. VOA Interview: US Secre-
+                                                                   tary of State Mike Pompeo.
+Timothy James Price. 2021. Interview Transcripts.
+                                                                 Voice of America. voanews.com.
+Abhinav Rastogi, Xiaoxue Zang, Srinivas Sunkara,
+  Raghav Gupta, and Pranav Khaitan. 2019. Towards
+                                                                 Leandro von Werra, Younes Belkada, Lewis Tunstall,
+  Scalable Multi-domain Conversational Agents: The
+                                                                   Edward Beeching, Tristan Thrush, Nathan Lambert,
+  Schema-Guided Dialogue Dataset. arXiv preprint.
+                                                                   Shengyi Huang, Kashif Rasul, and Quentin Gal-
+Antonio Sadaric. 2022. Interviews with 10 change lead-             louédec. 2020. TRL: Transformer Reinforcement
+  ers leading organizational change. Section: 2022-05-             Learning.
+  12 08:57:10.73.
+                                                                 Marilyn A. Walker, Diane J. Litman, Candace A. Kamm,
+Abigail See, Stephen Roller, Douwe Kiela, and Jason                and Alicia Abella. 1997. PARADISE: a framework
+  Weston. 2019. What makes a good conversation?                    for evaluating spoken dialogue agents. In Proceed-
+  How controllable attributes affect human judgments.              ings of the 35th annual meeting on Association for
+  In Proceedings of the 2019 Conference of the North,             Computational Linguistics -, pages 271–280, Madrid,
+  pages 1702–1723, Minneapolis, Minnesota. Associa-                Spain. Association for Computational Linguistics.
+  tion for Computational Linguistics.
+                                                                 David Watkins. 2021. Healthworker Interview Tran-
+Sentence Transformers. 2021. all-MiniLM-L12-v2.
+                                                                   scripts - Lira, Mbarara, Wakiso. Section: 2021-02-03
+Supreme Court of the USA. 2024. Moody v. NetChoice,                12:39:24.758.
+  LLC, et al. Oral Argument - February 26, 2024.
+                                                                 Wikinews. Category:Interviews.
+Supreme Court of the USA. 2025. The Court and Its
+  Procedures.                                                    Jason Williams, Antoine Raux, Deepak Ramachandran,
+                                                                    and Alan Black. 2013. The Dialog State Tracking
+Oliver Taherzadeh. 2016. Interview Transcripts. Sec-                Challenge. In Proceedings of the SIGDIAL 2013
+  tion: 2016-10-25 09:14:05.375.                                    Conference, pages 404–413, Metz, France. Associa-
+Zhiwen Tang and Grace Hui Yang. 2017. A Reinforce-                  tion for Computational Linguistics.
+  ment Learning Approach for Dynamic Search. In
+  Proceedings of the Text REtrieval Conference 2017,             Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan
+  Gaithersburg, MD, USA.                                           Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin,
+                                                                   Zhuohan Li, Dacheng Li, Eric P. Xing, Hao Zhang,
+Hui Yong Tay. 2024a. AI feedback: Moving beyond                    Joseph E. Gonzalez, and Ion Stoica. 2023. Judging
+  the hype to integrating it into a coherent feedback              LLM-as-a-Judge with MT-Bench and Chatbot Arena.
+  pedagogy. Routledge Open Research, 3:26.                         arXiv preprint.
+
+
+                                                            11
+A     Appendix                                               itory, an open-access platform for researchers
+                                                             across disciplines to share research data. We
+A.1     Data Sources                                         obtained the following collections from this
+A.1.1    Oral History                                        source: Covid Threshold Project Dataverse (Lach-
+We obtained documents for the Oral History do-               man, 2022), Healthworker Interview Transcripts
+main from a variety of government sources. The               (Watkins, 2021), Drivers of Food Choice (Girard,
+National Archives and Records Administration                 2019), AI feedback: Moving beyond the hype (Tay,
+(NARA) is the U.S. government agency respon-                 2024b,a), Relationship Building Around Farmers’
+sible for preserving and providing access to federal         Market Incentive Programs (D.C. Market Manager
+records and historical documents. We obtained the            Relationships) (Policastro, 2017), Leaders Lead-
+following from this source: National Archives His-           ing Organizational Change (Sadaric, 2022), and
+tory Office Interviews (The U.S. National Archives           Biodiversity Offsetting (Taherzadeh, 2016). We
+and Records Administration, 2025), National Per-             additionally obtained documents from the Flu Vac-
+sonnel Records Center Oral History Interviews                cination Interviews (Price et al., 2022; Price, 2021)
+(The U.S. National Archives and Records Admin-               for this domain.
+istration, 2023), Veterans Oral History Interviews           A.1.4 Journalistic Investigations
+(The U.S. National Archives and Records Adminis-
+                                                             We sourced collections for the Journalistic Inves-
+tration, 2024b), and National Archives Assembly’s
+                                                             tigations domain from Voice of America (VOA)
+Legacy Project (The U.S. National Archives and
+                                                             (Voice of America) and Wikinews (Wikinews).
+Records Administration, 2024a). NARA manages
+                                                             VOA is a U.S. international broadcaster under the
+the John F. Kennedy Presidential Library, which
+                                                             U.S. Agency for Global Media. Since VOA is
+offers collections related to John F. Kennedy’s life,
+                                                             funded by Congress, all VOA content is in the pub-
+career, and era, along with his administration’s
+                                                             lic domain, including the “VOA Interview” series
+work and its influence on the public. We added the
+                                                             which we used for YIELD. Wikinews is a collabora-
+Returned Peace Corps Volunteer Collection (The
+                                                             tive news platform that the Wikimedia Foundation
+John F. Kennedy Library, 2025) to YIELD from
+                                                             runs. It publishes user-generated reports in multiple
+this source. Lastly, we included the NASA Johnson
+                                                             languages under a Creative Commons license. We
+Space Center Oral History Project (National Aero-
+                                                             selected a subset of articles from the “Interviews”
+nautics and Space Administration - Johnson Space
+                                                             category.
+Center, 2021), which documents the personal ex-
+periences of individuals who played vital roles in           A.2     Experimental Dataset Statistics
+America’s space programs. Participants include
+                                                             Table 5 shows statistics of the experimental dataset
+astronauts, engineers, and administrators.
+                                                             used for SFT and ORL.
+A.1.2    Judicial Proceedings
+                                                             A.3     Licensing
+We obtained the Supreme Court case collection
+for YIELD from the Oyez repository developed by              Table A.1 provides a summary of copyright desig-
+Cornell’s Legal Information Institute, Justia, and           nations by collection.
+Chicago-Kent College of Law. The Supreme Court               A.4     Experimental Dataset Sample
+hears cases from the first Monday in October until
+late June or early July (a “term”) (Supreme Court            The following sample shows a line from the experi-
+of the USA, 2025). Hence, the “years” included               mental dataset.
+in the dataset start in October. As of this writing,               "block_id": "voa-news-00034:11",
+the last complete term is 2023. While the archive                  "domain": "journalistic_investigations",
+runs from 1955, we only include YIELD in the last                  "factual_novelty_score": 2,
+10-year period (2014-2023) to make the dialogue
+                                                                   "return_to_go": 18.550635451980344,
+pool in this domain not be overwhelmingly larger
+                                                                   "messages": [
+than other domains.
+                                                                   {"role": "system", "content": "Act as an infor-
+A.1.3    Academic Interviews                                       mation elicitation agent for journalistic investiga-
+                                                                   tions."},
+Most collections for the Academic Interviews cate-                 {"role": "user", "content": "That’s correct, ex-
+gory originated from the Harvard Dataverse Repos-                  actly."},
+
+
+                                                        12
+ Copyright        Collections                                             signs, which keeps me busy in the cold months of
+                  Covid Threshold Project Dataverse,                      the winter and the hot months of the summer.
+                  Healthworker Interview Transcripts,                     elicitor: Where are you living now?
+                  Drivers of Food Choice, AI feedback:                    respondent: In Green Bay, Wisconsin. We farmed
+                  Moving beyond the hype, Relationship                    for 30 years and then I retired and we bought a
+ CC0 1.0
+                  Building Around Farmers’ Market In-                     farm house and remodeled that...
+                  centive Programs (D.C. Market Manager                   elicitor: Too much work. OK.
+                  Relationships), Leaders Leading Organiza-               respondent: So that’s brought me up to today.
+                  tional Change, Biodiversity Offsetting                  elicitor: Well, then the next thing that I want to
+ CC BY 4.0        Flu Vaccination Interviews, Wikinews                    do is have you think back to the year that you
+ CC BY-NC                                                                 joined the Peace Corps. What were you doing
+                  Oyez Supreme Court
+ 4.0                                                                      before? How did you hear about it? What made
+                  National Archives History Office Inter-                 you decide to join?
+                  views, National Personnel Records Cen-                  respondent: [responds...]
+ Public Do-       ter Oral History Interviews, Veterans Oral              elicitor: [Your turn — ask the next natural ques-
+ main             History Interviews, National Archives As-               tion based on what they just said.]
+                  sembly’s Legacy Project, Returned Peace
+                  Corps Volunteer Collection, VOA News
+       Table A.1: Collections by copyright status.                  A.6    Instructions Given to Human Evaluation
+                                                                           Participants
+                                                                    The human evaluation criteria provided to workers
+      {"role": "assistant", "content": "The decider
+      would be the president who was elected."},                    consists of Progression (P), Conversational Control
+      {"role": "user", "content": "Precisely."},                    (CC), Outcome Relevance (OR), Probing Effective-
+      {"role": "assistant", "content": "When did you                ness (PE), and Conformity (C). The following is the
+      become the national security adviser?"},                      full set of instructions given to human evaluation
+      {"role": "user", "content": "In April of 2018,                participants:
+      and I lasted seven, 17 months until September
+      of 2019."},                                                         Your Task
+      {"role": "assistant", "content": "You were not                      You will read short conversation snippets between
+      the first national security adviser under this presi-               an interviewer (denoted Seeker) and an intervie-
+      dent?"}                                                             wee (denoted Provider).
+      ]}
+                                                                             • Each snippet has 5 turns of context (the
+                                                                               conversation so far).
+A.5     Baseline’s Prompt
+                                                                             • After the context, you will see 4 distinct
+The following is the prompt used on the baseline                               interviewer (Elicitor) questions.
+models. The prompt was not tailored to any specific                          • Your job is to rate that Elicitor question on
+                                                                               the five Metrics listed below.
+model and was generated using an LLM to avoid
+                                                                             • A Dialogue Setting is provided to put the
+researcher bias.                                                               conversation in context.
+      You are participating in an oral history interview                  Metrics:
+      as the "elicitor" (interviewer). Your role is to
+      elicit personal stories, reflections, and details from                 • Conformity (1–5)
+      the "respondent" (interviewee) through natural,                          How well does the question match the
+      conversational questions.                                                expected style of the speaker, per the
+      Follow these principles:                                                 Dialogue Setting?
+                                                                               1 = Very unnatural / out of character
+           • Be friendly, engaged, and curious.                                3 = Neutral / acceptable but not strong
+           • Ask clear, open-ended questions.                                  5 = Perfectly fits the expected style
+           • Let the conversation flow naturally build on
+             what the provider just said.                                    • Progression (1–5)
+           • Use informal, real spoken language (e.g.,                         Does the question move the conversation
+             “So tell me. . . ” or “What was that like?”).                     forward?
+                                                                               1 = Off-topic or repetitive
+           • Occasionally use acknowledgments or re-
+                                                                               3 = Somewhat helps the discussion
+             statements like “OK” or “Wow” to maintain
+                                                                               continue
+             flow.
+                                                                               5 = Strongly advances the discussion
+           • Focus on memories, motivations, feelings,
+             and personal experiences.
+                                                                             • Outcome Relevance (1–5)
+      Here’s an example start:                                                 Is the question relevant to the goal of the
+                                                                               exchange, per the Dialogue Setting?
+      [conversation]                                                           1 = Unrelated to the goal
+      elicitor: OK, Larry, why don’t you tell us a little                      3 = Moderately related
+      bit about what you’re doing now.                                         5 = Directly addresses the goal
+      respondent: I’m retired and I do a lot of scroll
+
+
+                                                               13
+          • Probing (1–5)
+            Does the question push for deeper
+            information?
+            1 = No probing at all
+            3 = Some attempt to get more detail
+            5 = Strong, pointed probing
+
+          • Control (1–5)
+            Does the question guide or steer the
+            conversation?
+            1 = No control, just follows along
+            3 = Some influence
+            5 = Clearly sets direction
+
+      After you finish rating all the responses, click
+      Next HIT to move on.
+      Dialogue Setting
+      $domain
+      Dialogue Context
+      $context_turns
+
+A.7    Sample Responses
+The following shows sample responses from Llama-
+3.1-8B models.
+      Block ID: "jsc-oral-history-00206:183"
+      Input Prompt: "Act as an information elicitation
+      agent for oral history. Respondent: Yes. And I
+      feel I was very fortunate to be where I was, when
+      I was. It was a different situation that is unique
+      to where I was. Other people were part of the
+      program, but somehow or other, I felt like I was
+      in a unique situation through most of it. Elicitor:
+      It certainly was a very unique time. Respondent:
+      Yes. Elicitor: To be working in and living through.
+      Looking back over your time at NASA, was there
+      any point that you would consider—or any two
+      points that might be your most challenging mo-
+      ments? And then maybe that you feel is your
+      most significant accomplishment? Respondent:
+      Challenging moments, I guess revolved around
+      the guys like Charlie Bassett, you know. I was
+      reasonably close. And Gus [Virgil I. Grissom].
+      That was a challenging time. That was a tough
+      time. As far as the years, I think those kind of
+      went along with the way things ended up. The
+      times that there was a big smile on your face, I
+      think were part of the end of the success as to how
+      things worked out...
+      Responses
+      Real: "Well, things certainly did work out very
+      well."
+      Prompted: "It sounds like those were really diffi-
+      cult times, losing friends and colleagues like that.
+      Gus Grissom, of course, was a very important
+      part of the Gemini program. And Charlie Bassett
+      was a great guy, too. You mentioned the end of
+      the program, and that time frame - the end of the
+      success, I think you said. What was it like, feeling
+      like you’d accomplished what you set out to do,
+      and then seeing the program come to a close?"
+      SFT: "And you mentioned that you’d like to talk
+      about some of the people that you worked with."
+      ORL: "Was there a time when you realized that
+      the Space Program was really taking off?"
+
+
+
+                                                             14
+
