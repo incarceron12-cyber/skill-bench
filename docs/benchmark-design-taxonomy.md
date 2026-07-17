@@ -1604,6 +1604,50 @@ professional-capability estimates.
 
 ALE's released PowerMill evaluator adds a concrete bypass: a pre-existing `agent_sim.stl` can enter a test path that skips collision checking and simulation. The internal seven-case replay rejects pre-satisfied, stale, copied-reference, and omitted-transition outcomes, accepts one declared alternate path, and marks invalid initialization as environment invalid. These are builder-authored synthetic conformance results only—not ALE reproduction, verifier completeness, agent capability, prevalence, expert validity, or readiness [ALE, IS].
 
+#### Cross-resource state needs four identities before it can support a score
+
+A pinned initial artifact is insufficient when a task mutates tables, files, object
+stores, queues, caches, sequences, tickets, notebooks, or external services. Treat
+the stateful instrument as four independently versioned identities:
+
+```text
+parent   = state root + schema/application version + start boundary
+           + concurrent-writer policy
+overlay  = session + ordered operation/dependency ledger + mutable-resource inventory
+           + foreground/background propagation and interception status
+observer = immutable read set + exclusions + comparator/version + accepted alternatives
+           + fail-closed ambiguity policy
+commit   = selected operations + authorization + dependency closure + stale-base policy
+           + discard/rollback decision
+```
+
+No identity inherits another's validity. A correctly tagged database row does not
+show that a background write, sequence, cache, blob, webhook, or recipient effect was
+isolated. A broad dirty-state observer can still omit consequential regions or match
+the wrong same-resource item. A high endpoint score does not authorize committing
+the overlay, and a successful commit does not validate the score. Preserve required,
+forbidden, protected, and explicitly unobserved regions; every before/after mutation
+including intentional nulls and transient reversals; operation dependencies; canary
+results; observer coverage and ambiguity; commit review; and failed versus
+environment-invalid attempt dispositions [COW].
+
+**Invariant:** if parent identity drifts, a required propagation canary escapes, the
+observer cannot distinguish admissible candidates, or commit preconditions are
+incomplete, fail closed at that layer rather than converting the defect into agent
+failure or partial professional credit. Evaluation overlays default to discard;
+commit requires separate authority, complete dependency closure, fresh-base review,
+and rollback evidence. Existing workspace, artifact/state, trace, task-health,
+metric, execution-validity, and validity-argument records remain the semantic homes.
+The generic resource-envelope schema extends those records; it is not a database- or
+copy-on-write-specific benchmark subsystem.
+
+The internal cross-resource replay detects eight exact builder-authored defects in
+one retained mixed-resource fixture and admits one declared unambiguous alternative
+[CROE]. That is executable conformance evidence for the current schema and validator
+only—not reproduction of the source system, complete isolation, workflow correctness,
+causal repair, capability, professional validity, safety, production fitness, or
+readiness.
+
 #### Temporal artifacts require native, rendered, and export-time evidence
 
 A state visible at one instant cannot establish behavior over an interval. For any
@@ -5397,3 +5441,18 @@ them:
   builder-authored contract calibration only. The fixtures establish representation
   and fail-closed semantic-validator behavior, not empirical evolution benefit,
   expert validity, construct continuity, transport, capability, or readiness.
+- **[COW]**
+  `papers/agent-benchmarks/2026-07-17-copy-on-write-application-evaluation-validity.md`;
+  reviewed immutable v1 PDF/text, pinned official library/application releases, all
+  300 released session rows and 3,109 operation rows, and machine-readable release
+  audit are recorded there. The evidence supports selected PostgreSQL-write staging
+  and descriptive operation attribution—not complete application isolation, scorer
+  validity, workflow correctness, causal repair, safety, professional validity,
+  production fitness, or readiness.
+- **[CROE]** `pilots/cross-resource-observation-envelope/README.md`,
+  `schemas/resource-observation-envelope.schema.json`, retained package/replay report,
+  and `tests/test_cross_resource_observation_envelope.py`; deterministic
+  builder-authored contract calibration only. The fixture establishes detection of
+  eight planted envelope defects and one declared alternative under the current
+  validator, not empirical isolation, workflow, capability, professional, safety,
+  production, or readiness evidence.

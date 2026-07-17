@@ -1039,6 +1039,7 @@ cover the boundary; no feedback-specific schema follows.
 | [MBABench](../papers/agent-benchmarks/2026-07-11-mbabench-spreadsheet-artifact-validity.md) | A | Shows why static values/formulas are weaker than counterfactual recalculation, dependency propagation, rendered communication, and initial-to-final mutation evidence |
 | [AIDABench](../papers/agent-benchmarks/2026-07-17-aidabench-end-to-end-artifact-validity.md) | A/B | Routes answers, rendered charts, and generated files to different observers and releases a substantial public package, while a broken reference path, prediction-relative denominators, lossy views, undisclosed judge calibration, mixed score semantics, and post-paper Skills/ConsensusEval show that output routing is not requirement-to-consequence or portfolio-claim closure |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Adds persistent workspace identity, protected/mutable zones, mutations, cleanup, and typed dependency evidence |
+| [Copy-on-Write application evaluation](../papers/agent-benchmarks/2026-07-17-copy-on-write-application-evaluation-validity.md) | A | Makes selected PostgreSQL write deltas and operation/session attribution inspectable while showing that a live parent, partial interception, one-witness matching, observer exclusions, and selective commit do not establish complete isolation, workflow correctness, causal diagnosis, or safe application state |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Reinforces checkpoint/final-state evidence while warning against attributing invalid environment behavior to the agent |
 | [SaaS-Bench](../papers/agent-benchmarks/2026-07-11-saas-bench-stateful-workflow-validity.md) | A | Adds deployable cross-application state and dense native checks, while showing that seeded preconditions, dependent consequences, weak joins, and artifact proxies can make a weighted checkpoint score diverge from run-attributable professional progress |
 | [GDPval](../papers/agent-benchmarks/2026-07-10-gdpval-occupational-task-validity.md) | A | Contributes multimodal professional artifacts and expert preference evidence while showing that preference is not an absolute readiness threshold |
@@ -1051,6 +1052,26 @@ cover the boundary; no feedback-specific schema follows.
 | [AgenticVBench](../papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md) | A | Repairs CutVerse's task/grader inspectability gap with a full later four-family release and criterion-specific manifest, frame, audio, metadata, and model views; its 13 brief/rubric resolution conflicts, five reversed good-state penalties, absent human/calibration/results records, rights gaps, and unreconciled rollout denominator show that observer richness cannot rescue an incoherent criterion contract |
 
 **Repository consequence:** Score families remain separate, artifact views have admissibility contracts, and task/trial records preserve both produced artifacts and consequential workspace state. Editable artifacts need native, executable/recalculated, rendered, exported, and trace evidence plus authoritative mutation tests; inherited size and one reference witness do not establish work performed or maintainability. Each criterion routes to the authoritative object and temporal scope it actually requires: final prose, a tool request, committed service state, native structure, a rendered interval, exported bytes, or calibrated human judgment. More channels are not automatically redundant truth, and missing or stale decisive views produce `insufficient_evidence` or instrument invalidity rather than a substantive failure. Scored state checks must also distinguish environment readiness from trial-created deltas and identify shared-cause or descendant dependencies. The internal initial-state replay rejects pre-satisfied, stale, copied-witness, and omitted-transition cases, accepts a declared alternative, and abstains on invalid initialization; its seven synthetic matches validate only fixture/scorer behavior ([replay](../pilots/task-initial-state-conformance/replay-report.json)).
+
+Mutable cross-resource work requires a **parent/overlay/observer/commit envelope**.
+Pin the parent state root, schema/application version, start boundary, and concurrent-
+writer policy; inventory every mutable resource and foreground/background propagation
+path in the overlay; bind the observer to an immutable read set, exclusions,
+comparator, alternatives, and ambiguity policy; and keep commit authorization,
+dependency closure, stale-base handling, discard default, and rollback separate from
+the score. A row, file, queue, cache, sequence, or external effect that escapes or is
+unobserved is evidence about the instrument boundary—not automatically an agent
+failure. Retain failed and environment-invalid attempts explicitly, and preserve the
+ordered mutation/dependency ledger even when endpoint scoring collapses state.
+
+The completed [cross-resource conformance package](../pilots/cross-resource-observation-envelope/README.md)
+turns that synthesis into a generic schema and validator: its retained synthetic
+fixture detects eight exact builder-authored defects, including an escaped background
+write, unobserved sequence/cache effects, matching ambiguity, parent drift, and a
+rejected stale/dependency-incomplete commit. This establishes deterministic contract
+behavior only. It does not reproduce the reviewed PostgreSQL system or establish
+complete isolation, workflow correctness, causal repair, capability, professional
+validity, safety, production fitness, or readiness.
 
 Executable decision artifacts add an **obligation/conformance dual witness**.
 An authorized mandate and independent requirement review establish what must be
