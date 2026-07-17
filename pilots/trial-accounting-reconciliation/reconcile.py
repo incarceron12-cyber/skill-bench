@@ -47,6 +47,13 @@ def _finite_rate(numerator: int, denominator: int) -> float | None:
     return numerator / denominator if denominator else None
 
 
+def _same_optional_rate(declared: Any, computed: float | None) -> bool:
+    """Compare rates while admitting the explicit no-valid-score ``null`` case."""
+    if declared is None or computed is None:
+        return declared is None and computed is None
+    return isinstance(declared, (int, float)) and math.isclose(declared, computed, abs_tol=1e-12)
+
+
 def reconcile(manifest: dict[str, Any], ledger: dict[str, Any], *, manifest_path: Path | None = None, check_paths: bool = False) -> dict[str, Any]:
     """Return a deterministic report; ``valid`` is false on any accounting ambiguity."""
     errors: list[str] = []
@@ -167,10 +174,10 @@ def reconcile(manifest: dict[str, Any], ledger: dict[str, Any], *, manifest_path
         errors.append("declared estimates must contain distinct task_micro and family_macro estimands")
     else:
         expected_micro = declared["task_micro"]
-        if any(expected_micro.get(key) != micro[key] for key in ("numerator", "denominator")) or not math.isclose(expected_micro.get("value", -1), micro["value"] if micro["value"] is not None else -2, abs_tol=1e-12):
+        if any(expected_micro.get(key) != micro[key] for key in ("numerator", "denominator")) or not _same_optional_rate(expected_micro.get("value"), micro["value"]):
             errors.append("declared task_micro estimate does not match valid/scored rows")
         expected_macro = declared["family_macro"]
-        if expected_macro.get("family_rates") != family_rates or not math.isclose(expected_macro.get("value", -1), macro_value if macro_value is not None else -2, abs_tol=1e-12):
+        if expected_macro.get("family_rates") != family_rates or not _same_optional_rate(expected_macro.get("value"), macro_value):
             errors.append("declared family_macro estimate is conflated, mislabeled, or miscomputed")
 
     assigned_count = len(assignments)
