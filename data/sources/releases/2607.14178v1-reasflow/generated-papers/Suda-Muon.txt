@@ -1,0 +1,2915 @@
+CSIAM Trans. Appl. Math.                                              Vol. x, No. x, pp. 1-50
+doi:                                                                  xx 20xx
+
+
+
+
+SUDA-Muon: Decentralized Muon Optimization
+via a Unified Primal-Dual Framework
+ReasFlow Paper Copilot
+
+
+          Abstract. Fully decentralized Muon is difficult for a specific reason: the nonlinear ma-
+          trix sign operator msgn does not commute with gossip averaging. As a result, ex-
+          tending Muon from centralized training to sparse peer-to-peer networks is not just a
+          matter of adding communication; one must decide how polarization, tracking, and
+          consensus correction should interact. We propose SUDA–Muon, which places Muon’s
+          matrix polarization directions inside the SUDA primal–dual backbone parameterized
+          by ( A,B,C ). The same template recovers ED/D2 , EXTRA, gradient tracking, and re-
+          lated decentralized schemes, so the communication mechanism can vary while the
+          Muon geometry is kept fixed. We prove a topology-separated
+                                                                   √        non-asymptotic rate in
+          the nuclear-norm geometry: the leading term O((1 + σ/ N )K −1/4 ) is independent of
+          the graph, and topology appears only through faster-decaying corrections involving
+          the SUDA contraction rate and the spectral gap. We also show by a smooth coun-
+          terexample that tracking before polarization is not optional: removing it can trap the
+          averaged iterate at a non-stationary point. We further give a linear-speedup counterex-
+          ample that separates federated and fully √decentralized Muon: server-side averaging
+          before polarization enjoys the usual σ/ N variance reduction, whereas local polar-
+          ization before averaging does not, even under exact averaging on a complete graph.
+          Experiments on CIFAR-100 and GPT-2 fine-tuning support the same qualitative pic-
+          ture. On short-horizon ring benchmarks, decentralized Muon variants are often close;
+          in the 20-node, 100-epoch non-IID CIFAR-100 setting both SUDA-based variants out-
+          perform D E M UON, with SUDA–M UON -ED performing best, while under near-IID
+          partitions the gap between different SUDA–Muon instances becomes much smaller
+          and the preferred topology changes.
+AMS subject classifications: 90C26, 90C25, 68W15
+Key words: decentralized optimization, matrix-aware optimizer, Muon, topology separation,
+convergence analysis
+
+
+
+
+1   Introduction
+Fully decentralized training is attractive in settings where data and compute are naturally
+spread across agents and a central coordinator is either unavailable or undesirable [3, 4,
+8]. In this paper, however, we are interested in a narrower question than decentralized
+
+http://www.global-sci.org/csiam-am                   1                  ©20xx Global-Science Press
+2                               ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+learning in general: how should one extend Muon, a matrix-structured optimizer, to a
+sparse peer-to-peer network? The main obstacle is that Muon’s matrix sign operator
+msgn is nonlinear, whereas decentralized communication is built from linear averaging.
+Once these two operations are combined, averaging and polarization need not agree, so
+the usual intuition from decentralized SGD no longer applies.
+    To tackle this problem, we consider the decentralized matrix optimization problem
+
+                                                      1 N
+                                                      N i∑
+                                    min f ( X ) ≜           f i ( X ),                          (1.1)
+                                  X ∈ Rm × n             =1
+
+where agent i ∈ [ N ] ≜ {1,..., N } only has access to its local objective f i and can query a
+stochastic first-order oracle. At iteration k, given a local iterate Xik , agent i samples ξ ik and
+obtains a stochastic gradient
+
+                                   Gik ≜ ∇ Fi ( Xik ;ξ ik ) ∈ Rm×n ,                            (1.2)
+
+which satisfies standard unbiasedness and bounded-variance conditions. The agents
+are connected by an undirected communication graph encoded by a symmetric, dou-
+bly stochastic mixing matrix W ∈ R N × N , and they can exchange messages only with their
+neighbors according to W.
+    In this setting, decentralized optimization already offers several correction mecha-
+nisms for heterogeneity, including gradient tracking, EXTRA, and ED/D2 [8, 13, 15].
+SUDA is particularly appealing because it expresses many of these schemes inside one
+primal–dual recursion parameterized by three matrices ( A,B,C ) built from W [2]. On
+the optimizer side, Muon replaces a coordinatewise step by a matrix polarization direc-
+tion and has shown strong empirical performance in centralized and federated settings
+[7, 9, 10, 14]. What is still missing is a framework that lets these two viewpoints meet
+cleanly: we would like to vary the communication backbone without redesigning the
+Muon update from scratch every time.
+    Current decentralized Muon results do not yet provide that picture. DeMuon [6] com-
+bines Muon with gradient tracking and works over general graphs, but it is built around
+one specific communication template. This leaves four questions open. Can Muon be
+placed inside a unified SUDA-style backbone? Can one obtain a topology-separated rate
+in the nuclear-norm geometry induced by Muon, rather than an analysis in which net-
+work effects and optimizer geometry are entangled from the start? Is tracking before
+polarization genuinely necessary, or merely convenient? And, compared with server-
+based/federated Muon, can a fully decentralized Muon update still exploit the usual
+linear-speedup effect from averaging stochastic gradients?
+    We answer these questions with SUDA–Muon, which keeps Muon’s matrix geometry
+but places it inside the SUDA primal–dual recursion. The point is not only to obtain one
+more decentralized Muon method. It is to expose which parts of the behavior come from
+the communication mechanism and which parts come from the polarization step itself.
+    Our contributions are the following.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                     3
+
+
+      • We propose SUDA–Muon, a unified decentralized Muon framework in which the
+        communication mechanism is encoded by the SUDA matrices ( A,B,C ). By choos-
+        ing these matrices appropriately, the same template recovers ED/D2 , EXTRA, and
+        ATC-style gradient tracking while keeping the Muon direction fixed.
+      • We prove a topology-separated non-asymptotic convergence guarantee in the
+        Muon-induced nuclear-norm geometry. The full five-term bound is stated in Corol-
+        lary 4.1. In particular,
+                             √ with suitable stepsize and EMA schedules, its dominant term
+        scales as O((1 + σ/ N )K −1/4 ), while topology enters only through faster-decaying
+        corrections involving the SUDA contraction rate γ and the mixing rate λ.
+      • We show that tracking before polarization is structurally necessary. Via a smooth
+        matrix-logistic counterexample, we prove that if each node applies msgn directly
+        to its local EMA, the averaged iterate can remain fixed at a non-stationary point.
+      • We give a second counterexample that isolates the difference between federated
+        and fully decentralized Muon. In a simple
+                                               √   noisy quadratic, server-side averaging
+        before polarization yields the usual σ/ N variance reduction, whereas local polar-
+        ization before averaging produces an update whose contraction rate is independent
+        of N, even under exact averaging on a complete graph.
+      • We evaluate the framework on CIFAR-100 classification and GPT-2 fine-tuning. The
+        experiments support a more specific qualitative picture: short-horizon ring bench-
+        marks do not strongly separate decentralized Muon variants, but in the 20-node,
+        100-epoch non-IID CIFAR-100 setting both SUDA-based variants outperform D E -
+        M UON, with SUDA–M UON -ED performing best; under near-IID partitions, the
+        gap between different SUDA–Muon instances becomes much smaller and the pre-
+        ferred topology changes.
+
+
+2      Related Work
+2.1     Matrix-Aware Optimizers and the Muon Family in Centralized Training
+Muon was introduced as an optimizer that acts directly on matrix-valued parameters
+through a polarization step instead of treating every layer as a flattened vector [7]. Sub-
+sequent empirical work reports strong performance on modern architectures, including
+large language models, and recent theory interprets Muon as steepest descent under a
+spectral-norm constraint [9, 12, 16]. For our purposes, the important point is not merely
+that Muon is matrix-aware, but that its update rule is nonlinear at the matrix level. That
+nonlinearity is exactly what complicates decentralization.
+    A broader literature studies structured optimizers such as Adafactor and Shampoo [5,
+11]. These methods also exploit matrix or tensor structure, but they do not raise the same
+question considered here. Our focus is narrower: how to combine Muon’s polarization
+step with fully decentralized correction mechanisms over sparse graphs.
+4                              ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+2.2   Decentralized Optimization and Heterogeneity Correction
+Decentralized SGD is simple but biased under heterogeneous data. EXTRA, Exact
+Diffusion/D2 , and gradient tracking were developed to remove or reduce that bias
+through additional correction terms [13, 15, 17]. SUDA is especially relevant because
+it places several of these methods inside one primal–dual template parameterized by
+( A,B,C ), making it possible to compare communication mechanisms without redesign-
+ing the algorithm each time [1, 18].
+    Most of this literature, however, works in a Euclidean setting: gradients are commu-
+nicated linearly, and the optimizer itself is vector-based or at most diagonally precondi-
+tioned. The resulting theory says a great deal about topology and bias correction, but it
+does not address what happens when the optimizer applies a nonlinear matrix transfor-
+mation before the update.
+
+2.3   Distributed Muon: Decentralized and Federated Extensions
+Distributed extensions of Muon are already beginning to appear. Federated variants such
+as FedMuon study star-topology settings and show that naive local Muon combined with
+FedAvg can be unstable under heterogeneity, which motivates additional server-side cor-
+rection [10, 14]. Those works are informative about heterogeneity, but they do not address
+fully decentralized communication.
+    DeMuon is, to our knowledge, the clearest fully decentralized Muon method on gen-
+eral graphs [6]. It demonstrates that combining Muon with gradient tracking is viable,
+but it is organized around one specific communication template. Our paper differs in em-
+phasis: we ask for a unified SUDA-style backbone for Muon, a topology-separated rate
+within that backbone, a direct statement that tracking before polarization is not merely
+helpful but necessary in general, and an explicit counterexample separating the linear-
+speedup behavior of federated and fully decentralized Muon.
+
+
+3     Problem Formulation and Algorithm
+3.1   Problem Setup
+We consider the decentralized matrix optimization problem
+
+                                                   1 N
+                                                   N i∑
+                                   min f ( X ) ≜         f i ( X ),
+                                 X ∈ Rm × n           =1
+
+where agent i ∈[ N ]≜{1,..., N } can only access its local objective f i and query a stochastic
+first-order oracle. At iteration k, given Xik , agent i samples ξ ik and obtains the stochastic
+gradient
+                                  Gik ≜ ∇ Fi ( Xik ;ξ ik ) ∈ Rm×n .
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                     5
+
+
+Algorithm 1 SUDA–Muon (stacked form)
+ 1: Input: stepsize α > 0, EMA parameter β ∈ [0,1), mixing / SUDA matrices (W, A,B,C ).
+ 2: Initialize: choose X0 = col{ X10 ,...,X 0N }, set Y0 = 0.
+ 3: Query stochastic gradients G0 = col{ G10 ,...,GN
+                                                   0 } at X0 .
+
+ 4: Set M0 : = G0 and H0 : = M0 .
+ 5: for k = 0,1,2,... do
+ 6:    Query stochastic gradients Gk = col{ G1k ,...,GN
+                                                      k } at Xk .
+
+ 7:    M   k + 1     k
+                 ← βM +(1 − β) G  k                                                 (EMA)
+ 8:    H  k + 1  ← W H k + M k +1 − M k                                 (gradient tracking)
+         k + 1  ← A CXk − α msgn(Hk+1 ) − BYk
+                                        
+ 9:    X                                                                 (SUDA backbone)
+10:    Yk+1 ← Yk + BXk+1
+11: end for
+
+
+3.2     Algorithm Description
+The framework is parameterized by the SUDA communication matrices ( A,B,C ), which
+are low-degree polynomials of the mixing matrix W. Different choices recover well-
+known decentralized schemes as special cases:
+
+      • ED/D2 : A = C = W and B2 = I − W 2 .
+
+      • EXTRA: A = C = I +2W and B2 = I −2W .
+
+      • Gradient Tracking (ATC-GT): A = C = W and B = I − W.
+
+Remark 3.1. DeMuon [6] uses a closely related gradient-tracking mechanism combined
+with Muon directions, but applies mixing directly to the primal variables rather than
+through the SUDA primal–dual backbone. Specifically, DeMuon does not maintain the
+dual variable Yk and instead performs a gossip-style averaging step on Xk after the Muon
+update. This subtle structural difference means DeMuon is not recovered as a special
+case of Algorithm 1, but its gradient-tracking component shares the same motivations
+analyzed in our convergence theory.
+
+In all cases, the Muon polarization direction msgn(Hk+1 ) is applied after gradient track-
+ing, so that the msgn operator acts on a network-aggregated quantity rather than a purely
+local signal. The stacked update equations are:
+
+                             Xk+1 = A CXk − α msgn(Hk+1 ) − BYk ,
+                                                         
+
+                             Yk+1 = Yk + BXk+1 ,
+                                                                                      (3.1)
+                             Mk+1 = βMk +(1 − β) Gk ,
+                             H k +1 = W H k + M k +1 − M k ,
+                                                          
+6                              ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+3.3   Assumptions
+We adopt standard assumptions from refined SUDA analyses and recent Muon/DeMuon
+convergence analyses, adapted to matrix-valued parameters.
+Assumption 1 (Network and SUDA communication structure). Let W ∈ R N × N be the
+(undirected) mixing matrix associated with the communication graph. We assume:
+    1. W is symmetric, doubly stochastic, and primitive. Denote the mixing rate
+                                                    
+                                 λ ≜ ρ W − N1 1 N 1⊤
+                                                   N ∈ (0,1).
+
+
+
+    2. The SUDA matrices A,B,C ∈ R N × N satisfy: (i) A and C are doubly stochastic; (ii)
+       BZ = 0 iff Z1 = ··· = ZN for stacked variables; (iii) A, B2 , and C are (low-degree)
+       polynomial functions of W.
+Assumption 2 (Matrix smoothness and lower boundedness). Each local objective f i :
+Rm×n → R is L∗ -smooth in the sense that for all X,Y ∈ Rm×n ,
+
+                      ∥∇ f i ( X )−∇ f i (Y )∥∗ ≤ L∗ ∥ X − Y ∥,   ∀ i ∈ [ N ],
+where ∥·∥∗ and ∥·∥ denote the nuclear norm and operator norm, respectively. Moreover,
+the global objective f ( X ) ≜ N1 ∑iN=1 f i ( X ) is bounded below: f ( X ) ≥ f inf > −∞.
+Assumption 3 (Stochastic first-order oracle). At each iteration k and node i, the oracle
+returns Gik = ∇ Fi ( Xik ;ξ ik ) satisfying
+
+                 E Gik | F k = ∇ f i ( Xik ), E ∥ Gik −∇ f i ( Xik )∥2F | F k ≤ σ2 ,
+                                                                          
+
+where F k is the natural filtration of the algorithm. Stochastic gradients are conditionally
+independent across agents and time given F k .
+Assumption 4 (Muon polarization operator). For any H ∈ Rm×n with a reduced SVD
+H = UΣV ⊤ , define
+                      msgn( H ) ≜ UV ⊤ ,    msgn(0) ≜ 0.                   (3.2)
+Each agent uses Sik+1 = msgn( Hik+1 ) as the Muon direction, computed locally (e.g., via an
+exact SVD or approximate Newton–Schulz iterations).
+
+
+4     Theoretical Analysis
+We present the theoretical analysis of SUDA–Muon. For the reader’s convenience, we
+first state the main convergence result and its big-O simplification in Subsection 4.1,
+then establish the proof ingredients and final assembly in Subsection 4.3. Subsections 4.4
+and 4.5 then draw two structural consequences of this theory: how the master bound
+specializes to concrete SUDA backbones, and why tracking must precede polarization.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                         7
+
+
+4.1   Statement of Main Results
+The following proposition provides the explicit convergence rate for SUDA–Muon.
+
+Proposition 4.1 (Main convergence rate — informal statement). Under Assumptions 1–4
+and standard SUDA stability conditions, choose the stepsize α = α0 K −3/4 and EMA parameter
+1 − β = b0 K −1/2 . Then the average nuclear-norm stationarity measure of SUDA–Muon satisfies
+                                                                                  
+
+ 1 K −1                           σ  −1/4       K −3/4                       
+   ∑    E ∥∇ f ( X̄ k )∥∗ = O  1 + √
+                         
+                                         K    +                +lower-order terms , (4.1)
+                                                                                
+ K k =0                              N         (1 − γ)(1 − λ)                   
+                                |     {z    } |       {z     }
+                                      topology-free     network-dependent
+
+
+where γ ∈ (0,1) is the SUDA contraction rate and λ = ρ(W − J ) ∈ (0,1) is the mixing rate.
+
+    The precise five-term bound, together with all constants, is given in Proposition 4.4
+and its big-O simplification in Corollary 4.1. Three structural features of this result de-
+serve emphasis:
+                                                    √
+   1. Topology separation. The leading term (1+ σ/ N )K −1/4 is entirely free of any net-
+      work quantity; the communication topology affects only the faster-decaying correc-
+      tion terms.
+
+   2. Modular network dependence. Network effects enter only through (1 − γ) and
+      (1 − λ), and different choices of ( A,B,C ) alter only γ, so one can compare commu-
+      nication strategies by simply substituting the corresponding SUDA contraction rate
+      (see Subsection 4.4).
+
+   3. Muon-induced geometry. The stationarity measure is the nuclear norm ∥∇ f ∥∗ ,
+      which is the natural dual norm for Muon’s operator-norm constraint set. This is
+      fundamentally different from the Euclidean norm used in standard decentralized
+      SGD analyses.
+
+    The proof proceeds in three stages: we first derive a one-step descent inequality in
+the nuclear-norm geometry, then establish the auxiliary bounds controlling EMA error,
+gradient tracking, SUDA disagreement, and forcing terms, and finally assemble these
+ingredients via telescoping and the chosen stepsize/EMA schedules.
+
+4.2   Basic Properties of the Matrix Sign Operator
+Lemma 4.1 (Basic properties of msgn and a robust inner-product lower bound). Let H ∈
+Rm×n and define msgn( H ) as in (3.2): if H ̸= 0 has reduced SVD H = UΣV ⊤ with U ∈ Rm×r ,
+V ∈ Rn×r , Σ = diag(σ1 ,...,σr ) and σi > 0, then msgn( H ) := UV ⊤ , and set msgn(0) := 0. Then
+the following hold.
+8                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+    1. Alignment with the nuclear norm. One has
+
+                                        ⟨ H,msgn( H )⟩ = ∥ H ∥∗ .                                (4.2)
+
+    2. Operator- and Frobenius-norm bounds. One has
+                                            q           √
+        ∥ msgn( H )∥ ≤ 1,   ∥ msgn( H )∥ F = rank( H ) ≤ rmax ,                rmax := min{m,n}.
+                                                                                             (4.3)
+      Moreover, if H ̸= 0 then ∥ msgn( H )∥ = 1.
+
+    3. A key inequality (no Lipschitzness required). For any G, H ∈ Rm×n ,
+
+                                  ⟨ G,msgn( H )⟩ ≥ ∥ G ∥∗ − 2∥ G − H ∥∗ .                        (4.4)
+
+The proof uses only the definition (3.2), basic linear algebra, and the standard nuclear/operator
+norm duality inequality
+
+                             |⟨ A,B⟩| ≤ ∥ A∥∗ ∥ B∥,      ∀ A,B ∈ Rm×n ,                          (4.5)
+
+where ⟨ A,B⟩ := tr( A⊤ B).
+Proof. If H = 0, then msgn( H ) = 0 by definition and all claims are immediate. Hence
+assume H ̸= 0 and write its reduced SVD as H = UΣV ⊤ with U ⊤ U = Ir and V ⊤ V = Ir .
+Part (1): ⟨ H,msgn( H )⟩ = ∥ H ∥∗ . Using cyclicity of the trace and U ⊤ U = Ir , V ⊤ V = Ir ,
+                                                                      r
+⟨ H,msgn( H )⟩=tr (UΣV ⊤ )⊤ (UV ⊤ ) =tr VΣU ⊤ UV ⊤ =tr(VΣV ⊤ )=tr(Σ)= ∑ σi =∥ H ∥∗ .
+                                                 
+                                                                                       i =1
+
+
+Part (2): operator- and Frobenius-norm bounds. Set M := msgn( H ) = UV ⊤ . Then
+
+                                   M⊤ M = VU ⊤ UV ⊤ = VV ⊤ ,
+
+which is the orthogonal projector onto col(V ) and hence has eigenvalues in {0,1}. There-
+fore
+                        ∥ M∥2 = λmax ( M⊤ M) = λmax (VV ⊤ ) = 1,
+so ∥ msgn( H )∥ = 1 for H ̸= 0, and the bound ∥ msgn( H )∥ ≤ 1 holds in general (including
+H = 0). Moreover,
+
+                ∥ M∥2F = tr( M⊤ M) = tr(VV ⊤ ) = rank(VV ⊤ ) = r = rank( H ),
+                   p             p                √
+so ∥ msgn( H )∥ F = rank( H ) ≤ min{m,n} =: rmax .
+Part (3): robust inner-product lower bound. Write
+
+                     ⟨ G,msgn( H )⟩ = ⟨ H,msgn( H )⟩+⟨ G − H,msgn( H )⟩.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                              9
+
+
+By Part (1), ⟨ H,msgn( H )⟩ = ∥ H ∥∗ . For the second term, apply the duality inequality (4.5)
+with A = G − H and B = msgn( H ), together with Part (2) (∥ msgn( H )∥ ≤ 1), to obtain
+
+      ⟨ G − H,msgn( H )⟩ ≥ −|⟨ G − H,msgn( H )⟩| ≥ −∥ G − H ∥∗ ∥ msgn( H )∥ ≥ −∥ G − H ∥∗ .
+
+Consequently,
+                                   ⟨ G,msgn( H )⟩ ≥ ∥ H ∥∗ −∥ G − H ∥∗ .                        (4.6)
+Finally, by the triangle inequality for the nuclear norm,
+
+                             ∥ G ∥∗ = ∥ H +( G − H )∥∗ ≤ ∥ H ∥∗ +∥ G − H ∥∗ ,
+
+which rearranges to ∥ H ∥∗ ≥ ∥ G ∥∗ −∥ G − H ∥∗ . Plugging this into (4.6) yields
+
+             ⟨ G,msgn( H )⟩ ≥ (∥ G ∥∗ −∥ G − H ∥∗ )−∥ G − H ∥∗ = ∥ G ∥∗ − 2∥ G − H ∥∗ ,
+
+which is (4.4).
+
+4.3     Proof Ingredients and Main Proofs
+This subsection develops the technical ingredients behind the master rate and then as-
+sembles them into the final convergence bound.
+
+One-Step Descent Analysis
+Lemma 4.2 (Averaged SUDA–Muon dynamics). Suppose Assumption 1 holds and the iterates
+are generated by (3.1) with initialization Yi0 = 0 for all i ∈ [ N ]. Define the averages
+
+                           1 N k                   1 N k +1
+                           N i∑                    N i∑
+                  X̄ k ≜         Xi ,    S̄k+1 ≜         Si ,          Sik+1 = msgn( Hik+1 ).
+                              =1                      =1
+
+Then, for all k ≥ 0,
+                                           X̄ k+1 = X̄ k − α S̄k+1 .                            (4.7)
+Proof. Let 1 ∈ R N denote the all-ones vector and set
+                                                1 ⊤
+                                           J≜     11 ∈ R N × N .
+                                                N
+For a stacked variable Z = col{ Z1 ,...,ZN } (with matrix blocks Zi ∈ Rm×n ), JZ has all blocks
+equal to the average Z̄ ≜ N1 ∑i Zi .
+   From (3.1),                                             
+                          Xk+1 = A CXk − α msgn(Hk+1 ) − BYk .
+
+Left-multiplying by J and using that A and C are doubly stochastic (Assumption 1(2)(i)),
+hence J A = J and JC = J, yields
+
+                                 JXk+1 = JXk − α J msgn(Hk+1 )− JBYk .                          (4.8)
+10                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+We claim that JBYk = 0 for all k ≥ 0 under Y0 = 0. Indeed, define the row vector b⊤ ≜ N1 1⊤ B
+and the stacked linear functional uk ≜ b⊤ Yk ∈ Rm×n . From the dual update Yk+1 = Yk +
+BXk+1 ,
+                         uk+1 = uk + b⊤ BXk+1 = uk + N1 1⊤ B2 Xk+1 .
+By Assumption 1(2)(ii), for every consensus stacked variable Z = col{ Z,...,Z } (with an
+arbitrary block Z ∈Rm×n ), we have BZ=0. Writing the i-th block of BZ as ( BZ)i =∑ N
+                                                                                   j=1 bij Z,
+               N
+we obtain (∑ j=1 bij ) Z = 0 for every Z. Choosing any nonzero Z (e.g., a basis matrix)
+implies ∑ N
+          j=1 bij = 0 for all i, i.e.,
+                                          B1 = 0.                                      (4.9)
+Consequently, B2 1 = 0.
+   Next, by Assumption 1(2)(iii), there exists a polynomial p such that B2 = p(W ). Since
+W is doubly stochastic, W1 = 1 and 1⊤ W = 1⊤ , hence p(W )1 = p(1)1 and 1⊤ p(W )= p(1)1⊤ .
+From B2 1 = p(W )1 = 0 we conclude p(1) = 0, and therefore
+
+                                     1⊤ B2 = 1⊤ p(W ) = p(1)1⊤ = 0.                                (4.10)
+
+Therefore b⊤ B = N1 1⊤ B2 = 0, and thus uk+1 = uk . Since Y0 = 0, we get u0 = 0 and hence
+uk ≡ 0 for all k. Finally,
+                                      1
+                               JBYk = 1 (1⊤ BYk ) = 1uk = 0.
+                                      N
+Substituting JBYk = 0 into (4.8) and taking the common block yields X̄ k+1 = X̄ k − αS̄k+1 ,
+which is (4.7).
+
+Lemma 4.3 (One-step descent of f ( X̄ k ) with Muon direction and tracking error). Suppose
+Assumptions 1 and 2 hold, the iterates are generated by (3.1), and Yi0 = 0 for all i ∈ [ N ] (as in
+Algorithm 1). Let ( X̄ k )k≥0 be the averaged iterates defined in Lemma 4.2. Then, for all k ≥ 0,
+
+                                                             L∗ α2 2α N
+            f ( X̄ k+1 ) ≤ f ( X̄ k )− α ∥∇ f ( X̄ k )∥∗ +        + ∑ ∥∇ f ( X̄ k )− Hik+1 ∥∗ .    (4.11)
+                                                              2    N i =1
+
+Here and throughout, ⟨ A,B⟩ := tr( A⊤ B) denotes the matrix inner product.
+
+Proof. Step 1: a descent lemma under Assumption 2. Since f ( X ) = N1 ∑iN=1 f i ( X ), As-
+sumption 2 implies that for all X,Y,
+
+                         1 N                                1 N
+                           ∑    ∇ f i ( X )−∇ f i (Y ) ≤ ∑ ∥∇ f i ( X )−∇ f i (Y )∥∗ ≤ L∗ ∥ X −Y ∥.
+                                                      
+∥∇ f ( X )−∇ f (Y )∥∗ =
+                         N i =1                         ∗ N i =1
+                                                                                             (4.12)
+Fix X,Y ∈ R m × n and let D := Y − X. Define g(t) := f ( X + tD ) for t ∈ [0,1]. Then g is differ-
+entiable and
+                                     g′ (t) = ⟨∇ f ( X + tD ),D ⟩.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                11
+
+
+Using the fundamental theorem of calculus,
+                                                              Z 1
+                       f (Y )− f ( X ) = g(1)− g(0) =               ⟨∇ f ( X + tD ),D ⟩ dt.       (4.13)
+                                                                0
+
+Add and subtract ∇ f ( X ) inside the integrand to obtain
+                                                      Z 1
+                f (Y )− f ( X ) = ⟨∇ f ( X ),D ⟩+           ⟨∇ f ( X + tD )−∇ f ( X ),D ⟩ dt.
+                                                       0
+
+By the nuclear/operator duality inequality |⟨ A,B⟩|≤∥ A∥∗ ∥ B∥ and (4.12), for each t ∈[0,1],
+                  ⟨∇ f ( X + tD )−∇ f ( X ),D ⟩ ≤ |⟨∇ f ( X + tD )−∇ f ( X ),D ⟩|
+                                                ≤ ∥∇ f ( X + tD )−∇ f ( X )∥∗ ∥ D ∥
+                                                      ≤ L∗ ∥tD ∥∥ D ∥ = L∗ t ∥ D ∥2 .
+Plugging this into (4.13) gives the descent inequality
+                                                                         L∗
+                           f (Y ) ≤ f ( X )+⟨∇ f ( X ),Y − X ⟩+             ∥Y − X ∥ 2 .          (4.14)
+                                                                         2
+
+Step 2: apply (4.14) to the averaged recursion. By Lemma 4.2, X̄ k+1 = X̄ k − αS̄k+1 with
+S̄k+1 = N1 ∑iN=1 Sik+1 and Sik+1 = msgn( Hik+1 ). Applying (4.14) with X = X̄ k and Y = X̄ k+1
+yields
+                                                                            L ∗ α 2 k +1 2
+                       f ( X̄ k+1 ) ≤ f ( X̄ k )− α ⟨∇ f ( X̄ k ), S̄k+1 ⟩+        ∥S̄ ∥ . (4.15)
+                                                                              2
+Moreover, by Lemma 4.1(2), ∥Sik+1 ∥ ≤ 1 for all i, and by convexity of the operator norm,
+
+                                            1 N k +1   1 N
+                             ∥S̄k+1 ∥ =       ∑
+                                            N i =1
+                                                   Si ≤ ∑ ∥Sik+1 ∥ ≤ 1.
+                                                       N i =1
+                                                                                                  (4.16)
+
+Combining (4.15) and (4.16) gives
+                                                                                   L ∗ α2
+                            f ( X̄ k+1 ) ≤ f ( X̄ k )− α ⟨∇ f ( X̄ k ), S̄k+1 ⟩+          .       (4.17)
+                                                                                     2
+
+Step 3: lower bound ⟨∇ f ( X̄ k ), S̄k+1 ⟩ via Lemma 4.1. Let G := ∇ f ( X̄ k ). For each agent i,
+Lemma 4.1(3) with H = Hik+1 gives
+
+                     ⟨ G,Sik+1 ⟩ = ⟨ G,msgn( Hik+1 )⟩ ≥ ∥ G ∥∗ − 2 ∥ G − Hik+1 ∥∗ .
+
+Averaging over i and using ⟨ G, S̄k+1 ⟩ = N1 ∑iN=1 ⟨ G,Sik+1 ⟩ yields
+
+                                                                2 N
+                                                                N i∑
+                   ⟨∇ f ( X̄ k ), S̄k+1 ⟩ ≥ ∥∇ f ( X̄ k )∥∗ −         ∥∇ f ( X̄ k )− Hik+1 ∥∗ .   (4.18)
+                                                                   =1
+
+Substituting (4.18) into (4.17) gives (4.11).
+12                                     ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Proposition 4.2 (Descent inequality with an explicit “tracking-error” remainder). Suppose
+the assumptions of Lemma 4.3 hold. Then for any integer K ≥ 1,
+
+         1 K −1                  ∆0 L ∗ α    2 K −1 N 
+           ∑    E ∥∇ f ( X̄ k )∥∗ ≤              ∑   ∑   E ∥∇ f ( X̄ k )− Hik+1 ∥∗ ,
+                                                                                  
+                                       +    +                                                         (4.19)
+         K k =0                     αK   2    NK k=0 i=1
+
+where ∆0 := E[ f ( X̄ 0 )]− f inf .
+Proof. Sum the one-step inequality (4.11) from Lemma 4.3 over k = 0,...,K − 1, take expec-
+tations, and use E[ f ( X̄ K )] ≥ f inf . Divide by αK.
+
+EMA and Gradient Tracking Foundations
+Lemma 4.4 (EMA stochastic error (per-agent and averaged)). Suppose Assumption 3 holds
+and the iterates are generated by (3.1) (equivalently, Algorithm 1). Fix any agent i ∈ [ N ]. Define
+Ci0 := ∇ f i ( Xi0 ) and for k ≥ 0,
+
+                                        Cik+1 := βCik +(1 − β)∇ f i ( Xik ),
+
+and recall that Mi0 = Gi0 and Mik+1 = βMik +(1 − β) Gik . Then, for all k ≥ 0,
+                                                 q
+                                                    1− β
+                                E ∥Ci − Mi ∥ F ≤ 1+ β σ + βk σ.
+                                     k     k
+                                                                                                      (4.20)
+
+Moreover, defining the averages M̄k := N1 ∑iN=1 Mik and C̄ k := N1 ∑iN=1 Cik , we have for all k ≥ 0,
+                                                q
+                                                   1− β
+                             E ∥C̄ k − M̄k ∥ F ≤ 1+ β √σ + βk √σ .                                (4.21)
+                                                                   N           N
+
+Finally, letting rmax := min{m,n}, for all k ≥ 0,
+                                               √
+                             E ∥Cik − Mik ∥∗ ≤ rmax E ∥Cik − Mik ∥ F .                                (4.22)
+
+Proof. Throughout, define the stochastic gradient noise
+
+                                             ∆ik := Gik −∇ f i ( Xik ).
+
+Then Assumption 3 implies
+
+                                  E[∆ik | F k ] = 0,     E[∥∆ik ∥2F | F k ] ≤ σ2 .                    (4.23)
+
+Step 1: per-agent EMA error. Let Eik := Cik − Mik . By the definitions of Cik+1 and Mik+1 ,
+
+                  Eik+1 = βEik +(1 − β) ∇ f i ( Xik )− Gik = βEik −(1 − β)∆ik .
+                                                          
+                                                                                        (4.24)
+
+Unrolling (4.24) gives, for any k ≥ 0,
+                                  k −1
+                     Eik = (1 − β) ∑ βk−1−t ∇ f i ( Xit )− Git + βk ∇ f i ( Xi0 )− Gi0 .
+                                                                                     
+                                                                                                      (4.25)
+                                      t =0
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                                  13
+
+
+Taking Frobenius norms, using the triangle inequality and Cauchy–Schwarz,
+                             k −1
+    E∥ Eik ∥ F ≤ (1 − β) E   ∑ βk−1−t ∇ fi (Xit )− Git                      + βk E∥∇ f i ( Xi0 )− Gi0 ∥ F
+                                                                
+                             t =0                                       F
+                        v
+                        u k −1
+                                                        2     q
+                                ∑
+                        u
+             ≤ (1 − β ) tE     βk−1−t ∇ f ( X t )− G t
+                                                 i       i + βk E∥∇ f ( X 0 )− G0 ∥2 .
+                                                                    i                           i    i      i   F   (4.26)
+                                t =0                                         F
+
+
+The second term is bounded by βk σ using (4.23). For the first term, note that for s < t, by
+the tower property and (4.23),
+
+                    E ∇ f i ( Xis )− Gis , ∇ f i ( Xit )− Git
+                                                             
+                        h                                                i
+                     = E E ∇ f i ( Xis )− Gis , ∇ f i ( Xit )− Git | F t
+                        h                                                 i
+                     = E ∇ f i ( Xis )− Gis , E[∇ f i ( Xit )− Git | F t ] = 0.
+                                              |            {z           }
+                                                                        =0
+
+Hence all cross terms vanish in the expansion of the squared norm, and therefore
+                k −1                            2       k −1
+            E   ∑ βk−1−t ∇ fi (Xit )− Git        F
+                                                     = ∑ β2(k−1−t) E∥∇ f i ( Xit )− Git ∥2F
+                t =0                                     t =0
+                                                             k −1
+                                                                                           1 − β2k   σ2
+                                                     ≤ σ 2 ∑ β 2( k −1− t ) = σ 2                  ≤     .
+                                                             t =0                          1 − β2 1 − β2
+
+Plugging this into (4.26) yields
+                                                                                 q
+                                                     σ                               1− β
+                        E∥ Eik ∥ F ≤ (1 − β) p               + βk σ =                          k
+                                                                                     1+ β σ + β σ,
+                                                 1 − β2
+which proves (4.20).
+                                            √
+Step 2: averaged EMA error and the 1/ N factor. Let Ēk := C̄ k − M̄k = N1 ∑iN=1 Eik and
+¯ k := 1 ∑ N ∆k . Averaging (4.24) over i gives
+∆      N i =1 i
+
+                                                               ¯ k.
+                                         Ēk+1 = β Ēk −(1 − β)∆                                                    (4.27)
+
+We now bound the second moment of ∆         ¯ k . By Assumption 3, conditional on F k the random
+matrices {∆ik }iN=1 are independent across agents and satisfy (4.23). Therefore, conditional on
+F k,
+                                  h 1 N       2    i 1 N 
+                    ¯
+                 E ∥∆ ∥ F | F = E
+                      k 2    k
+                                      ∑    ∆i
+                                            k
+                                                F = 2 ∑ E ∥∆ik ∥2F | F k
+                                                 k
+                                                                       
+                                                                                                                    (4.28)
+                                    N i =1    F      N i =1
+                                        σ2
+                                    ≤      .
+                                        N
+14                               ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Equality (4.28) is exactly where the conditional independence across agents is used: it
+removes the cross terms ⟨∆ik ,∆kj ⟩ for i ̸= j. Consequently, by Jensen,
+                                                q
+                                     ¯ k ∥F ≤
+                                  E∥ ∆                 ¯ k ∥2 ≤ √σ .
+                                                    E∥ ∆                                        (4.29)
+                                                            F
+                                                                  N
+
+Now apply the same argument as in Step 1 to the recursion (4.27), using (4.28) (in place
+of (4.23) with σ2 ), to obtain
+                                          q
+                                            1− β σ      σ
+                               E∥ Ē ∥ F ≤ 1+ β √ + βk √ ,
+                                    k
+                                                  N      N
+
+which is (4.21).
+Step 3: nuclear norm conversion. For any matrix A ∈ Rm×n with singular values (s j )rj=
+                                                                                      max
+                                                                                        1,
+
+                                rmax
+                                        √     rmax 1/2 √
+                         ∥ A∥∗ = ∑ s j ≤ rmax ∑ s2j     = rmax ∥ A∥ F ,
+                                j =1                 j =1
+
+
+where the inequality is Cauchy–Schwarz. Applying this pointwise with A = Eik and taking
+expectations gives (4.22).
+
+Lemma 4.5 (Gradient tracking preserves network averages). Suppose Assumption 1(1)
+holds (in particular, W is doubly stochastic) and the gradient-tracking variable is updated as
+in (3.1):
+                           H k +1 = W H k + M k +1 − M k ,
+                                                        
+                                                             k ≥ 0.
+Assume the initialization satisfies Hi0 = Mi0 for all i ∈ [ N ] (equivalently, H0 = M0 ). Define the
+network averages
+                                     1 N                     1 N
+                              H̄ k ≜ ∑ Hik ,        M̄k ≜ ∑ Mik .
+                                     N i =1                  N i =1
+Then, for all k ≥ 0,
+                                             H̄ k = M̄k .
+In particular, for all k ≥ 0,
+                                   H̄ k+1 = H̄ k + M̄k+1 − M̄k .
+                                                              
+
+
+Proof. Let 1 ∈ R N denote the all-ones vector and set
+
+                                            1 ⊤
+                                       J≜     11 ∈ R N × N .
+                                            N
+For any stacked variable Z = col{ Z1 ,...,ZN } (with matrix blocks Zi ∈ Rm×n ), the stacked
+vector JZ has all blocks equal to the average Z̄ ≜ N1 ∑i Zi .
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                       15
+
+
+    Since W is doubly stochastic, we have 1⊤ W = 1⊤ , and thus
+
+                                         1           1
+                                  JW =     1(1⊤ W ) = 11⊤ = J.
+                                         N           N
+Left-multiplying the gradient-tracking recursion by J and using JW = J yields
+
+                       JHk+1 = JW Hk + Mk+1 − Mk = J Hk + Mk+1 − Mk
+                                                                   
+
+                             = JHk + JMk+1 − JMk ,
+                                                
+                                                     ∀k ≥ 0.
+
+Taking the common block of both sides (equivalently, premultiplying by N1 1⊤ ) gives
+
+                              H̄ k+1 = H̄ k + M̄k+1 − M̄k ,
+                                                         
+                                                                  ∀k ≥ 0.
+
+By the initialization H̄ 0 = M̄0 , the above identity telescopes to
+
+                                     H̄ k − M̄k = H̄ 0 − M̄0 = 0,
+                                                            
+
+
+for every k ≥ 0. Hence H̄ k = M̄k for all k ≥ 0.
+
+Lemma 4.6 (Gradient-tracking disagreement recursion). Suppose Assumption 1(1) holds
+and the gradient-tracking variable obeys
+
+                           H k +1 = W H k + M k +1 − M k ,
+                                                        
+                                                           k ≥ 0.
+
+Let 1 N ∈ R N be the all-ones vector and define
+
+                       J ≜ N1 1 N 1⊤
+                                   N ∈R
+                                        N×N
+                                            ,      Z̃k ≜ ( I − J )Zk = Zk − JZk .
+
+Then, for all k ≥ 0,
+                               ∥H̃k+1 ∥ F ≤ λ H̃k +(M̃k+1 − M̃k ) F ,
+                 
+where λ ≜ ρ W − J ∈(0,1) is the mixing rate from Assumption 1(1). Consequently, for any η > 0,
+
+                   ∥H̃k+1 ∥2F ≤ (1 + η )λ2 ∥H̃k ∥2F +(1 + 1/η )λ2 ∥M̃k+1 − M̃k ∥2F .
+
+Proof. Since W is doubly stochastic, we have W1 N = 1 N and 1⊤      ⊤
+                                                             N W = 1 N , which imply
+
+             W J = N1 W1 N 1⊤   1      ⊤
+                            N = N 1 N 1 N = J,       JW = N1 1 N (1⊤       1      ⊤
+                                                                   N W ) = N 1 N 1 N = J.
+
+Therefore,
+                                   ( I − J )W = W − JW = W − J.
+Left-multiplying the gradient-tracking recursion by ( I − J ) gives
+
+      H̃k+1 = ( I − J )Hk+1 = ( I − J )W Hk + Mk+1 − Mk = (W − J ) Hk + Mk+1 − Mk .
+                                                                                
+16                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Moreover, for any stacked variable Z we can decompose Z = JZ +( I − J )Z, and since
+(W − J ) J = W J − J 2 = J − J = 0, we have
+
+                             (W − J )Z = (W − J )( I − J )Z = (W − J )Z̃.
+
+Applying this identity to Hk and Mk+1 − Mk yields
+
+                               H̃k+1 = (W − J ) H̃k +(M̃k+1 − M̃k ) .
+                                                                   
+
+Next, view a stacked variable Z = col{ Z1 ,...,ZN } (with matrix blocks Zi ∈ Rm×n ) as a
+vector by vectorization. Then the action of W − J on the agent index corresponds to the
+linear map ((W − J )⊗ Imn ) on vec(Z), and
+
+∥(W − J )Z∥ F = ∥((W − J )⊗ Imn ) vec(Z)∥2 ≤ ∥(W − J )⊗ Imn ∥2 ∥vec(Z)∥2 = ∥W − J ∥2 ∥Z∥ F .
+
+Because W is symmetric, W − J is also symmetric. Hence its spectral norm equals its
+spectral radius:
+                   ∥W − J ∥2 = max |λi (W − J )| = ρ(W − J ) = λ.
+                                           i
+
+Combining the last two displays gives
+
+                               ∥H̃k+1 ∥ F ≤ λ H̃k +(M̃k+1 − M̃k ) F .
+
+Finally, squaring and using the standard inequality ∥U + V ∥2F ≤ (1 + η )∥U ∥2F +(1 +
+1/η )∥V ∥2F (valid for any η > 0) with U = H̃k and V = M̃k+1 − M̃k yields
+                                                           2
+                   ∥H̃k+1 ∥2F ≤ λ2 H̃k +(M̃k+1 − M̃k ) F
+                              ≤ (1 + η )λ2 ∥H̃k ∥2F +(1 + 1/η )λ2 ∥M̃k+1 − M̃k ∥2F .
+
+This proves the claim.
+
+SUDA Backbone Analysis
+Lemma 4.7 (SUDA backbone disagreement bound with bounded input directions). Sup-
+pose Assumption 1 holds. Consider the primal–dual recursion (stacked form)
+
+                              Xk+1 = A CXk − αUk+1 − BYk ,
+                                                      
+                                                                           (4.30)
+                              Yk+1 = Yk + BXk+1 ,
+
+where α >0 and Uk+1 =col{U1k+1 ,...,UN      k +1
+                                                 } is an arbitrary (possibly time-varying) stacked input.
+Let J := N1 11⊤ and Z̃ := ( I − J )Z. Assume Y0 = 0.
+    Assume additionally that the corresponding SUDA deviation matrix (defined in the proof)
+is stable, i.e., all of its eigenvalues are strictly inside the unit circle. Then there exist network-
+dependent constants
+                              γ ∈ (0,1),      v1 ≥ 1,       v2 ≥ 1,     λ a ≥ 0,
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                     17
+
+
+(depending only on A,B,C and the network) such that for all k ≥ 0,
+                                                                     
+                         ∥X̃k ∥ F ≤ v1 v2 γk ∥X̃0 ∥ F +∥ B2 ∥∥X̃0 ∥ F
+                                              αv1 v2 λ a                                              (4.31)
+                                          +              sup ∥Ũt+1 ∥ F .
+                                               1 − γ 0≤ t ≤ k
+
+If, moreover, Uk+1 = msgn(Hk+1 ) is the blockwise matrix-sign (Muon) direction from (3.1), then
+Lemma 4.1 implies                    √
+                       ∥Ũk+1 ∥ F ≤ 2 Nrmax ,      rmax := min{m,n},                     (4.32)
+and thus
+                                                             2αv1 v2 λ a √
+                    ∥X̃k ∥ F ≤ v1 v2 γk 1 +∥ B2 ∥ ∥X̃0 ∥ F +
+                                                 
+                                                                           Nrmax .
+                                                               1−γ
+
+Proof. Step 1: a non-incremental form involving B2 only. Define
+
+                            zk ≜ Yk − BXk ,           sk ≜ Bzk = BYk − B2 Xk .
+
+Substituting Yk = zk + BXk into (4.30) yields
+
+                               Xk+1 = ( AC − B2 )Xk − αAUk+1 − Bzk ,                                 (4.33a)
+                               zk+1 = zk + BXk .                                                     (4.33b)
+
+Multiplying (4.33b) by B and using the definition of sk gives
+
+                                Xk+1 = ( AC − B2 )Xk − αAUk+1 − sk ,                                 (4.34a)
+                                s k +1 = s k + B 2 X k .                                             (4.34b)
+
+Step 2: restriction to the disagreement subspace. Let Z̃:=( I − J )Z. Since A,C,B2 are poly-
+nomials in W (Assumption 1(2)(iii)) and W is doubly stochastic, these matrices commute
+with J and preserve the consensus/disagreement decomposition; in particular, g    AZ = AZ̃,
+CZ                      2
+f = C Z̃, and B2 Z = B Z̃. Applying ( I − J ) to (4.34) yields
+                g
+
+                                X̃k+1 = ( AC − B2 )X̃k − αAŨk+1 − s̃k ,                             (4.35a)
+                                s̃k+1 = s̃k + B2 X̃k .                                               (4.35b)
+
+Step 3: diagonalization in the eigenbasis of W. Since W is symmetric, it admits an
+orthogonal eigendecomposition W = Udiag(1, Λ̂)U ⊤ with U = [ √1 1, Û ] and Û Û ⊤ = I − J.
+                                                                                 N
+Because A,C,B2 are polynomials in W, they share the eigenvectors of W and thus can be
+decomposed as
+
+         A = Udiag(1, Λ̂ a ) U ⊤ ,      C = Udiag(1, Λ̂c ) U ⊤ ,        B2 = Udiag(0, Λ̂2b ) U ⊤ ,
+18                                     ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+for some diagonal Λ̂ a , Λ̂c , Λ̂2b ∈ R( N −1)×( N −1) . Define the projected variables
+
+                          X̂k ≜ Û ⊤ Xk ,           ŝk ≜ Û ⊤ sk ,          Ûk+1 ≜ Û ⊤ Ũk+1 .
+
+Then (4.35) is equivalent to
+
+                                X̂k+1 = (Λ̂ a Λ̂c − Λ̂2b )X̂k − ŝk − αΛ̂ a Ûk+1 ,                   (4.36a)
+                                ŝ   k +1
+                                            = ŝ + Λ̂2b X̂k .
+                                                k
+                                                                                                      (4.36b)
+
+Introduce the augmented state ξ̂ k := X̂k ; ŝk and the deviation matrix
+                                              
+
+
+                                        Λ̂ a Λ̂c − Λ̂2b − I
+                                                           
+                                  G≜                          .
+                                               Λ̂2b      I
+
+Then
+                                                                       Λ̂ a Ûk+1
+                                                                                 
+                                             ξ̂ k+1 = Gξ̂ k − α                     .                   (4.37)
+                                                                             0
+By the stability assumption on G, there exist an invertible matrix V̂ and a matrix Γ such
+that G = V̂ΓV̂ −1 and ∥Γ∥ =: γ < 1. Define v1 := ∥V̂ ∥, v2 := ∥V̂ −1 ∥, and λ a := ∥Λ̂ a ∥.
+Step 4: contraction and unrolling. Let êk := V̂ −1 ξ̂ k . Multiplying (4.37) by V̂ −1 gives
+
+                                                 −1 Λ̂ a Û
+                                                             k +1
+                                                                 
+                             ê k +1
+                                     = Γê − αV̂
+                                          k
+                                                                    .
+                                                           0
+
+Taking Frobenius norms and using ∥Ûk+1 ∥ F ≤ ∥Ũk+1 ∥ F yields
+
+                                     ∥êk+1 ∥ F ≤ γ∥êk ∥ F + αv2 λ a ∥Ũk+1 ∥ F .
+
+Unrolling gives
+                                                                αv2 λ a
+                               ∥êk ∥ F ≤ γk ∥ê0 ∥ F +                 sup ∥Ũt+1 ∥ F .
+                                                                1 − γ 0≤ t ≤ k
+
+Since ξ̂ k = V̂ êk , we have ∥X̂k ∥ F ≤ ∥ξ̂ k ∥ F ≤ v1 ∥êk ∥ F and ∥ê0 ∥ F ≤ v2 ∥ξ̂ 0 ∥ F . Moreover, Y0 = 0
+implies s0 = − B2 X0 and hence ŝ0 = −Λ̂2b X̂0 . Therefore ∥ξ̂ 0 ∥ F ≤ (1 +∥Λ̂2b ∥)∥X̂0 ∥ F ≤ (1 +
+∥ B2 ∥)∥X̃0 ∥ F . Finally, since Û Û ⊤ = I − J we have ∥X̂k ∥ F = ∥X̃k ∥ F . Combining these bounds
+yields (4.31).
+Step 5: boundedness of the Muon directions. If Uk+1 = msgn(Hk+1 ), then by Lemma 4.1,
+                                 √
+each block satisfies ∥Uik+1 ∥ F ≤ rmax . Thus
+                                                     v
+                                                                      √
+                                                     uN
+        ∥Ũ ∥ F ≤ ∥U ∥ F +∥ JU ∥ F ≤ 2∥U ∥ F ≤ 2t ∑ ∥Uik+1 ∥2F ≤ 2 Nrmax ,
+                                                     u
+           k +1        k +1        k +1       k +1
+
+                                                                                        i =1
+
+which is (4.32).
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                        19
+
+
+Drift, Mismatch, and Tracking Error Decomposition
+Lemma 4.8 (EMA bias for averaged true gradients (drift term)). Suppose Assumption 2
+holds. Define the averaged true gradient at the local iterates
+
+                                                     1 N
+                                                     N i∑
+                                        ∇f(Xk ) ≜          ∇ f i ( Xik ),
+                                                        =1
+
+and the averaged EMA of true gradients by
+
+                   C̄0 := ∇f(X0 ),         C̄ k+1 := β C̄ k +(1 − β)∇f(Xk ),         k ≥ 0.
+
+Define the (one-step-ahead) EMA bias
+
+                                    D k ≜ ∇f(Xk )− C̄ k+1 ,          k ≥ 0.
+
+Then, for all k ≥ 0, D k obeys the recursion
+
+                                D k+1 = βD k + β ∇f(Xk+1 )−∇f(Xk ) .
+                                                                  
+
+Moreover, for all k ≥ 0,
+
+                                                            L∗ N
+                                                            N i∑
+                             ∇f(Xk+1 )−∇f(Xk ) ∗ ≤                ∥ Xik+1 − Xik ∥.                       (4.38)
+                                                               =1
+
+If, in addition, the iterates are generated by Algorithm 1, then
+
+                 1 N                                          1              1
+                   ∑
+                 N i =1
+                        ∥ Xik+1 − Xik ∥ ≤ ∥ X̄ k+1 − X̄ k ∥+ √ ∥X̃k+1 ∥ F + √ ∥X̃k ∥ F ,
+                                                               N              N
+                                                                                                         (4.39)
+
+
+where X̄ k := N1 ∑i Xik and X̃k := ( I − J )Xk with J := N1 11⊤ . Consequently, using Lemmas 4.2
+and 4.3 (which imply ∥ X̄ k+1 − X̄ k ∥ ≤ α), we have for all k ≥ 0,
+                                   βL∗         2                              
+                        ∥ D k ∥∗ ≤         α + √ sup ∥X̃t+1 ∥ F +∥X̃t ∥ F .                              (4.40)
+                                   1− β          N t ≥0
+                                                                                             1 v2 λ a
+                                                                                                      √
+In particular, if Lemma 4.7 holds (so that for all t ≥ 0, ∥X̃t ∥ F ≤ v1 v2 γt ∥X̃0 ∥ F + 2αv1−  γ       Nrmax ),
+then for all k ≥ 0,
+                                       "                                           #
+                          k       βL∗        4v1 v2 0         8αv1 v2 λ a √
+                      ∥ D ∥∗ ≤           α + √ ∥X̃ ∥ F +                      rmax .                     (4.41)
+                                  1− β          N                 1−γ
+
+Proof. Throughout, abbreviate gk := ∇f(Xk ).
+Step 1: bias recursion. By the definition of D k+1 and the EMA update,
+
+           D k+1 = gk+1 − C̄ k+2 = gk+1 − βC̄ k+1 +(1 − β) gk+1 = β gk+1 − C̄ k+1 .
+                                                                                
+20                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Next, add and subtract gk and use D k = gk − C̄ k+1 to obtain
+
+                   gk+1 − C̄ k+1 = gk+1 − gk + gk − C̄ k+1 = gk+1 − gk + D k .
+                                                                    
+
+
+Combining the last two displays yields
+
+                                       D k+1 = βD k + β gk+1 − gk ,
+                                                                 
+
+
+as claimed.
+Step 2: bound the averaged true-gradient drift by smoothness. By convexity of ∥·∥∗
+and Assumption 2,
+
+                                                 1 N
+                         ∥ g k +1 − g k ∥ ∗ =      ∑    ∇ f i ( Xik+1 )−∇ f i ( Xik )
+                                                                                      
+                                                 N i =1                                 ∗
+
+                                                1 N
+                                                N i∑
+                                          ≤           ∥∇ f i ( Xik+1 )−∇ f i ( Xik )∥∗
+                                                   =1
+                                                L∗ N
+                                                N i∑
+                                          ≤           ∥ Xik+1 − Xik ∥,
+                                                   =1
+
+which is (4.38).
+Step 3: bound the average step size by the average motion and consensus errors. For
+each i, insert and subtract the averages X̄ k+1 and X̄ k and use triangle inequality:
+
+                   ∥ Xik+1 − Xik ∥ ≤ ∥ Xik+1 − X̄ k+1 ∥+∥ X̄ k+1 − X̄ k ∥+∥ X̄ k − Xik ∥.
+
+Averaging over i yields
+
+         1 N                                        1 N                   1 N
+           ∑
+         N i =1
+                ∥ Xik+1 − Xik ∥ ≤ ∥ X̄ k+1 − X̄ k ∥+ ∑ ∥ Xik+1 − X̄ k+1 ∥+ ∑ ∥ Xik − X̄ k ∥.
+                                                    N i =1                N i =1
+
+For the disagreement terms, use ∥ A∥ ≤ ∥ A∥ F and Cauchy–Schwarz:
+
+1 N                     1 N                        1 N                    1/2    1            2
+  ∑
+N i =1
+       ∥ X k
+           i − X̄ k
+                    ∥ ≤   ∑
+                        N i =1
+                               ∥ X k
+                                   i − X̄ k
+                                            ∥ F ≤ √   ∑
+                                                    N i =1
+                                                           ∥ X k
+                                                               i − X̄ k 2
+                                                                       ∥ F      = √ ∥X̃k ∥ F ≤ √ ∥X̃k ∥ F .
+                                                                                    N            N
+
+The same bound holds with k replaced by k + 1, yielding (4.39).
+Step 4: unroll the bias recursion. Combine the recursion from Step 1, the drift
+bound (4.38), and the step-size bound (4.39) to get
+                                                                                         
+              ∥ D k+1 ∥∗ ≤ β∥ Dk ∥∗ + βL∗ ∥ X̄ k+1 − X̄ k ∥+ √2N ∥X̃k+1 ∥ F + √2N ∥X̃k ∥ F .
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                               21
+
+
+Under Algorithm 1, Lemma 4.2 gives ∥ X̄ k+1 − X̄ k ∥ = α∥S̄k+1 ∥, and Lemma 4.3 (specifi-
+cally (4.16) therein) implies ∥S̄k+1 ∥ ≤ 1, hence ∥ X̄ k+1 − X̄ k ∥ ≤ α. Moreover, D0 = g0 − C̄1 = 0
+because C̄0 = g0 . Unrolling the above linear recursion and bounding the geometric series
+yields
+
+               k −1                                     βL                                   
+∥ D k ∥∗ ≤ βL∗ ∑ βk−1−t α+ √2N ∥X̃t+1 ∥ F + √2N ∥X̃t ∥ F ≤
+                                                             ∗
+                                                                α+ √2 sup(∥X̃t+1 ∥ F +∥X̃t ∥ F ) ,
+               t =0                                        1− β      N
+                                                                       t ≥0
+
+which proves (4.40).
+Step 5: plug in the SUDA consensus bound (Lemma 4.7). Lemma 4.7 implies for all
+t ≥ 0,
+                                                  2αv1 v2 λ a √
+                      ∥X̃t ∥ F ≤ v1 v2 ∥X̃0 ∥ F +               Nrmax ,
+                                                    1−γ
+since γt ≤ 1. Therefore,
+
+                                                                        4αv1 v2 λ a √
+                    sup(∥X̃t+1 ∥ F +∥X̃t ∥ F ) ≤ 2v1 v2 ∥X̃0 ∥ F +                    Nrmax .
+                    t ≥0                                                  1−γ
+
+Substituting this into (4.40) and simplifying gives (4.41).
+
+Lemma 4.9 (Consensus-induced gradient mismatch). Assume Assumption 2. For any
+stacked primal iterate Xk = col{ X1k ,...,X N
+                                            k }, define
+
+
+                                        N
+                           X̄ k := N1 ∑ Xik ,        X̃k := ( I − J )Xk ,   J := N1 11⊤ .
+                                       i =1
+
+Then the mismatch between the gradient at the averaged point and the average of local gradients
+at local points satisfies
+
+                                                1 N                    L∗
+                               ∇ f ( X̄ k )−      ∑
+                                                N i =1
+                                                       ∇ f i ( Xik ) ≤ √ ∥X̃k ∥ F .
+                                                                    ∗   N
+                                                                                                 (4.42)
+
+
+Proof. Using ∇ f ( X̄ k ) = N1 ∑iN=1 ∇ f i ( X̄ k ), we write
+
+                                      1 N                   1 N
+                      ∇ f ( X̄ k )−     ∑    ∇ f i ( Xik ) = ∑ ∇ f i ( X̄ k )−∇ f i ( Xik ) .
+                                                                                           
+                                      N i =1                N i =1
+
+By convexity of the nuclear norm and the triangle inequality,
+
+                                    1 N                    1 N
+                    ∇ f ( X̄ k )−     ∑
+                                    N i =1
+                                           ∇ f i ( Xik ) ≤ ∑ ∥∇ f i ( X̄ k )−∇ f i ( Xik )∥∗ .
+                                                         ∗ N i =1
+22                                      ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+By Assumption 2, ∥∇ f i ( X̄ k )−∇ f i ( Xik )∥∗ ≤ L∗ ∥ X̄ k − Xik ∥. Moreover, ∥ X̄ k − Xik ∥ ≤ ∥ X̄ k −
+Xik ∥ F . Therefore,
+
+                                            1 N                    L∗ N
+                            ∇ f ( X̄ k )−     ∑
+                                            N i =1
+                                                   ∇ f i ( Xik ) ≤ ∑ ∥ Xik − X̄ k ∥ F .
+                                                                 ∗ N i =1
+
+Finally, Cauchy–Schwarz gives
+
+                   1 N                        1 N                    1/2    1
+                     ∑
+                   N i =1
+                          ∥ X k
+                              i − X̄ k
+                                       ∥ F ≤ √   ∑
+                                               N i =1
+                                                      ∥ X k
+                                                          i − X̄ k 2
+                                                                  ∥ F      = √ ∥X̃k ∥ F .
+                                                                               N
+
+Combining the last two displays yields (4.42).
+
+Lemma 4.10 (Decomposing the tracking error ∥∇ f ( X̄ k )− Hik+1 ∥∗ ). Assume Assumptions 1–
+3. Let (Xk ,Mk ,Hk ) be generated by (3.1) with initialization Hi0 = Mi0 for all i ∈ [ N ]. Define
+
+                                  N                              N                             N
+                     X̄ k := N1 ∑ Xik ,          M̄k := N1 ∑ Mik ,               H̄ k := N1 ∑ Hik ,
+                                 i =1                           i =1                       i =1
+
+
+                        X̃k := ( I − J )Xk ,          H̃k := ( I − J )Hk ,         J := N1 11⊤ .
+
+Moreover, define the averaged true-gradient EMA (C̄ k )k≥0 and the drift variable ( D k )k≥0 as in
+Lemma 4.8:
+
+          C̄0 := ∇f(X0 ),         C̄ k+1 := βC̄ k +(1 − β)∇f(Xk ),                   D k := ∇f(Xk )− C̄ k+1 ,
+
+where ∇f(Xk ) := N1 ∑iN=1 ∇ f i ( Xik ). Then for every k ≥ 0,
+
+        1 N                              L∗
+          ∑
+        N i =1
+               ∥∇ f ( X̄ k )− Hik+1 ∥∗ ≤ √ ∥X̃k ∥ F +∥ D k ∥∗
+                                          N
+                                                                                                                (4.43)
+                                                                              1 N
+                                              +∥C̄   k +1
+                                                            − M̄   k +1
+                                                                          ∥∗ + ∑ ∥ Hik+1 − H̄ k+1 ∥∗ .
+                                                                              N i =1
+
+Furthermore, letting rmax := min{m,n}, we have the conversion bound
+
+                               1 N
+                                                                       r
+                                                                           rmax
+                               N i∑
+                                     ∥ Hik+1 − H̄ k+1 ∥∗ ≤                      ∥H̃k+1 ∥ F .                    (4.44)
+                                  =1
+                                                                            N
+
+Also,
+                                                            √
+                              ∥C̄ k+1 − M̄k+1 ∥∗ ≤              rmax ∥C̄ k+1 − M̄k+1 ∥ F .                      (4.45)
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                               23
+
+
+Proof. Step 1: a four-term decomposition. Fix k ≥ 0 and an agent i ∈ [ N ]. Using
+Lemma 4.5, we have H̄ k+1 = M̄k+1 . Therefore, by repeated addition/subtraction and the
+triangle inequality,
+
+∥∇ f ( X̄ k )− Hik+1 ∥∗ ≤ ∇ f ( X̄ k )−∇f(Xk )             + ∇f(Xk )− C̄ k+1
+                                                       ∗                          ∗
+                          +∥C̄ k+1 − M̄k+1 ∥∗ +∥ H̄ k+1 − Hik+1 ∥∗
+                       = ∇ f ( X̄ k )−∇f(Xk )              +∥ D k ∥∗ +∥C̄ k+1 − M̄k+1 ∥∗ +∥ Hik+1 − H̄ k+1 ∥∗ .
+                                                       ∗
+
+Averaging over i yields
+
+            1 N
+            N i∑
+                  ∥∇ f ( X̄ k )− Hik+1 ∥∗ ≤ ∇ f ( X̄ k )−∇f(Xk ) +∥ D k ∥∗
+               =1                                                ∗
+
+                                                                           1 N
+                                                                           N i∑
+                                                +∥C̄ k+1 − M̄k+1 ∥∗ +            ∥ Hik+1 − H̄ k+1 ∥∗ .
+                                                                              =1
+
+Step 2: bound the first term by disagreement of Xk . Apply Lemma 4.9 to obtain
+
+                                                                   L∗
+                                  ∇ f ( X̄ k )−∇f(Xk )           ≤ √ ∥X̃k ∥ F ,
+                                                               ∗    N
+
+which proves (4.43).
+Step 3: disagreement-to-average conversion for Hk+1 . For each i, by Cauchy–Schwarz
+                           √
+on singular values, ∥ A∥∗ ≤ rmax ∥ A∥ F . Therefore,
+                                 √
+   1 N                               rmax N                                rmax  N
+                                                                       r                                   1/2
+   N i∑                              N i∑                                   N i∑
+         ∥ Hik+1 − H̄ k+1 ∥∗ ≤               ∥ Hik+1 − H̄ k+1 ∥ F ≤                  ∥ Hi
+                                                                                         k +1
+                                                                                              − H̄ k +1 2
+                                                                                                       ∥ F      .
+      =1                                  =1                                      =1
+
+Since H̃k+1 =( I − J )Hk+1 has i-th block Hik+1 − H̄ k+1 , ∥H̃k+1 ∥2F = ∑iN=1 ∥ Hik+1 − H̄ k+1 ∥2F , prov-
+ing (4.44).
+Step 4: nuclear-to-Frobenius conversion for the averaged EMA noise. The same in-
+                √
+equality ∥ A∥∗ ≤ rmax ∥ A∥ F yields (4.45).
+
+Forcing Terms and Disagreement Bounds
+Lemma 4.11 (A uniform bound on the stacked one-step motion). Assume Assumptions 1–
+4 and that the iterates are generated by (3.1) with Yi0 = 0. Define the agentwise average X̄ k :=
+1   N    k             1   ⊤               k               k
+N ∑i =1 Xi , let J : = N 11 , and define X̃ : = ( I − J ) X . Then, for every k ≥ 0,
+                                            √
+                     ∥ X k +1 − X k ∥ F ≤       N ∥ X̄ k+1 − X̄ k ∥ F +∥X̃k+1 ∥ F +∥X̃k ∥ F .               (4.46)
+24                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+                                                                                √
+Consequently, using Lemma 4.2 and Lemma 4.1 (which imply ∥ X̄ k+1 − X̄ k ∥ F ≤ α rmax ), we have
+                         √
+       ∥Xk+1 − Xk ∥ F ≤ α Nrmax +∥X̃k+1 ∥ F +∥X̃k ∥ F ,  rmax := min{m,n}.                (4.47)
+If, moreover, the assumptions and initialization of Lemma 4.7 hold with Uk+1 = msgn(Hk+1 ) (so
+                                        1 v2 λ a
+                                                 √
+that ∥X̃t ∥ F ≤ v1 v2 γt ∥X̃0 ∥ F + 2αv1−  γ       Nrmax for all t), then
+                                    √                          4αv1 v2 λ a √
+              sup ∥Xk+1 − Xk ∥ F ≤ α Nrmax + 2v1 v2 ∥X̃0 ∥ F +               Nrmax .               (4.48)
+              k ≥0                                               1−γ
+
+Proof. Step 1: decompose into average and disagreement parts. Write
+                         Xk+1 − Xk = J (Xk+1 − Xk )+( I − J )(Xk+1 − Xk ).
+Take Frobenius norms and use the triangle inequality:
+                   ∥Xk+1 − Xk ∥ F ≤ ∥ J (Xk+1 − Xk )∥ F +∥( I − J )(Xk+1 − Xk )∥ F .
+Because JZ has all blocks equal to Z̄ := N1 ∑i Zi , we have J (Xk+1 − Xk ) = col{ X̄ k+1 −
+X̄ k ,..., X̄ k+1 − X̄ k } and hence
+                                                       √
+                                  ∥ J (Xk+1 − Xk )∥ F = N ∥ X̄ k+1 − X̄ k ∥ F .
+Moreover, ( I − J )(Xk+1 − Xk ) = X̃k+1 − X̃k , so
+                           ∥( I − J )(Xk+1 − Xk )∥ F ≤ ∥X̃k+1 ∥ F +∥X̃k ∥ F .
+Combining the last three displays yields (4.46).
+Step 2: bound the average motion in Frobenius norm. By Lemma 4.2, X̄ k+1 − X̄ k =
+−αS̄k+1 , where S̄k+1 = N1 ∑iN=1 Sik+1 and Sik+1 = msgn( Hik+1 ). By Lemma 4.1(2), ∥Sik+1 ∥ F ≤
+√                                                                            √
+   rmax . By convexity of the Frobenius norm, ∥S̄k+1 ∥ F ≤ N1 ∑i ∥Sik+1 ∥ F ≤ rmax . Hence
+                       √
+∥ X̄ k+1 − X̄ k ∥ F ≤ α rmax . Substituting this into (4.46) yields (4.47).
+Step 3: plug in the SUDA consensus bound.               Under Lemma 4.7 with Muon directions,
+                  t                     2αv1 v2 λ a √
+                                  0
+for any t ≥ 0, ∥X̃ ∥ F ≤ v1 v2 ∥X̃ ∥ F + 1−γ          Nrmax since γt ≤ 1. Plugging this into (4.47)
+and taking the supremum over k yields (4.48).
+
+Lemma 4.12 (Bounding the gradient-difference forcing term). Assume Assumptions 2
+and 3. Let Xk be any (possibly random) stacked iterates and let Gk = col{ G1k ,...,GN    k } be the
+
+stochastic gradients with Gi = ∇ Fi ( Xi ;ξ i ). Define the stacked noise ∆i := Gi −∇ f i ( Xik ) and
+                               k          k  k                                  k      k
+
+∆k := col{∆1k ,...,∆kN }. Let J := N1 11⊤ and Z̃k := ( I − J )Zk . Then for any k ≥ 1,
+
+                        E ∥G̃k − G̃k−1 ∥2F ≤ 2L2∗ E ∥Xk − Xk−1 ∥2F + 8Nσ2 .
+                                                                    
+                                                                                               (4.49)
+
+In particular, if Lemma 4.11 holds so that ∥Xt − Xt−1 ∥ F ≤ BX for all t ≥ 1, then
+                           sup E ∥G̃k − G̃k−1 ∥2F ≤ 2L2∗ BX  2
+                                                               + 8Nσ2 .
+                                                 
+                                                                                                   (4.50)
+                             k ≥1
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                           25
+
+
+Proof. Fix k ≥ 1. Decompose
+
+                           Gk − Gk−1 = ∇f(Xk )−∇f(Xk−1 ) + ∆k − ∆k−1 ,
+                                                                   
+
+
+where ∇f(Xk ) := col{∇ f 1 ( X1k ),..., ∇ f N ( X N
+                                                  k )}. Since I − J is an orthogonal projection,
+
+∥Z̃∥ F ≤ ∥Z∥ F for all stacked Z. Therefore, using ∥U + V ∥2F ≤ 2∥U ∥2F + 2∥V ∥2F ,
+
+                   ∥G̃k − G̃k−1 ∥2F = ∥( I − J )(Gk − Gk−1 )∥2F ≤ ∥Gk − Gk−1 ∥2F
+                                     ≤ 2 ∥∇f(Xk )−∇f(Xk−1 )∥2F + 2 ∥∆k − ∆k−1 ∥2F .
+
+Take expectations.
+   For the first term, by Assumption 2, for each i we have
+
+∥∇ f i ( Xik )−∇ f i ( Xik−1 )∥ F ≤ ∥∇ f i ( Xik )−∇ f i ( Xik−1 )∥∗ ≤ L∗ ∥ Xik − Xik−1 ∥ ≤ L∗ ∥ Xik − Xik−1 ∥ F .
+
+Squaring and summing over i yields ∥∇f(Xk )−∇f(Xk−1 )∥2F ≤ L2∗ ∥Xk − Xk−1 ∥2F .
+   For the second term, use ∥ A − B∥2F ≤ 2∥ A∥2F + 2∥ B∥2F blockwise:
+
+                                       N                        N                N
+                  ∥∆k − ∆k−1 ∥2F = ∑ ∥∆ik − ∆ik−1 ∥2F ≤ 2 ∑ ∥∆ik ∥2F + 2 ∑ ∥∆ik−1 ∥2F .
+                                      i =1                     i =1             i =1
+
+Taking expectations and using Assumption 3 (unconditional version of the conditional
+variance bound) gives E∥∆it ∥2F ≤ σ2 for all i,t, and hence E∥∆k − ∆k−1 ∥2F ≤ 4Nσ2 .
+   Combining the above bounds proves (4.49). Finally, if ∥Xk − Xk−1 ∥ F ≤ BX holds uni-
+formly, then (4.50) follows immediately.
+
+Lemma 4.13 (A bound on the EMA increment disagreement). Assume Assumption 3. Let
+the iterates be generated by (3.1) with the EMA initialization M0 = G0 (as in Algorithm 1).
+Let β ∈ [0,1). Define J := N1 11⊤ and Z̃k := ( I − J )Zk . For k ≥ 1 define the EMA increment
+Vk := Mk − Mk−1 and its disagreement Ṽk := ( I − J )Vk . Then V1 = 0 and for all k ≥ 1,
+
+                     Ṽk+1 = β Ṽk +(1 − β) G̃k − G̃k−1 ,               G̃k := ( I − J )Gk .
+                                                       
+                                                                                                           (4.51)
+
+Consequently, for any η > 0 and all k ≥ 1,
+
+                 ∥Ṽk+1 ∥2F ≤ (1 + η ) β2 ∥Ṽk ∥2F +(1 + 1/η )(1 − β)2 ∥G̃k − G̃k−1 ∥2F .                  (4.52)
+
+In particular, if there exists a constant BG such that supk≥1 E∥G̃k − G̃k−1 ∥2F ≤ BG
+                                                                                   2 , then
+
+
+
+                                                                      2(1 + β2 ) 2
+                   sup E∥M̃k − M̃k−1 ∥2F = sup E∥Ṽk ∥2F ≤                            2
+                                                                                B ≤ 2BG .                  (4.53)
+                    k ≥1                         k ≥1                  (1 + β )2 G
+26                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Proof. Step 1: derive the increment recursion. For k ≥ 1, subtract the EMA updates at
+times k and k − 1:
+
+                        Mk+1 − Mk = β(Mk − Mk−1 )+(1 − β)(Gk − Gk−1 ).
+
+This is exactly Vk+1 = βVk +(1 − β)(Gk − Gk−1 ). Applying ( I − J ) to both sides gives (4.51).
+Moreover, since M0 = G0 , we have M1 = βM0 +(1− β)G0 = M0 and hence V1 = M1 − M0 = 0.
+Step 2: square and apply Young’s inequality. From (4.51) and ∥U + V ∥2F ≤ (1 + η )∥U ∥2F +
+(1 + 1/η )∥V ∥2F , with U = βṼk and V = (1 − β)(G̃k − G̃k−1 ), we get (4.52).
+Step 3: uniform bound under a uniform forcing bound.                              Assume supk≥1 E∥G̃k −
+                                                     1− β2                           1+ β2
+G̃k−1 ∥2F ≤ BG
+             2 . For β ∈ (0,1), pick η : =
+                                           2β2
+                                               so that (1 + η ) β2 =                   2 = : q ∈ (0,1) and
+           1+ β2
+1 + 1/η = 1− β2 . Taking expectations in (4.52) gives, for all k ≥ 1,
+
+                                                                         1 + β2 2
+                            E∥Ṽk+1 ∥2F ≤ qE∥Ṽk ∥2F +(1 − β)2                 B .
+                                                                         1 − β2 G
+
+Unrolling this recursion and using Ṽ1 = 0 yields, for all k ≥ 1,
+
+                                              1 + β 2 k −1 t 2              2 1+ β
+                                                                                    2 1
+
+                                              1 − β2 t∑
+                   E∥Ṽk+1 ∥2F ≤ (1 − β)2                 q B G ≤ ( 1 − β )              B2 .
+                                                                                    2 1−q G
+                                                       =0                     1 − β
+
+                 1− β2
+Since 1 − q =      2 , the last display becomes
+
+                                         2(1 + β2 )(1 − β)2 2 2(1 + β2 ) 2
+                         E∥Ṽk+1 ∥2F ≤                     BG =          B .
+                                             (1 − β2 )2         (1 + β )2 G
+Taking the supremum over k gives (4.53) for β ∈(0,1). For β = 0, V1 = 0 and (4.51) reduces
+to Ṽk+1 = G̃k − G̃k−1 , hence supk≥1 E∥Ṽk ∥2F ≤ BG
+                                                   2 ≤ 2B2 .
+                                                         G
+
+Lemma 4.14 (A uniform bound on the gradient-tracking            disagreement). Assume Assump-
+                         k + 1      k     k + 1    k
+                                                     
+tion 1(1) holds. Let H = W H + M − M as in (3.1). Let λ:= ρ(W − J )∈(0,1) and define
+Z̃k := ( I − J )Zk . Assume that there exists a constant BM such that
+
+                                      sup E∥M̃k+1 − M̃k ∥2F ≤ B2M .                                 (4.54)
+                                       k ≥0
+
+Then for all k ≥ 0,
+                                        1 + λ 2  k +1                 2λ2 (1 + λ2 ) 2
+                       E∥H̃k+1 ∥2F ≤                      E∥H̃0 ∥2F +                B .            (4.55)
+                                              2                          (1 − λ2 )2 M
+In particular,
+                                                               2λ2 (1 + λ2 ) 2
+                             sup E∥H̃k ∥2F ≤ E∥H̃0 ∥2F +                    B .                     (4.56)
+                             k ≥0                               (1 − λ2 )2 M
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                    27
+
+
+Proof. From Lemma 4.6, for any η > 0,
+
+                      ∥H̃k+1 ∥2F ≤ (1 + η )λ2 ∥H̃k ∥2F +(1 + 1/η )λ2 ∥M̃k+1 − M̃k ∥2F .
+
+             −λ   2                    1+ λ       2                         2λ    1+ λ    2      2
+Choose η := 12λ                     2
+                2 so that (1 + η ) λ =   2 = : q ∈ (0,1) and 1 + 1/η = 1 + 1−λ2 = 1−λ2 . Taking
+expectations and using (4.54) yields
+
+                                                                  1 + λ2 2
+                                E∥H̃k+1 ∥2F ≤ qE∥H̃k ∥2F + λ2           B .
+                                                                  1 − λ2 M
+
+Unrolling this linear recursion gives
+
+                                                                 1 + λ2 k t 2
+                                                                 1 − λ2 t∑
+                           E∥H̃k+1 ∥2F ≤ qk+1 E∥H̃0 ∥2F + λ2                q BM .
+                                                                         =0
+
+Since ∑kt=0 qt ≤ 1−1 q = 1−2λ2 , we get
+
+                                              1 + λ2 2                                2λ2 (1 + λ2 ) 2
+      E∥H̃k+1 ∥2F ≤ qk+1 E∥H̃0 ∥2F + λ2                    B 2
+                                                               = q k +1
+                                                                        E ∥ H̃ 0 2
+                                                                                ∥   +              B ,
+                                              1 − λ2 1 − λ2 M                     F
+                                                                                       (1 − λ2 )2 M
+
+which is (4.55). Taking the supremum over k yields (4.56).
+
+Lemma 4.15 (An explicit bound on the EMA increment disagreement). Assume Assump-
+tions 2 and 3. Let the iterates be generated by (3.1) with EMA parameter β ∈ [0,1) and initial-
+ization M0 = G0 (as in Algorithm 1). Assume further that Lemma 4.11 holds so that there exists
+BX > 0 with
+                                 ∥ X k − X k −1 ∥ F ≤ BX , ∀k ≥ 1.                      (4.57)
+Define
+                                              2
+                                             BG := 2L2∗ BX
+                                                         2
+                                                           + 8Nσ2 .                                  (4.58)
+Then the forcing term in Lemma 4.6 admits the uniform bound
+
+                                      sup E∥M̃k+1 − M̃k ∥2F ≤ 2BG
+                                                                2
+                                                                  .                                  (4.59)
+                                      k ≥0
+
+
+Proof. Lemma 4.12 and (4.57) imply supk≥1 E∥G̃k − G̃k−1 ∥2F ≤ BG  2 . Then Lemma 4.13 yields
+
+supk≥1 E∥M̃k − M̃k−1 ∥2F ≤ 2BG
+                             2 . Renaming the index (k 7 → k + 1) gives (4.59).
+
+
+Proofs of the Main Convergence Results
+Proposition 4.3 (A closed stationarity bound). Assume Assumptions 1–4. Let the iterates be
+generated by (3.1) with initialization Hi0 = Mi0 = Gi0 and Yi0 = 0 for all i ∈[ N ]. Assume additionally
+that Y0 =0 and the stability condition in Lemma 4.7 hold (so that the constants γ ∈(0,1), v1 ,v2 ≥1,
+28                                 ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+and λ a ≥ 0 in Lemma 4.7 exist). Let K ≥ 1. Define ∆0 := E[ f ( X̄ 0 )]− f inf and rmax := min{m,n}.
+Then
+
+        1 K −1                  ∆0 L ∗ α
+          ∑
+        K k =0
+               E ∥∇ f ( X̄ k )∥∗ ≤
+                                   αK
+                                      +
+                                        2
+                                           + 2 Tcons (K )+ 2 Tdrift + 2 Tnoise (K )+ 2 Tgt ,      (4.60)
+
+
+where
+
+                          L ∗ K −1            L∗ v v2 ∥X̃0 ∥ F 2L∗ αv1 v2 λ a √
+         Tcons (K ) := √ ∑ E∥X̃k ∥ F ≤ √1                     +                 rmax ,            (4.61)
+                       K N k =0                K N 1−γ            1−γ
+                                             "                                       #
+                                       βL  ∗       4v  v
+                                                      1 2        8αv   v  λ
+                                                                      1 2 a   √
+             Tdrift := sup E∥ D k ∥∗ ≤         α + √ ∥X̃0 ∥ F +                 rmax ,            (4.62)
+                       k ≥0            1 − β           N            1 − γ
+
+                      1 K −1
+                      K k∑
+        Tnoise (K ) :=       E∥C̄ k+1 − M̄k+1 ∥∗
+                          =0
+                               "s                           #
+                       √            1− β σ        σ      1
+                     ≤ rmax              √ + √                ,                                   (4.63)
+                                    1+ β N K N 1− β
+                      r                          r       s
+                         rmax                      r max               4λ2 (1 + λ2 ) 2
+               Tgt :=         sup E∥H̃k+1 ∥ F ≤            E∥H̃0 ∥2F +              B ,           (4.64)
+                          N k ≥0                     N                  (1 − λ2 )2 G
+
+with λ := ρ(W − J ) ∈ (0,1) and
+
+      2
+                                          √                          4αv1 v2 λ a √
+     BG := 2L2∗ BX
+                 2
+                   + 8Nσ2 ,        BX := α Nrmax + 2v1 v2 ∥X̃0 ∥ F +               Nrmax .        (4.65)
+                                                                       1−γ
+
+Proof. Start from Proposition 4.2:
+
+              1 K −1                    ∆ 0 L ∗ α 2 K −1 h 1 N                           i
+                ∑
+              K k =0
+                     E∥∇ f ( X̄ k )∥∗ ≤
+                                        αK
+                                           +
+                                             2
+                                                 + ∑E
+                                                  K k =0     ∑
+                                                           N i =1
+                                                                  ∥∇ f ( X̄ k )− Hik+1 ∥∗ .
+
+Apply Lemma 4.10 to the averaged tracking error inside the expectation and sum over k.
+This yields the decomposition into four contributions.
+    For the consensus term, apply Lemma 4.7 (with Muon directions) and sum the geo-
+metric series to obtain (4.61).
+    For the drift term, use the uniform bound from Lemma 4.8, giving (4.62).
+    For the stochastic EMA term, use Lemma 4.4 and the nuclear-to-Frobenius conversion
+(4.45) from Lemma 4.10; averaging βk+1 over k = 0,...,K − 1 yields (4.63).
+    For the gradient-tracking disagreement
+                                         q     term, use (4.44) from Lemma 4.10 and
+Jensen/Cauchy–Schwarz: E∥H̃k+1 ∥ F ≤ E∥H̃k+1 ∥2F . Then apply Lemma 4.14 together
+with Lemma 4.15. Finally, invoke Lemma 4.11 to bound BX as stated in (4.65). Collecting
+terms yields (4.60).
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                                   29
+
+                                                         p
+Lemma 4.16 (Averaged tracking error bound with 1 − β noise scaling). Assume Assump-
+tions 1–3. Let the iterates be generated by (3.1) with initialization Hi0 = Mi0 for all i ∈ [ N ]. Define
+the network averages
+
+                              1 N k                           1 N k                          1 N k
+                              N i∑                            N i∑                           N i∑
+                    X̄ k :=         Xi ,            H̄ k :=         Hi ,          M̄k :=           Mi .
+                                 =1                              =1                             =1
+
+Define the (average) tracking error
+                                            k
+                                           Egt := H̄ k −∇ f ( X̄ k ) ∈ Rm×n .
+
+Let
+                             1 N k                         1 N
+                             N i∑                          N i∑
+                   Ḡ k :=         Gi ,           ḡk :=         ∇ f i ( Xik ),        ¯ k := Ḡ k − ḡk .
+                                                                                       ∆
+                                =1                            =1
+Then for every integer K ≥ 1 we have
+
+         1 K −1                                                            L ∗ 1 K −1
+                                            q
+         K k∑                                                            1 − β K k∑
+                                                1− β σ
+                E ∥ Egt
+                     k +1
+                          ∥F ≤                      √
+                                                1+ β N               +         ·      E ∥ X̄ k+1 − X̄ k ∥ F
+            =0                              |     {z     }√                       =0
+                                                                         |            {z                  }
+                                     stochastic noise ∼ √σ    1− β
+                                                          N                          drift ∼ 1L−∗ αβ
+                                                                                                                 (4.66)
+                                      1 K −1                       1 K −1
+                                     + ∑ E ∥ ḡk −∇ f ( X̄ k )∥ F + ∑ βk+1 E ∥ Egt
+                                                                                0
+                                                                                   ∥F .
+                                      K k =0                       K k =0
+                                      |         {z              }
+                                                  consensus bias
+
+Moreover, under Assumption 2, the consensus bias can be bounded by
+                                         L∗
+                ∥ ḡk −∇ f ( X̄ k )∥ F ≤ √ ∥X̃k ∥ F ,                    X̃k := ( I − J )Xk , J := N1 11⊤ .      (4.67)
+                                          N
+Proof. By Lemma 4.5, H̄ k = M̄k for all k ≥ 0. Averaging the EMA update gives
+
+                                              M̄k+1 = β M̄k +(1 − β) Ḡ k .                                      (4.68)
+                  k = M̄ k −∇ f ( X̄ k ) and (4.68),
+Fix k ≥ 0. Using Egt
+        k +1
+       Egt   = M̄k+1 −∇ f ( X̄ k+1 ) = β M̄k +(1 − β) Ḡ k −∇ f ( X̄ k+1 )
+             = β( M̄k −∇ f ( X̄ k ))+ ∇ f ( X̄ k )−∇ f ( X̄ k+1 ) +(1 − β) Ḡ k −∇ f ( X̄ k )
+                                                                                             
+
+                  k
+                    +(1 − β)∆¯ k +(1 − β)( ḡk −∇ f ( X̄ k )) + ∇ f ( X̄ k )−∇ f ( X̄ k+1 ) .
+                                                                                           
+             = βEgt                                                                                              (4.69)
+                      | {z } |                   {z          } |            {z             }
+                             noise                 consensus bias                              drift
+
+                   k = Ak + Bk . Define A0 : = 0 and B0 : = E0 , and for k ≥ 0 define
+Step 1: decompose Egt                                        gt
+
+                        ¯ k +( ḡk −∇ f ( X̄ k )) ,
+   Ak+1 := βAk +(1 − β) ∆                                                 Bk+1 := βBk + ∇ f ( X̄ k )−∇ f ( X̄ k+1 ) .
+                                                                                                                  
+30                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+                     k = Ak + Bk for all k.
+Then (4.69) implies Egt
+Step 2: bound the stochastic part (noise). Unrolling the A-recursion and keeping only
+the noise contribution yields
+                                                               k
+                                         k +1
+                                        Anoise = (1 − β) ∑ βk−t ∆¯ t .
+                                                              t =0
+
+By Assumption 3, conditional on F t the noises are independent across agents and satisfy
+   ¯ t | F t ] = 0 and E[∥∆
+E[ ∆                      ¯ t ∥2 | F t ] ≤ σ2 /N. Therefore cross terms vanish, and
+                              F
+                                            v                               s
+                                            u k
+                 q
+                                                                σ 2             1       σ
+                                                                                           q
+                                                                                               β σ
+                     E∥ Anoise ∥ F ≤ (1 − β) ∑ β                                     · √ = 11−
+                                            u
+E∥ Anoise
+    k +1
+          ∥F ≤           k +1 2             t      2 ( k − t ) · ≤ (1 − β )        2         +   √ .
+                                              t =0              N             1− β       N     β
+                                                                                                  N
+
+Step 3: bound the drift part. Unrolling Bk+1 = βBk + dk with dk := ∇ f ( X̄ k )−∇ f ( X̄ k+1 )
+gives
+                                                                   k
+                                       B k +1 = β k +1 B 0 + ∑ β k − t d t .
+                                                               t =0
+Thus, by triangle inequality,
+                                                                        k
+                            E ∥ B k +1 ∥ F ≤ β k +1 E ∥ B 0 ∥ F + ∑ β k − t E ∥ d t ∥ F .
+                                                                       t =0
+
+Now average over k = 0,...,K − 1 and exchange the order of summation:
+
+             1 K −1 k k − t               1 K −1             K −1
+                                                                            1     1 K −1
+             K k∑  ∑    β   E ∥ d t
+                                    ∥ F =
+                                          K ∑    E ∥ d t
+                                                         ∥ F ∑    β k−t
+                                                                        ≤
+                                                                          1 − β
+                                                                                ·
+                                                                                  K ∑ E∥ d t ∥ F .
+                =0 t =0                     t =0             k=t                    t =0
+
+Therefore,
+                 1 K −1                  1 K −1 k +1                 1     1 K −1
+                 K k∑                      ∑                                 ∑ E∥ d t ∥ F .
+                        E ∥ B k +1
+                                   ∥ F ≤        β    E ∥ B 0
+                                                             ∥ F +       ·
+                    =0
+                                         K k =0
+                                                                   1 − β   K t =0
+
+Under Assumption 2, ∥dt ∥ F ≤ ∥dt ∥∗ ≤ L∗ ∥ X̄ t+1 − X̄ t ∥, and ∥·∥ ≤ ∥·∥ F . This yields the drift
+term in (4.66).
+Step 4: bound the consensus bias. The consensus-bias contribution in Ak+1 is
+                                                  k
+                                   k +1
+                                        = (1 − β) ∑ βk−t ḡt −∇ f ( X̄ t ) .
+                                                                          
+                                  Abias
+                                                    t =0
+
+By triangle inequality,
+                                                       k
+                           E∥ Abias
+                               k +1
+                                    ∥ F ≤ (1 − β) ∑ βk−t E∥ ḡt −∇ f ( X̄ t )∥ F .
+                                                      t =0
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                           31
+
+
+Now average over k = 0,...,K − 1 and exchange summations:
+
+   1 K −1                1 K −1                                      K −1
+                                                                                  1 K −1
+   K k∑                    ∑                                         ∑              ∑ E∥ ḡt −∇ f (X̄ t )∥F ,
+                                                                            k−t
+          E ∥ A k +1
+                     ∥
+                bias F ≤        E ∥ ḡ t
+                                         −∇ f ( X̄ t
+                                                     )∥ F ·( 1 − β )      β     ≤
+      =0
+                         K t =0                                      k=t
+                                                                                  K t =0
+
+where we used (1 − β) ∑∞    s
+                       s=0 β = 1. This yields the bias term in (4.66).
+                                    k +1
+   Combining Steps 2–4 and using Egt     = Ak+1 + Bk+1 proves (4.66). Finally, (4.67) follows
+from the same argument as Lemma 4.9:
+
+                              1 N                                      1 N                      L∗
+   ∥ ḡk −∇ f ( X̄ k )∥ F =     ∑    ∇ f i ( Xik )−∇ f i ( X̄ k )     ≤ ∑ L∗ ∥ Xik − X̄ k ∥ F ≤ √ ∥X̃k ∥ F .
+                                                                  
+                              N i =1                                F  N i =1                    N
+
+
+Lemma 4.17 (Gradient-tracking disagreement bound (no heterogeneity term)). Assume
+Assumptions 1(1), 2, and 3. Let (Xk ,Mk ,Hk ) be generated by (3.1). Define the disagreement
+operator Z̃ := ( I − J )Z with J := N1 11⊤ . Let λ := ρ(W − J ) ∈ (0,1). Then, for every integer K ≥ 1,
+
+          1 K −1                    λ                     λ 1 K −1
+            ∑
+          K k =0
+                 E ∥H̃k+1 ∥ F ≤
+                                K (1 − λ )
+                                           E ∥H̃0 ∥ F +
+                                                        1 − λ K k∑
+                                                             ·      E ∥M̃k+1 − M̃k ∥ F .                 (4.70)
+                                                                 =0
+
+Moreover, with rmax := min{m,n},
+
+       1 K −1                      E ∥∇
+                                      ff(X0 )− M̃0 ∥ F              √
+         ∑
+       K k =0
+              E ∥M̃k+1 − M̃k ∥ F ≤
+                                          K
+                                                       + 2(1 − β ) σ N
+                                                                                      !                  (4.71)
+                                                 √          2 K −1         1
+                                       + L∗ α        Nrmax + ∑ E ∥X̃k ∥ F + E ∥X̃K ∥ F .
+                                                            K k =0         K
+
+Combining (4.70)–(4.71) yields
+                                                                "
+         1 K −1                       λ                       λ   E ∥∇
+                                                                     ff(X0 )− M̃0 ∥ F
+         K k∑
+                E ∥ H̃ k +1
+                            ∥ F ≤            E ∥ H̃ 0
+                                                      ∥ F +
+            =0
+                                  K (1 − λ )                1−λ          K
+                                                                     !                #                  (4.72)
+                         √            2 K −1                1                      √
+              + L∗ α Nrmax + ∑ E ∥X̃ ∥ F + E ∥X̃ ∥ F + 2(1 − β) σ N .
+                                                   k              K
+                                      K k =0                K
+
+In particular, if Lemma 4.7 holds with Muon directions, then
+                                                      "
+    1 K −1                    λ                    λ    E ∥∇
+                                                           ff(X0 )− M̃0 ∥ F       √
+      ∑
+    K k =0
+           E ∥H̃k+1 ∥ F ≤
+                          K (1 − λ )
+                                     E ∥H̃0 ∥ F +
+                                                  1−λ          K
+                                                                            + L∗ α Nrmax
+
+           2L∗ v1 v2 (1 +∥ B2 ∥) 0        L∗ v1 v2 (1 +∥ B2 ∥) K 0        2L∗ αv1 v2 λ a √
+         +                      ∥X̃ ∥ F +                     γ ∥X̃ ∥ F +                  Nrmax
+                K (1 − γ )                          K                      (1 − γ ) K
+                                                     #                                        (4.73)
+           4L∗ αv1 v2 λ a √                     √
+         +                  Nrmax + 2(1 − β) σ N .
+              1−γ
+32                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Proof. Step 1: unroll the GT disagreement recursion. From Lemma 4.6 (non-squared
+form),
+             ∥H̃k+1 ∥ F ≤ λ ∥H̃k +(M̃k+1 − M̃k )∥ F ≤ λ ∥H̃k ∥ F + λ ∥M̃k+1 − M̃k ∥ F .
+Unrolling this scalar recursion and summing the resulting geometric series yields (4.70).
+Step 2: bound the average EMA increment without a heterogeneity term. Define the
+local EMA tracking error
+
+                     Ek := ∇f(Xk )− Mk ,        Ẽk := ( I − J )Ek = ∇
+                                                                     ff(Xk )− M̃k .
+
+From the EMA update Mk+1 = βMk +(1 − β)Gk and the decomposition Gk = ∇f(Xk )+ ∆k ,
+we have
+
+Ek+1 =∇f(Xk+1 )− βMk −(1− β)∇f(Xk )−(1− β)∆k = βEk + ∇f(Xk+1 )−∇f(Xk ) −(1− β)∆k .
+                                                                      
+
+
+Applying ( I − J ) and using its non-expansiveness yields the recursion
+
+                 ∥Ẽk+1 ∥ F ≤ β ∥Ẽk ∥ F +∥∇          ff(Xk )∥ F +(1 − β)∥∆
+                                           ff(Xk+1 )− ∇                   ˜ k ∥F .                (4.74)
+
+Unrolling (4.74) and averaging over k = 0,...,K − 1 gives
+
+     1 K −1              E ∥Ẽ0 ∥ F       1      K −1                              K −1
+                                                                    ff(Xk )∥ F + 1 ∑ E ∥∆
+       ∑
+     K k =0
+            E ∥Ẽk ∥ F ≤            +            ∑
+                         K ( 1 − β ) K ( 1 − β ) k =0
+                                                      E ∥∇
+                                                         ff(Xk+1 )− ∇
+                                                                                 K k =0
+                                                                                        ˜ k ∥F ,
+
+
+where we used the weight identity (1 − β) ∑∞            s
+                                                s=0 β = 1.
+   Next, since each f i is L∗ -smooth in the sense of Assumption 2, we have for each i
+and any X,Y that ∥∇ f i ( X )−∇ f i (Y )∥ F ≤ ∥∇ f i ( X )−∇ f i (Y )∥∗ ≤ L∗ ∥ X − Y ∥ ≤ L∗ ∥ X − Y ∥ F .
+Stacking and using non-expansiveness of ( I − J ) yields
+
+                      ff(Xk+1 )− ∇
+                     ∥∇           ff(Xk )∥ F ≤ L∗ ∥Xk+1 − Xk ∥ F .
+                                                                √
+Moreover, by Assumption 3 and Jensen, E ∥∆
+                                         ˜ k ∥ F ≤ E ∥∆k ∥ F ≤ σ N. Therefore,
+
+                1 K −1              E ∥Ẽ0 ∥ F   L ∗ 1 K −1                  √
+                  ∑
+                K k =0
+                       E ∥Ẽk ∥ F ≤            +     · ∑ E ∥Xk+1 − Xk ∥ F + σ N.
+                                    K ( 1 − β ) 1 − β K k =0
+                                                                                                  (4.75)
+
+
+                                                              ∆k + Ẽk . Thus, using triangle
+   Finally, note that M̃k+1 − M̃k =(1 − β) G̃k − M̃k =(1 − β) ˜
+                                                                     
+
+inequality and (4.75),
+
+            1 K −1                              1 K −1                     K −1
+                                                       ˜ k ∥ F +(1 − β)· 1 ∑ E ∥Ẽk ∥ F
+              ∑
+            K k =0
+                   E ∥M̃k+1 − M̃k ∥ F ≤ (1 − β)· ∑ E ∥∆
+                                                K k =0                   K k =0
+
+                         √    E ∥Ẽ0 ∥ F       1 K −1                       √
+             ≤ (1 − β ) σ N +            + L∗ · ∑ E ∥Xk+1 − Xk ∥ F +(1 − β)σ N.
+                                 K             K k =0
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                             33
+
+
+It remains to bound the average primal increment. Write Xk = X̄k + X̃k with X̄k := JXk . Then
+
+
+                            ∥Xk+1 − Xk ∥ F ≤ ∥X̄k+1 − X̄k ∥ F +∥X̃k+1 − X̃k ∥ F .
+
+Since X̄k√is a stacked consensus variable with all blocks equal to X̄ k , we have ∥X̄k+1 −
+                                                                       √
+X̄k ∥ F = N ∥ X̄ k+1 − X̄ k ∥ F . By Lemma 4.2, ∥ X̄ k+1 − X̄ k ∥ F ≤ α rmax . Moreover, ∥X̃k+1 −
+X̃k ∥ F ≤ ∥X̃k+1 ∥ F +∥X̃k ∥ F . Averaging over k = 0,...,K − 1 yields
+
+
+                1 K −1                     √       2 K −1         1
+                  ∑
+                K k =0
+                       E ∥Xk+1 − Xk ∥ F ≤ α Nrmax + ∑ E ∥X̃k ∥ F + E ∥X̃K ∥ F .
+                                                   K k =0         K
+
+
+Substituting into the previous display gives (4.71).
+
+Step 3: plug into the GT bound and (optionally) use Lemma 4.7. Combining Step 1 and
+Step 2 yields (4.72). If Lemma 4.7 holds with Muon directions, then ∥X̃k ∥ F ≤ v1 v2 γk (1 +
+                               √
+                      1 v2 λ a
+∥ B2 ∥)∥X̃0 ∥ F + 2αv1−  γ       Nrmax . Averaging and using K1 ∑kK=−01 γk ≤ K(11−γ) gives
+
+
+                   1 K −1              v1 v2 (1 +∥ B2 ∥) 0        2αv1 v2 λ a √
+                     ∑
+                   K k =0
+                          E ∥X̃k ∥ F ≤
+                                           K (1 − γ )
+                                                        ∥X̃ ∥ F +
+                                                                    1−γ
+                                                                                Nrmax ,
+
+
+which implies (4.73).
+
+
+
+Proposition 4.4 (Transient complexity with explicit (fast) network-dependent decay). As-
+sume Assumptions 1–4. Let the iterates be generated by (3.1) with initialization Y0 = 0, M0 = G0 ,
+and H0 = M0 as in Algorithm 1. Assume also the stability condition in Lemma 4.7 so that its
+constants (γ,v1 ,v2 ,λ a ) exist. Fix a horizon K ≥ 1 and choose
+
+                    α0                   b0
+            α :=        ,       1 − β := √ ,        with fixed constants α0 > 0, b0 ∈ (0,1].
+                   K3/4                   K
+
+Let rmax := min{m,n} and ∆0 := E[ f ( X̄ 0 )]− f inf . Let λ := ρ(W − J ) ∈ (0,1). Define the average
+tracking error
+
+
+                                                            1 N k                  1 N k
+                                                            N i∑                   N i∑
+                     k
+                    Egt := H̄ k −∇ f ( X̄ k ),    H̄ k :=         Hi ,   X̄ k :=         Xi .
+                                                               =1                     =1
+34                                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Then
+                                              √                        !
+       1 K −1                            ∆0 2σ rmax p      2L∗ α0 rmax
+       K k∑
+              E ∥∇ f ( X̄ k )∥∗ ≤           + √       b0 +               K −1/4
+          =0
+                                         α0     N              b0
+                                       |               {z                     }
+                                                         topology-free leading term
+                                                                                       !
+           5          4L∗ α0 v1 v2 λ a         2λ               8λ L∗ α0 v1 v2 λ a
+       +     L ∗ α0 +                  rmax +     L∗ α0 rmax +                     rmax K −3/4
+           2              1−γ                 1−λ              1−λ     1−γ
+         |                                         {z                                        }
+                                                network-dependent drift terms (no σ)
+                √                           !
+           2 rmax               4λ     √
+       +              0
+                  E∥ Egt ∥ F +     b0 σ rmax K −1/2
+             b0                1−λ
+         |                     {z                 }
+                            higher-order stochastic terms                                                              (4.76)
+               2L∗ v1 v2 (1 +∥ B2 ∥) √                  4λ L∗ v1 v2 (1 +∥ B2 ∥) √
+       +                    √          rmax ∥X̃0 ∥ F +                  √         rmax ∥X̃0 ∥ F
+                   (1 − γ ) N                          1 − λ   (1 − γ ) N
+                                        2
+                                                                   r
+                  2λ L∗ v1 v2 (1 +∥ B ∥) √              0     2λ       rmax    ff(X0 )− M̃0 ∥ F
+               +                √             rmax ∥X̃ ∥ F +                E∥ ∇
+                 1−λ              N                          1 − λ      N
+                        r                  !
+                  2λ        rmax
+               +                 E∥H̃0 ∥ F      K −1
+                 1−λ         N                 |{z}
+                                                  init. transients
+             4λ L∗ α0 v1 v2 λ a
+       +                        rmax K −7/4 .
+           1−λ      1−γ
+           |             {z               }
+                    fast transient from α/K
+
+
+In particular,
+                                                    1 K −1
+                                               lim
+                                               K →∞ K
+                                                      ∑ E ∥∇ f (X̄ k )∥∗ = 0.
+                                                      k =0
+
+
+
+Proof. Step 1: start from the telescoping descent inequality. Proposition 4.2 gives
+
+           1 K −1                      ∆ 0 L ∗ α 2 K −1 h 1 N                             i
+           K k∑                                   K k∑    N i∑
+                  E ∥∇ f ( X̄ k
+                                )∥ ∗ ≤    +     +       E       ∥∇ f ( X̄ k
+                                                                            )− Hi
+                                                                                 k +1
+                                                                                      ∥ ∗   .                          (4.77)
+              =0
+                                       αK   2        =0      =1
+
+
+
+Step 2: reduce the tracking mismatch to averaged GT error and GT disagreement. For
+each k,
+
+               h1 N                                  i               √
+                                                                                              r
+                                                                                                  rmax
+                N i∑
+           E            ∥∇ f ( X̄ )− Hik+1 ∥∗
+                                   k
+                                                         ≤ L∗ α +        rmax E∥ Egt
+                                                                                  k +1
+                                                                                       ∥F +            E∥H̃k+1 ∥ F .
+                   =1
+                                                                                                   N
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                             35
+
+
+Averaging over k = 0,...,K − 1 and substituting into (4.77) yields
+
+                 1 K −1                      ∆0 5             √         1 K −1
+                 K k∑                                                     ∑ E∥Egtk+1 ∥F
+                        E ∥∇ f ( X̄ k
+                                      )∥ ∗ ≤    +   L ∗ α + 2   r max ·
+                    =0
+                                             αK   2                     K k =0
+                                                                                               (4.78)
+                                                            K −1
+                                                r
+                                                  rmax 1
+                                                    N K k∑
+                                             +2          ·       E∥H̃k+1 ∥ F .
+                                                              =0
+
+
+Step 3: bound the averaged GT error and the averaged GT disagreement. Lemma 4.16
+gives
+
+              1 K −1                               L∗ 1       K −1
+                                     q
+              K k∑                                            ∑ E∥X̄ k+1 − X̄ k ∥F
+                                         1− β σ
+                     E∥ Egt
+                         k +1
+                              ∥F ≤       1+ β N + 1 − β · K
+                                             √
+                 =0                                           k =0
+                                           K −1
+                                         1                                 1 K −1 k +1
+                                         K k∑                                ∑ β E∥Egt0 ∥F .
+                                     +         E ∥ ḡ k
+                                                        −∇ f ( X̄ k
+                                                                    )∥ F +                     (4.79)
+                                            =0
+                                                                           K k =0
+                                     √
+By Lemma 4.2, ∥ X̄ k+1 − X̄ k ∥ F ≤ α rmax . Moreover, by (4.67) and Lemma 4.7 (Muon case),
+
+                         1 K −1                             L ∗ 1 K −1
+                         K k∑
+                                E ∥ ḡ k
+                                         −∇ f ( X̄ k
+                                                     )∥ F ≤ √   · ∑ E∥X̃k ∥ F .
+                            =0                                N  K k =0
+
+By Lemma 4.7 with Muon directions (using (4.32)), for every k ≥ 0,
+
+                                                                 2αv1 v2 λ a √
+                     ∥X̃k ∥ F ≤ v1 v2 γk (1 +∥ B2 ∥)∥X̃0 ∥ F +                 Nrmax ,
+                                                                   1−γ
+
+and hence, averaging over k = 0,...,K − 1 and using K1 ∑kK=−01 γk ≤ K(11−γ) ,
+
+                  1 K −1             v1 v2 (1 +∥ B2 ∥) 0        2αv1 v2 λ a √
+                    ∑
+                  K k =0
+                         E∥X̃k ∥ F ≤
+                                         (1 − γ ) K
+                                                      ∥X̃ ∥ F +
+                                                                  1−γ
+                                                                              Nrmax .
+
+
+In particular, the primal disagreement is of order O(α) up to an exponentially decay-
+ing/initial transient, and this bound is independent of the gradient noise level σ thanks to
+the uniform boundedness of Muon directions.
+    For the GT disagreement, Lemma 4.17 yields (4.72). In this bound, the stochastic-
+noise contribution enters multiplied by (1 − β) (via the EMA increment), giving a term of
+the form
+                                     λ             √
+                                          (1 − β) σ N,
+                                    1−λ
+which becomes a higher-order term of order (1 − β)σ = O(K −1/2 ) under 1 − β = b0 K −1/2 .
+The remaining deterministic contribution in (4.72) is controlled by smoothness through
+the primal increments and the primal disagreement; under Muon, these increments
+36                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+are O(α). Moreover, Lemma 4.17 contains an additional boundary term of the form
+ K E∥ X̃ ∥ F . Using Lemma 4.7 (Muon case) at time k = K and γ ≤ 1 yields
+L∗      K                                                     K
+
+
+                     1             v1 v2 (1 +∥ B2 ∥) 0        2αv1 v2 λ a √
+                       E∥X̃K ∥ F ≤                  ∥X̃ ∥ F +               Nrmax .
+                     K                     K                  (1 − γ ) K
+
+The first term contributes an additional K −1 initial transient, while the second contributes
+a faster term of order α/K. Substituting the GT disagreement bound (4.72) (together
+with the averaged primal-disagreement bound above) into (4.78) yields the claimed K-
+dependent decomposition.
+Step 4: substitute α = α0 K −3/4 and 1 − β = b0 K −1/2 . Collect powers of K using
+                 ∆0 ∆0 −1/4                                                         α   α0
+                                                               b0 K −1/4 ,             = K −1/4 ,
+                                          p                p
+                   = K      ,                 1− β =
+                 αK α0                                                            1 − β b0
+
+              1 K −1 k +1        1       1                                                 α
+              K k∑
+                    β     ≤             = K −1/2 ,                α = α0 K −3/4 ,            = α0 K −7/4 ,
+                 =0
+                            K ( 1 − β )  b0                                                K
+                                                                     1
+                                   1 − β = b0 K −1/2 ,                 = K −1 .
+                                                                     K
+This yields (4.76).
+
+Corollary 4.1 (Big-O form of the SUDA–Muon convergence rate). Under the assumptions
+of Proposition 4.4 and with the same stepsize and EMA choices α = α0 K −3/4 and 1 − β = b0 K −1/2 ,
+there exists a constant C > 0 (independent of K, N, λ, γ, and σ) such that for all integers K ≥ 1,
+
+  1 K −1                                                                  K −3/4
+    ∑    E ∥∇ f ( X̄ k )∥∗ ≤ C          1 + √σ K −1/4 +
+                          
+  K k =0                              |
+                                              N
+                                              {z    }                    (1 − γ)(1 − λ)
+                                                                         |     {z     }
+                                  dominant topology-free term        network-dependent drift terms
+                                                 σ  −1/2                                  K −1
+                                  +           1+      K                      +       √
+                                                 1−λ                                   N (1 − γ)(1 − λ)                (4.80)
+                                            |      {z    }                           |       {z       }
+                                      higher-order stochastic network term       network-dependent initial transient
+                                                           !
+                                          K −7/4
+                                  +                  .
+                                      (1 − γ)(1 − λ)
+                                      |     {z     }
+                                          fast transient
+
+Equivalently,
+
+     1 K −1                         
+       ∑
+                                                            −3/4
+            E           k
+                                       1 + √σ K −1/4 + (1−Kγ)(1−λ)
+                                              
+              ∥∇ f ( X̄   )∥ ∗   = O
+     K k =0                                  N
+                                                                                                        −7/4
+                                                                                                                        
+                                                                                          K −1
+                                                 + 1 + 1−σ λ K −1/2 + √               N (1−γ)(1−λ)
+                                                                                                   + (1−Kγ)(1−λ)            .
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                       37
+
+
+Proof. Starting from the refined bound (4.76) in Proposition 4.4, note that it decomposes
+into five groups of terms with powers K −1/4 , K −3/4 , K −1/2 , K −1 , and K −7/4 . We upper-
+bound each coefficient by a universal constant times the desired (K, N,1 − λ,1 − γ,σ)-
+dependent factor.
+
+1. K −1/4 term. The coefficient of K −1/4 in (4.76) is
+                                      √
+                                 ∆0 2σ rmax p      2L∗ α0 rmax
+                                    + √       b0 +             ,
+                                 α0     N              b0
+                                                                                     √
+which is bounded by a constant depending only on (∆0 ,L∗ ,rmax ,α0 ,b0 ) times 1 + σ/ N.
+This yields the first term in (4.80).
+
+2. K −3/4 term. The K −3/4 coefficient in (4.76) contains only deterministic drift terms and
+depends on γ and λ via expressions of the form 1/(1 − γ) and λ/(1 − λ). Using 0 < γ < 1
+and 0 < λ < 1, we have 1 ≤ 1/(1 − γ) and λ/(1 − λ) ≤   1/(1 − λ), so the entire coefficient is
+bounded by a constant multiple of 1/ (1− γ)(1− λ) . This gives the second term in (4.80).
+
+3. K −1/2 term. The K −1/2 group in (4.76) consists of
+                                 √
+                                2 rmax              4λ     √
+                                       E∥ Egt
+                                           0
+                                              ∥F +     b0 σ rmax ,
+                                  b0               1−λ
+
+which we bound by a constant (independent of K, N, λ, γ, σ) plus a constant multiple of
+σ/(1 − λ). Absorbing the purely deterministic part into C yields the third term in (4.80).
+
+4. K −1 term.      −1
+         √ The K group in (4.76) collects initial transients. Factoring out the explicit
+√
+   rmax / N and using again 1 ≤ 1/(1 − γ) and√λ/(1 − λ) ≤ 1/(1 − λ), the whole coeffi-
+                                                              
+cient is bounded by a constant multiple of 1/ N (1 − γ)(1 − λ) , giving the fourth term
+in (4.80).
+
+5. K −7/4 term. The last group in (4.76) is already of the form const · λ/ (1 − λ)(1 −
+γ) K −7/4 . Using λ ≤ 1, we upper-bound this by a constant times K −7/4 / (1 − γ)(1 − λ) ,
+                                                                                       
+
+which yields the fifth term in (4.80).
+     Combining these five estimates and enlarging C if necessary, we obtain (4.80). The
+equivalent big-O expression follows immediately.
+
+
+    With the master bound established, we now draw two structural consequences. We
+first instantiate it for concrete SUDA communication backbones in Subsection 4.4 and
+then show in Subsection 4.5 that tracking before polarization is not a modular detail but
+a structural requirement. Section 5 then turns to a complementary counterexample on
+federated versus fully decentralized linear speedup.
+38                              ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+4.4    Specialization to Concrete SUDA Backbones
+
+To compare concrete communication backbones, it suffices to inspect how Corollary 4.1
+depends on the SUDA contraction rate γ. For convenience, we recall the big-O master
+bound:
+
+          1 K −1                                            K −3/4
+            ∑    E ∥∇ f ( X̄ k )∥∗ ≤ C 1 + √σ K −1/4 +
+                                  
+          K k =0                             N            (1 − γ)(1 − λ)
+                                               σ                    K −1
+                                       + 1+           K −1/2 + √                               (4.81)
+                                              1−λ                N (1 − γ)(1 − λ)
+                                                         !
+                                             K −7/4
+                                       +                   ,
+                                         (1 − γ)(1 − λ)
+
+    The dominant term is the same for every SUDA instantiation and is completely in-
+dependent of the graph. Different communication backbones appear only through the
+factor (1 − γ)−1 in the lower-order network corrections, where γ is the SUDA contraction
+rate.
+    For the SUDA instantiations of theoretical interest here, the substitution is simple:
+
+                  γ = λ2   for ED/D2 and EXTRA,            γ=λ      for ATC-GT.
+
+      Therefore
+                                                             
+                                      1                 1
+                                               =O
+                                (1 − γ)(1 − λ)      (1 − λ )2
+
+in all three cases. At the big-O level, ED/D2 , EXTRA, and ATC-GT therefore all scale as
+O((1 − λ)−2 ) in the K −3/4 , K −1 , and K −7/4 network-dependent corrections.
+    The difference lies in constants rather than order. ED/D2 and EXTRA use 1 − γ = (1 −
+λ)(1 + λ), whereas ATC-GT uses 1 − γ = 1 − λ. When λ is close to one, ATC-GT therefore
+carries a larger prefactor in the subdominant network terms, even though the asymptotic
+order is the same. This is precisely the modularity provided by the SUDA formulation:
+among convergent SUDA instantiations, the leading stochastic term is graph-free, and
+the communication backbone changes only the transient network corrections through
+the substitution for γ.
+    In short, the theory does not predict different dominant rates for ED/D2 , EXTRA,
+and ATC-GT. It predicts the same leading order and different transient behavior. This
+modularity, however, has a clear limit: changing the backbone within SUDA affects only
+transient terms, but changing the order between tracking and polarization does not. The
+next subsection shows that moving tracking after polarization can destroy convergence
+altogether.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                             39
+
+
+4.5   Why Tracking Must Precede Polarization
+The previous subsection treated the communication backbone as a modular choice inside
+the SUDA template. We now turn to a different design choice that is not modular in
+this sense: whether Muon polarizes a tracked quantity or a purely local one. A key
+design choice in SUDA–Muon is that the Muon direction is computed from a network-
+aggregated / tracked quantity Hik+1 rather than directly from a local stochastic gradient
+(or its EMA). The following proposition shows that if we remove this pre-polarization
+tracking step while keeping the rest of the algorithm unchanged, then one cannot, in
+general, guarantee exact convergence to stationarity for heterogeneous objectives. For
+clarity we present the obstruction in the deterministic/noiseless subcase σ = 0; this is not
+an additional assumption, since the stochastic-oracle model in Assumption 3 explicitly
+allows σ = 0 (deterministic gradients), and any convergence guarantee under that model
+must hold in particular for this simplest admissible case. In this setting, we construct
+smooth and lower-bounded problems on which the averaged iterate X̄ k gets stuck at a
+non-stationary point.
+
+Proposition 4.5 (A non-stationary fixed point for the no-tracking variant (general matrix
+case)). For notational simplicity, consider the deterministic/noiseless setting σ = 0 and the general
+matrix case m,n ≥ 1. Define the no-tracking variant of SUDA–Muon by keeping Algorithm 1
+unchanged except that the gradient-tracking update is removed and replaced by
+
+                              Hik+1 ← Mik+1         for all i ∈ [ N ], k ≥ 0.                 (4.82)
+
+Assume the communication/SUDA matrices satisfy Assumption 1, and initialize as in Algo-
+rithm 1 with Yi0 = 0 and Mi0 = Gi0 .
+    Then there exist N = 2 and local objectives f 1 , f 2 : Rm×n → R that are L∗ -smooth in the sense
+of Assumption 2 and are lower bounded, such that for the consensus initialization X10 = X20 = X † ,
+the averaged iterate satisfies
+                                        X̄ k ≡ X † for all k ≥ 0,
+while the global objective f ( X ) ≜ 12 f 1 ( X )+ f 2 ( X ) has
+                                                            
+
+
+                                            ∇ f ( X † ) ̸= 0.
+
+Consequently,
+                               1 K −1
+                               K k∑
+                                      ∇ f ( X̄ k ) ∗ ≡ ∇ f ( X † ) ∗ > 0,
+                                  =0
+
+and hence the no-tracking variant (4.82) cannot guarantee exact stationarity convergence (van-
+ishing averaged gradient nuclear norm at X̄ k ) over the class of smooth heterogeneous objectives.
+
+Proof. We first note that the averaging argument in the proof of Lemma 4.2 uses only the
+X- and Y-updates (and the doubly-stochasticity/polynomial properties of A,B,C), and
+40                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+does not rely on the specific recursion defining Hk+1 . Hence the same argument applies
+to the no-tracking variant as well and yields
+
+                                                         1 2 k +1
+                                                         2 i∑
+               X̄ k+1 = X̄ k − α S̄k+1 ,       S̄k+1 ≜         Si ,    Sik+1 = msgn( Hik+1 ).      (4.83)
+                                                            =1
+
+Under the no-tracking rule (4.82), we have Hik+1 = Mik+1 . It remains to exhibit a smooth
+lower-bounded instance for which S̄k+1 ≡ 0 while ∇ f ( X̄ 0 ) ̸= 0.
+Construction of the counterexample. Choose f 1 , f 2 as in Example 4.1 below and initialize
+at consensus X̄ 0 = X † . For these functions, for every X ∈ Rm×n , the gradients satisfy
+
+                            ∇ f 1 ( X ) = c1 ( X ) U,       ∇ f 2 ( X ) = c2 ( X ) U,              (4.84)
+
+where U ∈ Rm×n is a fixed rank-one matrix and the scalar coefficients obey c1 ( X ) > 0 and
+c2 ( X ) < 0. In particular, writing U = uv⊤ with ∥u∥2 = ∥v∥2 = 1, for any scalar µ ̸= 0 we
+have msgn(µU ) = sign(µ) U because a reduced SVD of µU is µU = u(|µ|)(sign(µ)v)⊤ .
+Therefore, msgn(∇ f 1 ( X )) = U and msgn(∇ f 2 ( X )) = −U for all X.
+Inductive cancellation argument. In the noiseless setting, Gik = ∇ f i ( Xik ). Since Mi0 = Gi0
+and Mik+1 = βMik +(1 − β) Gik , the alignment (4.84) implies inductively that M1k = µ1k U and
+M2k = µ2k U for scalars µ1k > 0 and µ2k < 0 for all k. Therefore, under (4.82), we have S1k+1 =
+msgn( M1k+1 ) = U and S2k+1 = msgn( M2k+1 ) = −U, and hence S̄k+1 = (U − U )/2 = 0 for all
+k ≥ 0. Plugging S̄k+1 = 0 into (4.83) yields X̄ k+1 = X̄ k for all k, so X̄ k ≡ X̄ 0 = X † . Finally,
+Example 4.1 satisfies ∇ f ( X † ) ̸= 0, so the averaged stationarity measure stays bounded
+away from zero.
+
+Example 4.1 (A concrete smooth counterexample in the general matrix setting). Let N = 2.
+Pick any unit vectors u ∈ Rm and v ∈ Rn with ∥u∥2 = ∥v∥2 = 1 and define the rank-one
+matrix
+                                      U ≜ uv⊤ .
+Let a > b > 0 be constants and define, for X ∈ Rm×n ,
+
+                   f 1 ( X ) ≜ a log 1 + e⟨U,X ⟩ , f 2 ( X ) ≜ b log 1 + e−⟨U,X ⟩ ,
+                                                                                
+
+
+where ⟨U,X ⟩ ≜ trace(U ⊤ X ). Then f 1 and f 2 are lower bounded (both are nonnegative)
+and differentiable with
+                                           1                                        1
+                    ∇ f1 (X) = a                  U,        ∇ f 2 ( X ) = −b               U.
+                                   1 + e−⟨U,X ⟩                                1 + e⟨U,X ⟩
+In particular, ∇ f 1 ( X ) and ∇ f 2 ( X ) are always aligned with U but have opposite signs in
+their scalar coefficients; hence msgn(∇ f 1 ( X )) = uv⊤ and msgn(∇ f 2 ( X )) = −uv⊤ for all
+X.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                            41
+
+
+    Moreover, the gradients are Lipschitz in the sense of Assumption 2. Indeed, let φ(t)≜
+(1 + e−t )−1 so that φ′ (t)= φ(t)(1− φ(t))≤ 1/4. Since ∥U ∥∗ = 1 (rank-one with unit singular
+value) and |⟨U,X − Y ⟩| ≤ ∥U ∥∗ ∥ X − Y ∥ = ∥ X − Y ∥, we have
+                                                                a              a
+    ∥∇ f 1 ( X )−∇ f 1 (Y )∥∗ = a | φ(⟨U,X ⟩)− φ(⟨U,Y ⟩)|∥U ∥∗ ≤ |⟨U,X − Y ⟩| ≤ ∥ X − Y ∥,
+                                                                4              4
+
+and similarly ∥∇ f 2 ( X )−∇ f 2 (Y )∥∗ ≤ 4b ∥ X − Y ∥. Thus Assumption 2 holds with L∗ ≜
+max{ a,b}/4.
+   Finally, with X † ≜ 0, for the global objective f ≜ 12 ( f 1 + f 2 ) we have
+                                                           a b  a−b
+                  ∇ f ( X † ) = 21 ∇ f 1 (0)+∇ f 2 (0) = 21 − U =
+                                                      
+                                                                      U ̸= 0.
+                                                            2 2    4
+Therefore, the hypotheses and conclusion of Proposition 4.5 are satisfied in the general
+matrix setting.
+
+    This structural result underscores the role of the gradient-tracking step in Algo-
+rithm 1: because msgn is nonlinear, replacing a tracked quantity by a purely local one can
+break exact convergence under heterogeneous objectives. The next section asks a com-
+plementary question: even when averaging is exact and topology is no obstacle, does
+decentralized Muon retain the familiar federated linear-speedup effect?
+
+
+5    Federated vs. Decentralized Linear Speedup
+The previous subsection concerned exact convergence. We now turn to a complemen-
+tary scaling question: can Muon exploit the usual linear-speedup effect from averaging
+stochastic gradients? Here the answer again depends on when averaging happens. In
+a federated or server-based architecture, gradients can be averaged first and polarized
+afterward. In a fully decentralized architecture, each node polarizes a local noisy gra-
+dient and only then communicates. The following toy example isolates this structural
+difference in the simplest possible setting.
+    We consider the vector case as a special instance of our matrix formulation, namely
+X = ( x1k ,x2k )⊤ ∈ R2×1 . Let
+  k
+
+                                                  1
+                                         f ( X ) ≜ x12 ,                            (5.1)
+                                                  2
+    so that ∇ f ( X ) = ( x1 ,0)⊤ . At iteration k, node i ∈ [ N ] observes the stochastic gradient
+                                                k
+                                              0      x
+                        Gik = ∇ f ( X k )+         = 1k ,     ξ ik ∈ {+σ, −σ },                (5.2)
+                                              ξ ik   ξi
+
+    where {ξ ik } are i.i.d. across i and k with E[ξ ik ] = 0 and E[(ξ ik )2 ] = σ2 . The noise is
+transverse to the signal: it acts only in the second coordinate.
+42                                    ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+     Since X k ∈ R2×1 , the matrix-sign operator reduces to Euclidean normalization,
+
+                                                     V
+                                  msgn(V ) =              ,       msgn(0) = 0.                        (5.3)
+                                                    ∥V ∥2
+
+    To give the decentralized method its best possible chance, we assume a complete
+graph with exact averaging and synchronized iterates. The only distinction is the order
+of averaging and polarization.
+
+                                                                              1 N
+                                                                              N i∑
+                     Decentralized Muon:                 X k +1 = X k − α ·         msgn( Gik ),      (5.4)
+                                                                                 =1
+
+                                                                                     !
+                                                                               N
+                                                                            1
+                                                                            N i∑
+                      Federated Muon:                X k+1 = X k − α · msgn       Gik .               (5.5)
+                                                                               =1
+
+Proposition 5.1 (Federated Muon can speed up, decentralized Muon cannot). Consider
+(5.1)–(5.3) with any σ > 0 and stepsize α ∈ (0,σ ).
+
+     1. Decentralized Muon is insensitive to N. The first coordinate of (5.4) obeys the deter-
+        ministic recursion                                  
+                                                                      α
+                                          x1k+1 = x1k 1 − q                      .                  (5.6)
+                                                                  ( x1k )2 + σ2
+
+        Hence                                                     α k
+                                                   | x1k+1 | ≥ 1 −   | x1 |,
+                                                                   σ
+        and reaching | x1T | ≤ ε| x10 | requires
+                                                                
+                                                         σ     1
+                                                     T=Ω   log     ,
+                                                         α     ε
+
+        which does not improve with N.
+
+     2. Federated Muon enjoys variance reduction. Let ξ̄ k ≜ N1 ∑iN=1 ξ ik , so that E[ξ̄ k ] = 0 and
+                                                                                            √
+        E[(ξ̄ k )2 ]= σ2 /N. Then the federated
+                                            √   update (5.5) is driven by noise at scale σ/   N. In the
+        noise-dominated regime | x1k | ≲ σ/ N, the corresponding iteration complexity scales as
+                                                                           
+                                                              σ           1
+                                                   T =O       √     log       ,
+                                                              α N         ε
+
+        which is the usual linear-speedup behavior.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                         43
+
+
+
+
+Figure 1: Counterexample for linear speedup under transverse noise (σ = 50). Dashed
+curves: federated Muon (5.5) with server-side averaging before polarization. Solid
+curves: decentralized Muon (5.4) with local polarization before averaging. As N in-
+creases, the federated curves accelerate clearly, whereas the decentralized curves essen-
+tially overlap, indicating the absence of linear speedup.
+
+
+Proof sketch. For decentralized Muon, note that
+
+                                             q                          q
+                               Gik       =       ( x1k )2 +(ξ ik )2 =       ( x1k )2 + σ2 .
+                                     2
+
+                                                                       q
+Therefore the first coordinate of the local Muon direction equals x1k / ( x1k )2 + σ2 , which
+is independent of both the node index i and
+                                          q the sign of the noise. Averaging over i yields
+(5.6), and the lower bound follows from                   ( x1k )2 + σ2 ≥ σ.
+   For federated Muon, averaging occurs before normalization, so the second coordinate
+becomes
+  √      ξ̄ k with variance σ2 /N. The effective noise level is therefore reduced from σ to
+σ/ N, which gives the stated complexity in the noise-dominated regime.
+
+
+
+
+    This counterexample is useful precisely because topology plays no role in it: the graph
+is complete and averaging is exact. The failure of linear speedup comes solely from local
+polarization before averaging. In that sense, the example isolates a structural difference
+between federated Muon and fully decentralized Muon rather than a weakness of any
+particular communication scheme.
+    Figure 1 visualizes the same phenomenon for σ = 50 and N ∈{1,8,64,256}. The dashed
+federated curves accelerate as N grows, while the solid decentralized curves nearly over-
+lap across all choices of N.
+44                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+6     Numerical Experiments
+6.1   Experimental Setup
+We use two benchmarks that stress different parts of the decentralized Muon story:
+CIFAR-100 with strong cross-node heterogeneity, and GPT-2 fine-tuning on Wikitext-2
+with a much milder, near-IID partition. Throughout, we compare SUDA–M UON -ED,
+SUDA–M UON -ATC-GT, and D E M UON, and all quantitative summaries are computed
+from pre-aggregated CSV logs produced by the training scripts.
+    For CIFAR-100, we use the standard 50,000/10,000 train/test split, a ResNet-18-style
+model with 100 output classes, and a Dirichlet partition with concentration α = 0.05,
+which produces severe label skew across workers. The main comparison uses N = 10
+nodes on a ring with mixing parameter ρ = 0.25, batch size 512 per node, constant step-
+size η = 0.03, EMA parameter β = 0.9, weight decay 5 × 10−4 , and 25 training epochs.
+Unless otherwise stated, each configuration is run with 3 random seeds, and we report
+the performance of the averaged model.
+    We also include two CIFAR-100 extensions aimed at the communication story. First,
+fixing SUDA–M UON -ED, we vary the topology and node count over N ∈ {4,8,12} to
+isolate how system scale changes the preferred graph. Second, we run a larger and longer
+experiment with N = 20 ring-connected nodes for 100 epochs using a slightly smaller
+constant stepsize η = 0.01. This long-horizon setting is where steady-state communication
+effects should be easiest to see.
+    For GPT-2/Wikitext-2, each node hosts the pretrained gpt2 model. We tokenize the
+corpus into length-512 sequences, use local batch size 16, train for 4 epochs with base
+stepsize η = 0.03, and apply a warmup-plus-cosine schedule. The main comparison uses
+a 15-node ring, while the ablation again varies topology and node count for SUDA–
+M UON -ED. Each GPT configuration is run with 2 seeds, and we report validation per-
+plexity at epoch 4.
+
+
+6.2   Results and Analysis
+CIFAR-100 main comparison (10-node ring). The short-horizon 10-node ring bench-
+mark is relatively balanced. After 25 epochs, all three decentralized Muon variants finish
+within about 0.6 accuracy points of one another, as shown in Table 1. SUDA–M UON -
+ATC-GT achieves the highest mean final accuracy, while D E M UON is statistically very
+close and SUDA–M UON -ED remains competitive despite the strongly non-IID split. So
+the right reading of this table is not that one method wins decisively at a short budget; it
+is that the SUDA-based instantiations already match D E M UON in the default heteroge-
+neous ring regime.
+    The variance pattern is also informative. SUDA–M UON -ATC-GT has the smallest
+spread across seeds, which is consistent with the intuition that explicit correction of cross-
+node drift can stabilize training even when the final means are close. In other words, the
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                            45
+
+
+Table 1: CIFAR-100 top-1 test accuracy under a 10-node ring topology with Dirichlet
+heterogeneity α = 0.05. We report mean ± population standard deviation over three seeds
+for the final accuracy at epoch 25. Higher is better.
+
+       Method                          #Nodes      Topology         α       ρ    Final acc (%)
+       SUDA–M UON -ED                      10         ring       0.05     0.25    44.99 ± 5.19
+       SUDA–M UON -ATC-GT                  10         ring       0.05     0.25    45.56 ± 3.18
+       D E M UON                           10         ring       0.05     0.25    45.50 ± 5.57
+
+Table 2: CIFAR-100 test accuracy for SUDA–M UON -ED under varying numbers of nodes
+and topologies. We report mean ± population standard deviation over three seeds of
+final and best test accuracy. Bold values indicate the best performance within each node-
+count group.
+
+                   #Nodes         Topology          Final acc (%)       Best acc (%)
+                       4       fully connected       51.71 ± 0.94       53.71 ± 0.57
+                       4              line           51.76 ± 1.04       53.22 ± 0.95
+                       4             ring            53.23 ± 0.30       55.27 ± 1.53
+                       4              star           52.93 ± 0.73       53.21 ± 0.33
+                       8       fully connected       47.69 ± 0.55       47.82 ± 0.72
+                       8              line           45.91 ± 1.27       46.07 ± 1.03
+                       8             ring            45.90 ± 0.97       47.04 ± 0.69
+                       8              star           50.19 ± 1.60       50.94 ± 0.98
+                      12       fully connected       43.62 ± 2.86       45.14 ± 3.43
+                      12              line           37.26 ± 5.32       39.40 ± 4.93
+                      12             ring            41.72 ± 3.73       43.03 ± 4.47
+                      12              star           42.19 ± 4.76       42.19 ± 4.76
+
+
+short-horizon experiment does not yet separate the methods strongly by final accuracy,
+but it already suggests that the SUDA coupling is not paying an optimization penalty for
+using the more structured primal–dual backbone.
+    CIFAR-100 ablation on topology and node count. Fixing the optimizer to SUDA–
+M UON -ED, Table 2 shows that the preferred topology changes with scale. At N = 4, ring
+is best. At N = 8, star becomes strongest. At N = 12, fully connected is best and the
+line graph degrades the most. This is the clearest finite-time sign that graph effects are
+real but problem dependent: the communication backbone is not a mere implementation
+detail, yet neither is there a single topology that wins uniformly.
+    This ablation is useful for the paper’s story because it isolates the SUDA backbone
+itself. Once the local Muon geometry is fixed, changing only the graph still produces
+ 46                                                        ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+ Table 3: CIFAR-100 training loss and test accuracy after 100 epochs on a 20-node ring
+ topology. We report mean ± population standard deviation over three seeds. Bold entries
+ indicate the best values.
+
+                           Method                         #Nodes      Epochs                            Final train loss      Final test acc (%)       Seeds
+         SUDA–M UON -ED                                     20         100                                  0.281 ± 0.018          52.89 ± 0.82           3
+       SUDA–M UON -ATC-GT                                   20         100                                  0.329 ± 0.008          48.58 ± 0.73           3
+            D E M UON                                       20         100                                  0.386 ± 0.009          43.94 ± 1.68           3
+
+
+                                                 SUDA--Muon-ED           SUDA--Muon-ATC-GT                               DeMuon
+                    (a) CIFAR-100 (20-node ring): train loss (100 epochs)                              (b) CIFAR-100 (20-node ring): test accuracy (100 epochs)
+
+                5                                                                                      50
+
+
+
+
+                                                                             Top-1 test accuracy (%)
+                4                                                                                      40
+
+
+
+Training loss
+                3                                                                                      30
+
+                2                                                                                      20
+
+                1                                                                                      10
+
+                0                                                                                      0
+                      0        20       40           60          80    100                                   0      20       40           60   80       100
+                                             Epoch                                                                                Epoch
+
+ Figure 2: CIFAR-100 performance of the three decentralized Muon variants on a 20-
+ node ring over 100 epochs. SUDA–M UON -ED converges faster and finishes higher than
+ SUDA–M UON -ATC-GT and D E M UON. Shaded regions, where visible, denote one stan-
+ dard deviation over three seeds.
+
+
+ visibly different transient outcomes, especially as N grows. That is exactly the regime
+ where the topology-dependent correction terms should matter most in practice, even if
+ the leading stochastic term in the theory is topology separated.
+     CIFAR-100 extended training on a 20-node ring. The strongest empirical evidence
+ for the SUDA+Muon design appears in the larger and longer non-IID run. Table 3 and
+ Figure 2 show that SUDA–M UON -ED clearly separates from both alternatives after 100
+ epochs on a 20-node ring: it attains the lowest final training loss and the highest final test
+ accuracy, outperforming SUDA–M UON -ATC-GT by more than 4 points and D E M UON
+ by nearly 9 points in final accuracy. This is the setting where the advantage of the SUDA-
+ style correction is no longer subtle.
+     The trajectory plot sharpens the comparison. During the first half of training, both
+ SUDA-based variants already stay ahead of D E M UON; later on, SUDA–M UON -ED con-
+ tinues improving and cleanly overtakes SUDA–M UON -ATC-GT. So the most defensi-
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50                                                                                                                                                                                                                                                                                                                                                                                                       47
+
+
+Table 4: Validation perplexity on Wikitext-2 for GPT-2 under a 15-node ring topology af-
+ter four training epochs. Values are means over two seeds. Lower is better; bold indicates
+the lowest perplexity.
+
+                                                                              Method                                                                                                                                                                          #Nodes                                Topology                                                      Seeds                                 Eval ppl (4 epochs)
+                                                                               SUDA–M UON -ED                                                                                                                                                                             15                                    ring                                                           2                                             18.1396
+                                                                               SUDA–M UON -ATC-GT                                                                                                                                                                         15                                    ring                                                           2                                             18.1406
+                                                                               D E M UON                                                                                                                                                                                  15                                    ring                                                           2                                             18.1401
+
+                                                                                                                                                                                                                                                                                           * 3 7    : L N L W H [ W     6 8 ' $   0 X R Q  ( '    W R S R O R J \  D Q G  Q R G H  F R X Q W  D E O D W L R Q
+                                                                                                                                                                                                                                                                                                                            5 L Q J            ) X O O \  F R Q Q H F W H G             / L Q H         6 W D U
+
+
+
+
+                                                         * 3 7    : L N L W H [ W        Q R G H  U L Q J    Y D O L G D W L R Q  S H U S O H [ L W \  Y V  H S R F K V                                                                            1                                                                                               1                                                                  1      
+                                                 
+                                                                                                                                                     6 8 ' $   0 X R Q  ( '                                                            
+                                                                                                                                                 6 8 ' $   0 X R Q  $ 7 &  * 7
+
+
+
+
+                                                                                                                                                                                            9 D O L G D W L R Q  S H U S O H [ L W \
+                                                                                                                                                     ' H 0 X R Q
+                                                                                                                                                                                                                                      
+
+
+
+
+ 9 D O L G D W L R Q  S H U S O H [ L W \
+                                                 
+                                                                                                                                                                                                                                          
+                                                 
+
+                                                                                                                                                                                                                                      
+                                                 
+                                                                                                                                                                                                                                          
+                                                 
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                    ( S R F K                                                                                                                                       ( S R F K                                                                                          ( S R F K                                                                 ( S R F K
+
+
+(a) Main 15-node ring                                                                                                                                                                                                                                                    (b) Ablation over node count and topology.
+run.
+
+Figure 3: Validation perplexity of decentralized Muon variants on GPT-2 / Wikitext-
+2. The left panel compares SUDA–M UON -ED, SUDA–M UON -ATC-GT, and D E M UON
+under the main 15-node ring configuration, while the right panel reports the SUDA–
+M UON -ED topology ablation. Shaded regions denote one standard deviation over two
+seeds.
+
+
+ble claim is tied to this specific regime: in the demanding 20-node, 100-epoch non-IID
+setting, both SUDA-based variants outperform D E M UON, and among the instantiations
+tested here SUDA–M UON -ED is the strongest.
+    GPT-2 / Wikitext-2 main comparison (15-node ring). The language-modeling pic-
+ture is intentionally different. Under the 15-node ring, the three decentralized Muon
+variants are almost indistinguishable after 4 epochs, with validation perplexities clus-
+tered between 18.1396 and 18.1406 in Table 4. We therefore do not read this benchmark
+as evidence that one decentralized Muon mechanism dominates the others. The useful
+message is instead that the SUDA-based variants remain fully competitive in the benign
+near-IID regime; adopting the SUDA backbone does not sacrifice performance when the
+communication problem is mild.
+    GPT-2 / Wikitext-2 ablation on topology and node count. Fixing the optimizer to
+SUDA–M UON -ED, Table 5 shows that all topologies remain close at N = 4, while fully
+connected becomes best at N = 8 and N = 12. The absolute spread is still small, so this is
+not a large-effect benchmark, but it reinforces the same practical lesson as on CIFAR-100:
+the graph interacts with task statistics and scale, and the preferred topology can shift as
+48                           ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-50
+
+
+Table 5: Validation perplexity of SUDA–M UON -ED on Wikitext-2 after four training
+epochs under varying numbers of nodes and topologies. Values are means over the avail-
+able seeds. Lower is better; bold indicates the best performance within each node-count
+group.
+
+                    #Nodes        Topology          Eval ppl (4 epochs)
+                        4      fully connected              15.75
+                        4             line                  15.73
+                        4            ring                   15.74
+                        4             star                  15.72
+                        8      fully connected              15.88
+                        8             line                  15.97
+                        8            ring                   15.94
+                        8             star                  16.09
+                       12      fully connected              16.12
+                       12             line                  16.31
+                       12            ring                   16.28
+                       12             star                  16.53
+
+
+those conditions change.
+
+
+7    Conclusion
+This paper studies one specific obstruction in fully decentralized Muon: the polarization
+step is nonlinear, so it does not interact with gossip averaging in the same way as an
+ordinary gradient step. SUDA–Muon addresses that obstruction by placing Muon inside
+the SUDA primal–dual backbone, which lets us compare several decentralized correction
+mechanisms within one template.
+     The main theoretical message is that the dominant stochastic term remains topology-
+free, while the graph enters only through faster-decaying corrections. The main structural
+message is even simpler: tracking before polarization is not optional in general. Without
+it, one can construct smooth heterogeneous problems on which the averaged iterate stays
+at a non-stationary point.
+     The second conceptual message is a contrast with federated Muon. In our linear-
+speedup
+    √      counterexample, server-side averaging before polarization recovers the usual
+σ/ N variance reduction, while fully decentralized local polarization before averaging
+does not, even on a complete graph with exact averaging.
+     Our experiments on CIFAR-100 and GPT-2/Wikitext-2 are consistent with this pic-
+ture. Short-horizon and near-IID runs make the decentralized Muon variants look simi-
+REFERENCES                                                                                 49
+
+
+lar, but in the 20-node, 100-epoch non-IID CIFAR-100 setting both SUDA-based variants
+outperform D E M UON, with SUDA–M UON -ED performing best. When the partition is
+near IID, the different SUDA–Muon instances behave much more similarly and the best
+topology can shift.
+     Natural next steps include communication-efficient variants with compression,
+sharper rates under additional structure such as PL-type conditions, online tuning of the
+stepsize and EMA parameters, and larger-scale experiments that test whether the same
+topology effects persist for bigger models and graphs.
+
+
+References
+ [1] Sulaiman A. Alghunaim and Kun Yuan. A unified and refined convergence anal-
+     ysis for non-convex decentralized learning. IEEE Transactions on Automatic Control,
+     67(11):5922–5937, 2022.
+
+ [2] Sulaiman A. Alghunaim, Kun Yuan, and Ali H. Sayed. Suda: A unifying framework
+     for decentralized optimization with sharp topology dependence. IEEE Transactions
+     on Automatic Control, 67(10):5305–5320, 2022.
+
+ [3] Michael Blot, David Picard, Matthieu Cord, and Nicolas Thome. Gossip training for
+     deep learning. arXiv preprint arXiv:1611.09726, 2016.
+
+ [4] Jeff Daily, Abhinav Vishnu, Charles Siegel, Thomas Warfel, and Vinay Amatya. Gos-
+     sipgrad: Scalable deep learning using gossip communication based asynchronous
+     gradient descent. arXiv preprint arXiv:1803.05880, 2018.
+
+ [5] Vineet Gupta, Tomer Koren, and Yoram Singer. Shampoo: Preconditioned stochastic
+     tensor optimization. In Proceedings of the International Conference on Machine Learning,
+     2018.
+
+ [6] Chuan He, Shuyi Ren, Jingwei Mao, and Erik G. Larsson. Demuon: A decentralized
+     muon for matrix optimization over graphs. arXiv preprint arXiv:2510.01377, 2025.
+
+ [7] Keller Jordan, Yuchen Jin, Vlado Boza, Jiacheng You, Franz Cesista, Laker New-
+     house, and Jeremy Bernstein. Muon: An optimizer for hidden layers in neural net-
+     works, 2024.
+
+ [8] Xiangru Lian, Ce Zhang, Huan Zhang, Cho-Jui Hsieh, Wei Zhang, and Ji Liu. Can
+     decentralized algorithms outperform centralized algorithms? a case study for de-
+     centralized parallel stochastic gradient descent. In Advances in Neural Information
+     Processing Systems, volume 30, 2017.
+
+ [9] Jingyuan Liu, Jianlin Su, Xingcheng Yao, Zhejun Jiang, Guokun Lai, Yulun Du, Yi-
+     dao Qin, Weixin Xu, Enzhe Lu, Junjie Yan, Yanru Chen, Huabin Zheng, Yibo Liu,
+50                                                                            REFERENCES
+
+
+     Shaowei Liu, Bohong Yin, Weiran He, Han Zhu, Yuzhi Wang, Jianzhou Wang, Meng-
+     nan Dong, Zheng Zhang, Yongsheng Kang, Hao Zhang, Xinran Xu, Yutao Zhang,
+     Yuxin Wu, Xinyu Zhou, and Zhilin Yang. Muon is scalable for llm training. arXiv
+     preprint arXiv:2502.16982, 2025.
+
+[10] Junkang Liu, Fanhua Shang, Junchao Zhou, Hongying Liu, Yuanyuan Liu, and
+     Jin Liu. Fedmuon: Accelerating federated learning with matrix orthogonalization.
+     arXiv preprint arXiv:2510.27403, 2025.
+
+[11] Noam Shazeer and Mitchell Stern. Adafactor: Adaptive learning rates with sublin-
+     ear memory cost. In Proceedings of the International Conference on Machine Learning,
+     2018.
+
+[12] Wei Shen, Ruichuan Huang, Minhui Huang, Cong Shen, and Jiawei Zhang. On the
+     convergence analysis of muon. arXiv preprint arXiv:2505.23737, 2025.
+
+[13] Wei Shi, Qing Ling, Gang Wu, and Wotao Yin. Extra: An exact first-order algorithm
+     for decentralized consensus optimization. SIAM Journal on Optimization, 25(2):944–
+     966, 2015.
+
+[14] Yuki Takezawa, Anastasia Koloskova, Xiaowen Jiang, and Sebastian U. Stich. Fed-
+     muon: Federated learning with bias-corrected lmo-based optimization. arXiv
+     preprint arXiv:2509.26337, 2025.
+
+[15] Hanlin Tang, Xiangru Lian, Ming Yan, Ce Zhang, and Ji Liu. D2 : Decentralized train-
+     ing over decentralized data. In Proceedings of the International Conference on Machine
+     Learning, 2018.
+
+[16] Shuche Wang, Fengzhuo Zhang, Jiaxiang Li, Cunxiao Du, Chao Du, Tianyu Pang,
+     Zhuoran Yang, Mingyi Hong, and Vincent Y. F. Tan. Muon outperforms adam in
+     tail-end associative memory learning. arXiv preprint arXiv:2509.26030, 2025.
+
+[17] Kun Yuan, Sulaiman A. Alghunaim, and Xinmeng Huang. Removing data het-
+     erogeneity influence enhances network topology dependence of decentralized sgd.
+     Journal of Machine Learning Research, 2021.
+
+[18] Shuchen Zhu, Boao Kong, Songtao Lu, Xinmeng Huang, and Kun Yuan. Sparkle: A
+     unified single-loop primal-dual framework for decentralized bilevel optimization.
+     In Proceedings of the Neural Information Processing Systems Conference, 2024.
+

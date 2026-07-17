@@ -1,0 +1,1440 @@
+CSIAM Trans. Appl. Math.                                                Vol. 1, No. 1, pp. 1-27
+doi:                                                                    March 2026
+
+
+
+
+A Retraction-Free EXTRA Method for Decentralized
+Optimization on the Stiefel Manifold
+ReasFlow Paper Copilot
+
+
+          Abstract. Decentralized optimization provides a fundamental framework for large-
+          scale learning and signal processing with distributed data. We study decentralized
+          optimization with orthogonality constraints on the Stiefel manifold and propose RF-
+          EXTRA, a distributed retraction-free primal-dual method on static undirected net-
+          works. The method combines an approximate gradient mapping for orthogonality-
+          constrained optimization with an EXTRA-based decentralized recursion, thereby
+          avoiding explicit retractions while preserving a simple communication pattern. On
+          the theoretical side, the analysis considers both the averaged iterate and the joint er-
+          ror (Xk − Xk ,sk − sk ), and establishes a contractive recursion for the joint error under
+          an equivalent norm. This recursion is then used to compare the different terms in
+          the descent lemma and finally derive an exact O(1/K ) convergence rate for the aver-
+          aged iterate under explicit parameter conditions. Experiments on PCA and low-rank
+          matrix completion show that RF-EXTRA compares favorably with the reported decen-
+          tralized baselines and exhibits strong communication efficiency on the tested tasks on
+          the Stiefel manifold.
+AMS subject classifications: 65K10, 90C30, 49M37, 68W15
+Key words: decentralized optimization, Stiefel manifold, retraction-free method, EXTRA, non-
+convex optimization
+
+
+
+1   Introduction
+Decentralized optimization [1, 2] studies how a network of agents cooperatively solves a
+global problem using local data and local communication. It has become a fundamental
+framework in large-scale learning [3], signal processing [4, 5], and control [1], where data
+are naturally distributed and centralized aggregation is either costly or undesirable. In
+its classical Euclidean form, the goal is to combine computational scalability with com-
+munication efficiency while preserving the solution quality of the underlying centralized
+model.
+    Many decentralized problems are not purely Euclidean. In distributed principal com-
+ponent analysis, subspace estimation, and related matrix-learning tasks, the decision
+
+
+
+http://www.global-sci.org/csiam-am                    1                   ©2026 Global-Science Press
+2                             ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+variable is required to have orthonormal columns, and the optimization therefore takes
+place on the Stiefel manifold
+
+                             St(d,r ) = { X ∈ Rd×r : X ⊤ X = Ir }.
+
+Such orthogonality constraints also arise in deep models with orthogonal layers [6], nor-
+malization mechanisms [7], and low-rank fine-tuning schemes [8]. Accordingly, decen-
+tralized optimization on the Stiefel manifold has become an important problem in decen-
+tralized learning and matrix optimization.
+    A central difficulty is that decentralized primal-dual correction mechanisms and man-
+ifold feasibility mechanisms are driven by different principles. Methods in the EXTRA
+family are analyzed as primal-dual type recursions, whereas manifold methods typically
+rely on tangent projections and retractions to preserve feasibility. Once EXTRA is brought
+into a nonconvex problem on the Stiefel manifold, combining these two ingredients is es-
+sentially equivalent to analyzing a primal-dual algorithm together with nonconvex man-
+ifold constraints and geometry in a single recursion. The convergence analysis is hence
+highly nontrivial.
+    This paper studies the consensus-constrained optimization problem on the Stiefel
+manifold
+                                                   1 n
+                                     min F ( X ) := ∑ f i ( X ),
+                                   X ∈St(d,r )     n i =1
+where each agent i ∈ {1,...,n} has access only to its local smooth objective f i and commu-
+nicates over a fixed connected undirected graph. Our aim is to develop a decentralized
+method that preserves the correction mechanism of EXTRA while using a retraction-free
+update on the Stiefel manifold. This direction is algorithmically attractive because mod-
+ern GPUs are highly optimized for basic linear algebra subprograms (BLAS) [9], whereas
+retraction operations such as repeated QR or polar orthogonalization are typically less
+GPU-friendly than simple matrix multiplications and additions.
+
+1.1     Related Work
+1.1.1   Primal methods and primal-dual methods in decentralized optimization
+The development of decentralized optimization began with primal methods such as de-
+centralized gradient descent (DGD) [2] and decentralized SGD type variants for stochas-
+tic objectives [10, 11], which established the basic consensus optimization framework but
+generally suffer from steady state bias under constant stepsizes. To remove that bias, later
+primal-dual or correction based methods introduced auxiliary states that couple consen-
+sus and optimization more tightly. Representative milestones include gradient tracking
+and DGT type methods [12–14], EXTRA [4], exact diffusion [5], NIDS [15], and prox-
+PDA [16]. These methods clarified how exactness can be preserved over static networks
+while maintaining low per-iteration communication cost.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                        3
+
+
+    The surrounding Euclidean literature further expanded this line through refined anal-
+yses for heterogeneous and nonconvex settings [3, 17, 18], compressed communication
+[19–23], time varying and directed networks [24, 25], local step variants [26], and graph
+design viewpoints [27]. These Euclidean results provide the algorithmic backbone for
+our method, since RF-EXTRA keeps EXTRA itself while adapting it to optimization on
+the Stiefel manifold.
+
+1.1.2   Distributed optimization on the Stiefel manifold
+For orthogonality-constrained problems, decentralized Riemannian methods form the
+natural baseline. DRSGD [28] studies decentralized Riemannian gradient descent on the
+Stiefel manifold and shows that distributed PCA type tasks can be handled directly in
+the manifold setting. More recently, DPRGD [29] and DPRGT [30] study projected de-
+centralized Riemannian gradient updates and decentralized proximal gradient tracking
+on Riemannian manifolds, respectively; together they provide our main projection based
+and tracking based baselines. Riemannian EXTRA (REXTRA) [31] further demonstrates
+that EXTRA type primal-dual correction can be extended from Euclidean space to com-
+pact submanifolds, but still through retraction or projection based updates.
+    Related works further considered quantization and compression [32, 33], stochastic
+recursive momentum [34], conjugate gradient and natural gradient directions [35, 36],
+local linear consensus behavior on the Stiefel manifold [37], manifold consensus formu-
+lations [38,39], and decentralized retraction-free optimization on the Stiefel manifold [40].
+However, an EXTRA type correction method in this retraction-free regime is still unavail-
+able.
+
+1.1.3   Retraction-free optimization with orthogonality constraints
+A separate line of work studies orthogonality-constrained optimization without perform-
+ing explicit retractions at every iteration. DESTINY [41] introduced an approximate
+gradient mapping for orthogonality-constrained optimization through an approximate
+augmented Lagrangian formulation on the Stiefel manifold, where orthogonality is con-
+trolled by a penalty-based surrogate instead of being enforced by explicit retractions at
+every step. Early centralized retraction-free methods also showed that one can reduce the
+cost of repeated QR or polar decompositions while still controlling feasibility drift [42,43].
+This perspective is particularly attractive for large matrix problems, where orthogonal-
+ization can dominate the local computational budget.
+    More recent developments include infeasible methods with local linear convergence
+guarantees [44], ambient-space reformulations that dissolve hard constraints into smooth
+penalty structures [45], and preconditioned schemes motivated by LoRA type large-
+model fine-tuning [8]. Related applications in orthogonal weight normalization and
+multi-Stiefel learning further illustrate the practical importance of low-cost updates for
+orthogonality-constrained problems [6, 7]. The present work draws on this line to con-
+struct the local geometric step, and it combines that step with the decentralized EXTRA
+correction mechanism discussed above.
+4                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+1.2     Contribution and Organization
+This paper combines decentralized primal-dual correction, distributed optimization on
+the Stiefel manifold, and retraction-free orthogonality control in a single scheme. The
+key idea is to embed an approximate gradient mapping for orthogonality-constrained
+optimization into an EXTRA recursion.
+   Our contributions are summarized as follows.
+
+      • We design and implement RF-EXTRA, a distributed retraction-free EXTRA al-
+        gorithm that combines an approximate gradient mapping for orthogonality-
+        constrained optimization with an EXTRA-based decentralized recursion on the
+        Stiefel manifold, and we validate this design through a systematic numerical study
+        on PCA and LRMC over the Stiefel manifold.
+
+      • On the theory side, we show that the joint-error variables (Xk − Xk ,sk − sk ) remain
+        in a controllable region and satisfy a contractive recursion under an equivalent
+        norm. This allows us to establish a summed joint-error bound, compare the dif-
+        ferent terms in the descent analysis of the original objective function, and finally
+        derive an exact O(1/K ) convergence rate under a constant stepsize. In contrast
+        to existing retraction-based EXTRA-type methods such as REXTRA [31] and exist-
+        ing retraction-free schemes without EXTRA correction, our analysis must couple
+        retraction-free feasibility control with an EXTRA-type inexact primal-dual recur-
+        sion; this combination is nontrivial because of the manifold nonconvexity, espe-
+        cially under a constant stepsize, as also noted in [31].
+
+    This article is organized as follows. Section 2 presents RF-EXTRA together with
+the approximate gradient mapping for orthogonality-constrained optimization. Sec-
+tion 3 first states the standing assumptions and the averaged-sequence ingredients in
+Lemma 3.1, then introduces the equivalent-norm lemma and the joint-error recursion,
+next proves neighborhood propagation in Lemma 3.4, and finally establishes the exact
+O(1/K ) convergence theorem.
+
+1.3     Notation
+Throughout the theoretical development, we use n for the number of agents and X ∈ Rd×r
+for the matrix variable on the Stiefel manifold. We write
+                                  ⊤         ⊤ ⊤                ⊤
+                          Xk = [ X1,k ,...,Xn,k ] ,     sk = [s1,k ,...,s⊤
+                                                                         n,k ]
+                                                                               ⊤
+
+
+for the stacked primal and auxiliary variables, and
+
+                                         1 n                     1 n
+                                         n i∑                    n i∑
+                                X̄k :=         Xi,k ,   s̄k :=         si,k
+                                            =1                      =1
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                        5
+
+
+for their averages. The consensus projector is
+
+                                                1
+                                            J := 1n 1⊤
+                                                     n ⊗ Id ,
+                                                n
+and we use
+                              Xk := (1n ⊗ Id ) X̄k ,       sk := (1n ⊗ Id )s̄k .
+We also use the lifted mixing matrices
+
+                                   W := W ⊗ Id ,           V := V ⊗ Id ,
+
+so the stacked block recursions are written directly in terms of W and V. The stacked
+Euclidean gradients are denoted by
+
+                              ∇f(X) := [∇ f 1 ( X1 )⊤ ,..., ∇ f n ( Xn )⊤ ]⊤ .
+
+The joint error is defined by                      "             #
+                                                       Xk − Xk
+                                           pk :=                     .
+                                                       sk − sk
+Finally, ∥·∥ F denotes the Frobenius norm.
+
+
+2    A Retraction-Free EXTRA Method for Decentralized Opti-
+     mization
+We consider the decentralized optimization problem on the Stiefel manifold introduced
+in Section 1. Each agent i ∈ {1,...,n} stores a local variable Xi,k ∈ Rd×r and has access only
+to its local objective f i . Let W ∈ Rn×n be a symmetric doubly stochastic mixing matrix
+associated with a connected undirected graph, and let
+
+                               V = θ In +(1 − θ )W,              θ ∈ (0,1/2].
+
+We use the lifted mixing matrices W and V introduced in the notation section. Our con-
+struction starts from the Euclidean correction philosophy of EXTRA and then replaces
+the Euclidean gradient with a surrogate compatible with the geometry of the Stiefel man-
+ifold.
+    For unconstrained consensus optimization, EXTRA corrects the steady state bias of
+decentralized gradient descent by coupling the primal recursion with a memory term.
+An equivalent two-state representation of the Euclidean mechanism can be written as
+
+                                           Xk+1 = WXk + sk ,                             (2.1)
+                                                                  
+                        sk+1 = sk +(W − V)Xk − α ∇f(Xk+1 )−∇f(Xk ) ,                     (2.2)
+6                                 ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+where ∇f(Xk ) is defined in the notation section. This representation makes the role of
+the auxiliary state explicit: the matrix W − V handles the consensus correction, while the
+gradient difference drives descent without introducing a persistent bias under hetero-
+geneity [4, 5]. Our goal is to retain this correction architecture in the setting of the Stiefel
+manifold.
+    To this end, we replace the Euclidean gradient by an approximate gradient mapping
+for orthogonality-constrained optimization [41]. For each agent, define
+                                  Hi ( X ) = Gi ( X )+ βX ( X ⊤ X − Ir ),
+where
+                                     3Ir − X ⊤ X
+                Gi ( X ) = ∇ f i ( XX ⊤ X )      − X sym X ⊤ ∇ f i ( XX ⊤ X ) .
+                                                                             
+                                          2
+The first term provides an ambient descent surrogate tailored to the geometry of the
+Stiefel manifold, while the penalty term controls orthogonality violation. This construc-
+tion allows the geometric information to enter through a local map Hi without changing
+the linear communication structure of EXTRA. For the averaged analysis, we also use the
+corresponding global map
+                                  H ( X ) = G ( X )+ βX ( X ⊤ X − Ir ),
+where G is defined from f := n−1 ∑in=1 f i in the same way as Gi is defined from f i . After
+introducing the algorithm, we write
+                                                                          1 n
+                                                                          n i∑
+                 Hk := [ H1 ( X1,k )⊤ ,..., Hn ( Xn,k )⊤ ]⊤ ,    H̄k :=         Hi ( Xi,k ).
+                                                                             =1
+
+    The resulting algorithm, called RF-EXTRA, is stated in Algorithm 1. The initialization
+follows the EXTRA mechanism and uses the local map Hi evaluated at the initial point.
+    In stacked form, Algorithm 1 reads
+                                           Xk+1 = WXk + sk ,                                      (2.3)
+                              sk+1 = sk +(W − V)Xk − α(Hk+1 − Hk ).                               (2.4)
+Averaging (2.3)–(2.4) and using the doubly stochasticity of W and V yields
+                                 s̄k = −α H̄k ,      X̄k+1 = X̄k − α H̄k .
+This averaged recursion is the key link between RF-EXTRA and the descent analysis de-
+veloped in Section 3.
+    RF-EXTRA has two main advantages. First, it preserves the EXTRA mechanism, so
+the communication layer remains linear and fully decentralized. Second, it avoids ex-
+plicit retractions at every iteration. Each step requires one neighbor mixing update for Xk ,
+one evaluation of the local surrogate map Hi , and one auxiliary correction update for sk .
+Consequently, the method replaces repeated orthogonalization with a cheaper ambient-
+space computation while still maintaining effective control of feasibility and consensus
+through the penalty term and the correction state.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                           7
+
+
+Algorithm 1 RF-EXTRA
+Require: Mixing matrix W, correction matrix V = θ In +(1 − θ )W with θ ∈(0,1/2], stepsize
+    α > 0, penalty parameter β > 0, initial matrices Xi,0 ∈ Rd×r for i = 1,...,n
+ 1: for each agent i = 1,...,n do
+ 2:     Compute Hi ( Xi,0 )
+ 3:     Set si,0 = −αHi ( Xi,0 )
+ 4: end for
+ 5: for k = 0,1,2,... do
+ 6:     for each agent i = 1,...,n in parallel do
+ 7:         Exchange X j,k with neighbors j
+ 8:         Update the primal variable:
+                                                      n
+                                            Xi,k+1 = ∑ wij X j,k + si,k
+                                                     j =1
+
+ 9:         Compute Hi ( Xi,k+1 )
+10:         Update the auxiliary variable:
+                                      n
+                      si,k+1 = si,k + ∑ (wij − vij ) X j,k − α Hi ( Xi,k+1 )− Hi ( Xi,k )
+                                                                                            
+                                     j =1
+
+11:     end for
+12: end for
+
+
+3     Convergence Analysis
+This section establishes convergence of the averaged RF-EXTRA iterate. The analysis
+combines two ingredients: descent properties inherited from the centralized surrogate
+analysis on the Stiefel manifold and a contractive recursion for the joint error. The latter
+is handled in an S-norm, which is essential for the EXTRA subsystem.
+
+3.1   Standing assumptions
+Before stating the assumptions, we collect the constants used throughout the analysis.
+Let
+                      1
+             b( X ) := ∥ X ⊤ X − Ir ∥2F , R := { X ∈ Rd×r : ∥ X ⊤ X − Ir ∥ F ≤ 1/6},
+                      4
+and define the explicit bounded set
+                                                        √
+                             B := { X ∈ Rd×r : ∥ X ∥ F ≤ 7r/6 + 1}.
+8                                     ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+We use L f for a Lipschitz constant of ∇ f on { XX ⊤ X : X ∈ B}, and we define
+
+                               ∥ G ( X )− G (Y )∥ F                        ∥∇b( X )−∇b(Y )∥ F
+               L g := sup                           ,       Lb := sup                         ,
+                      X ̸=Y ∈B      ∥X − Y∥F                      X ̸=Y ∈B     ∥X − Y∥F
+
+                         Mg := sup ∥ G ( X )∥ F ,         C0 := sup ∥∇ f ( XX ⊤ X )∥ F ,
+                                 X ∈R                            X ∈R
+
+and the shorthand
+                               L H := L g + βLb ,         M H := sup ∥ H ( X )∥ F .
+                                                                  X ∈R
+
+      We collect the assumptions used in the convergence analysis.
+
+Assumption 1 (Smooth local models). Each local objective f i is smooth, and the constants
+L f , L g , Lb , Mg , C0 , L H , and M H defined above are finite on the indicated sets.
+
+Assumption 2 (Network). The mixing matrix W is symmetric and doubly stochastic,
+the communication graph is connected, and the second largest singular value satisfies
+σ2 (W ) < 1.
+
+3.2     Averaged-sequence ingredients
+The next lemma records the two properties imported from the centralized analysis: coer-
+civity of the surrogate map on the neighborhood of interest and one-step propagation of
+the averaged iterate inside that neighborhood.
+
+Lemma 3.1 (Averaged neighborhood preservation). If
+
+                                                        6 + 21C0
+                                                 β≥              ,
+                                                            5
+then, for every X ∈ R,
+                                 ∥ H ( X )∥2F ≥ ∥ G ( X )∥2F + β∥ X ⊤ X − Ir ∥2F .                    (3.1)
+Moreover, if
+                                              √                                        
+                                                  n                           1    1    1
+           X̄k ∈ R,        ∥Xk − Xk ∥ F ≤ min 1,    ,                α ≤ min     ,    ,     ,
+                                                 LH                          4L H 4βLb 4β
+
+and                                                √        
+                                             β ≥ 12 2 Mg + 1 ,
+then
+                                                    X̄k+1 ∈ R.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                                  9
+
+
+Proof. The coercivity estimate (3.1) is exactly the statement of DESTINY Lemma 2 for the
+same pointwise map
+                              H ( X ) = G ( X )+ βX ( X ⊤ X − Ir )
+on the same region R; hence it may be cited directly.
+    For the second claim, let
+                                                                        1
+                            Q( X ) := X ⊤ X − Ir ,             b( X ) := ∥ Q( X )∥2F .
+                                                                        4
+Then ∇b( X ) = XQ( X ). As before, if
+                                                  1
+                                              J := 1n 1⊤
+                                                       n ⊗ Id ,
+                                                  n
+then JW = J, JV = J, and J (W − V) = 0. Applying J to the auxiliary recursion gives
+
+                                      Jsk+1 = Jsk − αJ (Hk+1 − Hk ).
+
+Because si,0 = −αHi ( Xi,0 ), averaging yields s̄0 = −α H̄0 , and induction gives
+
+                                       s̄k = −α H̄k            for all k ≥ 0.
+
+Applying J to the primal recursion,
+
+                                             Xk+1 = WXk + sk ,
+
+and using JW = J, we obtain
+
+                                       X̄k+1 = X̄k + s̄k = X̄k − α H̄k .
+
+Now define
+                                       ξ k := H ( X̄k )− H̄k − G ( X̄k ).
+Since H ( X̄k ) = G ( X̄k )+ β∇b( X̄k ), the averaged recursion becomes
+
+                                     X̄k+1 = X̄k − αβ∇b( X̄k )+ αξ k .                              (3.2)
+
+Moreover,
+                           ∥ Xi,k − X̄k ∥ F ≤ ∥Xk − Xk ∥ F ≤ 1,              i = 1,...,n.
+Since X̄k ∈ R, we have ∥ X̄k⊤ X̄k − Ir ∥ F ≤ 1/6, and hence
+                                                                                            √
+                                                          √                                  r 7r
+                 ∥ X̄k ∥2F = tr( X̄k⊤ X̄k ) ≤ tr( Ir )+       r ∥ X̄k⊤ X̄k − Ir ∥ F ≤ r +     ≤ .
+                                                                                            6  6
+                     √
+Therefore ∥ X̄k ∥ F ≤ 7r/6, hence Xi,k ∈ B for all i. Therefore Hi is L H -Lipschitz at the
+points used below, and
+                                                              L
+            ∥ξ k ∥ F ≤ ∥ H ( X̄k )− H̄k ∥ F +∥ G ( X̄k )∥ F ≤ √H ∥Xk − Xk ∥ F + Mg ≤ 1 + Mg .       (3.3)
+                                                                n
+10                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+Because X̄k ∈ R, we have ∥ Q( X̄k )∥ F ≤ 1/6, so every eigenvalue of X̄k⊤ X̄k lies in [5/6,7/6].
+We now estimate the feasibility of X̄k+1 directly through the singular values of X̄k . Let
+                              t := αβ,       X̄k = UΣV ⊤ ,        q j := σj2 − 1,
+where Σ = diag(σj ). Since X̄k ∈ R, we have |q j | ≤ 1/6. Define the penalty-only point
+                                           Zk := X̄k − t∇b( X̄k ).
+Using ∇b( X̄k ) = UΣ(Σ2 − Ir )V ⊤ , we have
+                                      Zk = Udiag σj (1 − tq j ) V ⊤ .
+                                                               
+
+Therefore                                                                  2
+                        ∥ Zk⊤ Zk − Ir ∥2F = ∑ (1 + q j )(1 − tq j )2 − 1
+                                             j
+                                                                                       2
+                                         = ∑ q2j 1 − 2t(1 + q j )+ t2 q j (1 + q j )
+                                             j
+                                                                                                   (3.4)
+                                                    5 2
+                                                      
+                                             ≤ 1 − t ∑ q2j
+                                                    3      j
+                                                      2
+                                                    5
+                                             = 1 − t ∥ X̄k⊤ X̄k − Ir ∥2F .
+                                                    3
+Indeed, the scalar factor in the second line is bounded by 1 − 5t/3 for q j ∈ [−1/6,1/6]
+and t ≤ 1/4: if q j ≥ 0, then 1 − 2t(1 + q j )+ t2 q j (1 + q j ) ≤ 1 − 2t ≤ 1 − 5t/3; if q j < 0, then
+1 − 2t(1 + q j )+ t2 q j (1 + q j ) ≤ 1 − 2t(5/6) = 1 − 5t/3.
+     It remains to include the perturbation αξ k in (3.2). Since the       √ singular values of Zk are
+σj |1 − tq j |, the bounds |q j | ≤ 1/6 and t ≤ 1/4 imply ∥ Zk ∥2 ≤ 7/6. Hence, using X̄k+1 =
+Zk + αξ k ,
+          ∥ X̄k⊤+1 X̄k+1 − Ir ∥ F ≤ ∥ Zk⊤ Zk − Ir ∥ F + 2α∥ Zk ∥2 ∥ξ k ∥ F + α2 ∥ξ k ∥2F
+                                                                       r                         2
+                                                                           7 ∥ξ k ∥ F 2 ∥ξ k ∥ F
+                                                                                       
+                                           5        ⊤
+                                  ≤ 1 − t ∥ X̄k X̄k − Ir ∥ F + 2t                    +t             .
+                                           3                               6 β             β
+     Combine the assumed β condition and (3.3), we have
+                                              ∥ξ k ∥ F    1
+                                                       ≤ √ .
+                                                β       12 2
+Since ∥ X̄k⊤ X̄k − Ir ∥ F ≤ 1/6, t ≤ 1/4, and
+                                    r
+                                      7 1     t  1  1   5
+                                  2       √ +   ≤ +    ≤ ,
+                                      6 12 2 288 6 1152 18
+we obtain                                               
+                                                      5 1 5t 1
+                         ∥ X̄k⊤+1 X̄k+1 − Ir ∥ F ≤ 1 − t   + = .
+                                                      3 6 18 6
+Hence X̄k+1 ∈ R, as claimed.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                         11
+
+
+3.3    Joint-error recursion in an equivalent norm
+We next control the disagreement-correction subsystem associated with RF-EXTRA. The
+key point is that one should not work with the Frobenius operator norm of the linear
+transition matrix. We therefore begin with a standard equivalent-norm lemma.
+    A second subtlety is that the Lipschitz estimate for Hi ( Xi,k+1 )− Hi ( Xi,k ) involves the
+next local iterate. Accordingly, the recursion below is proved in a one-step bootstrap
+form: averaged-region control together with small primal and auxiliary disagreement
+first imply Xi,k ,Xi,k+1 ∈ B , and only then is the L H -Lipschitz property invoked.
+Lemma 3.2 ( [46]). For any given ε > 0, there exists an operator norm ∥·∥S (dependent on A and
+ε) such that ∥ A∥S ≤ ρ( A)+ ε. Consequently, if ρ( A)< 1, then there exists an operator norm ∥·∥S
+for which ∥ A∥S < 1.
+      Under Assumption 2, define
+                                                       
+                                              W− J  I
+                                         P :=             .
+                                              W−V I − J
+Using the standard state-space representation of EXTRA [4, 5], the RF-EXTRA disagree-
+ment state satisfies
+                                                                      
+                                                            0
+                     pk+1 = Ppk + αδk ,  δk :=                           .       (3.5)
+                                                 ( J − I )(Hk+1 − Hk )
+By [47], the condition σ2 (W ) < 1 implies ρ( P) < 1. Applying Lemma 3.2 to A = P, we may
+therefore fix an operator norm ∥·∥S and constants c1 ,c2 > 0 such that
+                          ∥ P∥S =: σ < 1,         c1 ∥ A ∥ F ≤ ∥ A ∥ S ≤ c2 ∥ A ∥ F
+for all stacked variables A in the joint-error space.
+Lemma 3.3 (Joint-error recursion in an equivalent norm). Recall the stacked quantities pk ,
+Hk , and σ introduced earlier. Let c1 ,c2 > 0 satisfy
+                                     c1 ∥ A ∥ F ≤ ∥ A ∥ S ≤ c2 ∥ A ∥ F .
+Let
+                                         1+σ                      √
+                                  a :=       ,        BH := c2 L H n.
+                                          2
+Assume that, for some δS > 0,
+                                                                            √ 
+                                                                     1        n
+                    X̄k ∈ R,     ∥pk ∥S ≤ δS ,    δS ≤ c1 min              ,      ,
+                                                                1 + σ2 (W ) L H
+                         
+                            1     1    1 c1 (1 − σ )
+                                                                    √          
+                α ≤ min        ,     , ,             ,1 ,     β ≥ 12 2 Mg + 1 .
+                           4L H 4βLb 4β 8c2 L H
+Then X̄k+1 ∈ R, and
+                               ∥pk+1 ∥S ≤ a∥pk ∥S + α2 BH ∥ H ( X̄k )∥ F .                  (3.6)
+12                                  ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+Proof. Let
+                                     e k := Xk − Xk ,
+                                     X                           sek := sk − sk .
+From (3.5), we have
+                                      ∥ p k +1 ∥ S ≤ σ ∥ p k ∥ S + α ∥ δ k ∥ S .                            (3.7)
+By norm equivalence and the bound ∥pk ∥S ≤ δS ,
+
+                             e k ∥ F ≤ ∥pk ∥ F ≤ δS ,
+                            ∥X
+                                                                                    δ
+                                                                ∥sek ∥ F ≤ ∥pk ∥ F ≤ S .
+                                                 c1                                 c1
+
+Since X̄k ∈ R, we have ∥ X̄k⊤ X̄k − Ir ∥ F ≤ 1/6, and hence
+                                                                                            √
+                                                          √                                  r 7r
+                 ∥ X̄k ∥2F = tr( X̄k⊤ X̄k ) ≤ tr( Ir )+       r ∥ X̄k⊤ X̄k − Ir ∥ F ≤ r +     ≤ .
+                                                                                            6  6
+                        √
+Therefore ∥ X̄k ∥ F ≤      7r/6. Together with δS /c1 ≤ 1/(1 + σ2 (W )) ≤ 1, this yields
+                                                  √                √
+                                                          e k ∥ F ≤ 7r/6 + 1,
+        ∥ Xi,k ∥ F ≤ ∥ X̄k ∥ F +∥ Xi,k − X̄k ∥ F ≤ 7r/6 +∥X                      i = 1,...,n,
+
+hence Xi,k ∈ B for all i.                               √
+    The assumptions imply ∥Xk − Xk ∥ F ≤ δS /c1 ≤ min{1, n/L H }, and hence all conditions
+in the second part of Lemma 3.1 are satisfied. Therefore
+
+                                                   X̄k+1 ∈ R.
+
+Moreover, subtracting the average from the primal recursion yields
+
+                                          e k +1 = ( W − J ) X
+                                          X                  e k + sek .
+
+Therefore
+                      ∥X                     e k ∥ F +∥sek ∥ F ≤ (1 + σ2 (W )) δS ≤ 1.
+                         e k+1 ∥ F ≤ σ2 (W )∥X
+                                                                               c1
+                                                      √
+Using again X̄k+1 ∈ R, we obtain ∥ X̄k+1 ∥ F ≤ 7r/6 and hence
+                                                     √                       √
+ ∥ Xi,k+1 ∥ F ≤ ∥ X̄k+1 ∥ F +∥ Xi,k+1 − X̄k+1 ∥ F ≤ 7r/6 +∥X      e k+1 ∥ F ≤ 7r/6 + 1,             i = 1,...,n,
+
+so Xi,k+1 ∈ B for all i. Thus every point at which Hi is evaluated in the present step lies in
+B . Since J (W − V) = 0 and sk = −α(1n ⊗ Id ) H̄k , the primal increment satisfies
+
+                                   X k +1 − X k = ( W − I ) X
+                                                            e k + sek − αHk ,
+
+where H̄k := n−1 ∑in=1 Hi ( Xi,k ) and Hk := (1n ⊗ Id ) H̄k . Therefore,
+
+                              ∥ X k +1 − X k ∥ F ≤ 2 ∥ X
+                                                       e k ∥ F +∥sek ∥ F + α∥Hk ∥ F .                       (3.8)
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                                        13
+
+
+Because Xi,k ,Xi,k+1 ∈ B for every i, each Hi is L H -Lipschitz along this step, and therefore
+
+                                               LH n                       L
+                      ∥ H ( X̄k )− H̄k ∥ F ≤      ∑
+                                                n i =1
+                                                       ∥ X̄k − Xi,k ∥ F ≤ √H ∥Xk − Xk ∥ F ,
+                                                                            n
+
+which implies                                              √
+                                   ∥Hk ∥ F ≤ L H ∥X
+                                                  e k ∥ F + n ∥ H ( X̄k )∥ F .                             (3.9)
+Substituting (3.9) into (3.8) and using αL H ≤ 1 give
+                                                     √                               √
+       ∥ X k +1 − X k ∥ F ≤ 3 ∥ X
+                                e k ∥ F +∥sek ∥ F + α n ∥ H ( X̄k )∥ F ≤ 4∥pk ∥ F + α n ∥ H ( X̄k )∥ F .
+
+Therefore we have
+                                                                        √
+               ∥Hk+1 − Hk ∥ F ≤ L H ∥Xk+1 − Xk ∥ F ≤ 4L H ∥pk ∥ F + αL H n ∥ H ( X̄k )∥ F .
+
+Hence
+                                                            4c2 L H
+                     ∥ δ k ∥ S ≤ c 2 ∥ H k +1 − H k ∥ F ≤           ∥pk ∥S + αBH ∥ H ( X̄k )∥ F .
+                                                              c1
+Combining this with (3.7) yields
+                                             
+                                     4c2 L H
+                  ∥ p k +1 ∥ S ≤ σ +         α ∥pk ∥S + α2 BH ∥ H ( X̄k )∥ F .
+                                       c1
+
+The restriction α ≤ c1 (1 − σ)/(8c2 L H ) gives
+
+                                                 4c2 L H    1+σ
+                                           σ+            α≤     = a,
+                                                   c1        2
+which proves (3.6).
+
+Remark. A direct Frobenius-norm contraction argument is unavailable for the RF-
+EXTRA transition
+             √     matrix P. Indeed, if u ̸= 0 satisfies Ju = 0 and z =[0;u]⊤ , then Pz =[u;u]⊤ ,
+so ∥ Pz∥ F = 2 ∥u∥ F > ∥z∥ F . Thus any contraction inequality directly under ∥·∥ F is infea-
+sible. This is why the introduction of the S-norm is crucial.
+
+3.4    Neighborhood propagation
+Once the joint-error recursion is available, we propagate the invariant neighborhood gen-
+erated by Lemma 3.4. The pointwise boundedness facts needed later are simple conse-
+quences of the already-established disagreement control and averaged-region control, so
+we use them directly inside the final theorem proof instead of isolating them as a separate
+lemma.
+14                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+Lemma 3.4 (One-step propagation of the joint neighborhood). Let δS > 0, and define
+
+                                   NS (δS ) := {(X,s) : ∥p∥S ≤ δS }.
+
+Let
+                                              √                     1+σ
+                                  BH := c2 L H n,            a :=       .
+                                                                     2
+Assume the hypotheses of Lemma 3.3. If, for some k ≥ 0,
+                                                                         s
+                                                                             (1 − a)δS
+                       X̄k ∈ R,      (Xk ,sk ) ∈ NS (δS ),          α≤                 ,
+                                                                              BH M H
+
+then
+                              X̄k+1 ∈ R,        (Xk+1 ,sk+1 ) ∈ NS (δS ).
+Proof. By Lemma 3.3, we have X̄k+1 ∈ R and
+
+                              ∥pk+1 ∥S ≤ a∥pk ∥S + α2 BH ∥ H ( X̄k )∥ F .
+
+Since X̄k ∈ R and R is bounded, continuity of H implies
+
+                                          ∥ H ( X̄k )∥ F ≤ M H .
+
+Using ∥pk ∥S ≤ δS , we obtain
+
+                                     ∥pk+1 ∥S ≤ aδS + α2 BH M H .
+
+The stepsize restriction yields
+
+                                        α2 BH M H ≤ (1 − a)δS ,
+
+hence
+                                  ∥pk+1 ∥S ≤ aδS +(1 − a)δS = δS .
+Hence (Xk+1 ,sk+1 ) ∈ NS (δS ).
+
+   The recursive bound above also yields a summed estimate for the joint error, which
+will be used in the final descent argument.
+Lemma 3.5 (Summed joint-error bound). Assume that, for each k = 0,...,K, the one-step hy-
+potheses of Lemma 3.3 hold. Then
+             K                                                                  K
+            ∑      ∥Xk+1 − Xk+1 ∥2F +∥sk+1 − sk+1 ∥2F        ≤ CP,0 + α2 CP,1 ∑ ∥ H ( X̄k )∥2F ,   (3.10)
+            k =0                                                                 k =0
+
+where
+                                    2a2                              2nc2 L2
+                         CP,0 := 2           ∥p0 ∥2S ,       CP,1 := 2 2 H 2 .
+                                c1 (1 − a2 )                        c1 (1 − a )
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                                                       15
+
+
+Proof. Unrolling (3.6) gives
+                                                                            k
+                              ∥pk+1 ∥S ≤ ak+1 ∥p0 ∥S + α2 BH ∑ ak−t ∥ H ( X̄t )∥ F .
+                                                                        t =0
+
+Set ht := ∥ H ( X̄t )∥ F . Using (u + v)2 ≤ 2u2 + 2v2 , we obtain
+                                                                                                   !2
+                                                                                    k
+                               ∥pk+1 ∥2S ≤ 2a2k+2 ∥p0 ∥2S + 2α4 B2H             ∑a      k−t
+                                                                                              ht        .
+                                                                                t =0
+
+Summing over k = 0,...,K yields
+                                                                                                            !2
+                     K                                  K                        K        k
+                    ∑ ∥pk+1 ∥2S ≤ 2∥p0 ∥2S ∑ a2k+2 + 2α4 B2H ∑ ∑ ak−t ht                                         .
+                   k =0                             k =0                        k =0     t =0
+
+The geometric-series bound gives
+                                                    K
+                                                                       a2
+                                                  ∑ a2k+2 ≤ 1 − a2 .
+                                                  k =0
+
+For the second term, Cauchy–Schwarz implies
+                         !2          !                                          !
+                                              k                  k
+                         k
+                                                                                          1 k k−t 2
+                     ∑ ak−t ht          ≤    ∑ ak−t             ∑ ak−t h2t          ≤
+                                                                                        1 − a t∑
+                                                                                                  a ht .
+                     t =0                    t =0               t =0                           =0
+
+Summing over k and exchanging the order of summation,
+                                    !2
+                  K    k
+                                           1 K 2 K k−t            1         K
+                ∑ ∑       a k−t
+                                h t    ≤
+                                         1 − a ∑ t∑h      a ≤
+                                                              ( 1 − a ) 2 ∑ t
+                                                                               h2 .
+                k =0 t =0                      t =0 k = t                 t =0
+
+Therefore,
+                             K                                                      K
+                                              2a2                      2α4 B2
+                             ∑ ∥pk+1 ∥2S ≤ 1 − a2 ∥p0 ∥2S + (1 − aH)2 ∑ ∥ H (X̄k )∥2F .
+                         k =0                                                   k =0
+Finally, norm equivalence gives
+                                                           1
+                      ∥Xk+1 − Xk+1 ∥2F +∥sk+1 − sk+1 ∥2F ≤ 2 ∥pk+1 ∥2S ,
+                                                          c1
+                                √
+and, since α ≤ 1 and BH = c2 L H n,
+    K                                                                                                                K
+                                                                2a2                               2nc2 L2
+   ∑ ∥Xk+1 − Xk+1 ∥2F +∥sk+1 − sk+1 ∥2F ≤ c2 (1 − a2 ) ∥p0 ∥2S + α2 c2 (1 −
+                                                                          2 H
+                                                                            a )2
+                                                                                 ∑ ∥ H (X̄k )∥2F .
+   k =0                                                     1                                      1                 k =0
+
+This is exactly (3.10).
+16                                 ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+3.5     Exact O(1/K ) convergence rate
+We now combine averaged descent with the summed joint-error bound. Summing
+the descent inequality along the averaged trajectory and comparing the different terms
+through Lemma 3.5 yields an exact O(1/K ) convergence rate. Recall that the descent
+coefficient c H is defined in Proposition 3.6.
+Lemma 3.6 (Descent lemma for the averaged RF-EXTRA sequence). Let H̄k :=
+n−1 ∑in=1 Hi ( Xi,k ), let Qk := X̄k⊤ X̄k − Ir . Suppose Assumption 1 holds, suppose moreover that
+Xi,k ∈ B for all i = 1,...,n and X̄k ∈ R. Assume further that the remaining hypotheses in the sec-
+ond part of Lemma 3.1, including
+                              n        itsoparameter assumptions, are satisfied at iteration k. Assume
+                                3     1
+β ≥ 56L2f , and let α ≤ min    8Lh , 4L H   , then we have
+
+                                               3α
+                      h( X̄k+1 ) ≤ h( X̄k )−      ∥ H ( X̄k )∥2F + Γ X (α)∥Xk − Xk ∥2F ,               (3.11)
+                                               16
+where
+                                      17αL2H α2 Lh L2H         5L
+                              Γ X (α) :=     +         ≤ Γ♯X := H .
+                                        8n       n              8n
+Proof. Write Hk := H ( X̄k ). By the second part of Lemma 3.1, we obtain X̄k+1 ∈ R. Hence
+X̄k , X̄k+1 ∈ R ⊂ B , and h is Lh -smooth on B ,
+                                                                      α2 L h
+                        h( X̄k+1 ) ≤ h( X̄k )− α⟨∇h( X̄k ), H̄k ⟩+           ∥ H̄k ∥2F .               (3.12)
+                                                                        2
+Split the inner product into
+                                 −α⟨∇h( X̄k )− Hk , H̄k ⟩− α⟨ Hk , H̄k ⟩.
+Since X k ∈ R implies || X k ||22 ≤ 76 , we have
+                                         9                            21
+                     ∥∇h( X̄k )− Hk ∥2F ≤ ∥ X̄k ( X̄kT X̄k − Ir )∥2F ≤ L2f ∥ Qk ∥2F .
+                                         4                            8
+Moreover,
+                             L                                                   2L2H
+            ∥ Hk − H̄k ∥ F ≤ √H ∥Xk − Xk ∥ F ,         ∥ H̄k ∥2F ≤ 2∥ Hk ∥2F +        ∥Xk − Xk ∥2F .
+                               n                                                  n
+                                                              2
+Next we bound ⟨∇h( X̄k )− Hk , H̄k ⟩, ⟨ Hk , H̄k ⟩ and α 2Lh ∥ H̄k ∥2F separately. For the first one,
+Young’s inequality gives
+                                                                          
+                                                        2      1         2
+      −α⟨∇h( X̄k )− Hk , H̄k ⟩ ≤ α 4∥∇h( X̄k )− Hk ∥ F + ∥ H̄k ∥ F
+                                                              16
+                                                                            2L2H
+                                                                                            
+                                      21 2          2   1              2                   2
+                               ≤ α 4 · L f ∥ Qk ∥ F +         2∥ Hk ∥ F +        ∥Xk − Xk ∥ F
+                                       8               16                    n
+                                 21                 α            αL2
+                               = αL2f ∥ Qk ∥2F + ∥ Hk ∥2F + H ∥Xk − Xk ∥2F .
+                                  2                 8              8n
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                         17
+
+
+For the second term, we write
+
+                    −α⟨ Hk , H̄k ⟩ = −α⟨ Hk , H̄k − Hk ⟩− α∥ Hk ∥2F
+                                                                  
+                                        1
+                                   ≤ α ∥ Hk ∥ F + 2∥ H̄k − Hk ∥ F − α∥ Hk ∥2F
+                                                 2               2
+                                        8
+                                                     2L2
+                                                                    
+                                        1
+                                   ≤ α ∥ Hk ∥2F + H ∥Xk − Xk ∥2F − α∥ Hk ∥2F
+                                        8             n
+                                      7α             2αL2H
+                                   = − ∥ Hk ∥2F +          ∥Xk − Xk ∥2F .
+                                       8               n
+Finally, using the bound on ∥ H̄k ∥2F , we obtain
+
+                        α2 L h             α2 L h               2L2H
+                                                                                  
+                                      2                     2                    2
+                               ∥ H̄k ∥ F ≤          2∥ Hk ∥ F +       ∥Xk − Xk ∥ F
+                          2                  2                    n
+                                                            α2 Lh L2H
+                                         = α2 Lh ∥ Hk ∥2F +           ∥Xk − Xk ∥2F .
+                                                                n
+Therefore, plugging the above three expressions into (3.12), we have
+                                                                           
+                             21 2                                    3α
+       h( X̄k+1 ) ≤ h( X̄k )+ αL f ∥ Qk ∥ F + Γ X (α)∥Xk − Xk ∥ F + − + α Lh ∥ Hk ∥2F .
+                                         2                     2         2
+                             2                                        4
+
+Because α ≤ 3/(8Lh ), the last coefficient is bounded above by −3α/8. Since X̄k ∈ R,
+Lemma 3.1 gives
+                                    ∥ Hk ∥2F ≥ β∥ Qk ∥2F ,
+hence
+                                                     21L f   2
+                                   21 2
+                                     αL f ∥ Qk ∥2F ≤       α∥ Hk ∥2F .
+                                   2                  2β
+Substituting this estimate yields
+                                               2
+                                                      !
+                                        3 21L f
+                 h( X̄k+1 ) ≤ h( X̄k )−   −               α∥ Hk ∥2F + Γ X (α)∥Xk − Xk ∥2F ,
+                                        8   2β
+
+                                                           21L2
+Because β ≥ 56L2f , the coefficient satisfies 38 − 2β f ≥ 16
+                                                           3
+                                                             , which gives (3.11). Since α ≤
+    n           o
+min 8L3 h , 4L1H , then
+
+                                      17αL2H 3αL2H 5αL2H 5L H
+                          Γ X (α) ≤         +     =     ≤     = Γ♯X .
+                                        8n    8n    2n    8n
+18                                 ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+Theorem 3.1 (Exact O(1/K ) convergence rate for the averaged iterate). Assume Assump-
+tions 1 and 2. Let δS > 0 satisfy
+                                                            √ 
+                                                     1        n
+                                  δS ≤ c1 min              ,     ,
+                                                1 + σ2 (W ) L H
+
+and suppose X̄0 ∈ R and (X0 ,s0 ) ∈ NS (δS ). Assume that β satisfies
+                                   
+                                         2 6 + 21C0
+                                                        √           
+                                                                      
+                        β ≥ max 56L f ,             , 12 2 Mg + 1 .
+                                               5
+
+Let
+                                                        5L H
+            ∆h := h( X̄0 )− inf h( X ),        Γ♯X :=        ,      ♯
+                                                                   CP,0 := ∥X0 − X0 ∥2F + CP,0 ,
+                            X ∈R                         8n
+                        √                 1+σ
+            BH := c2 L H n,        a :=       .
+                                           2
+If
+                                               s                                
+                    1     1    1 c1 (1 − σ )     (1 − a)δS   1    3     3       
+     α ≤ ᾱ := min       ,    , ,             ,             ,    ,   ,         ,1 ,                (3.13)
+                    4L H 4βLb 4β 8c2 L H          BH M H M H + 1 8Lh 32Γ♯ CP,1 
+                                                                                      X
+
+then, for every integer K ≥ 0,
+
+                                1 K                      32 ∆h + Γ♯X CP,0
+                                                                      ♯ 
+
+                              K + 1 k∑
+                                                    2
+                                        ∥ H ( X̄k )∥ F ≤                  .                        (3.14)
+                                     =0
+                                                            3α(K + 1)
+
+Consequently,
+                                1 K                        32 ∆h + Γ♯X CP,0
+                                                                          ♯ 
+
+                              K + 1 k∑
+                                                      2
+                                          ∥ G ( X̄k )∥ F ≤                     .                   (3.15)
+                                     =0
+                                                              3α(K + 1)
+                                                                         ♯ ♯ 
+                              1 K                            32  ∆ h + Γ X CP,0
+                                  ∑
+                            K + 1 k =0
+                                       ∥ X̄k⊤ X̄k − Ir ∥2F ≤
+                                                                3αβ(K + 1)
+                                                                                 .                 (3.16)
+
+Hence the RF-EXTRA averaged iterate attains an exact O(1/K ) convergence rate.
+
+Proof. Repeated application of Lemma 3.4 gives X̄k ∈ R and (Xk ,sk ) ∈ NS (δS ) for all k ≥ 0.
+Hence X̄k+1 ∈ R as well. By norm equivalence,
+
+                                                  1          δ       1
+                     ∥Xk − Xk ∥ F ≤ ∥pk ∥ F ≤        ∥pk ∥S ≤ S ≤           ≤ 1.
+                                                  c1         c1 1 + σ2 (W )
+                                     √
+Since X̄k ∈ R, we have ∥ X̄k ∥ F ≤        7r/6; therefore, for every i,
+                                                        √                    √
+              ∥ Xi,k ∥ F ≤ ∥ X̄k ∥ F +∥ Xi,k − X̄k ∥ F ≤ 7r/6 +∥Xk − Xk ∥ F ≤ 7r/6 + 1,
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                             19
+
+
+so Xi,k ∈ B for all i,k. Moreover, R ⊂ B , hence X̄k , X̄k+1 ∈ B . Therefore Lemma 3.6 applies
+at every step. Summing (3.11) from k = 0 to K and using Γ X (α) ≤ Γ♯X yield
+
+                                              3α K                          K
+
+                                              16 k∑                     X ∑ ∥Xk − Xk ∥ F .
+                                                                        ♯
+                    h( X̄K+1 ) ≤ h( X̄0 )−           ∥ H ( X̄  )∥
+                                                              k F
+                                                                  2
+                                                                    + Γ               2
+
+                                                  =0                      k =0
+
+Now split the consensus sum as
+                        K                                        K −1
+                        ∑ ∥Xk − Xk ∥2F = ∥X0 − X0 ∥2F + ∑ ∥Xk+1 − Xk+1 ∥2F .
+                       k =0                                      k =0
+
+Applying Lemma 3.5 to the second term and discarding the nonnegative ∥sk+1 − sk+1 ∥2F
+part give
+             K                                  K −1                                      K
+          ∑ ∥Xk − Xk ∥2F ≤ CP,0
+                            ♯
+                                + α2 CP,1 ∑ ∥ H ( X̄k )∥2F ≤ CP,0
+                                                              ♯
+                                                                  + α2 CP,1 ∑ ∥ H ( X̄k )∥2F .
+          k =0                                  k =0                                     k =0
+
+Substituting this estimate gives
+                                                                K
+                                        3α
+                 h( X̄K+1 ) ≤ h( X̄0 )−
+                                        16
+                                           − Γ♯X α2 CP,1           ∑ ∥ H (X̄k )∥2F + Γ♯X CP,0
+                                                                                          ♯
+                                                                                              .
+                                                                   k =0
+
+By (3.13),
+                                      3                         3α                3α
+                       Γ♯X αCP,1 ≤       ,       hence             − Γ♯X α2 CP,1 ≥ .
+                                      32                        16                32
+Since h( X̄K+1 ) ≥ infX ∈R h( X ), we conclude that
+
+                  3α K
+                  32 k∑
+                         ∥ H ( X̄k )∥2F ≤ h( X̄0 )− h( X̄K+1 )+ Γ♯X CP,0
+                                                                     ♯
+                                                                         ≤ ∆h + Γ♯X CP,0
+                                                                                     ♯
+                                                                                         .
+                      =0
+
+Dividing by K + 1 proves (3.14). Finally, Lemma 3.1 gives
+
+                              ∥ H ( X̄k )∥2F ≥ ∥ G ( X̄k )∥2F + β∥ X̄k⊤ X̄k − Ir ∥2F ,
+
+hence (3.15) and (3.16) follow immediately from (3.14).
+
+    The convergence proof preserves the averaged iterate and the joint error introduced
+earlier, while replacing a Frobenius-norm contraction argument by an equivalent-norm
+analysis of the EXTRA subsystem. As a result, the final estimate is obtained through a
+transparent descent-and-accumulation argument: averaged descent provides the main
+decrease, the joint-error recursion quantifies the network-induced perturbation, and the
+summed joint-error bound makes it possible to conclude under explicit conditions on α
+and β.
+20                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+4     Experiments
+In this section, we compare RF-EXTRA with four decentralized baselines: DPRGD [29],
+DPRGT [30], DESTINY [41], and REXTRA [31]. Our implementation follows the experi-
+mental setting of [31] as closely as possible.
+
+4.1     Decentralized principal component analysis
+The decentralized principal component analysis (PCA) problem seeks a common low-
+dimensional subspace that preserves the maximal variation of data distributed across
+multiple agents. It can be formulated as
+
+                              1 n
+                             2n i∑
+                   minn −           tr( Xi⊤ Ai⊤ Ai Xi ),          s.t.    X1 = ··· = Xn ,         (4.1)
+                   X∈M
+                                 =1
+
+where Mn := St(d,r )n , St(d,r ) is the Stiefel manifold, n is the number of agents, and
+Ai ∈ Rmi ×d is the local data matrix stored at agent i. As in [31], if X ∗ solves (4.1), then
+X ∗ Q is also a solution for any orthogonal matrix Q ∈ Rr×r . We therefore measure the
+distance to a reference solution by
+
+                               ds ( X,X ∗ ) :=       min          ∥ XQ − X ∗ ∥.
+                                                 Q⊤ Q= QQ⊤ = Ir
+
+4.1.1    Synthetic dataset
+We fix m1 = ··· = mn = 1000, d = 10, r = 5, and n = 8. A Gaussian matrix B ∈ R1000n×d is
+generated and decomposed as B = UΣV ⊤ . We then set Σ    e = diag(ξ j ) with ξ ∈ (0,1) and
+construct A = U ΣV
+                e ⊤ , whose rows are partitioned uniformly across the n agents. The first
+r columns of V form a solution to (4.1). In all experiments we use ξ = 0.8. For the PCA
+problem, the effective scaling is chosen as
+
+                                                        β̂n
+                                              α=              .
+                                                     ∑in=1 mi
+
+All algorithms use constant step sizes. For the synthetic comparison below, the step size
+is selected from
+                         {1,2,4,6,8}×{10−5 ,10−4 ,10−3 ,10−2 }.
+    We first study the robustness of RF-EXTRA with respect to graph topology and the
+internal parameter β. Figure 1 shows that the same qualitative behavior is preserved
+across ring, star, and ER graphs of different densities, and also across a wide range of
+internal β values. This supports the claim that the retraction-free recursion is reasonably
+stable under moderate changes in both network structure and internal tuning.
+    We next compare the wall-clock efficiency of RF-EXTRA and REXTRA under matched
+graph settings. Table 1 shows that, once both methods are stably tuned, RF-EXTRA is
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                                                                                           21
+
+
+                                        Graph comparison                                                            Graph comparison
+                                                             RF-EXTRA, ring                                                              RF-EXTRA, ring
+                                                             RF-EXTRA, star                                                              RF-EXTRA, star
+                                                             RF-EXTRA, ER(p=0.4)                10 3                                     RF-EXTRA, ER(p=0.4)
+                    102                                      RF-EXTRA, ER(p=0.8)                                                         RF-EXTRA, ER(p=0.8)
+                                                                                                10 4
+                    101                                                                         10 5
+    ||gradf(xk)||                                                                   ||xk xk||
+                    100                                                                         10 6
+                                                                                                10 7
+                    10 1                                                                        10 8
+                    10 2                                                                        10 9
+                           0   1000   2000    3000    4000    5000           6000                      0   1000   2000    3000    4000    5000           6000
+                                              Epoch                                                                       Epoch
+                                       Internal comparison                                                         Internal comparison
+                                                               RF-EXTRA, =0.01                                                             RF-EXTRA, =0.01
+                                                               RF-EXTRA, =0.1
+                                                               RF-EXTRA, =1
+                                                                                                10 3                                       RF-EXTRA, =0.1
+                                                                                                                                           RF-EXTRA, =1
+                    102                                        RF-EXTRA, =10                                                               RF-EXTRA, =10
+                                                               RF-EXTRA, =100                   10 4                                       RF-EXTRA, =100
+
+                    101                                                                         10 5
+
+    ||gradf(xk)||                                                                   ||xk xk||
+                    100                                                                         10 6
+                                                                                                10 7
+                    10 1
+                                                                                                10 8
+                    10 2                                                                        10 9
+                           0   1000   2000    3000    4000    5000           6000                      0   1000   2000    3000    4000    5000           6000
+                                              Epoch                                                                       Epoch
+
+Figure 1: Synthetic decentralized PCA: robustness of RF-EXTRA with respect to graph topology and internal
+β. Top row: stationarity and consensus trajectories under ring, star, ER(0.4), and ER(0.8) graphs. Bottom
+row: the same quantities when the internal parameter β varies in {0.01,0.1,1,10,100} on the ring graph.
+
+
+typically slightly faster than REXTRA, which is consistent with the additional cost of
+retraction operations in the latter.
+    After these focused robustness and efficiency checks, we turn to the standard syn-
+thetic decentralized PCA task under the same ER(0.6) graph, seed, and epoch budget for
+all methods. Figure 2 reports the best run of RF-EXTRA, DESTINY, DPRGT, DPRGD, and
+REXTRA under this unified search space. RF-EXTRA is competitive with the strongest
+baselines across the communication budget, and its performance is close to that of REX-
+TRA. Combined with the wall-clock comparison in Table 1, this indicates that RF-EXTRA
+achieves similar empirical behavior while avoiding the extra retraction cost.
+
+4.1.2               MNIST dataset
+To further evaluate the practical behavior of RF-EXTRA on real data, we conduct exper-
+iments on the MNIST dataset. The dataset contains 60,000 handwritten digit images of
+size 28 × 28, which are used to generate the local matrices Ai . We first normalize the pixel
+values by dividing by 255 and then randomly partition the data into n = 8 agents with
+equal numbers of samples. As a result, each agent holds a local matrix Ai of dimen-
+sion 60000
+       n × 784. We compute the top r = 2 principal components with ambient dimension
+d = 784, use a stopping threshold ∥ grad f ( x̄k )∥ < 10−6 , and choose the effective scaling
+                                                                                     β̂
+                                                                        α=               .
+                                                                                   60000
+22                                                                                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+
+               Table 1: Final wall-clock time (seconds) of RF-EXTRA and REXTRA on ER graphs. Smaller is better.
+                                                        Method / stepsize                                                             p = 0.4                  p = 0.6               p = 0.8
+                                                        RF-EXTRA, β̂ = 0.3                                                             0.617                    0.583                 0.588
+                                                        RF-EXTRA, β̂ = 0.05                                                            3.388                    3.268                 3.384
+                                                        RF-EXTRA, β̂ = 0.008                                                          20.433                   20.716                22.598
+                                                        REXTRA, β̂ = 0.3                                                               0.609                    0.645                 0.670
+                                                        REXTRA, β̂ = 0.05                                                              3.613                    3.574                 3.570
+                                                        REXTRA, β̂ = 0.008                                                            23.447                   22.364                23.669
+
+                                              RF-EXTRA, =0.08
+                                                                                103                                 RF-EXTRA, =0.08               10 2                             RF-EXTRA, =0.08                                                  RF-EXTRA, =0.08
+              102                             DESTINY, =0.08                                                        DESTINY, =0.08                                                 DESTINY, =0.08                                                   DESTINY, =0.08
+                                              DPRGT, =0.08                      101                                 DPRGT, =0.08                                                   DPRGT, =0.08                     10 1                            DPRGT, =0.08
+              100                             DPRGD, =0.006                                                         DPRGD, =0.006                 10 4                             DPRGD, =0.006                                                    DPRGD, =0.006
+                                              REXTRA, =0.08                                                         REXTRA, =0.08                                                  REXTRA, =0.08                                                    REXTRA, =0.08
+             10 2                                                               10 1                                                                                                                                10 3
+
+                                                                ||gradf(xk)||                                                         ||xk xk||                                                      ds(xk, x * )
+                                                                                                                                                  10 6
+f(xk) f *
+             10 4                                                               10 3                                                                                                                                10 5
+             10 6                                                                                                                                 10 8
+                                                                                10 5                                                                                                                                10 7
+             10 8
+            10 10                                                               10 7                                                              10 10                                                             10 9
+            10 12
+                    0              2                      4                            0                 2                      4                         0             2                      4                           0             2                      4
+                         Communication quantities                                              Communication quantities                                       Communication quantities                                         Communication quantities
+
+
+Figure 2: Synthetic decentralized PCA on ER(0.6) versus communication quantities. Each method uses its best
+step size selected from {1,2,4,6,8}×{10−5 ,10−4 ,10−3 ,10−2 }. Under this matched search space, RF-EXTRA,
+DESTINY, DPRGT, and REXTRA all select β̂ = 0.08, while DPRGD selects β̂ = 0.006.
+
+
+Similar to the synthetic PCA setting, all methods use constant step sizes, and we select
+the best available step size from the grid
+
+                                                                                                {1,2,6}×{10−4 ,10−3 ,10−2 }.
+
+Among the runs already completed in this grid, the strongest available setting is β̂ = 0.06
+for RF-EXTRA, DESTINY, and DPRGT, while the best available DPRGD run uses β̂ = 0.02.
+Accordingly, Figure 3 reports RF-EXTRA, DESTINY, and DPRGT at β̂ = 0.06 together with
+DPRGD at β̂ = 0.02.
+    Figure 3 shows that RF-EXTRA and DESTINY perform similarly and both improve
+on DPRGT in the later stage, while DPRGD remains clearly weaker within the same com-
+munication budget.
+
+4.2                     Decentralized low-rank matrix completion
+Low-rank matrix completion (LRMC) aims to recover a low-rank matrix A ∈ Rd×T from a
+subset of its observed entries. Let Ω denote the index set of observed entries. The rank-r
+LRMC problem can be written as
+
+                                                                                                                            1               2
+                                                                                                   min                        PΩ ⊙( XV − A) ,
+                                                                                           X ∈Gr(d,r ), V ∈Rr×T             2
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                                                                                                                                                                                           23
+
+
+             105                               RF-EXTRA, =0.06                                                   RF-EXTRA, =0.06            10 2                                RF-EXTRA, =0.06                    100                               RF-EXTRA, =0.06
+                                               DESTINY, =0.06                  104                               DESTINY, =0.06                                                 DESTINY, =0.06                                                       DESTINY, =0.06
+             103                               DPRGT, =0.06                                                      DPRGT, =0.06                                                   DPRGT, =0.06                      10 1                               DPRGT, =0.06
+                                               DPRGD, =0.02                                                      DPRGD, =0.02
+                                                                                                                                            10 4                                DPRGD, =0.02                                                         DPRGD, =0.02
+                                                                                                                                                                                                                  10 2
+             101                                                               102
+                                                                                                                                            10 6                                                                  10 3
+
+f(xk) f *                                                         gradf(xk)                                                         xk xk                                                          ds(xk, x * )
+            10 1                                                                                                                                                                                                  10 4
+                                                                               100
+                                                                                                                                            10 8                                                                  10 5
+            10 3
+                                                                              10 2                                                          10 10                                                                 10 6
+            10 5
+                                                                                                                                                                                                                  10 7
+            10 7                                                              10 4                                                          10 12                                                                 10 8
+            10 9
+                   0.0   0.2    0.4     0.6     0.8       1.0                        0.0   0.2    0.4     0.6     0.8       1.0                     0.0   0.2    0.4     0.6     0.8       1.0                           0.0   0.2    0.4     0.6     0.8        1.0
+                          Communication quantities          1e8                             Communication quantities          1e8                          Communication quantities          1e8                                Communication quantities          1e8
+
+
+
+
+Figure 3: Decentralized PCA on the MNIST dataset versus communication quantities. RF-EXTRA, DESTINY,
+and DPRGT are plotted at β̂ = 0.06, while DPRGD is plotted at its best existing MNIST noMPI step size β̂ = 0.02
+among the currently available runs from {1,2,6}×{10−4 ,10−3 ,10−2 }.
+
+
+where Gr(d,r ) is the Grassmann manifold, ⊙ denotes the Hadamard product, and PΩ
+is the observation mask. In the decentralized setting, the partially observed matrix is
+partitioned column-wise across n agents into local blocks A1 ,..., An . Using the standard
+representation of the Grassmann manifold through the Stiefel manifold, the problem can
+be reformulated as a decentralized optimization problem over St(d,r ),
+                                                   1 n
+                                                     ∑
+                                                                                 2
+                                              min         PΩi ⊙ Xi Vi ( Xi )− Ai ,                                                                                s.t.                 X1 = ··· = Xn ,
+                                      Xi ∈St(d,r ) 2 i =1
+
+where Ωi is the local observation pattern and Vi ( Xi ) is the corresponding least-squares
+factor. Following [31], we consider a synthetic setup with T = 1000, d = 100, r = 5, and
+n = 8, where the ground-truth low-rank matrix is generated from Gaussian factors and
+the observation mask is sampled with rate µ =r (d + T −r )/(dT ). More precisely, if L ∈Rd×r
+and R ∈ Rr×T are Gaussian factors, then the target matrix is generated as
+                                                                                                            A = LR + 10−3 E,
+where E ∈ Rd×T has i.i.d. standard normal entries. Thus, the LRMC instance is mildly
+perturbed from an exactly rank-r model. We adopt a ring graph to model the communi-
+cation network among agents. For LRMC, we use the effective scaling
+                                                                                                                    α = β̂ × n.
+All algorithms are implemented with constant step sizes, and the candidate step sizes are
+selected from the grid
+                            {1,2,5,8}×{10−4 ,10−3 ,10−2 }.
+We run each method for at most 1500 epochs and terminate early if ∥ grad f ( x̄k )∥ < 10−6 .
+    Because the perturbed LRMC instance does not admit a practically meaningful exact
+reference solution, we only report the stationarity and Euclidean consensus panels in the
+revised communication plot. Figure 4 shows that RF-EXTRA reaches low stationarity and
+consensus levels more rapidly than DESTINY and DPRGT in the plotted regime, while
+DPRGD remains less competitive within the same budget. Figure 5 further compares
+representative RF-EXTRA and DESTINY step sizes on the same communication axis and
+shows the same qualitative trend.
+24                                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+                      102                              RF-EXTRA, =6.25e-4                                               RF-EXTRA, =6.25e-4
+                      101                              DESTINY, =2.5e-4               10 1                              DESTINY, =2.5e-4
+                                                       DPRGT, =2.5e-4                                                   DPRGT, =2.5e-4
+                      100                              DPRGD, =6.25e-5                10 2                              DPRGD, =6.25e-5
+
+                     10 1
+         gradf(xk)
+                                                                                      10 3
+                     10 2                                                     xk xk
+                     10 3                                                             10 4
+                     10 4
+                                                                                      10 5
+                     10 5
+                     10 6                                                             10 6
+                        0.0   0.2         0.4   0.6   0.8         1.0   1.2              0.0   0.2         0.4   0.6   0.8         1.0   1.2
+                                    Communication quantities            1e7                          Communication quantities            1e7
+
+
+Figure 4: Decentralized LRMC on the ring graph versus communication quantities. Only the stationarity
+and Euclidean consensus panels are shown, since the perturbed instance does not provide an exact-solution
+reference panel of comparable value. For each method, the step size is selected by the earliest epoch at which
+∥ grad f ( x̄k )∥ < 10−6 .
+
+                                                       RF-EXTRA, =6.25e-4                                               RF-EXTRA, =6.25e-4
+                     101                               DESTINY, =6.25e-4                                                DESTINY, =6.25e-4
+                                                       RF-EXTRA, =2.5e-4              10 2                              RF-EXTRA, =2.5e-4
+                                                       DESTINY, =2.5e-4                                                 DESTINY, =2.5e-4
+                     10 1                              RF-EXTRA, =1e-3                                                  RF-EXTRA, =1e-3
+                                                       DESTINY, =1e-3                 10 4                              DESTINY, =1e-3
+
+         gradf(xk)                                                            xk xk
+                     10 3
+
+                     10 5                                                             10 6
+
+                     10 7                                                             10 8
+
+                        0.0         0.5         1.0         1.5         2.0              0.0         0.5         1.0         1.5         2.0
+                                    Communication quantities            1e7                          Communication quantities            1e7
+
+
+Figure 5: Decentralized LRMC on the ring graph versus communication quantities for representative RF-EXTRA
+and DESTINY step sizes. We again retain only the stationarity and Euclidean consensus panels.
+
+
+5    Conclusion
+We proposed RF-EXTRA, a decentralized retraction-free method for optimization on
+the Stiefel manifold. The method combines an ambient-space surrogate for the
+orthogonality-constrained local models with an EXTRA-based primal-dual recursion,
+thereby preserving a simple decentralized communication structure while avoiding ex-
+plicit per-iteration retractions.
+    On the theoretical side, the analysis is built on the averaged iterate and the joint error
+(Xk − Xk ,sk − sk ). By establishing a contractive recursion for the joint error under an equiv-
+alent norm and then comparing the different terms in the descent analysis, we obtain an
+exact O(1/K ) convergence guarantee for the averaged iterate.
+    The experiments indicate that RF-EXTRA is a competitive retraction-free decentral-
+ized solver for optimization problems on the Stiefel manifold. On PCA and low-rank
+matrix completion, it delivers favorable empirical performance and communication ef-
+ficiency relative to the reported baselines. These results support retraction-free decen-
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                             25
+
+
+tralized correction as a promising direction for large-scale optimization on matrix mani-
+folds.
+
+
+References
+ [1] John Duchi, Alekh Agarwal, and Martin Wainwright. Dual averaging for distributed opti-
+     mization: Convergence analysis and network scaling. IEEE Transactions on Automatic Control,
+     2011.
+ [2] Kun Yuan, Qing Ling, and Wotao Yin. On the convergence of decentralized gradient descent.
+     SIAM Journal on Optimization, 26(3):1835–1854, 2016.
+ [3] Sulaiman A. Alghunaim and Kun Yuan. A unified and refined convergence analysis for
+     non-convex decentralized learning. IEEE Transactions on Signal Processing, 2022.
+ [4] Wei Shi, Qing Ling, Gang Wu, and Wotao Yin. Extra: An exact first-order algorithm for
+     decentralized consensus optimization. SIAM Journal on Optimization, 25(2):944–966, 2015.
+ [5] Kun Yuan, Bicheng Ying, Xiaochuan Zhao, and Ali H. Sayed. Exact diffusion for distributed
+     optimization and learning — part i: Algorithm development. IEEE Transactions on Signal
+     Processing, 2018.
+ [6] Lei Huang, Xianglong Liu, Bo Lang, Adams Yu, Yongliang Wang, and Bo Li. Orthogonal
+     weight normalization: Solution to optimization over multiple dependent stiefel manifolds
+     in deep neural networks. In Proceedings of the AAAI Conference on Artificial Intelligence, 2018.
+ [7] Minhyung Cho and Jaehyung Lee. Riemannian approach to batch normalization. In Ad-
+     vances in Neural Information Processing Systems, 2017.
+ [8] Furong Zhang and Mert Pilanci. Riemannian preconditioned lora for fine-tuning foundation
+     models. arXiv preprint arXiv:2402.02347, 2024.
+ [9] L Susan Blackford, Antoine Petitet, Roldan Pozo, Karin Remington, R Clint Whaley, James
+     Demmel, Jack Dongarra, Iain Duff, Sven Hammarling, Greg Henry, et al. An updated
+     set of basic linear algebra subprograms (blas). ACM Transactions on Mathematical Software,
+     28(2):135–151, 2002.
+[10] Anastasia Koloskova, Tao Lin, and Sebastian U. Stich. An improved analysis of gradient
+     tracking for decentralized machine learning. In Advances in Neural Information Processing
+     Systems, 2022.
+[11] Hanlin Tang, Xiangru Lian, Ming Yan, Ce Zhang, and Ji Liu. D2 : Decentralized training over
+     decentralized data. In Proceedings of the International Conference on Machine Learning, 2018.
+[12] Huaqing Li, Lifeng Zheng, Zheng Wang, Yu Yan, Liping Feng, and Jing Guo. S-diging: A
+     stochastic gradient tracking algorithm for distributed optimization. IEEE Transactions on
+     Emerging Topics in Computational Intelligence, 2020.
+[13] Shi Pu and Angelia Nedić. Distributed stochastic gradient tracking methods. Mathematical
+     Programming, 2021.
+[14] Yue Liu, Tao Lin, Anastasia Koloskova, and Sebastian U. Stich. Decentralized gradient track-
+     ing with local steps. Optimization Methods and Software, 2023.
+[15] Z. Li, W. Shi, and M. Yan. A decentralized proximal-gradient method with network inde-
+     pendent step-sizes and separated convergence rates. IEEE Transactions on Signal Processing,
+     67(17):4494–4506, 2019.
+[16] Mingyi Hong, Davood Hajinezhad, and Ming-Min Zhao. Prox-pda: The proximal primal-
+     dual algorithm for fast distributed nonconvex optimization and learning over networks. In
+     International Conference on Machine Learning, pages 1529–1538. PMLR, 2017.
+26                              ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27
+
+
+[17] Kun Yuan, Sulaiman A. Alghunaim, and Xinmeng Huang. Removing data heterogeneity
+     influence enhances network topology dependence of decentralized sgd. Journal of Machine
+     Learning Research, 2023.
+[18] Paolo Di Lorenzo and Gesualdo Scutari. Next: In-network nonconvex optimization. IEEE
+     Transactions on Signal and Information Processing over Networks, 2016.
+[19] Anastasia Koloskova, Sebastian U. Stich, and Martin Jaggi. Decentralized stochastic op-
+     timization and gossip algorithms with compressed communication. In Proceedings of the
+     International Conference on Machine Learning, 2019.
+[20] Yutong He, Xinmeng Huang, and Kun Yuan. Unbiased compression saves communication
+     in distributed optimization: When and how much? In Advances in Neural Information Pro-
+     cessing Systems, 2023.
+[21] Chuyan Chen, Yutong He, Pengrui Li, Weichen Jia, and Kun Yuan. Greedy low-rank gradi-
+     ent compression for distributed learning with convergence guarantees. IEEE Transactions on
+     Signal Processing, 2026.
+[22] Aleksandr Beznosikov, Samuel Horváth, Peter Richtárik, and Mher Safaryan. On biased
+     compression for distributed learning. Journal of Machine Learning Research, 2023.
+[23] Xun Qian, Peter Richtárik, and Tong Zhang. Error compensated distributed sgd can be
+     accelerated. In Advances in Neural Information Processing Systems, 2021.
+[24] Angelia Nedić, Alex Olshevsky, and Wei Shi. Achieving geometric convergence for dis-
+     tributed optimization over time-varying graphs. SIAM Journal on Optimization, 2016.
+[25] Liyuan Liang, Xinmeng Huang, Ran Xin, and Kun Yuan. Understanding the influence of
+     digraphs on decentralized optimization: Effective metrics, lower bound, and optimal algo-
+     rithm. SIAM Journal on Optimization, 2025.
+[26] Sulaiman A. Alghunaim. Local exact-diffusion for decentralized optimization and learning.
+     IEEE Transactions on Automatic Control, 2024.
+[27] Bicheng Ying, Kun Yuan, Yiming Chen, Hanbin Hu, Pan Pan, and Wotao Yin. Exponential
+     graph is provably efficient for decentralized deep training. In Advances in Neural Information
+     Processing Systems, 2021.
+[28] Shixiang Chen, Alfredo Garcia, Mingyi Hong, and Shahin Shahrampour. Decentralized
+     riemannian gradient descent on the stiefel manifold. In International Conference on Machine
+     Learning, pages 1594–1605. PMLR, 2021.
+[29] Kangkang Deng and Jiang Hu. Decentralized projected riemannian gradient method for
+     smooth optimization on compact submanifolds embedded in the euclidean space. Nu-
+     merische Mathematik, 2025.
+[30] Lei Wang, Le Bao, and Xin Liu. A decentralized proximal gradient tracking algorithm for
+     composite optimization on riemannian manifolds. Journal of Machine Learning Research, 2025.
+[31] Jiayuan Wu, Zhanwang Deng, Jiang Hu, Weijie Su, and Zaiwen Wen. Riemannian extra:
+     Communication-efficient decentralized optimization over compact submanifolds with data
+     heterogeneity. arXiv preprint arXiv:2505.15537, 2025.
+[32] Jun Chen, Lina Liu, Tianyi Zhu, Yong Liu, Guang Dai, Yunliang Jiang, and Ivor W Tsang.
+     Decentralized optimization on compact submanifolds by quantized riemannian gradient
+     tracking. IEEE Transactions on Signal Processing, 2025.
+[33] Jiang Hu and Kangkang Deng. Improving the communication in decentralized manifold op-
+     timization through single-step consensus and compression. arXiv preprint arXiv:2407.08904,
+     2024.
+[34] Kangkang Deng and Jiang Hu. Decentralized projected riemannian stochastic recursive
+     momentum method for nonconvex optimization. In Proceedings of the AAAI Conference on
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., 1 (2026), pp. 1-27                               27
+
+
+     Artificial Intelligence, 2025.
+[35] Jun Chen, Haishan Ye, Mengmeng Wang, Tianxin Huang, Guang Dai, Ivor W Tsang, and
+     Yong Liu. Decentralized riemannian conjugate gradient method on the stiefel manifold.
+     arXiv preprint arXiv:2308.10547, 2023.
+[36] Jiang Hu, Kangkang Deng, and Quanzheng Li. Decentralized riemannian natural gradient
+     methods with kronecker product approximations. Journal of the Operations Research Society of
+     China, 2025.
+[37] Shixiang Chen, Alfredo Garcia, Mingyi Hong, and Shahin Shahrampour. On the local linear
+     rate of consensus on the stiefel manifold. IEEE Transactions on Automatic Control, 2023.
+[38] Roberto Tron, Bijan Afsari, and René Vidal. Riemannian consensus for manifolds with
+     bounded curvature. IEEE Transactions on Automatic Control, 2012.
+[39] Alain Sarlette and Rodolphe Sepulchre. Consensus optimization on manifolds. SIAM Journal
+     on Control and Optimization, 2009.
+[40] Yifei Sun, Shixiang Chen, Alfredo Garcia, and Shahin Shahrampour. Global conver-
+     gence of decentralized retraction-free optimization on the stiefel manifold. arXiv preprint
+     arXiv:2405.11590, 2024.
+[41] Lei Wang and Xin Liu. Decentralized optimization over the stiefel manifold by an approxi-
+     mate augmented lagrangian function. IEEE Transactions on Signal Processing, 2022.
+[42] Pierre Ablin and Gabriel Peyré. Fast and accurate optimization on the orthogonal manifold
+     without retraction. In Proceedings of The 25th International Conference on Artificial Intelligence
+     and Statistics, pages 5636–5657. PMLR, 2022.
+[43] Bin Gao, Xin Liu, and Ya-xiang Yuan. Parallelizable algorithms for optimization problems
+     with orthogonality constraints. SIAM Journal on Scientific Computing, 41(3):A1949–A1983,
+     2019.
+[44] Yifei Sun, Shixiang Chen, Alfredo Garcia, and Shahin Shahrampour. Local linear conver-
+     gence of infeasible optimization with orthogonal constraints. IEEE Control Systems Letters,
+     2024.
+[45] Nachuan Xiao, Xin Liu, and Kim-Chuan Toh. Dissolving constraints for riemannian opti-
+     mization. Mathematics of Operations Research, 2024.
+[46] Roger A. Horn and Charles R. Johnson. Matrix Analysis. Cambridge University Press, 2012.
+[47] Lei Qin and Ye Pu. Convergence analysis of extra in non-convex distributed optimization.
+     IEEE Control Systems Letters, 2025.
+

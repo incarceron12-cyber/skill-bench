@@ -1,0 +1,1424 @@
+CSIAM Trans. Appl. Math.                                              Vol. x, No. x, pp. 1-25
+doi:                                                                  xx 20xx
+
+
+
+
+Accelerated Decentralized Gradient Descent for Strongly
+Convex Optimization
+ReasFlow Paper Copilot
+
+
+          Abstract. Decentralized stochastic optimization is a standard framework for large-
+          scale learning over networks where a central coordinator is unavailable or undesirable.
+          In this paper we propose Multi-Gossip Accelerated DSGD (MC-ADSGD), a decentral-
+          ized stochastic optimization algorithm that combines a Nesterov-type primal–dual ex-
+          trapolation with a multi-round accelerated gossip averaging primitive (FGA). At each
+          outer iteration, the proposed algorithm performs two calls to FGA with gossip depth
+          R, thereby allowing multiple rounds of communication within one optimization step.
+          Under standard smoothness, strong convexity, and bounded-variance assumptions,
+          we establish a non-asymptotic convergence guarantee that makes explicit the depen-
+          dence on (µ,L,σ2 ,n,R,β) and on a heterogeneity quantity G ∗ measuring the mismatch
+          between local and global optima. The resulting bound consists of a linearly decaying
+          transient term together with stochastic and heterogeneity-dependent residual terms.
+          The corresponding communication-complexity consequence exhibits the scaling
+                                                     s        !
+                                               σ 2     L   1
+                                         Oe        +     p      ,
+                                              µnϵ      µ 1− β
+
+          up to logarithmic factors, with the heterogeneity contribution entering through the
+                                                                                        p
+                                                                                    O(1/ 1 − β)
+          residual floor in the convergence bound. This also yields the guideline R= e
+          for the gossip depth.
+AMS subject classifications: 90C25, 68W15, 65K05
+Key words: Decentralized optimization, stochastic gradient methods, distributed learning, com-
+munication complexity, gossip algorithms
+
+
+
+1   Introduction
+Decentralized stochastic optimization has become a standard tool for large-scale learning
+when data and computation are distributed across many workers but a central parameter
+server is either undesirable or unavailable. In such systems, each node only exchanges
+messages with its neighbors according to an underlying communication graph. This ar-
+chitecture improves robustness, alleviates the single-point bottleneck of centralized syn-
+chronization, and naturally matches settings where data are generated and stored at the
+
+http://www.global-sci.org/csiam-am                  1                   ©20xx Global-Science Press
+2                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+edge. At the same time, local computation and network communication are tightly cou-
+pled: aggressive local updates may accelerate descent, while insufficient mixing ampli-
+fies disagreement across the network and slows global convergence.
+    A large body of work has therefore focused on characterizing the trade-off between
+optimization progress and consensus error for decentralized stochastic gradient meth-
+ods. Classical decentralized SGD (often called D-SGD or D-PSGD) uses one consensus
+step per iteration and achieves convergence guarantees that explicitly depend on the
+spectral gap of the mixing matrix, the condition number of the objective, and the vari-
+ance of the stochastic gradients [5, 14, 17]. Subsequent methods such as EXTRA, exact
+diffusion, and gradient-tracking variants reduce steady-state bias and improve commu-
+nication efficiency by better correcting the drift between local models and the network av-
+erage [7, 11, 13, 18]. In parallel, accelerated methods and multi-consensus schemes have
+demonstrated that several rounds of communication per iteration, possibly combined
+with polynomial (Chebyshev-type) gossip, can substantially improve the dependence on
+the spectral gap [2, 4, 12].
+    Despite substantial progress on decentralized optimization, it remains useful to un-
+derstand how accelerated optimization dynamics and accelerated communication prim-
+itives interact in the stochastic strongly convex regime. In particular, one would like to
+clarify how multiple communication rounds within each outer iteration affect the over-
+all dependence on the condition number, the network spectral gap, the stochastic noise
+level, and the residual terms induced by data heterogeneity.
+    Motivated by this question, we propose Multi-Gossip Accelerated DSGD (MC-ADSGD),
+a decentralized stochastic optimization algorithm that combines a Nesterov-type primal–
+dual extrapolation with two calls to a fast gossip averaging operator (FGA) per outer it-
+eration. The gossip depth R controls the number of communication rounds inside each
+FGA call. In the parameter regime considered in our analysis, we further couple the mini-
+batch size and the gossip depth through the choice B = R, so that increasing R improves
+communication accuracy while also reducing gradient variance.
+    Our focus in this paper is on presenting the proposed MC-ADSGD method and mak-
+ing its convergence and communication-complexity implications explicit in the strongly
+convex stochastic setting. Under standard smoothness, strong convexity, and bounded-
+variance assumptions, we derive a Lyapunov-based convergence bound consisting of a
+linearly decaying term together with stochastic and heterogeneity-dependent residual
+terms. This bound leads to a communication-complexity consequence of order
+                                               s         !
+                                         σ 2     L    1
+                                    Oe       +     p       ,
+                                        µnϵ      µ 1− β
+up to logarithmic factors, while the heterogeneity quantity G ∗ enters through the residual
+accuracy floor.
+    The purpose of the present paper is therefore to give a self-contained presentation
+of the proposed algorithm and its analysis, and to isolate the communication-complexity
+consequence of the current proof in a form suitable for further comparison and extension.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                     3
+
+
+Contributions.      The main contributions of this work are as follows.
+
+    • We propose Multi-Gossip Accelerated DSGD (MC-ADSGD), a decentralized stochas-
+      tic optimization algorithm that combines a Nesterov-type primal–dual extrapola-
+      tion with a multi-round accelerated gossip primitive (FGA), and we specify the
+      parameter regime analyzed in this paper.
+
+    • We derive an explicit strongly convex convergence guarantee for the proposed MC-
+      ADSGD algorithm, whose dependence on (µ,L,σ2 ,n,R,β) and on the heterogeneity
+      quantity G ∗ is stated in closed form.
+
+    • We isolate the corresponding communication-complexity consequence,     p whichp ex-
+      hibits a stochastic term of order σ2 /(µnϵ) and a network term of order L/µ/ 1 − β,
+                                                                              p
+      up to logarithmic factors, together with the scaling guideline R = eO(1/ 1 − β).
+
+    • We collect the technical derivations in the appendix and organize the proof through
+      a coupled Lyapunov argument that tracks both network disagreement and opti-
+      mization error.
+
+
+2    Related Work
+This section briefly reviews the most relevant literature on decentralized stochastic opti-
+mization, multi-round and accelerated gossip, and communication-efficient accelerated
+methods, and situates Multi-Gossip Accelerated DSGD within this landscape.
+
+Decentralized stochastic gradient methods. Early decentralized stochastic gradient meth-
+ods such as D-SGD and D-PSGD [5, 14] apply one consensus (or gossip) step per iteration
+and establish convergence guarantees that explicitly depend on the spectral gap of the
+underlying mixing matrix. These methods are simple and widely used, but their com-
+munication complexity can be suboptimal on poorly connected graphs, and their steady-
+state error typically reflects a nonvanishing disagreement component. Variants based on
+EXTRA and exact diffusion [13, 17, 18] as well as gradient-tracking schemes such as DIG-
+ing, NEXT, and related algorithms [7, 11, 16] mitigate this issue by tracking the global
+gradient more accurately and correcting local drift. Many of these works operate either
+in deterministic or diminishing-stepsize regimes; when stochastic gradients and constant
+stepsizes are considered, the resulting steady-state bounds often make the dependence
+on noise and network parameters only partially explicit.
+
+Gradient tracking and exact diffusion. Gradient-tracking methods maintain auxiliary
+variables that estimate the average gradient across the network and use them to drive
+local updates toward the global optimum. In the deterministic setting, such methods
+achieve exact convergence and, in some cases, are known to be optimal up to logarithmic
+4                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+factors in terms of the dependence on the condition number and the spectral gap [12].
+In the stochastic strongly convex case, recent works have extended gradient tracking
+and exact diffusion to handle gradient noise and non-identical data distributions across
+nodes [10, 15]. Compared with these approaches, the proposed MC-ADSGD algorithm
+does not maintain an explicit gradient-tracking variable; instead, it combines a Nesterov-
+type primal–dual extrapolation with multi-round accelerated gossip and ties the batch
+size to the gossip depth. Our analysis focuses on making the communication complexity
+in this specific design explicit, rather than deriving a general-purpose optimality result
+for all gradient-tracking variants.
+
+Multi-round and accelerated gossip. The idea of performing multiple gossip rounds
+per iteration to accelerate consensus dates back to early work on multi-consensus meth-
+ods and polynomial filtering of the mixing matrix [2, 9]. Chebyshev-accelerated gossip
+schemes design a polynomial in the mixing matrix that minimizes the worst-case contrac-
+                                                                                  p
+tion factor over the spectrum, yielding a number of rounds that scales as O( e 1/ 1 − β)
+with the inverse square root of the spectral gap. Such primitives have been used both
+as stand-alone averaging mechanisms [2] and as building blocks within decentralized
+optimization algorithms [4, 12]. The FGA operator used in the proposed MC-ADSGD
+method is an instance of this general idea: it implements an accelerated gossip averaging
+procedure with a parameter R controlling the number of internal communication rounds
+and a contraction factor ρ that depends explicitly on R and the spectral gap. Our con-
+tribution is to embed this primitive into a stochastic accelerated optimization algorithm
+and to carry out a Lyapunov analysis that tracks both the disagreement recursion and the
+optimization recursion.
+
+Accelerated decentralized methods and communication complexity. Beyond multi-
+consensus, several works have investigated acceleration in decentralized optimization,
+either via Nesterov-type momentum, dual acceleration, or primal–dual mirror maps [3,
+4, 8, 12]. These methods often achieve communication complexity bounds that are opti-
+malp(or nearly
+            p optimal) in the deterministic strongly convex setting, with a characteris-
+tic L/µ/ 1 − β dependence on the condition number and spectral gap. Extensions to
+time-varying or directed graphs further refine these guarantees under more general com-
+munication models [1, 6]. However, many of these results either assume exact oracles,
+lack fully explicit constants in the stochastic regime, or leave the relationship between
+the number of communication rounds per iteration and the stochastic batch size implicit.
+
+Positioning of this work. The algorithm proposed in this paper, Multi-Gossip Accel-
+erated DSGD (MC-ADSGD), combines several ingredients that have each appeared, in
+different forms, in the decentralized optimization literature: local stochastic gradients,
+multi-round accelerated gossip, and an accelerated extrapolation structure. Our em-
+phasis here is not on claiming a universal improvement over all existing decentralized
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                              5
+
+
+methods, but on introducing this particular algorithmic design in the strongly convex
+stochastic regime and making the resulting communication-complexity dependence ex-
+plicit. In particular, the analysis highlights how the gossip depth R, the spectral gap 1 − β,
+and the stochastic noise level jointly enter the final bound, while the heterogeneity term
+contributes an explicit residual component.
+
+
+3    Problem Setup
+We consider the decentralized stochastic optimization problem
+
+                                                          1 n
+                                                          n i∑
+                                         min f ( x ) :=         f i ( x ),
+                                         x ∈Rd               =1
+
+where node i has access only to its local objective f i , its local stochastic gradient or-
+acle, and messages received from its graph neighbors. For a stacked matrix variable
+X = [ x1 ,...,xn ] ∈ Rd×n , we define the network average and disagreement operators by
+
+                                         1 n                      1
+                                         n i∑
+                                 x̄ :=         xi ,       Π := I − 11⊤ .
+                                            =1
+                                                                  n
+
+The quantity ΠX measures consensus error. Throughout the paper, x ⋆ denotes the unique
+minimizer of f , f ⋆ := f ( x ⋆ ), and for each local objective we define f i⋆ := minx f i ( x ). The
+heterogeneity measure is
+                                                     1 n
+                                         G ∗ := f ⋆ − ∑ f i⋆ .
+                                                     n i =1
+The quantity G ∗ captures heterogeneity at the optimum; in particular, G ∗ = 0 in the
+homogeneous-optimum case.
+   Our analysis in Section 5 is based on the following assumptions.
+Assumption 1 (L-smoothness). Each local objective f i is differentiable and L-smooth.
+Assumption 2 (µ-strong convexity). Each local objective f i is µ-strongly convex.
+Assumption 3 (Unbiased stochastic gradients with bounded variance). The stochastic
+gradient oracle at node i is unbiased and has bounded conditional variance:
+
+            E[∇ Fi ( x;ξ i ) | x ] = ∇ f i ( x ), E ∥∇ Fi ( x;ξ i )−∇ f i ( x )∥2 | x ≤ σ2 .
+                                                                                    
+
+Assumption 4 (Communication matrix). The communication matrix W is symmetric and
+doubly stochastic. Its spectral gap parameter is denoted by β ∈ (0,1].
+   Because the batch size and the communication depth are tied together in our final
+design, we set
+                                      B = R,
+6                                   ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+Algorithm 1 FastGossipAverage (FGA)
+Require: Local vector vi , mixing matrix W, rounds R, acceleration parameter η
+Ensure: FGAR (v)i
+ 1: for all nodes i = 1,...,n in parallel do
+         (0)
+ 2:     ai ← vi
+            (1)              (0)
+    3:    ai ← ∑nj=1 Wij a j
+    4:    for r = 1,2,...,R − 1 do
+               (r +1)                       (r )   (r −1)
+    5:        ai      ← (1 + η ) ∑nj=1 Wij a j − ηai
+    6:    end for
+                    ( R)
+    7:    return ai
+    8: end for
+
+
+where R is the number of accelerated gossip rounds used inside each outer iteration. The
+optimization parameter is                  r
+                                              µγ
+                                        θ=       .
+                                               2
+For the accelerated gossip operator, we use the effective contraction parameter
+                                      √
+                                 ρ : = 2(1 − 1 − β ) R .
+                                              p
+
+As R increases, the communication error decreases geometrically through ρ.
+
+
+4        MC-ADSGD Algorithm
+This section gives a concise specification of MC-ADSGD. We first state the accelerated
+gossip primitive used to suppress network disagreement, and then present the full itera-
+tive scheme together with its per-iteration oracle and communication costs.
+
+Communication primitive: FastGossipAverage (FGA).
+
+Main procedure: Multi-Gossip Accelerated DSGD.                      The iteration order is
+          stochastic gradient → z-update (FGA) → x-update (FGA) → y-extrapolation.
+
+Design rationale and per-iteration complexity. The three state variables ( x (k) ,z(k) ,y(k) )
+have distinct algorithmic roles. The point y(k) is the query location for stochastic gradi-
+ents, z(k) aggregates descent information and is consensus-refined, and x (k) tracks the pri-
+mal progress. Accordingly, each outer iteration uses two FGA calls: one in the z-update
+and one in the x-update, followed by
+
+                                     y(k+1) = (1 − θ ) x (k+1) + θz(k+1) .
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                   7
+
+
+Algorithm 2 Multi-Gossip Accelerated DSGD (MC-ADSGD)
+Require: Stepsize γ, momentum parameter θ, gossip depth R
+                (0)    (0)     (0)
+ 1: Initialize xi = yi = zi = 0 for all i = 1,...,n
+ 2: for k = 0,1,2,... do
+ 3:     for all nodes i = 1,...,n in parallel do
+ 4:         Sample ξ i,k+1,1 ,...,ξ 
+                                    i,k +1,R  
+             ( k +1)                       (k)
+ 5:         gi       ← R1 ∑sR=1 ∇ Fi yi ;ξ i,k+1,s
+                               θ ( k ) ( k ) ( k +1) 
+             ( k +1)              z +µy − g
+ 6:         zi       ← FGAR γ           θ
+                                        γ +µ            i 
+                              
+             ( k +1)
+ 7:         xi       ← FGAR (1 − θ ) x (k) + θz(k+1)
+                                                                 i
+             ( k +1)             ( k +1)         ( k +1)
+ 8:       yi   ← (1 − θ ) x i              + θzi
+ 9:    end for
+10: end for
+
+
+At iteration k, node i forms
+
+                                                     1 R
+                                                       ∑
+                                      ( k +1)                     (k)         
+                                    gi           =          ∇ Fi yi ;ξ i,k+1,s ,
+                                                     R s =1
+
+which requires R stochastic-gradient oracle calls (hence nR calls over the network). The
+communication cost is exactly two depth-R FGA invocations, i.e., 2R gossip rounds per
+outer iteration. Therefore, after K outer iterations, the total communication budget is
+
+                                                       T = 2RK,
+
+which is the complexity variable used in Section 5.
+
+
+5     Upper-Bound Analysis
+This section presents the principal upper-bound theorem together with the supporting
+inequalities used in its proof. Detailed derivations are deferred to Appendix A. In addi-
+tion to the heterogeneity quantity
+
+                                                               1 n ⋆
+                                                               n i∑
+                                                 G∗ = f ⋆ −          fi ,
+                                                                  =1
+
+used throughout the paper, the derivation also employs the auxiliary quantity
+                                                           n
+                                            e := 1 ∑ ∥∇ f i ( x ⋆ )∥2 .
+                                            G
+                                                nL i=1
+8                                 ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+5.1    Primary upper-bound theorem
+This subsection states the final communication-complexity guarantee in a compact form.
+The theorem below summarizes the dependence on optimization conditioning ( L,µ), net-
+work connectivity (1 − β), stochastic noise level σ2 , and the target accuracy ϵ. The explicit
+parameter construction used to realize this bound is deferred to Appendix A, so that the
+main text focuses on the final complexity consequence.
+Theorem 5.1 (Convergence complexity for the strongly convex case). Given L ≥ 0, n ≥ 1,
+β ∈ [0,1), and σ > 0, assume that the local objectives { f i }in=1 satisfy Assumptions 1 and 2 with
+µ > 0, that the stochastic gradient oracles satisfy Assumption 3, and that the gossip matrix satisfies
+Assumption 4. Let
+                                          ∆ x : = ∥ x (0) − x ⋆ ∥ 2 .
+Fix a target accuracy ϵ ∈ (0,L∆ x ). Run Multi-Gossip Accelerated DSGD in Algorithm 2 with
+parameter choices (K,R,γ) specified in Appendix Theorem A.2. Then the total number of gossip
+rounds
+                                             T⋆ (ϵ)
+needed to attain
+                                         E f ( x̄ (K) )− f ( x ⋆ ) ≤ ϵ
+                                                                 
+
+satisfies
+                                     2
+                                                 s               !
+                                   σ        L∆ x     L/µ       L∆ x
+                       T⋆ (ϵ) = O
+                                e      ln         +       ln           .                          (5.1)
+                                  µnϵ        ϵ       1− β       ϵ
+
+Here the O(·)
+          e notation suppresses logarithmic factors together with the heterogeneity-dependent
+contribution expressed in the main text through G ∗ .
+    The proof of Theorem 5.1 proceeds through an explicit admissible-rate bound estab-
+lished in Appendix A. The auxiliary results below record the main ingredients that enter
+that proof.
+
+5.2    Supporting lemmas
+We next collect the structural estimates that drive the proof of Theorem 5.1. The roles
+of these lemmas are as follows: (i) relate the proof-internal heterogeneity quantity G e to
+                        ∗
+the paper quantity G , (ii) control local model errors around decentralized surrogates,
+(iii) quantify stochastic variance reduction under batch size R, and (iv) establish coupled
+recursions for disagreement and optimization Lyapunov terms. Their full derivations are
+provided in Appendix A.
+                            e and G ∗ ). Under Assumption 1,
+Lemma 5.1 (Relation between G
+                                                 e ≤ 2G ∗ .
+                                                 G
+In particular, if G ∗ = 0, then G
+                                e = 0.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                                         9
+
+
+Lemma 5.2 (Local model bounds around decentralized surrogates). Under Assumptions 1–
+2, define
+                                 1 n                                
+                      f (ȳ;y) := ∑ f i (yi )+⟨∇ f i (yi ), ȳ − yi ⟩ ,
+                                 n i =1
+and
+                                                                 1 n
+                                                                 n i∑
+                           D f ( x;y) := f ( x )− f (ȳ;y)−            ⟨∇ f i (yi ),x − ȳ⟩.
+                                                                    =1
+Then, for every x ∈ Rd ,
+                                        1 n                         µ            µ
+                  f ( x ) ≥ f (ȳ;y)+     ∑
+                                        n i =1
+                                               ⟨∇ f i (yi ),x − ȳ⟩+ ∥ x − ȳ∥2 + ∥Πy∥2F ,
+                                                                    2            2n
+                                        1 n                         L             L
+                  f ( x ) ≤ f (ȳ;y)+     ∑
+                                        n i =1
+                                               ⟨∇ f i (yi ),x − ȳ⟩+ ∥ x − ȳ∥2 + ∥Πy∥2F .
+                                                                    2            2n
+Consequently,
+              µ             µ                     L             L
+                ∥ x − ȳ∥2 + ∥Πy∥2F ≤ D f ( x;y) ≤ ∥ x − ȳ∥2 + ∥Πy∥2F .
+              2             2n                    2            2n
+Lemma 5.3 (Conditional variance bounds). Under Assumption 3, let
+                                   1 R                                            1 n (k)
+                                     ∑                                            n i∑
+                            (k)                 (k)
+                                                                       h̄(k) :=
+                                                          
+                          hi : =          ∇ Fi yi ;ξ i,k,s ,                            hi ,
+                                   R s =1                                            =1
+and define
+                                             1 n
+                                             n i∑
+                                                             (k)
+                     g(k) := Ek [h̄(k) ] =         ∇ f i ( y i ),      m(k+1) := Ek [z̄(k+1) ].
+                                                =1
+Then
+                                         σ2                                              γ2 σ 2
+                Ek ∥ h̄(k) − g(k) ∥2 ≤      ,        Ek ∥z̄(k+1) − m(k+1) ∥2 ≤                    .
+                                         nR                                          (θ + µγ)2 nR
+Lemma 5.4 (Disagreement potential recursion). Under Assumptions 1–4, define
+                                             4ρ2 (1 + 2ρ2 ) 2 
+                         Ψk := E ∥Πx (k) ∥2F +              θ E ∥Πz(k) ∥2F ,
+                                                                         
+                                                      2
+                                                (1 − ρ ) 2
+
+and
+                                                        (1 − ρ2 )2
+                                                                   
+                                                             2
+                                  λ := max 2(1 − θ ) , 2              .
+                                                      2ρ (1 + 2ρ2 )
+Then, for all k ≥ 0,
+             3ρ2     144L2 λρ4 (1 + ρ2 )γ2                72nL2 ρ4 (1 + ρ2 )γ2
+                                                
+Ψ k +1 ≤           +                               Ψ  k +                      E∥ x̄ (k) − ȳ(k) ∥2
+           1 + 2ρ2          (1 − ρ2 )3                        (1 − ρ2 )3
+           144nLρ4 (1 + ρ2 )γ2                      ∗
+                                                        144nLρ4 (1 + ρ2 )γ2              4         2  2
+                                                                                e + 24ρ (1 + ρ )γ (n − 1)σ .
+                                                                                                                  2
+         +                      E    f ( x̄ (k)
+                                                )− f    +                      G
+                 (1 − ρ2 )3                                    (1 − ρ2 )3                      (1 − ρ2 )3 R
+                                                                                                            (5.2)
+10                                 ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+Lemma 5.5 (Optimization Lyapunov recursion). Under Assumptions 1–4, define
+                                           2       h
+                                           θ    µθ                          i
+                            (k)       ∗
+             Fk := E[ f ( x̄ )]− f ( x )+     +     E ∥Ek−1 [z̄(k) ]− x ∗ ∥2 .
+                                           2γ 2
+Then, for all k ≥ 0,
+                                              
+                                L           µ                         µ
+          Fk+1 ≤ (1 − θ ) Fk +    −(1 − θ )      E∥Πy(k) ∥2F −(1 − θ ) E∥ x̄ (k) − ȳ(k) ∥2
+                               2n           2n                        2
+                     2     2
+                                     
+                    θ γσ       γL + 1
+                 +                      .                                                            (5.3)
+                     2nR (θ + µγ)2
+Moreover, with
+                       λ                              (1 − θ ) µ
+                                                                      ∆k := E∥ x̄ (k) − ȳ(k) ∥2 ,
+                                     
+             aΨ :=       L −(1 − θ )µ ,      b∆ : =              ,
+                       n                                  2
+and
+                                           θ 2 γσ2
+                                                                   
+                                                           γL + 1
+                                      D :=                            ,
+                                            2nR           (θ + µγ)2
+one has
+                                 Fk+1 ≤ (1 − θ ) Fk + aΨ Ψk − b∆ ∆k + D.
+
+
+6     Conclusion
+We presented Multi-Gossip Accelerated DSGD, a decentralized stochastic optimization method
+that combines accelerated optimization dynamics with accelerated multi-round gossip
+communication. The main theorem gives an explicit strongly-convex convergence guar-
+antee with transparent dependence on the stepsize, gossip depth, spectral gap, and stochas-
+tic variance. Under the homogeneous-optimum condition G ∗ = 0, the resulting communi-
+                                                             2
+cation complexity
+          p      pseparates into a stochastic term of order σ /(µnϵ) and a network term
+of order L/µ/ 1 − β, up to logarithmic factors.
+    From a methodological viewpoint, the analysis shows that optimization acceleration
+and communication acceleration should be designed together: the benefit of the extrap-
+olation dynamics appears only when the disagreement recursion is controlled strongly
+enough by multi-gossip communication. This is the role of the FGA primitive and the
+explicit condition on                 √
+                                  ρ = 2(1 − 1 − β ) R .
+                                              p
+
+   A natural next step is to extend the current analysis beyond the strongly convex
+regime and to establish analogous explicit rates under weaker convexity assumptions.
+Another important direction is to understand whether a similarly explicit accelerated
+analysis can be carried out under more general network models, including time-varying
+communication patterns.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                                            11
+
+
+Appendix
+
+A     Detailed Proofs for the Theoretical Results
+This appendix presents the proof details in the order of the supplied theory file, while
+keeping the paper notation consistent with the main text.
+
+Notation alignment.           In the main text, the heterogeneity measure is
+
+                                     1 n ∗
+                                     n i∑
+                       G∗ := f ∗ −         fi ,     f i∗ := min f i ( x ),          f ∗ : = f ( x ∗ ).
+                                                               x
+                                        =1
+
+The supplied proof file also uses the quantity
+                                                      n
+                                           e := 1 ∑ ∥∇ f i ( x ∗ )∥2 ,
+                                           G
+                                               nL i=1
+
+which measures the mismatch of local gradients at the global minimizer. To avoid over-
+loading the symbol G ∗ , we denote that proof-internal quantity by G
+                                                                   e throughout this ap-
+pendix.
+                            e and the main-text heterogeneity G ∗ ). Assume each f i is
+Lemma A.1 (Relation between G
+convex and L-smooth. Then
+                                    e ≤ 2G ∗ .
+                                    G
+In particular, if G ∗ = 0, then G
+                                e = 0.
+
+Proof. Let xi⋆ ∈ argminx f i ( x ), so that f i ( xi⋆ ) = f i⋆ and ∇ f i ( xi⋆ ) = 0. By co-coercivity for
+L-smooth convex functions,
+
+    ∥∇ f i ( x ∗ )−∇ f i ( xi⋆ )∥2 ≤ 2L f i ( x ∗ )− f i ( xi⋆ )−⟨∇ f i ( xi⋆ ),x ∗ − xi⋆ ⟩ = 2L f i ( x ∗ )− f i⋆ .
+                                                                                                                 
+
+
+Summing over i and dividing by nL yields
+                                                                                          !
+                     n                       n
+              e = 1 ∑ ∥∇ f i ( x ∗ )∥2 ≤ 2 ∑ f i ( x ∗ )− f ⋆ = 2                  1 n ⋆
+                                                                                f − ∑ f i = 2G ∗ .
+                                                                                ∗
+                                                             
+              G                                            i
+                 nL i=1                  n i =1                                    n i =1
+
+If G ∗ = 0, then the right-hand side is zero, hence G
+                                                    e = 0.
+
+
+A.1     Setup and assumptions
+We consider
+                                                             1 n
+                                                             n i∑
+                                            min f ( x ) :=         f i ( x ).
+                                            x ∈Rd               =1
+12                                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+For a stacked matrix X = [ x1 ,...,xn ] ∈ Rd×n , define
+
+                                                      1 n                      1
+                                                      n i∑
+                                              x̄ :=         xi ,       Π := I − 11⊤ ,
+                                                         =1
+                                                                               n
+
+so that ΠX measures disagreement. We write
+
+                                        1 n (k)                      1 n (k)                        1 n (k)
+                                        n i∑                         n i∑                           n i∑
+                            x̄ (k) :=         xi ,        ȳ(k) :=         yi ,          z̄(k) :=         zi .
+                                           =1                           =1                             =1
+
+The algorithm parameters are
+                                                                √
+                        r
+                          µγ
+                                                                                1 − β) R ,
+                                                                            p
+                   θ :=      ,                           ρ :=       2(1 −                        B = R.
+                           2
+Assumption 5 (L-smoothness). Each local objective f i is differentiable and L-smooth.
+
+Assumption 6 (µ-strong convexity). The global objective f is µ-strongly convex.
+
+Assumption 7 (Unbiased stochastic gradients with bounded variance). For each node i,
+
+          E[∇ Fi ( x;ξ i ) | x ] = ∇ f i ( x ), E ∥∇ Fi ( x;ξ i )−∇ f i ( x )∥2 | x ≤ σ2 .
+                                                                                  
+
+
+Assumption 8 (Communication matrix and accelerated gossip). The mixing matrix W is
+symmetric and doubly stochastic. The accelerated gossip operator FGAR satisfies
+                                                    √
+               ∥ΠFGAR (U )∥2F ≤ ρ2 ∥ΠU ∥2F ,    ρ = 2(1 − 1 − β ) R ,
+                                                           p
+
+
+for every stacked matrix U.
+
+   Because FGAR is a polynomial in a doubly stochastic matrix, it also preserves aver-
+ages. Hence the averaged iterates satisfy
+                 θ (k)
+     ( k +1)     γ z̄  + µȳ(k) − ḡ(k+1)
+z̄             =         θ
+                                          ,           x̄ (k+1) = (1 − θ ) x̄ (k) + θ z̄(k+1) ,        ȳ(k) = (1 − θ ) x̄ (k) + θ z̄(k) .
+                         γ +µ
+
+
+A.2            Recursion for the disagreement potential
+Lemma A.2 (Recursion of the disagreement potential). Define
+
+                                                     4ρ2 (1 + 2ρ2 ) 2 
+                                 Ψk := E ∥Πx (k) ∥2F +              θ E ∥Πz(k) ∥2F ,
+                                                                                 
+                                                              2
+                                                        (1 − ρ ) 2
+
+
+and
+                                                                  (1 − ρ2 )2
+                                                                             
+                                                                       2
+                                            λ := max 2(1 − θ ) , 2              .
+                                                                2ρ (1 + 2ρ2 )
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                                                13
+
+
+Then, for all k ≥ 0,
+
+             3ρ2     144L2 λρ4 (1 + ρ2 )γ2                72nL2 ρ4 (1 + ρ2 )γ2
+                                                
+Ψ k +1 ≤           +                               Ψ  k +                      E∥ x̄ (k) − ȳ(k) ∥2
+           1 + 2ρ2          (1 − ρ2 )3                        (1 − ρ2 )3
+           144nLρ4 (1 + ρ2 )γ2                         144nLρ4 (1 + ρ2 )γ2              4         2  2         2
+         +                      E    f ( x̄ (k)
+                                                )− f ∗
+                                                        +                      Ge + 24ρ (1 + ρ )γ (n − 1)σ .
+                 (1 − ρ2 )3                                    (1 − ρ2 )3                      (1 − ρ2 )3 R
+                                                                                                           (A.1)
+
+Proof. Set
+                                         θ (k)
+             θ                           γz    + µy(k) − g(k+1)
+     A :=      + µ,      U ( k +1) : =                            ,      V (k+1) := (1 − θ ) x (k) + θz(k+1) .
+             γ                                        A
+
+Then
+
+      z(k+1) = FGAR (U (k+1) ),               x (k+1) = FGAR (V (k+1) ),        y(k) = (1 − θ ) x (k) + θz(k) .
+
+Applying the accelerated-gossip contraction to the z-update gives
+                                                                                    2
+                                                 ρ2 θ
+                         ∥Πz(k+1) ∥2F ≤               Πz (k)
+                                                             + µΠy (k)
+                                                                       − Πg ( k +1)
+                                                                                      .
+                                                 A2 γ                               F
+
+Using ∥ a + b + c∥2 ≤ 3(∥ a∥2 +∥b∥2 +∥c∥2 ) and conditional expectation,
+
+                               3ρ2 θ 2
+                                                                               
+            Ek ∥Πz  ( k +1) 2
+                           ∥F ≤ 2      ∥Πz ∥ F + µ ∥Πy ∥ F + Ek ∥Πg
+                                           (k) 2   2    (k) 2         ( k +1) 2
+                                                                             ∥F .                                 (A.2)
+                               A    γ2
+
+Write
+                            g(k+1) = ∇ f (y(k) )+ ζ (k+1) ,           Ek [ζ (k+1) ] = 0,
+                                                                   (k)              (k)
+where ∇ f (y(k) ) denotes the stacked matrix [∇ f 1 (y1 ),..., ∇ f n (yn )]. Then
+
+                         Ek ∥Πg(k+1) ∥2F = ∥Π∇ f (y(k) )∥2F + Ek ∥Πζ (k+1) ∥2F .
+
+For the deterministic term,
+                                          n
+                ∥Π∇ f (y(k) )∥2F ≤ 2 ∑ ∥∇ f i (yi )−∇ f i (ȳ(k) )∥2 + 2∥Π∇ f (ȳ(k) )∥2F .
+                                                          (k)
+
+                                         i =1
+
+By L-smoothness,
+                               n
+                              ∑ ∥∇ fi (yi )−∇ fi (ȳ(k) )∥2 ≤ L2 ∥Πy(k) ∥2F .
+                                                (k)
+
+                              i =1
+
+Also,
+               ∥Π∇ f (ȳ(k) )∥2F ≤ 2∥Π(∇ f (ȳ(k) )−∇ f ( x̄ (k) ))∥2F + 2∥Π∇ f ( x̄ (k) )∥2F ,
+14                                        ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+with
+                               ∥Π(∇ f (ȳ(k) )−∇ f ( x̄ (k) ))∥2F ≤ nL2 ∥ȳ(k) − x̄ (k) ∥2 .
+For the remaining term, use ∥ a + b∥2 ≤ 2∥ a∥2 + 2∥b∥2 with a = ∇ f i ( x̄ (k) )−∇ f i ( x ∗ ) and
+b = ∇ f i ( x ∗ ), and then the co-coercivity inequality for convex L-smooth functions:
+                                                                                                                
+                ∥∇ f i ( x̄ (k) )−∇ f i ( x ∗ )∥2 ≤ 2L f i ( x̄ (k) )− f i ( x ∗ )−⟨∇ f i ( x ∗ ), x̄ (k) − x ∗ ⟩ .
+
+Summing over i and using ∑in=1 ∇ f i ( x ∗ ) = 0 gives
+                                  n
+                                 ∑ ∥∇ fi (x̄(k) )∥2 ≤ 4nL f (x̄(k) )− f ∗ + 2nL e
+                                                                                    
+                                                                               G.
+                                i =1
+
+Therefore,
+
+     ∥Π∇ f (y(k) )∥2F ≤ 2L2 ∥Πy(k) ∥2F + 4nL2 ∥ x̄ (k) − ȳ(k) ∥2 + 16nL f ( x̄ (k) )− f ∗ + 8nL G.
+                                                                                          
+                                                                                                 e          (A.3)
+
+For the stochastic part, since each node uses a mini-batch of size R,
+
+                                                            ( k +1) 2      σ2
+                                                   Ek ∥ ζ i       ∥ ≤         .
+                                                                           R
+                           ( k +1)
+Let ζ̄ (k+1) := n1 ∑in=1 ζ i          . Then
+                                                        n
+                                      ∥Πζ (k+1) ∥2F = ∑ ∥ζ i
+                                                                ( k +1) 2
+                                                                        ∥ − n∥ζ̄ (k+1) ∥2 .
+                                                       i =1
+
+Using conditional independence and zero conditional mean,
+
+                                                              1 n
+                                                              n2 i∑
+                                                                            ( k +1) 2
+                                         Ek ∥ζ̄ (k+1) ∥2 =           Ek ∥ ζ i      ∥ ,
+                                                                  =1
+
+and hence
+                                                                        ( n − 1) σ 2
+                                               Ek ∥Πζ (k+1) ∥2F ≤                    .                      (A.4)
+                                                                             R
+Substituting (A.3) and (A.4) into (A.2) gives
+
+                         3ρ2 (µ2 + 2L2 )                   12nL2 ρ2 (k)
+     Ek ∥Πz(k+1) ∥2F ≤                    ∥  Πy  (k) 2
+                                                     ∥ F +         ∥ x̄ − ȳ(k) ∥2
+                               A2                            A2
+                           48nLρ2           (k)       ∗
+                                                         24nLρ2         2         2   2 2
+                                                                   e + 3ρ (n − 1)σ + 3ρ θ ∥Πz(k) ∥2F .
+                         +           f ( x̄     )−  f    +         G
+                              A2                             A2            A2 R      A2 γ2
+                                                                                                  (A.5)
+
+Next, apply the accelerated-gossip contraction to the x-update:
+
+     ∥Πx (k+1) ∥2F ≤ ρ2 ∥(1 − θ )Πx (k) + θΠz(k+1) ∥2F ≤ 2ρ2 (1 − θ )2 ∥Πx (k) ∥2F + 2ρ2 θ 2 ∥Πz(k+1) ∥2F .
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                                    15
+
+
+Also,
+                                      Πy(k) = (1 − θ )Πx (k) + θΠz(k) ,
+so
+                      ∥Πy(k) ∥2F ≤ 2(1 − θ )2 ∥Πx (k) ∥2F + 2θ 2 ∥Πz(k) ∥2F ≤ λΨk .
+Now multiply (A.5) by
+                                                   4ρ2 (1 + 2ρ2 ) 2
+                                            α :=                 θ
+                                                     (1 − ρ2 )2
+and add the result to the bound for ∥Πx (k+1) ∥2F . Before simplification this gives the same
+intermediate recursion as in the supplied proof file. Finally use
+             θ                      γ2                                           1            2
+           A≥ ,            A −2 ≤      ,     1 + 2ρ2 ≤ 2(1 + ρ2 ),                      ≤            ,
+             γ                      θ2                                             2
+                                                                             (1 − ρ ) 2   (1 − ρ2 )3
+and absorb the ∥Πy(k) ∥2F term with the bound ∥Πy(k) ∥2F ≤ λΨk . This yields exactly (A.1).
+
+
+A.3     Local surrogate bounds and the optimization Lyapunov recursion
+Lemma A.3 (Local model bounds around decentralized surrogates). Define
+                                1 n                                
+                     f (ȳ;y) := ∑ f i (yi )+⟨∇ f i (yi ), ȳ − yi ⟩ ,
+                                n i =1
+and
+                                                              1 n
+                                                              n i∑
+                           D f ( x;y) := f ( x )− f (ȳ;y)−         ⟨∇ f i (yi ),x − ȳ⟩.
+                                                                 =1
+Then, for every x ∈ Rd ,
+                                       1 n                         µ            µ
+                 f ( x ) ≥ f (ȳ;y)+     ∑
+                                       n i =1
+                                              ⟨∇ f i (yi ),x − ȳ⟩+ ∥ x − ȳ∥2 + ∥Πy∥2F ,
+                                                                   2            2n
+                                       1 n                         L             L
+                 f ( x ) ≤ f (ȳ;y)+     ∑
+                                       n i =1
+                                              ⟨∇ f i (yi ),x − ȳ⟩+ ∥ x − ȳ∥2 + ∥Πy∥2F .
+                                                                   2            2n
+Consequently,
+                   µ             µ                     L             L
+                     ∥ x − ȳ∥2 + ∥Πy∥2F ≤ D f ( x;y) ≤ ∥ x − ȳ∥2 + ∥Πy∥2F .
+                   2             2n                    2            2n
+Proof. Apply the µ-strong convexity and L-smoothness inequalities to each f i at the pair
+( x,yi ), average over i, and use the identity
+                                 1 n                              1
+                                   ∑
+                                 n i =1
+                                        ∥ x − yi ∥2 = ∥ x − ȳ∥2 + ∥Πy∥2F .
+                                                                  n
+
+The claimed two-sided bound for D f ( x;y) follows immediately.
+16                                 ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+Lemma A.4 (Conditional variance bounds for averaged gradients and averaged z-updates).
+Let
+                         1 R                             1 n (k)
+                  hi := ∑ ∇ Fi yi ;ξ i,k,s ,     h̄(k) := ∑ hi ,
+                   (k)              (k)    
+                         R s =1                          n i =1
+and define
+                                           1 n
+                                           n i∑
+                                                           (k)
+                   g(k) := Ek [h̄(k) ] =         ∇ f i ( y i ),          m(k+1) := Ek [z̄(k+1) ].
+                                              =1
+Then
+                                        σ2                                                γ2 σ 2
+               Ek ∥ h̄(k) − g(k) ∥2 ≤      ,       Ek ∥z̄(k+1) − m(k+1) ∥2 ≤                       .
+                                        nR                                            (θ + µγ)2 nR
+Proof. The first estimate follows from mini-batch variance reduction and conditional in-
+dependence across nodes. For the second estimate, use the averaged z-update
+
+                                                 θ z̄(k) + µγȳ(k) − γ h̄(k)
+                                   z̄(k+1) =                                 ,
+                                                           θ + µγ
+
+so that
+                                                              γ
+                               z̄(k+1) − m(k+1) = −               (h̄(k) − g(k) ).
+                                                           θ + µγ
+Squaring and taking conditional expectation gives the result.
+
+Lemma A.5 (Recursion of the optimization Lyapunov term). Define
+                                          2       h
+                                     ∗    θ    µθ                          i
+            Fk := E[ f ( x̄ )]− f ( x )+
+                           (k)
+                                             +     E ∥Ek−1 [z̄(k) ]− x ∗ ∥2 .
+                                          2γ 2
+
+Then, for all k ≥ 0,
+                                              
+                                L           µ                         µ
+          Fk+1 ≤ (1 − θ ) Fk +    −(1 − θ )      E∥Πy(k) ∥2F −(1 − θ ) E∥ x̄ (k) − ȳ(k) ∥2
+                               2n           2n                        2
+                     2     2
+                                     
+                    θ γσ       γL + 1
+                 +                      .                                                                    (A.6)
+                     2nR (θ + µγ)2
+
+Moreover, using ∥Πy(k) ∥2F ≤ λΨk , one has
+
+                                 Fk+1 ≤ (1 − θ ) Fk + aΨ Ψk − b∆ ∆k + D,                                     (A.7)
+
+where
+                       λ                                  (1 − θ ) µ
+                                                                              ∆k := E∥ x̄ (k) − ȳ(k) ∥2 ,
+                                     
+             aΨ :=       L −(1 − θ )µ ,          b∆ : =              ,
+                       n                                      2
+and
+                                             θ 2 γσ2
+                                                                       
+                                                               γL + 1
+                                        D :=                              .
+                                              2nR             (θ + µγ)2
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                                             17
+
+
+Proof. By average preservation of accelerated gossip,
+
+                     ȳ(k) = (1 − θ ) x̄ (k) + θ z̄(k) ,       x̄ (k+1) = (1 − θ ) x̄ (k) + θ z̄(k+1) ,
+
+so
+                                         x̄ (k+1) − ȳ(k) = θ z̄(k+1) − z̄(k) .
+                                                                             
+
+Applying the upper bound from Lemma A.3 at x = x̄ (k+1) and y = y(k) gives
+                                                    *                                    +
+                                                         n
+                                                      1
+                                                      n i∑
+                                                                    (k)
+               f ( x̄ (k+1) ) ≤ f (ȳ(k) ;y(k) )+ θ         ∇ f i (yi ), z̄(k+1) − z̄(k)
+                                                         =1
+                                           Lθ 2 (k+1) (k) 2 L
+                                       +       ∥z̄   − z̄ ∥ + ∥Πy(k) ∥2F .                                     (A.8)
+                                            2                2n
+Insert x ∗ by splitting the inner product:
+
+                                  z̄(k+1) − z̄(k) = ( x ∗ − z̄(k) )+(z̄(k+1) − x ∗ ).
+
+Let
+                                       1 n
+                                       n i∑
+                                                       (k)
+                            g(k) : =         ∇ f i ( y i ),        m(k+1) := Ek [z̄(k+1) ].
+                                          =1
+Taking conditional expectation in (A.8) and using Lemma A.4,
+
+             Ek [ f ( x̄ (k+1) )] ≤ f (ȳ(k) ;y(k) )+ θ ⟨ g(k) ,x ∗ − z̄(k) ⟩+ θ ⟨ g(k) ,m(k+1) − x ∗ ⟩
+                                       Lθ 2                      L              Lθ 2 γ2 σ2
+                                   +        ∥m(k+1) − z̄(k) ∥2 + ∥Πy(k) ∥2F +               .                  (A.9)
+                                        2                       2n            2(θ + µγ)2 nR
+
+Next, use
+                             θ ( x ∗ − z̄(k) ) = θ ( x ∗ − ȳ(k) )+(1 − θ )( x̄ (k) − ȳ(k) ).
+Applying the lower bound of Lemma A.3 with x = x ∗ and x = x̄ (k) gives
+
+                                                                    µθ (k)                     µθ
+             f (ȳ(k) ;y(k) )+ θ ⟨ g(k) ,x ∗ − z̄(k) ⟩ ≤ θ f ( x ∗ )−    ∥ȳ − x ∗ ∥2 − ∥Πy(k) ∥2F
+                                                                     2                         2n
+                                                           +(1 − θ ) f ( x̄ (k) )− D f ( x̄ (k) ;y(k) ) .
+                                                                                                       
+
+
+Substituting this into (A.9) yields
+
+                                                                                          µθ
+      Ek [ f ( x̄ (k+1) )] ≤ (1 − θ ) f ( x̄ (k) )− D f ( x̄ (k) ;y(k) ) + θ f ( x ∗ )− ∥ȳ(k) − x ∗ ∥2
+                                                                        
+                                                                                          2
+                                µθ                                                Lθ   2
+                             − ∥Πy(k) ∥2F + θ ⟨ g(k) ,m(k+1) − x ∗ ⟩+                    ∥m(k+1) − z̄(k) ∥2   (A.10)
+                                2n                                                   2
+                                 L                     Lθ 2 γ2 σ2
+                             + ∥Πy(k) ∥2F +                              .                                    (A.11)
+                                2n                  2(θ + µγ)2 nR
+18                                   ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+The averaged z-update identity implies
+                                  θ
+                            g(k) + (m(k+1) − z̄(k) )+ µ(m(k+1) − ȳ(k) ) = 0.
+                                  γ
+Hence
+                                                     θ 2 ( k +1) ( k ) ( k +1)
+                      θ ⟨ g(k) ,m(k+1) − x ∗ ⟩ = −      ⟨m      − z̄ ,m        − x∗ ⟩
+                                                     γ
+                                                − µθ ⟨m(k+1) − ȳ(k) ,m(k+1) − x ∗ ⟩.
+Using
+                            2⟨ a − b,a − c⟩ = ∥ a − b∥2 +∥ a − c∥2 −∥b − c∥2 ,
+we obtain
+                                   θ 2 (k)           θ2                 θ2
+      θ ⟨ g(k) ,m(k+1) − x ∗ ⟩ =       ∥z̄ − x ∗ ∥2 − ∥m(k+1) − x ∗ ∥2 − ∥m(k+1) − z̄(k) ∥2
+                                   2γ                2γ                 2γ
+                                      µθ (k)           µθ                 µθ
+                                   + ∥ȳ − x ∗ ∥2 − ∥m(k+1) − x ∗ ∥2 − ∥m(k+1) − ȳ(k) ∥2 .
+                                      2                 2                  2
+Substituting this into (A.11), canceling the ∥ȳ(k) − x ∗ ∥2 term, and discarding the nonposi-
+tive term − 2 ∥m(k+1) − ȳ(k) ∥2 , we get
+              µθ
+
+                                           2      
+                                            θ   µθ
+         Ek [ f ( x̄ ( k +1)          ∗
+                             )]− f ( x )+     +      ∥ m ( k +1) − x ∗ ∥ 2
+                                           2γ 2
+                                            θ2
+                                                                   2
+                                                                             Lθ 2
+                                                                                  
+                                                                      θ
+         ≤ (1 − θ ) f ( x̄ (k) )− f ( x ∗ ) + ∥z̄(k) − x ∗ ∥2 −            −        ∥m(k+1) − z̄(k) ∥2
+                                              2γ                     2γ       2
+                                                                             Lθ 2 γ2 σ2
+                                                     
+                                               L µθ
+                                  (k) (k)
+           −(1 − θ ) D f ( x̄ ;y )+              −      ∥Πy(k) ∥2F +                    .
+                                              2n 2n                       2(θ + µγ)2 nR
+Now use the lower bound from Lemma A.3:
+                                            µ                   µ
+                    D f ( x̄ (k) ;y(k) ) ≥ ∥ x̄ (k) − ȳ(k) ∥2 + ∥Πy(k) ∥2F .
+                                             2                  2n
+Then
+                                                L
+               −(1 − θ ) D f ( x̄ (k) ;y(k) )+ ∥Πy(k) ∥2F
+                                               2n                     
+                              µ (k)                    L            µ
+               ≤ −(1 − θ ) ∥ x̄ − ȳ ∥ +    (k) 2
+                                                          −(1 − θ )      ∥Πy(k) ∥2F .
+                              2                       2n            2n
+Finally, by Lemma A.4,
+                                                                          γ2 σ 2
+                       E∥z̄(k) − x ∗ ∥2 ≤ E∥Ek−1 [z̄(k) ]− x ∗ ∥2 +                .
+                                                                      (θ + µγ)2 nR
+Taking full expectation and collecting the two variance contributions gives (A.6). Replac-
+ing ∥Πy(k) ∥2F by λΨk yields (A.7).
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                                    19
+
+
+A.4    Combined Lyapunov recursion and unrolling
+Lemma A.6 (Combined Lyapunov recursion). Let
+
+                             Φk := Fk + uΨk ,        ∆k := E∥ x̄ (k) − ȳ(k) ∥2 .
+
+Set
+                                     λ                            (1 − θ ) µ
+                             aΨ :=     L −(1 − θ )µ ,         b∆ : =          ,
+                                     n                                  2
+        3ρ2     144L2 λρ4 (1 + ρ2 )γ2                 72nL2 ρ4 (1 + ρ2 )γ2               144nLρ4 (1 + ρ2 )γ2
+qΨ :=         +                        ,      c ∆ : =                      ,     c F : =                     ,
+      1 + 2ρ2          (1 − ρ2 )3                         (1 − ρ2 )3                           (1 − ρ2 )3
+                           24ρ4 (1 + ρ2 )γ2 (n − 1)σ2               θ 2 γσ2
+                                                                                          
+                                                                                γL + 1
+              C := c F G +
+                       e                                ,     D :=                           .
+                                  (1 − ρ2 )3 R                       2nR (θ + µγ)2
+Assume                                                                        
+                               θ                   [ aΨ ]+              θ b∆
+                       δ := 1 − − qΨ > 0,                  ≤ u ≤ min       ,     .
+                               2                      δ                2c F c∆
+Then, for all k ≥ 0,                               
+                                                  θ
+                                     Φ k +1 ≤ 1 −     Φk + uC + D.
+                                                  2
+Proof. From Lemma A.5,
+
+                                 Fk+1 ≤ (1 − θ ) Fk + aΨ Ψk − b∆ ∆k + D.
+
+From Lemma A.2 and the fact that E[ f ( x̄ (k) )− f ∗ ] ≤ Fk ,
+
+                                     Ψk+1 ≤ qΨ Ψk + c∆ ∆k + c F Fk + C.
+
+Multiply the second inequality by u and add it to the first one. This yields
+
+                Φk+1 ≤ (1 − θ + uc F ) Fk +( aΨ + uqΨ )Ψk +(uc∆ − b∆ )∆k + uC + D.
+
+Now the upper bound u ≤ θ/(2c F ) implies
+                                                                
+                                                               θ
+                                      (1 − θ + uc F ) Fk ≤ 1 −     F.
+                                                               2 k
+
+Next, by the definition of δ and the lower bound u ≥ [ aΨ ]+ /δ,
+                                                     
+                                                    θ
+                                   aΨ + uqΨ ≤ u 1 −     ,
+                                                    2
+so                                                         
+                                                          θ
+                                     ( aΨ + uqΨ )Ψk ≤ 1 −     uΨk .
+                                                          2
+20                               ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+Finally, the upper bound u ≤ b∆ /c∆ gives uc∆ − b∆ ≤ 0, so the ∆k term is nonpositive and
+may be dropped. Therefore,
+                                                          
+                            θ                              θ
+               Φ k +1 ≤ 1 −                                    Φk + uC + D.
+                                        
+                                Fk + uΨk + uC + D = 1 −
+                            2                              2
+
+
+Proposition A.1 (Feasibility of the interval for u). Assume ρ < 1. Then there exists γ̄( R) > 0
+such that for every 0 < γ ≤ γ̄( R) one has δ > 0 and the interval
+                                                               
+                                    [ aΨ ]+              θ b∆
+                                            ≤ u ≤ min       ,
+                                       δ                2c F c∆
+is nonempty.
+Proof. For fixed R with ρ < 1, the quantity
+
+                                                  (1 − ρ2 )2
+                                                             
+                                              2
+                             λ = max 2(1 − θ ) , 2
+                                                2ρ (1 + 2ρ2 )
+                                       p
+remains bounded as γ ↓ 0, because θ = µγ/2 → 0. Hence
+
+                           3ρ2                         θ       1 − ρ2
+                  qΨ =           + O ( γ2 ),    δ = 1 − − qΨ =         + o (1).
+                         1 + 2ρ2                       2       1 + 2ρ2
+
+Since ρ < 1, we have (1 − ρ2 )/(1 + 2ρ2 ) > 0, and therefore δ > 0 for all sufficiently small
+γ > 0. Also,
+                                     λ              
+                                aΨ = L −(1 − θ )µ = O(1),
+                                     n
+so the lower endpoint [ aΨ ]+ /δ stays bounded. On the other hand,
+
+                            θ       (1 − ρ2 )3
+                               =                    θ ≍ γ−3/2 → +∞,
+                           2c F 288nLρ4 (1 + ρ2 )γ2
+while
+                             b∆   (1 − θ ) µ (1 − ρ2 )3
+                                =                       ≍ γ−2 → +∞.
+                             c∆ 144nL2 ρ4 (1 + ρ2 )γ2
+Thus the right endpoint diverges to +∞ whereas the left endpoint remains bounded, so
+the interval is nonempty for all sufficiently small γ.
+
+Corollary A.1 (Unrolled Lyapunov bound). Assume the conditions of Lemma A.6, and let u
+satisfy the stated interval condition. Then, for every k ≥ 0,
+                                                                 !
+                                       θ k                    θ k
+                                                       
+                                                 2
+                           Φk ≤ 1 −        Φ0 +      1− 1−          N R,γ ,
+                                       2         θ            2
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                                            21
+
+
+where
+                                                                                                                 !
+           144nLρ4 (1 + ρ2 )γ2 e 24ρ4 (1 + ρ2 )γ2 (n − 1)σ2     µγ2 σ2
+                                                           
+                                                                                                    γL + 1
+N R,γ := u                    G +                             +                                                      .
+               (1 − ρ2 )3               (1 − ρ2 )3 R
+                                                                                                  p
+                                                                 4nR                             ( µγ/2 + µγ)2
+
+In particular,
+                                                         k
+                                                θ                  2
+                                       Φk ≤ 1 −                Φ0 + N R,γ .
+                                                2                  θ
+Proof. Iterating the one-step recursion from Lemma A.6 gives
+                                           k        k −1            k −1− t
+                                   θ                              θ
+                          Φk ≤ 1 −               Φ0 + ∑        1−                 (uC + D ).
+                                   2                  t =0        2
+
+Since uC + D does not depend on t, the geometric-series identity yields
+                 k                    k                             k                   !
+                          1 − 1 − 2θ                                                    θ k
+                                                                                  
+           θ                                         θ                          2
+  Φk ≤ 1 −            Φ0 +          (uC + D ) = 1 −                       Φ0 +   1− 1−       (uC + D ).
+           2               1− 1− 2
+                                 θ                   2                          θ       2
+
+Substituting the definitions of C and D shows that uC + D = N R,γ .
+
+A.5     Explicit admissible parameters and the final rate
+Theorem A.1 (Detailed convergence bound in the notation of the supplied proof). Assume
+the conditions of Proposition A.1, and choose u > 0 satisfying the interval condition in Lemma A.6.
+Then, for every k ≥ 0,
+                                                 θ k
+                                                  
+                                                             2
+                                Fk ≤ Φk ≤ 1 −         Φ0 + N R,γ ,
+                                                 2           θ
+where
+                                                             √
+                                    r
+                                            µγ
+                                                                             1 − β) R .
+                                                                         p
+                               θ=              ,      ρ=         2(1 −
+                                             2
+Consequently,
+                                                            θ k
+                                                             
+                                                                    2
+                            E f ( x̄ (k) )− f ( x ∗ ) ≤ 1 −     Φ0 + N R,γ .
+                                                    
+                                                            2       θ
+Proof. Since Φk = Fk + uΨk and uΨk ≥ 0, one has Fk ≤ Φk . The claim therefore follows
+directly from Corollary A.1 and the definition of Fk .
+
+Theorem A.2 (Explicit admissible choice of (γ,R)). Assume Assumptions 1–4. Let
+                                              r
+                       1                           µγ                                           µγ
+                                                                 ρ2 = 2(1 −        1 − β)2R ≤
+                                                                               p
+                  0<γ≤ ,               θ=             ,                                            .
+                      8L                            2                                            4
+22                                      ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25
+
+
+Let
+                                               ∆ x : = ∥ x (0) − x ∗ ∥ 2 .
+Then the interval for u in Lemma A.6 is nonempty. Moreover, with the choice
+                                                             aΨ
+                                                      u :=      ,
+                                                              δ
+for every k ≥ 0 one has
+                                              k                            √
+                                                          192 e n − 1 2 9 2 σ2 γ
+                                                                               r
+                               ∗          θ
+        E f ( x̄   (k)
+                                  
+                         )− f ( x ) ≤ 1 −          L∆ x +     θ G+      σ +        .                  (A.12)
+                                          2               119      6nLR     8 nR µ
+
+Proof. By the assumptions on γ and R,
+                                                     µγ    µ  1
+                                              ρ2 ≤      ≤    ≤ .
+                                                      4   32L 32
+Hence
+                                                       (1 − ρ2 )2
+                                                λ=                  ,
+                                                     2ρ2 (1 + 2ρ2 )
+because for ρ2 ≤ 1/32 the second term in the definition of λ dominates 2(1 − θ )2 . Using
+
+                                             1 + ρ2      33                        1
+                                               2      2
+                                                        ≤ ,                  γ≤      ,
+                                       (1 + 2ρ )(1 − ρ ) 31                       8L
+we obtain
+                                  3ρ2      72L2 γ2 ρ2 (1 + ρ2 )
+                            qΨ =       2
+                                         +
+                                1 + 2ρ     (1 + 2ρ2 )(1 − ρ2 )
+                                      9 33               6      21 21  21
+                              ≤ 3ρ2 + · ρ2 < 3ρ2 + ρ2 = ρ2 ≤ µγ ≤         .
+                                      8 31               5      5  20 160
+Therefore,
+                                   θ             1 21     119
+                           δ = 1 − − qΨ ≥ 1 − −         =     .
+                                   2             8 160 160
+Choose u = aΨ /δ. Since aΨ ≥ 0, this satisfies the lower bound. We verify the two upper
+bounds. First,
+                                   ρ4 (1 + ρ2 ) γ2                
+              2c F aΨ = 288L                2  3
+                                                   λ L −(1 − θ )µ
+                                     (1 − ρ )
+                                            ρ2 (1 + ρ2 )     144 33 2 12 2 3  6
+                           ≤ 144L2 γ2           2        2
+                                                           ≤    · ρ < ρ ≤ µγ = θ 2 .
+                                        (1 + 2ρ )(1 − ρ ) 64 31       5    5  5
+Combining this with δ ≥ 119/160 and θ ≤ 1/4 gives
+                                                     6      3
+                                            2c F aΨ ≤ θ 2 ≤ θ ≤ θδ,
+                                                     5     10
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-25                       23
+
+
+which proves u ≤ θ/(2c F ). Second,
+
+                           ρ4 (1 + ρ2 ) γ2
+            c∆ aΨ = 72L2
+                                                            
+                                           λ L −( 1 − θ ) µ
+                             (1 − ρ2 )3
+                                  ρ2 (1 + ρ2 )    36 33   3     3      3µ
+                  ≤ 36L3 γ2           2        2
+                                                 ≤ · Lρ2 < Lρ2 ≤ µγL ≤     .
+                              (1 + 2ρ )(1 − ρ ) 64 31     5     20     160
+On the other hand,
+                                      (1 − θ ) µ    3µ 119 3µ
+                                 b∆ δ =          δ≥    ·    >  .
+                                          2          8 160 160
+Hence c∆ aΨ ≤ b∆ δ, that is, u ≤ b∆ /c∆ . Thus u is feasible.
+  Now apply Theorem A.1. Since u = aΨ /δ,
+                                                        2
+                               2      e = 2c F aΨ G
+                                 uc F G           e≤ 6 θ Ge ≤ 192 θ G.
+                                                                    e
+                               θ            θδ       5 δ      119
+For the stochastic term carried by C, using u ≤ θ/(2c F ) yields
+
+                              2 24ρ4 (1 + ρ2 )γ2 (n − 1)σ2   n−1 2
+                                u             2 3
+                                                           ≤      σ .
+                              θ        (1 − ρ ) R            6nLR
+For the term D,
+                          σ2 µγ2
+                                                     
+                     2                     γL + 1
+                       D=
+                     θ    nR 2θ           (θ + µγ)2
+                                                            √
+                            σ2 µγ2 γL + 1 σ2 γ             9 2 σ2 γ
+                                                                 r
+                          ≤              =      (γL + 1) ≤          ,
+                            nR 2θ θ 2      nR θ             8 nR µ
+
+where we used θ 2 = µγ/2 and γL ≤ 1/8. It remains to control the initial term. Since the
+initialization is
+                                 (0)   (0)   (0)
+                                xi = yi = zi = 0,
+we have Πx (0) = Πz(0) = 0, hence Ψ0 = 0 and Φ0 = F0 . By L-smoothness of f and ∇ f ( x ∗ )= 0,
+                                                      L                  L
+                              f ( x (0) )− f ( x ∗ ) ≤ ∥ x (0) − x ∗ ∥2 = ∆ x .
+                                                      2                  2
+Also,
+                                  θ 2 µθ µ µθ µ µ 3L
+                                     + = + ≤ + ≤ ,
+                                  2γ 2   4 2  4 8  8
+because θ ≤ 1/4 and µ ≤ L. Therefore,
+                                        
+                                     1 3         7
+                         Φ0 = F0 ≤    +    L∆ x = L∆ x ≤ L∆ x .
+                                     2 8         8
+Substituting these estimates into Theorem A.1 proves (A.12).
+24                                                                                 REFERENCES
+
+
+Translation back to the paper notation. The detailed proof above follows the supplied
+                                                                 e = (nL)−1 ∑i ∥∇ f i ( x ∗ )∥2 .
+file and is therefore written in terms of the auxiliary quantity G
+The paper itself reserves the notation G for the heterogeneity measure f ∗ − n1 ∑i f i∗ . By
+                                          ∗
+
+Lemma A.1,
+                                          e ≤ 2G ∗ .
+                                          G
+Hence the entire proof can be restated in the paper notation without changing the argu-
+ment structure; and in the homogeneous-optimum regime G ∗ = 0, the auxiliary term G    e
+also vanishes, so the communication-complexity corollary stated in the main text follows
+exactly from the same proof chain.
+
+
+References
+ [1] A. Author and B. Coauthor. A representative work on decentralized optimization
+     over time-varying graphs. To be completed, 20XX. Placeholder entry; replace with the
+     specific reference you intend to cite.
+
+ [2] Romain Berthier, Sébastien Bubeck, and Yin Tat Lee. Accelerated gossip in networks
+     using polynomial filtering. SIAM Journal on Optimization, 2020.
+
+ [3] Y. Chen, Y. Ouyang, and H. Xu. Optimal accelerated algorithms for distributed op-
+     timization. To be completed, 2021. Placeholder; fill in with the exact paper if different.
+
+ [4] Dusan Jakovetić, João Xavier, and José M. F. Moura. Fast distributed gradient meth-
+     ods. IEEE Transactions on Automatic Control, 59(5):1131–1146, 2014.
+
+ [5] Xiangru Lian, Ce Zhang, Huan Zhang, Cho-Jui Hsieh, Wei Zhang, and Ji Liu. Can
+     decentralized algorithms outperform centralized algorithms? a case study for de-
+     centralized parallel stochastic gradient descent. In Advances in Neural Information
+     Processing Systems (NeurIPS), 2017.
+
+ [6] Angelia Nedić, Alex Olshevsky, Wei Shi, and César A. Uribe. Distributed opti-
+     mization over time-varying directed graphs. IEEE Transactions on Automatic Control,
+     59(11):3270–3285, 2014.
+
+ [7] Angelia Nedić, Alex Olshevsky, Wei Shi, and César A. Uribe. Achieving geometric
+     convergence for distributed optimization over time-varying graphs. SIAM Journal
+     on Optimization, 27(4):2597–2633, 2017.
+
+ [8] Yurii Nesterov. Lectures on convex optimization: Chapter on optimization over
+     networks. Manuscript, 2018. Preprint.
+
+ [9] Alex Olshevsky and John N. Tsitsiklis. Linear time average consensus on fixed
+     graphs and implications for decentralized optimization and multi-agent control.
+     IEEE Transactions on Automatic Control, 59(9):2227–2240, 2014.
+REFERENCES                                                                              25
+
+
+[10] Shi Pu, Angelia Nedić, and Alex Olshevsky. Distributed stochastic gradient tracking
+     methods. Mathematical Programming, 2021.
+
+[11] Guannan Qu and Na Li. Harnessing smoothness to accelerate distributed optimiza-
+     tion. IEEE Transactions on Control of Network Systems, 5(3):1245–1260, 2018.
+
+[12] Kevin Scaman, Francis Bach, Sébastien Bubeck, Yin Tat Lee, and Laurent Massoulié.
+     Optimal algorithms for non-smooth distributed optimization in networks. In Ad-
+     vances in Neural Information Processing Systems (NeurIPS), 2017.
+
+[13] Wei Shi, Qing Ling, Gang Wu, and Wotao Yin. EXTRA: An exact first-order al-
+     gorithm for decentralized consensus optimization. SIAM Journal on Optimization,
+     25(2):944–966, 2015.
+
+[14] Sebastian U. Stich. Local SGD converges fast and communicates little. In Interna-
+     tional Conference on Learning Representations (ICLR), 2019.
+
+[15] Ran Xin and Usman A. Khan. A general framework for decentralized optimization
+     with gradient tracking. IEEE Transactions on Signal Processing, 68:734–748, 2020.
+
+[16] Jinming Xu, S. Zhu, and W. Yin. Augmented lagrangian-based gradient methods
+     for distributed optimization. To be completed, 2015. Placeholder; adjust to the exact
+     paper you have in mind.
+
+[17] Kun Yuan, Qing Ling, and Wotao Yin. On the convergence of decentralized gradient
+     descent. SIAM Journal on Optimization, 26(3):1835–1854, 2016.
+
+[18] Kun Yuan, Bicheng Ying, and Ali H. Sayed. Exact diffusion for distributed opti-
+     mization and learning–part i: Algorithm development. IEEE Transactions on Signal
+     Processing, 67(3):708–723, 2019.
+

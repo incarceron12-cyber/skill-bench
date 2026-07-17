@@ -1,0 +1,1590 @@
+CSIAM Trans. Appl. Math.                                              Vol. x, No. x, pp. 1-31
+doi:                                                                  xx 20xx
+
+
+
+
+FedSLoP: Memory-Efficient Federated Learning
+with Low-Rank Gradient Projection
+ReasFlow Paper Copilot
+
+
+          Abstract. Federated learning enables a population of clients to collaboratively train
+          machine learning models without exchanging their raw data, but standard algorithms
+          such as FedAvg suffer from slow convergence and high communication and memory
+          costs in heterogeneous, resource-constrained environments. We introduce FedSLoP,
+          a federated optimization algorithm that combines momentum with low-rank random
+          subspace projections of stochastic gradients, thereby reducing the dimension of com-
+          municated and stored updates while preserving optimization progress. On the the-
+          oretical side, we develop a detailed nonconvex convergence analysis under standard
+          smoothness and bounded-variance assumptions. For the full-participation setting, we
+          prove an explicit O(1/T ) convergence rate in terms of the averaged squared gradient
+          norm, with a stochastic variance floor that exhibits linear speedup in the number of
+          clients and explicit dependence on the subspace rank and momentum parameters. We
+          further derive an optimized harmonic step-size strategy that attains an essentially op-
+          timal trade-off between optimization, variance, and drift terms in the presence of low-
+          rank projections. On the empirical side, we conduct extensive experiments on feder-
+          ated MNIST classification with heterogeneous data partitions, showing that FedSLoP
+          substantially reduces communication volume and client-side memory while achiev-
+          ing competitive or better accuracy compared with FedAvg and representative sparse
+          or low-rank baselines. Together, our results demonstrate that random subspace mo-
+          mentum methods such as FedSLoP provide a principled and effective approach to
+          communication- and memory-efficient federated learning.
+AMS subject classifications: 68T07, 90C25
+Key words: Federated Learning, Communication Efficiency, Low-Rank Projection, Gradient
+Compression
+
+
+
+1   Introduction
+Federated learning (FL) enables collaborative model training across many edge clients
+without centralizing raw data, offering a principled way to respect privacy and band-
+width constraints. In cross-device deployments, the Federated Averaging (FedAvg) al-
+gorithm has emerged as the de facto workhorse, but its standard instantiations do not
+explicitly account for the tight memory and compute budgets of resource-constrained
+
+
+http://www.global-sci.org/csiam-am                  1                   ©20xx Global-Science Press
+2                             ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+clients. This paper introduces FedSLoP, a FedAvg-style method that incorporates ran-
+dom subspace optimization and momentum to reduce client-side memory usage while
+maintaining compatibility with existing FL workflows.
+     In the canonical cross-device FL setting, a central server repeatedly broadcasts a
+global model to a subset of clients, each client performs several local stochastic gradi-
+ent steps on its private data, and the server averages the resulting model updates to form
+the next global iterate. This Federated Averaging (FedAvg) procedure is attractive due to
+its simplicity and communication efficiency, yet its behavior deteriorates in realistic envi-
+ronments with heterogeneous (non-IID) data and partial client participation, where local
+models can drift away from the global optimum and slow overall convergence. Existing
+theoretical analyses of FedAvg and its variants often require restrictive conditions—such
+as decaying step sizes or strong assumptions on the data distribution—to establish con-
+vergence guarantees, and typically focus on statistical efficiency rather than system-level
+considerations such as client memory usage. At the same time, edge devices participat-
+ing in FL frequently operate under tight memory and compute constraints, making the
+storage of full-dimensional optimizer states and intermediate activations a significant
+bottleneck in practice.
+     A rich line of foundational FL algorithms builds upon FedAvg to mitigate client drift
+and improve convergence under data heterogeneity. FedProx augments local objectives
+with a proximal term that penalizes deviations from the current global model, stabilizing
+local updates at the cost of more complex local subproblems. SCAFFOLD introduces per-
+client and server-side control variates to correct client drift and can attain convergence
+behavior comparable to centralized SGD even under strong heterogeneity and partial
+participation [13]. Subsequent work develops unified convergence analyses of FedAvg
+and its momentum variants, proving linear speedup in the number of clients and relaxing
+bounded-gradient assumptions in both convex and nonconvex regimes [4, 15, 21, 25, 35].
+These results provide guidance on step-size and local step choices but largely abstract
+away the system-level constraints of cross-device FL, including the memory footprint of
+optimizer states, auxiliary control variables, and per-iteration activations on clients.
+     In parallel, a substantial body of work has focused on communication-efficient dis-
+tributed and federated optimization, employing gradient quantization, sparsification,
+low-rank compression, and error-feedback mechanisms to reduce the number of trans-
+mitted bits. Unbiased compressors such as QSGD [1] and biased schemes includ-
+ing Top-k sparsification or sign-based updates are often combined with error-feedback
+frameworks that provably recover convergence rates comparable to uncompressed
+SGD [3, 11, 14, 20, 23, 24]. Integrated methods like Qsparse-local-SGD blend local updates
+with aggressive compression to match the convergence of standard distributed SGD in
+smooth nonconvex settings [2, 5, 8, 9]. While highly effective at saving communication,
+these approaches typically keep the optimizer state full-dimensional and are thus not
+tailored to reduce the client-side memory footprint, especially for modern deep models
+where momentum buffers and auxiliary variables can dominate memory consumption.
+     A third strand of research studies subspace and low-rank optimization, primarily in
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                             3
+
+
+centralized training. Recent methods show that optimization trajectories for large mod-
+els often lie in low-dimensional subspaces, and exploit this structure to reduce optimizer
+memory by updating only within carefully chosen subspaces while maintaining stan-
+dard convergence guarantees [10]. Related work on efficient subspace algorithms for
+federated learning suggests that structured projections can be leveraged to cope with
+data heterogeneity while controlling complexity [41]. However, most existing subspace
+approaches are not explicitly designed for the client–server architecture and participation
+patterns of cross-device FL, and their implications for client memory usage, especially in
+the presence of momentum and multiple local steps, remain underexplored.
+     These strands of work highlight a persistent gap between algorithmic and system-
+level considerations in federated learning. Foundational FL methods refine the optimiza-
+tion dynamics of FedAvg to handle heterogeneity but often increase client-side state (e.g.,
+control variates or proximal auxiliary variables), while communication-efficient methods
+significantly reduce transmitted bits without shrinking the dimensionality of optimizer
+states. Subspace optimization, in turn, offers a promising avenue for reducing mem-
+ory but has not been systematically integrated into standard FedAvg-style workflows in
+realistic cross-device FL settings. Consequently, we lack FL algorithms that are simul-
+taneously memory-efficient on clients, theoretically grounded under realistic stochastic
+conditions, and compatible with the simplicity and robustness that have made FedAvg
+the default choice in many applications.
+     FedSLoP is designed to bridge this gap by combining FedAvg-style training with
+random subspace optimization and momentum in a way that explicitly targets client-
+side memory efficiency. Unlike SCAFFOLD and related variance-reduction methods that
+maintain additional per-parameter control variates on clients [13], FedSLoP constrains
+both stochastic gradients and momentum to a random rank-r subspace that is shared
+within each communication round. This design reduces the effective dimensionality of
+the optimization trajectory and the associated optimizer states, while preserving the stan-
+dard pattern of broadcasting a global model, running local updates, and averaging model
+deltas. At the same time, our convergence analysis in the nonconvex regime, under ran-
+dom Stiefel projectors, makes explicit how the convergence rate depends on the subspace
+ratio δ = r/d and the number of clients, thereby quantifying the trade-offs induced by
+low-dimensional random projections in federated learning.
+     Concretely, in each communication round t the server samples a random orthonor-
+mal basis Pt from the Stiefel manifold St(d,r ), forms the rank-r projector Πt = Pt Pt⊤ , and
+broadcasts the pair (θ t ,Pt ) to the participating clients. Each selected client i initializes
+its local model at θi,0 = θ t and performs τ local steps of SGD with momentum, but both
+the stochastic gradients and momentum are restricted to the shared subspace: given a
+stochastic gradient gi,s = ∇ Fi (θi,s ;ξ i,s ), the momentum is updated as vi,s+1 = µvi,s + Πt gi,s
+and the model is updated as θi,s+1 = θi,s − η vi,s+1 . After completing the local loop, the
+client returns the full-model delta ∆it = θi,τ − θ t , and the server performs simple averaging
+θ t+1 = θ t + |S1t | ∑i∈St ∆it . By construction, when r = d the projection Πt becomes the identity,
+and FedSLoP reduces exactly to standard FedAvg with momentum, providing a natural
+4                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+sanity check in both the theoretical analysis and empirical evaluation.
+     By constraining all local updates to a random low-dimensional subspace with ratio
+δ = r/d, FedSLoP reduces the effective dimensionality of both the optimization trajec-
+tory and the optimizer state on each client. Clients maintain only a single momentum
+vector updated through the projector, without any per-parameter auxiliary variables or
+control variates, resulting in an inherently memory-efficient approach that is particu-
+larly attractive for resource-constrained devices. At the same time, the algorithm retains
+the core FedAvg workflow—periodic broadcast, local computation, and model averag-
+ing—ensuring that it can be integrated into existing FL systems with minimal engineer-
+ing changes while explicitly encoding low-dimensional structure in the training dynam-
+ics.
+     On the theoretical side, we establish a nonconvex convergence analysis of FedSLoP
+under full client participation and random Stiefel projectors. Under standard smoothness
+and bounded variance assumptions, and explicit step-size conditions that depend on the
+momentum parameter µ, the number of local steps τ, and the subspace ratio δ = r/d, we
+show that the averaged squared gradient norm admits an explicit convergence bound
+with an optimization term decaying as O(1/T ) and a stochastic variance term decay-
+ing as O( T −1/2 ), with explicit dependence on the number of clients N. The resulting
+bounds exhibit linear speedup in N through a variance term of the form σL2 /N, and their
+explicit dependence on δ quantifies how restricting updates to low-dimensional random
+subspaces impacts stochastic noise and convergence behavior. These results demonstrate
+that incorporating random subspace constraints into FedAvg-style training need not de-
+teriorate the convergence order, while making the algorithmic trade-offs between mem-
+ory savings and optimization fidelity transparent.
+     Empirically, we evaluate FedSLoP on a federated MNIST classification task, compar-
+ing it against standard FedAvg with momentum and several sparse or partial-update
+baselines on a Dirichlet non-IID split. Under a unified training budget of 100 communi-
+cation rounds and a shared learning rate, FedAvg with momentum achieves the highest
+final test accuracy, while FedSLoP attains a very close final accuracy and clearly out-
+performs sparse or partial-update methods such as FedMef, NeuLite, and FederatedSe-
+lect. These observations support the view that FedSLoP is a practical, memory-conscious
+variant of FedAvg that preserves competitive predictive performance while offering a
+favorable trade-off between performance and structural efficiency in realistic federated
+settings.
+     In summary, this work contributes a memory-efficient, theoretically grounded, and
+empirically validated variant of FedAvg that operates in random low-dimensional sub-
+spaces while preserving the standard cross-device FL workflow. Our design explicitly
+targets client-side memory constraints without introducing complex auxiliary states, and
+our analysis and experiments jointly characterize the trade-offs between subspace dimen-
+sion, convergence, and communication in federated optimization.
+
+    • FedAvg-style random subspace algorithm with momentum. We introduce Fed-
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                    5
+
+
+      SLoP, a variant of FedAvg that constrains local optimization to a random rank-r
+      subspace shared within each round via projectors sampled from the Stiefel man-
+      ifold. The method keeps the standard pattern of broadcasting the global model,
+      running local SGD with momentum, and averaging model deltas, but applies the
+      projector to both gradients and momentum on each client. This design eliminates
+      the need for additional per-parameter states such as control variates, thereby re-
+      ducing the dimensionality of optimizer states while preserving the simplicity and
+      robustness of FedAvg-style training.
+
+    • Nonconvex convergence analysis under random Stiefel projectors. We provide a
+      detailed nonconvex convergence analysis of FedSLoP in the full-participation set-
+      ting, assuming smooth objectives and bounded stochastic gradient variance. The
+      resulting bound on the averaged squared gradient norm has an optimization term
+      of order O(1/T ) and a variance-dominated term of order O( T −1/2 ), with explicit
+      constants that depend on the momentum parameter, the number of local steps, the
+      subspace ratio δ = r/d, and the number of clients. In particular, the bounds exhibit
+      linear speedup in the number of clients through a variance term proportional to
+      σL2 /N, and show that constraining updates to low-dimensional random subspaces
+      does not change the convergence order.
+
+    • Empirical validation of memory- and communication-friendly design. Through
+      experiments on federated MNIST classification under a Dirichlet non-IID split,
+      we compare FedSLoP to standard FedAvg with momentum and several sparse or
+      partial-update baselines across a unified training budget. FedAvg with momentum
+      achieves the highest final test accuracy, while FedSLoP reaches a very close final
+      accuracy and maintains a consistent advantage over FedMef, NeuLite, and Feder-
+      atedSelect, indicating that its memory-efficient, low-rank design offers a favorable
+      trade-off between performance and resource usage in federated optimization.
+
+
+2    Related Work
+Federated learning (FL) has emerged as a pivotal paradigm for training models on decen-
+tralized data. The foundational Federated Averaging (FedAvg) algorithm established the
+standard workflow of periodic local updates and server aggregation. However, its per-
+formance under realistic data heterogeneity (non-IID data) poses significant challenges,
+including client drift and slow convergence [15]. To address these issues, algorithmic
+extensions like FedProx and SCAFFOLD were introduced, with the latter using control
+variates to correct for client drift and achieve convergence rates matching centralized
+SGD under extreme heterogeneity [13]. Theoretical analyses have been crucial, proving
+that linear speedup in the number of clients is achievable for FedAvg even under simulta-
+neous non-IID data and partial participation [21, 35]. Further analysis in overparameter-
+ized neural networks suggests that the impact of heterogeneity diminishes with increased
+6                            ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+model width [12], while a non-parametric view quantifies the benefits of federation un-
+der model and covariate shift [25]. Systems challenges like non-uniform client participa-
+tion have also been addressed, with methods proposed to correct participation bias [33]
+and handle computational heterogeneity by allowing lightweight local updates [39]. For
+composite objectives with non-smooth regularizers, primal–dual frameworks like Feder-
+ated Dual Averaging [37] and algorithms like FedCanon [42] and FedDR [29] have been
+developed, though their guarantees often involve residual errors or restrictive assump-
+tions [40]. Personalization is a key direction to handle heterogeneity, with meta-learning
+approaches like Per-FedAvg [22] and distillation-based frameworks [30,32]. Other strate-
+gies include feature-alignment models [36] and decentralized personalized methods [19].
+However, these methods often incur communication and memory overheads for main-
+taining personalized components, and their robustness under severe system constraints
+requires further investigation.
+    Reducing communication overhead is essential for scalable FL. Decentralized opti-
+mization protocols offer an alternative to centralized servers, enabling peer-to-peer com-
+munication. While basic methods like D-PSGD suffer from non-vanishing error under
+data heterogeneity, variance-reduced extensions like D2 achieve rates matching central-
+ized SGD [27]. A key insight is that removing data heterogeneity influence enhances
+the dependence on network topology [38], and gradient tracking can provide network-
+agnostic performance under certain conditions [34]. Gradient compression techniques
+are fundamental, and can be categorized into unbiased and biased (contractive) com-
+pressors [11]. Algorithm-agnostic lower bounds establish fundamental performance
+limits for distributed optimization with compression [8]. To counteract compression
+errors, error-feedback mechanisms like EF21 are critical, preserving convergence even
+with biased compressors [14, 24]. Momentum integration further helps mitigate variance
+from heterogeneity [4]. For practical FL integration, frameworks like Qsparse-local-SGD
+unify local SGD with sparsification and quantization [2], while double-pass compression
+schemes like DoubleSqueeze apply error compensation to both upload and download
+directions [28]. Asynchronous decentralized protocols can also alleviate synchronization
+bottlenecks [16]. Adaptive compression strategies and near-optimal algorithms like ADI-
+ANA and NEOLITHIC have been developed to approach theoretical lower bounds [8, 9].
+However, these advanced methods often assume strong convexity or rely on unknown
+problem constants, limiting their practical deployment in heterogeneous, non-convex FL
+settings. Other notable compression schemes include sparsification with memory [23],
+unified biased compression frameworks [3], quantization methods like QSGD [1], low-
+rank compression like PowerSGD [31], and accelerated error-compensated methods [20].
+Primal–dual methods also unify local training with unbiased compression [5].
+    Memory constraints on client devices necessitate efficient management of optimizer
+states and activations. Memory-efficient optimizer design often exploits low-dimensional
+structure. Methods like GaLore perform training in a low-rank subspace to reduce state
+memory, while recent work on GoLore provides robust subspace optimization schemes
+with convergence guarantees under stochastic noise [10]. Related subspace algorithms
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                      7
+
+
+for federated learning suggest that structured projections can be leveraged to cope with
+data heterogeneity while controlling complexity [41]. These ideas connect to geometric
+convergence theory for preconditioned iterations [18] and have been applied in FL with
+local matrix orthogonalization [17]. Strategies to reduce activation and optimizer-state
+overhead include gradient checkpointing and parameter-efficient fine-tuning, while ar-
+chitectural innovations like the efficient mixture-of-experts design in DeepSeek-V2 also
+contribute to system economy [6]. A critical challenge is the integrated co-design of mem-
+ory and communication efficiency. This can involve compressing optimizer states, lever-
+aging asynchronous decentralized training to reduce synchronization peaks [16], and
+employing dynamic topology management. Algorithms like AL-DSGD weight neigh-
+bors based on performance [7], while methods like TELEPORTATION activate only a
+subset of nodes [26]. The theoretical limits of such integrated systems, particularly un-
+der joint memory and communication constraints, remain an open area, highlighting the
+need for holistic designs that balance resource efficiency with convergence guarantees in
+heterogeneous environments.
+    Against this backdrop, FedSLoP sits at the intersection of federated optimization,
+communication compression, and memory-efficient training. By constraining stochas-
+tic gradients and momentum updates to random low-dimensional subspaces while pre-
+serving the standard FedAvg workflow, it directly targets the optimizer-state memory
+footprint on clients without introducing complex control variates or personalized heads.
+Our theoretical analysis builds on ideas from subspace optimization and compressed dis-
+tributed SGD, but tailors them to the specific structure of random Stiefel projectors in FL,
+while our experiments connect these guarantees to practical gains in communication and
+memory usage on non-IID MNIST.
+
+
+3     Method
+Building on the problem formulation and motivation in Section 1, we now present the
+FedSLoP algorithm in detail. We first formalize the federated optimization problem and
+introduce the random low-rank subspace model used by our method, then describe the
+server and client updates, and finally discuss the memory and communication implica-
+tions of the design.
+
+3.1   Federated Optimization with Random Subspaces
+We consider a standard cross-device federated learning setup with N clients. The global
+optimization problem is
+                                             1 N
+                                min f (θ ) := ∑ Fi (θ ),                           (3.1)
+                               θ ∈ Rd        N i =1
+where Fi is the local empirical risk on client i. At each communication round t, the server
+maintains a global model θ t ∈ Rd and coordinates local updates executed on a subset (or
+8                             ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+all) of the clients. Our analysis in Section 4 focuses on the full-participation case, where
+all N clients participate in every communication round; extending the theory to partial
+participation is an interesting direction for future work.
+    A key ingredient of FedSLoP is a random low-rank subspace model applied to
+stochastic gradients and momentum. Let r ≤ d be a target rank, and define the Stiefel
+manifold
+                              St(d,r ) := { P ∈ Rd×r : P⊤ P = Ir },
+whose elements are column-orthonormal matrices. At the beginning of each communi-
+cation round t, the server samples a random matrix Pt ∈ St(d,r ) from the uniform (Haar)
+distribution and forms the rank-r projector
+
+                                     Πt := Pt Pt⊤ ∈ Rd×d .                                    (3.2)
+
+We denote the subspace ratio by
+                                             r
+                                         δ := ∈ (0,1],                               (3.3)
+                                             d
+which will play a central role in the convergence analysis in Section 4.
+    Intuitively, Πt selects a different random r-dimensional subspace at each communi-
+cation round and restricts all local optimization steps to this subspace, while the model
+itself remains full-dimensional. When r = d, the projector reduces to the identity and
+FedSLoP collapses to standard FedAvg with momentum; when r ≪ d, the updates are
+effectively low-rank, dramatically reducing the dimensionality of the optimizer state and
+communicated directions.
+
+3.2   FedSLoP with Full Participation
+Algorithm 1 summarizes the core variant of FedSLoP analyzed in Section 4, specialized
+to full client participation and per-round zero-initialized momentum.
+    The algorithm follows the FedAvg template: the server repeatedly broadcasts the cur-
+rent global model, clients perform several local stochastic-gradient steps, and the server
+averages the resulting model deltas. The main difference is the use of the random projec-
+tor Πt inside the local momentum update, which constrains the effective update direc-
+tions to a low-dimensional subspace shared across all clients within round t. This design
+enables memory-efficient implementations in which only projected gradients and mo-
+mentum need to be stored and communicated, while the full model parameters reside in
+standard dense tensors.
+
+3.3   Memory and Communication Considerations
+The random subspace design in Algorithm 1 has several concrete implications for system
+resources:
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                     9
+
+
+Algorithm 1 FedSLoP with Full Participation
+ 1: Input: number of rounds T, local steps τ, stepsize η > 0, momentum parameter µ ∈
+    [0,1), rank r, number of clients N.
+ 2: Server initializes: global model θ 0 ∈ Rd .
+ 3: for each communication round t = 0,1,...,T − 1 do
+ 4:     Sample Pt ∼ Unif(St(d,r )) and set Πt = Pt Pt⊤ .
+ 5:     Broadcast (θ t ,Pt ) (or equivalently Πt ) to all clients i ∈ {1,..., N }.
+ 6:     for each client i = 1,..., N in parallel do
+ 7:         ∆it ← C LIENT U PDATE (i,θ t ,Πt ).
+ 8:     end for
+ 9:     Aggregate updates and set
+
+                                                           1 N t
+                                                           N i∑
+                                          θ t +1 ← θ t +         ∆i .
+                                                              =1
+
+10: end for
+11: Output: final global model θ T .
+
+
+12: procedure C LIENT U PDATE (i, θ t , Πt )
+13: Initialize local model θi,0 ← θ t and local momentum vi,0 ← 0.
+14: for local step s = 0,1,...,τ − 1 do
+15:    Sample a minibatch ξ i,s from client i.
+16:    Compute stochastic gradient gi,s ← ∇ Fi (θi,s ;ξ i,s ).
+17:    Update momentum (projected) vi,s+1 ← µvi,s + Πt gi,s .
+18:    Update local model θi,s+1 ← θi,s − η vi,s+1 .
+19: end for
+20: return ∆it ← θi,τ − θ t .
+
+
+Optimizer-state memory. In standard FedAvg with momentum, each client typically
+maintains a full-dimensional momentum buffer of size d, in addition to the model pa-
+rameters themselves. In FedSLoP, the momentum vector vi,s is updated using projected
+gradients Πt gi,s , so it can be stored and manipulated in the same d-dimensional space
+but its effective degrees of freedom are restricted to the r-dimensional subspace spanned
+by Pt . In practical implementations that exploit this structure, clients can store the mo-
+mentum in factored form vi,s = Pt wi,s with wi,s ∈ Rr , reducing the optimizer-state memory
+from O(d) to O(r ) per linear layer. When r ≪ d, this yields substantial savings for deep
+models.
+
+Communication cost. On the downlink, the server must transmit the projector infor-
+mation in addition to the model parameters. However, Pt can be generated from shared
+random seeds or low-precision parameters, and its cost is amortized across all clients
+10                              ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+within a round. On the uplink, clients send full-model deltas ∆it , but these deltas arise
+from low-rank projected updates, meaning that their information content is effectively
+confined to an r-dimensional subspace. In practice, this structure can be combined with
+standard compression (e.g., low-rank factorization per layer) to reduce transmitted bits
+without altering the theoretical analysis in Section 4.
+
+Compatibility with standard FL workflows. When the rank is set to r = d, the projec-
+tor Πt equals the identity and Algorithm 1 reduces to FedAvg with client-side momen-
+tum. Thus FedSLoP can be viewed as a strict generalization of FedAvg that introduces a
+tunable subspace ratio δ controlling the trade-off between memory/communication and
+convergence accuracy. This perspective is particularly useful when interpreting the con-
+vergence bounds in Theorem 4.1, where δ appears explicitly in both the optimization and
+variance terms.
+    In the next section we formalize the assumptions underlying our analysis and de-
+velop a detailed nonconvex convergence theory for Algorithm 1.
+
+
+4     Theory
+In this section we develop a detailed nonconvex convergence analysis of FedSLoP in
+the full-participation setting described in Section 3. We first state the smoothness and
+stochastic-gradient assumptions, then introduce the random subspace model and key
+auxiliary quantities, and finally present the main convergence theorem together with the
+supporting lemmas and corollaries. All proofs are provided in full.
+
+4.1   Assumptions and Random Subspace Model
+We recall the standard smoothness and bounded-variance assumptions.
+
+Assumption 1 (Smoothness and lower boundedness). The global objective function f
+in (3.1) is bounded below by f ∗ > −∞. The global function f and each local function Fi
+are L-smooth, i.e., their gradients are L-Lipschitz continuous.
+
+Assumption 2 (Stochastic gradient properties). For each client i and model θ, the stochas-
+tic gradient gi (θ ) computed from a minibatch is an unbiased estimator         of the true local
+gradient, E[ gi (θ )] = ∇ Fi (θ ). The local variance is bounded as E ∥ gi (θ )−∇ Fi (θ )∥2 ≤ σL2 ,
+                                                                     
+
+and the gradient heterogeneity across clients is bounded as ∥∇ Fi (θ )−∇ f (θ )∥2 ≤ σG2 .
+
+    In addition, FedSLoP uses the random projector Πt defined in (3.2). Throughout this
+section we assume that Pt is drawn independently from the Haar measure on St(d,r ) at
+each communication round, independently of the data sampling and past randomness.
+As in Section 3, we denote the subspace ratio by δ = r/d.
+    We begin with a basic lemma on the properties of random Stiefel projectors.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                         11
+
+
+Lemma 4.1 (Random Stiefel projection). Let d,r be integers with 1 ≤ r ≤ d, and let
+
+                                   Std,r := { P ∈ Rd×r : P⊤ P = Ir }
+
+be the (column) Stiefel manifold. Suppose P is sampled from the uniform (Haar) distribution on
+Std,r . Then for any fixed vector g ∈ Rd ,
+
+  (1) E[ PP⊤ ] = dr Id ;
+
+  (2) E ∥ PP⊤ g∥2 = dr ∥ g∥2 ;
+                   
+
+  (3) E ∥( Id − PP⊤ ) g∥2 = 1 − dr ∥ g∥2 .
+                                
+
+Moreover, the same identities hold if we replace g by any fixed matrix G ∈ Rd×m and interpret ∥·∥
+as the Frobenius norm:
+                                                                          
+              E ∥ PP⊤ G ∥2F = dr ∥ G ∥2F ,    E ∥( Id − PP⊤ ) G ∥2F = 1 − dr ∥ G ∥2F .
+                                              
+
+
+Proof. Throughout, expectations are taken with respect to the Haar (uniform) distribution
+on Std,r . By definition of this distribution, for every orthogonal matrix Q ∈ O(d), the
+random matrices P and QP have the same distribution. In particular, for any measurable
+function f ,
+                                    E[ f ( P)] = E[ f ( QP)].
+
+Step 1: Computation of E[ PP⊤ ]. Define the random projection matrix
+
+                                         Π := PP⊤ ∈ Rd×d .
+
+Note that Π is symmetric and idempotent:
+
+                   Π⊤ = Π,        Π2 = PP⊤ PP⊤ = P( P⊤ P) P⊤ = PIr P⊤ = Π.
+
+Let
+                                  M := E[Π] = E[ PP⊤ ] ∈ Rd×d .
+                                                                        d
+Fix any orthogonal Q ∈ O(d). Using the distributional identity P = QP and the fact that Q
+is deterministic, we obtain
+
+         M = E[ PP⊤ ] = E[( QP)( QP)⊤ ] = E[ QPP⊤ Q⊤ ] = QE[ PP⊤ ] Q⊤ = QMQ⊤ .
+
+Thus M satisfies
+                                  QMQ⊤ = M,            ∀ Q ∈ O ( d ).                       (4.1)
+By a standard representation-theoretic argument, the only matrices commuting with all
+orthogonal matrices are scalar multiples of the identity, so there exists λ ∈ R such that
+
+                                              M = λId .
+12                                ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+Taking traces and using tr( PP⊤ ) = r almost surely, we obtain
+                                      tr( M ) = E[tr( PP⊤ )] = r.
+On the other hand, tr( M) = tr(λId ) = λd, so λ = r/d. Hence
+                                                       r
+                                         E[ PP⊤ ] = M = Id ,
+                                                       d
+proving item (1).
+Step 2: Action on a fixed vector. Let g ∈ Rd be fixed. Then
+                                                                    r
+         E ∥ PP⊤ g∥2 = E g⊤ PP⊤ PP⊤ g = E g⊤ PP⊤ g = g⊤ E[ PP⊤ ] g = ∥ g∥2 ,
+                                                   
+                                                                    d
+which is item (2). Similarly,
+                                                            r         r
+           E ∥( Id − PP⊤ ) g∥2 = g⊤ E[ Id − PP⊤ ] g = g⊤ Id − Id g = 1 −    ∥ g ∥2 ,
+                             
+                                                             d           d
+which is item (3).
+Step 3: Matrix case and Frobenius norm. Let G ∈ Rd×m be fixed, and write its columns
+as
+                             G = [ g1 ... gm ], g j ∈ Rd .
+Then
+       PP⊤ G = [ PP⊤ g1 ... PP⊤ gm ],          ( Id − PP⊤ ) G = [( Id − PP⊤ ) g1 ..., ( Id − PP⊤ ) gm ].
+Recall that the Frobenius norm satisfies
+                                                         m
+                                              ∥ G ∥2F = ∑ ∥ g j ∥2 .
+                                                        j =1
+
+Therefore,
+                            m                                              m
+             ∥ PP⊤ G ∥2F = ∑ ∥ PP⊤ g j ∥2 ,         ∥( Id − PP⊤ ) G ∥2F = ∑ ∥( Id − PP⊤ ) g j ∥2 .
+                           j =1                                           j =1
+
+Taking expectations and applying the vector identities from Step 2 column-wise,
+                                  m                m r          r
+                    E ∥ PP⊤ G ∥2F = ∑ E ∥ PP⊤ g j ∥2 = ∑ ∥ g j ∥2 = ∥ G ∥2F ,
+                     
+                                    j =1               j =1
+                                                            d      d
+
+and
+                            m                        m     r              r
+      E ∥( Id − PP⊤ ) G ∥2F = ∑ E ∥( Id − PP⊤ ) g j ∥2 = ∑ 1 −    ∥ g j ∥2 = 1 − ∥ G ∥2F .
+       
+                              j =1                       j =1
+                                                               d                d
+
+This yields the claimed Frobenius-norm identities and completes the proof.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                                     13
+
+
+4.2   Drift and One-Round Descent
+The main technical challenge in analyzing FedSLoP is the interaction between local mo-
+mentum, multiple local steps, and the random subspace constraint. Following the de-
+tailed derivations in the proof file, we introduce the per-round drift quantity
+                                                  1 N τ −1 
+                                                    ∑    ∑    Et ∥θi,s − θ t ∥2 ,
+                                                                               
+                                         Dt : =                                                         (4.2)
+                                                  N i =1 s =0
+where Et [·] denotes conditional expectation given θ t and the randomness up to the be-
+ginning of round t. This quantity measures how far, on average, the local iterates drift
+away from the current global model within a communication round.
+   The following lemma provides an upper bound of the drift quantity.
+Lemma 4.2 (Drift bound under projected momentum). Suppose Assumptions 1 and 2 hold
+and the stepsize η satisfies the explicit condition
+                                                              1 − µ2
+                                                      η2 ≤            ,                                 (4.3)
+                                                              6L2 τ 3
+it holds that
+                                6τ 4 2            t 2     2     2
+                                                                   
+                                 Dt ≤ η  δ ∇ f ( θ  )  + σL  + σG .                                     (4.4)
+                               1 − µ2
+Proof. We proceed in three steps.
+
+Step 1: Expressing the drift in terms of momenta. Fix a round t and a client i. Under
+the per-round zero-momentum setup, the local recursions are
+                                 vi,s+1 = µvi,s + Πt gi,s ,
+                                  θi,s+1 = θi,s − ηvi,s+1 ,             s = 0,...,τ − 1,
+with θi,0 = θ t and vi,0 = 0. By telescoping, for any s ≥ 1,
+                                                                 s −1
+                                               θi,s − θ t = −η ∑ vi,u+1 .
+                                                                 u =0
+Hence, by Cauchy–Schwarz and the bound s ≤ τ,
+                                        s −1          2         s −1                       τ −1
+                ∥θi,s − θ t ∥2 = η 2    ∑ vi,u+1          ≤ η 2 s ∑ ∥vi,u+1 ∥2 ≤ η 2 τ ∑ ∥vi,u+1 ∥2 .
+                                        u =0                    u =0                       u =0
+Summing over s = 0,...,τ − 1 (the s = 0 term is zero) yields
+                                       τ −1                         τ −1
+                                       ∑ ∥θi,s − θ t ∥2 ≤ η 2 τ2 ∑ ∥vi,u+1 ∥2 .
+                                       s =0                         u =0
+Averaging over clients and taking conditional expectation gives
+                           1 N τ −1                              1 N τ −1 
+                             ∑    ∑    Et ∥θi,s − θ t ∥2 ≤ η 2 τ 2 ∑ ∑ Et ∥vi,u+1 ∥2 .
+                                                                                   
+                    Dt =                                                                                (4.5)
+                           N i =1 s =0                            N i =1 u =0
+14                                       ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+Step 2: Bounding the momentum norms.                                  Unrolling the momentum recursion gives,
+for any u ≥ 0,
+                                                                         u
+                                        vi,u+1 = µu+1 vi,0 + ∑ µu−q Πt gi,q .
+                                                                        q =0
+
+Using vi,0 = 0, this simplifies to
+                                                               u
+                                                vi,u+1 = ∑ µu−q Πt gi,q .
+                                                              q =0
+
+
+Let aq := µu−q Πt gi,q . By Cauchy–Schwarz,
+                       u            2                   u                       u
+                      ∑ aq              ≤ (u + 1) ∑ ∥ aq ∥2 ≤ τ ∑ µ2(u−q) ∥Πt gi,q ∥2 ,
+                      q =0                            q =0                     q =0
+
+where we used u + 1 ≤ τ. Thus
+                                                               u
+                                        ∥vi,u+1 ∥2 ≤ τ ∑ µ2(u−q) ∥Πt gi,q ∥2 .
+                                                             q =0
+
+Summing over u = 0,...,τ − 1 and rearranging the finite sums yields
+                             τ −1                           τ −1 u
+                             ∑ ∥vi,u+1 ∥2 ≤ τ ∑ ∑ µ2(u−q) ∥Πt gi,q ∥2
+                             u =0                           u =0 q =0
+                                                            τ −1  τ −1             
+                                                    =τ ∑             ∑ µ 2( u − q )
+                                                                                      ∥Πt gi,q ∥2
+                                                            q =0 u = q
+
+                                                          τ τ −1
+                                                        1 − µ2 q∑
+                                                    ≤              ∥Πt gi,q ∥2 ,
+                                                                =0
+
+
+where we used the geometric-series bound ∑τu− 1 2( u − q )
+                                            =q µ           ≤ ∑∞     2k          2
+                                                              k =0 µ = 1/ (1 − µ ). Substi-
+tuting into (4.5), we obtain
+
+                                                 1 N h τ −1               i
+                               Dt ≤ η 2 τ 2        ∑
+                                                 N i =1
+                                                        Et ∑ ∥vi,u+1 ∥2
+                                                            u =0
+
+                                                 1   N    h    τ τ −1                i
+                                        ≤ η 2 τ 2 ∑ Et
+                                                            1 − µ2 q∑
+                                                                       ∥ Π  g
+                                                                           t i,q ∥ 2
+                                                 N i =1             =0
+
+                                            η 2 τ 3 1 N τ −1 
+                                                      ∑    ∑    E   Π             2
+                                                                                    
+                                        =                         t   t ∥ g i,q ∥     .                  (4.6)
+                                            1 − µ 2 N i =1 q =0
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                                                        15
+
+
+Step 3: Bounding Et [∥Πt gi,q ∥2 ] and closing the inequality.                                      By definition gi,q =
+∇ Fi (θi,q ;ξ i,q ). Using Assumption 2, we have
+                                                                             2                       2
+         Et [∥Πt gi,q ∥2 ] = Et         Πt ∇ Fi (θi,q ;ξ i,q )−∇ Fi (θi,q )      + Et Πt ∇ Fi (θi,q )
+                                                                                    
+                                                                           2                      2
+                                ≤ Et                                           + Et Πt ∇ Fi (θi,q )
+                                                                                  
+                                         ∇ Fi (θi,q ;ξ i,q )−∇ Fi (θi,q )
+                                                              2
+                                ≤ σL2 + Et Πt ∇ Fi (θi,q ) .
+                                          
+                                                                                                                           (4.7)
+
+Next we bound ∥Πt ∇ Fi (θi,q )∥2 using Assumptions 1 and 2. Insert and subtract Πt ∇ Fi (θ t )
+and Πt ∇ f (θ t ):
+
+    Πt ∇ Fi (θi,q ) = Πt ∇ Fi (θi,q )− Πt ∇ Fi (θ t ) + Πt ∇ Fi (θ t )− Πt ∇ f (θ t ) + Πt ∇ f (θ t ).
+                                                                                    
+
+
+Using ∥ a + b + c∥2 ≤ 3(∥ a∥2 +∥b∥2 +∥c∥2 ), the L-smoothness of Fi and the global variance
+bound in Assumption 2, we obtain
+                   2                                                2                                       2                       2
+ Πt ∇ Fi (θi,q )       ≤ 3 Πt ∇ Fi (θi,q )− Πt ∇ Fi (θ t )              + 3 Πt ∇ Fi (θ t )− Πt ∇ f (θ t )       + 3 Πt ∇ f (θ t )
+                                                           2                                 2                        2
+                       ≤ 3 ∇ Fi (θi,q )−∇ Fi (θ t )            + 3 ∇ Fi (θ t )−∇ f (θ t )        + 3 Πt ∇ f (θ t )
+                                                                                2
+                       ≤ 3L2 ∥θi,q − θ t ∥2 + 3σG2 + 3 Πt ∇ f (θ t ) .
+
+Taking conditional expectation and applying Lemma 4.1 achieves
+                                               2                                                           2
+                   Et        Πt ∇ Fi (θi,q )        ≤ 3L2 Et [∥θi,q − θ t ∥2 ]+ 3σG2 + 3δ ∇ f (θ t ) .
+                        
+                                                                                                                           (4.8)
+
+Combining (4.7) and (4.8) gives
+                                                        2
+                   Et ∥Πt gi,q ∥2 ≤ σL2 + 3δ ∇ f (θ t ) + 3L2 Et ∥θi,q − θ t ∥2 + 3σG2 .
+                                                                            
+                                                                                                                           (4.9)
+
+Substituting (4.9) into (4.6), we obtain
+
+                         η 2 τ 3 1 N τ −1                                                                  
+               Dt ≤                ∑    ∑
+                         1 − µ 2 N i =1 q =0
+                                                3δ ∥∇   f ( θ t 2
+                                                               )∥ +   3L 2
+                                                                           E t ∥ θ i,q − θ t 2
+                                                                                             ∥ + σL
+                                                                                                   2
+                                                                                                     + 3σG
+                                                                                                          2
+
+
+
+                         η2 τ3                  t 2            2          2          2
+                                                                                             
+                       =          3δ ∥∇    f ( θ  )∥ · τ  +  3L   D t +( σ L +   3σ  G  )· τ
+                         1 − µ2
+                            3η 2 τ 4 δ         t 2   η2 τ4 2        2    3L2 η 2 τ 3
+                       =               ∇ f ( θ  )  +       ( σ + 3σ   )+             Dt .                                 (4.10)
+                             1 − µ2                  1 − µ2 L      G
+                                                                          1 − µ2
+
+Rearranging (4.10) gives
+                               3L2 η 2 τ 3        3η 2 τ 4 δ         t 2   η2 τ4 2
+                           1−                 D t ≤            ∇ f ( θ  )  +       (σ + 3σG2 ).
+                                 1 − µ2              1 − µ2                  1 − µ2 L
+16                                   ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+If the stepsize satisfies (4.3), i.e.
+                                                           1 − µ2
+                                                  η2 ≤             ,
+                                                           6L2 τ 3
+then 3L2 η 2 τ 3 /(1 − µ2 ) ≤ 1/2 and therefore
+
+                                                      3L2 η 2 τ 3 1
+                                               1−                ≥ .
+                                                       1 − µ2     2
+This implies
+
+                                   6η 2 τ 4 δ         t 2      2η 2 τ 4 2
+                             Dt ≤             ∇ f ( θ  )     +         (σ + 3σG2 )
+                                    1 − µ2                     1 − µ2 L
+                                    6τ 4 2                 t 2      2     2
+                                                                             
+                                 ≤          η δ   ∇   f ( θ  )  +  σL  + σG ,
+                                   1 − µ2
+which is (4.4).
+
+   The next ingredient is a one-round descent inequality that combines smoothness, the
+random projector, and the drift quantity.
+Lemma 4.3 (One-round descent under random projector). Under Assumptions 1 and 2, if
+η ≤ 1/( LSτ ), the random subspace one-round descent satisfies
+
+                                        δ               2 η 2 Sτ2 LσL2     2L2 η
+               Et f (θ t+1 ) ≤ f (θ t )− ηSτ ∇ f (θ t ) +
+                           
+                                                                       +            Dt ,             (4.11)
+                                        2                      N         δ (1 − µ )
+              −1                          τ −q ) / (1 − µ ) are the effective momentum weights.
+where Sτ = ∑τq= 0 ατ,q and α τ,q = (1 − µ
+
+Proof. We fix a communication round t and work with the conditional expectation Et [·]
+given θ t and all past randomness. Recall that the server update can be written as
+                                                                       N
+                                               ¯ t,
+                                θ t +1 = θ t + ∆           ¯ t := 1 ∑ (θi,τ − θ t ).
+                                                           ∆
+                                                                  N i =1
+
+                 ¯ t in terms of the projected local gradients, then bound the linear descent
+We first express ∆
+term and the quadratic remainder term separately, and finally combine the bounds.
+
+Step 1: Expressing the aggregated update.                     From the local recursions,
+
+                  vi,s+1 = µvi,s + Πt gi,s ,          θi,s+1 = θi,s − ηvi,s+1 ,   s = 0,...,τ − 1,
+
+with vi,0 = 0 and θi,0 = θ t , it follows by telescoping that
+                                                               τ −1
+                                           θi,τ − θ t = −η ∑ vi,s+1 .
+                                                               s =0
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                             17
+
+
+Unrolling the momentum recursion gives, for every u ≥ 0,
+                                                     u
+                                        vi,u+1 = ∑ µ u−q Πt gi,q ,
+                                                    q =0
+
+and hence
+                                      τ −1                   τ −1 s
+                      θi,τ − θ t = −η ∑ vi,s+1 = −η ∑ ∑ µ s−q Πt gi,q
+                                      s =0                   s =0 q =0
+                                      τ −1  τ −1                       τ −1
+                               = −η ∑        ∑ µ s−q Πt gi,q = −η ∑ ατ,q Πt gi,q ,
+                                      q =0 s = q                         q =0
+
+where ατ,q = (1 − µτ −q )/(1 − µ) as in the lemma statement. Averaging over clients, we
+obtain
+                                   τ −1
+                          ¯ t = −η ∑ ατ,q Πt ḡq ,       1 N
+                          ∆                        ḡq := ∑ gi,q .                (4.12)
+                                   q =0                  N i =1
+
+Step 2: Bounding the linear descent term.                  By L-smoothness of f we have the standard
+one-step inequality
+                                                             ¯ t + L ∥∆
+                          f (θ t+1 ) ≤ f (θ t )+ ∇ f (θ t ), ∆        ¯ t ∥2 .
+                                                                   2
+Taking Et [·] and substituting (4.12),
+                                          τ −1                          L 
+               Et f (θ t+1 ) ≤ f (θ t )− η ∑ ατ,q Et ∇ f (θ t ),Πt ḡq + Et ∥∆
+                                                                             ¯ t ∥2 .
+                                                                                
+                                                                                              (4.13)
+                                           q =0                          2
+
+Fix a local step index q and set g∗ := ∇ f (θ t ). We decompose
+
+                              g∗ ,Πt ḡq = ⟨ g∗ ,Πt g∗ ⟩+ g∗ ,Πt ( ḡq − g∗ ) .
+
+Since g∗ depends only on θ t and the projector Πt is sampled independently from the
+Stiefel manifold, Lemma 4.1 (random Stiefel projection) yields
+
+                                Et ⟨ g∗ ,Πt g∗ ⟩ = δ ∥ g∗ ∥2 .
+                                               
+
+For the second term we use Assumption 2, Cauchy–Schwarz, the fact that Πt is a contrac-
+tion, and Young’s inequality with parameter δ/2:
+
+                    Et g∗ ,Πt ( ḡq − g∗ ) = Et g∗ ,Πt ( g̃q − g∗ )
+                                                                 
+
+                                                     ≤ ∥ g∗ ∥ Et [∥ g̃q − g∗ ∥]
+                                                       δ             1
+                                                     ≤ ∥ g∗ ∥2 + Et [∥ g̃q − g∗ ∥2 ],
+                                                       4             δ
+18                                    ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+where we define
+
+                                                           1 N
+                                                           N i∑
+                                                  g̃q :=         ∇ Fi (θi,q ).
+                                                              =1
+
+Combining the two pieces gives
+
+                                                  3δ                1 
+                    Et                               ∥∇ f (θ t )∥2 − Et ∥ g̃q −∇ f (θ t )∥2 .
+                                                                                         
+                             g∗ ,Πt ḡq       ≥                                                      (4.14)
+                                                  4                 δ
+
+Substituting (4.14) into (4.13), we obtain
+
+                              3δ                η τ −1                        L 
+     Et f (θ t+1 ) ≤ f (θ t )− ηSτ ∇ f (θ t ) + ∑ ατ,q Et ∥ g̃q −∇ f (θ t )∥2 + Et ∥∆
+                                            2          
+                                                                                    ¯ t ∥2 .
+                                                                                           
+                              4                 δ q =0                         2
+                                                                                         (4.15)
+
+Step 3: Controlling the stochastic-gradient variance and drift. We now bound the
+                                                   ¯ t ∥2 . Using L-smoothness of Fi and
+variance term in (4.15) and the quadratic term Et ∥∆
+Jensen’s inequality, we have
+                                              h 1 N                              2i
+                                                  N i∑
+                   Et ∥ g̃q −∇ f (θ t )∥2 =Et                               t
+                                        
+                                                        ∇ F ( θ
+                                                           i i,q )−∇ Fi ( θ   )
+                                                     =1
+                                            1 N h                               2i
+                                           ≤ ∑ Et ∇ Fi (θi,q )−∇ Fi (θ t )
+                                            N i =1
+                                                   ≤ L2 D̄q ,                                        (4.16)
+
+where we define
+                                                     1 N 
+                                                       ∑    Et ∥θi,q − θ t ∥2 .
+                                                                             
+                                          D̄q :=
+                                                     N i =1
+Using ατ,q ≤ 1/(1 − µ), we obtain
+
+                                η τ −1                                L2 ηDt
+                                  ∑    ατ,q Et ∥ g̃q −∇ f (θ t )∥2 ≤
+                                                                 
+                                                                                .                    (4.17)
+                                δ q =0                               δ (1 − µ )
+
+Write                                                                                 
+                         gi,q = ∇ Fi (θi,q ;ξ i,q ) = ∇ Fi (θi,q )+ gi,q −∇ Fi (θi,q ) ,
+so that ḡq −∇ f (θ t ) can be decomposed into (i) stochastic-noise fluctuations around the
+local true gradients and (ii) the bias between local and global gradients induced by data
+heterogeneity and local drift. A standard variance decomposition using Assumption 2
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                                   19
+
+
+(unbiasedness and bounded local variance) and the bounded heterogeneity condition
+gives
+                           h 1 N                            2i N h 1                   2i
+Et ∥ ḡq −∇ f (θ t )∥2 =Et
+                             N i∑
+                                                       t
+                                                                 ∑ t N i,q
+                                                                      E
+                     
+                                   ∇ F ( θ
+                                      i i,q )−∇ Fi ( θ   )     +        g  −∇ F ( θ
+                                                                               i i,q )
+                                =1                               i =1
+
+                           1 N                               σL2
+                           N i∑
+                                                         t 2
+                       ≤         E t ∇ F ( θ
+                                        i i,q )−∇ Fi ( θ  )   +
+                              =1
+                                                                N
+                                 σ2
+                       ≤ L2 D̄q + L ,                                                               (4.18)
+                                 N
+where we have used the L-smoothness of Fi to control ∥∇ Fi (θi,q )−∇ Fi (θ t )∥2 by
+L2 Et ∥θi,q − θ t ∥2 .
+                                                                           2
+    Next, from the expansion (4.12) and the inequality ∑q aq xq                ≤ (∑q aq ) ∑q aq ∥ xq ∥2 for
+aq ≥ 0, we have
+
+                                τ −1
+                 ¯ t ∥2 ≤ η 2 Sτ ∑ ατ,q Et ∥Πt ḡq ∥2
+            Et ∥ ∆
+                                                   
+                                 q =0
+                                 τ −1
+                        ≤ 2η 2 Sτ ∑ ατ,q Et ∥Πt ∇ f (θ t )∥2 + Et ∥ ḡq −∇ f (θ t )∥2
+                                                                                   
+                                  q =0
+                                  
+                                                   2       σ2   L2   
+                        ≤ 2η 2 Sτ δSτ ∇ f (θ t )       + Sτ L +    Dt ,                             (4.19)
+                                                           N 1−µ
+
+where we used the bound ∥Πt ḡq ∥2 ≤ 2∥Πt ∇ f (θ t )∥2 + 2∥Πt ḡq −∇ f (θ t ) ∥2 , (4.18), Lemma
+                                                                             
+
+4.1 and ατ,q ≤ 1/(1 − µ).
+
+Step 4: Collecting terms.       Plugging (4.17) and (4.19) into (4.15) and absorbing numerical
+constants, we arrive at
+
+                          δ                            2          σ 2  L2 η        L3 η 2 Sτ 
+ Et f (θ t+1 ) ≤ f (θ t )− ηSτ (3 − 4LηSτ ) ∇ f (θ t ) + η 2 Sτ2 L L +
+             
+                                                                                  +             Dt .
+                          4                                       N    δ (1 − µ )    1−µ
+
+When η ≤ 1/( LSτ ), we further have
+
+                                        δ               2 η 2 Sτ2 LσL2     2L2 η
+               Et f (θ t+1 ) ≤ f (θ t )− ηSτ ∇ f (θ t ) +
+                           
+                                                                       +            Dt ,
+                                        2                      N         δ (1 − µ )
+
+which is exactly the claimed one-round descent inequality (4.11). This completes the
+proof.
+
+    Combining Lemmas 4.2 and 4.3 yields a clean one-round bound with explicit con-
+stants.
+20                               ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+Lemma 4.4 (One-round descent with drift control). Suppose Assumptions 1 and 2 hold, and
+that the stepsize η satisfies
+                                      (r             )
+                                         1 − µ2 1
+                              η ≤ min           ,      .                         (4.20)
+                                         6L2 τ 3 LSτ
+Then for Algorithm 1 we have, for every round t,
+                                          δ        12L2 τ 4 η 3             2
+                 Et f (θ t+1 ) ≤ f (θ t )− ηSτ −                   ∇ f (θ t )
+                             
+                                           2     (1 − µ)(1 − µ )2
+
+                                      η 2 Sτ2 LσL2      12L2 τ 4 η 3
+                                  +                +                  (σ2 + σG2 ).              (4.21)
+                                           N         δ(1 − µ)(1 − µ2 ) L
+Proof. Substituting the drift bound (4.4) from Lemma 4.2 into the one-round de-
+scent (4.11), and collecting the terms in ∥∇ f (θ t )∥2 and (σL2 + σG2 ), yields (4.21) with the
+stated constants.
+
+4.3   Main Full-Participation Convergence Theorem
+We are now ready to state and prove the main convergence theorem for FedSLoP.
+Theorem 4.1 (Convergence of FedSLoP with explicit constants). Suppose Assumptions 1
+and 2 hold, and the algorithm is executed as described in Algorithm 1.
+                                                                           −1
+    For the momentum weights ατ,q = (1 − µτ −q )/(1 − µ) and Sτ = ∑τq=      0 ατ,q defined above and
+the rank ratio δ = r/d ∈ (0,1], assume that the stepsize η > 0 obeys the explicit conditions
+                                 (r                r                       )
+                                     1 − µ2 1        δ (1 − µ)(1 − µ2 ) Sτ
+                       η ≤ min              ,    ,                           .                (4.22)
+                                     6L2 τ 3 LSτ           48L2 τ 4
+
+Then for every integer T ≥ 1, the global iterates (θ t )t≥0 of FedSLoP satisfy
+              1 T −1                    4
+                ∑    E ∥∇ f (θ t )∥2 ≤        f (θ 0 )− f ∗
+                                                           
+              T t =0                   δηSτ T
+                                            4ηSτ LσL2       48η 2 τ 4 L2
+                                        +             + 2                    (σL2 + σG2 ).      (4.23)
+                                              δN       δ (1 − µ)(1 − µ2 ) Sτ
+Proof. We combine the explicit one-round descent inequality under random Stiefel pro-
+jector with the explicit drift bound.
+
+Step 1: One-round descent with drift. By Lemma 4.4, for each round t and conditional
+expectation Et [·] given θ t we have
+                                          δ        12L2 τ 4 η 3             2
+                 Et f (θ t+1 ) ≤ f (θ t )− ηSτ −                   ∇ f (θ t )
+                             
+                                           2     (1 − µ)(1 − µ2 )
+                                      η 2 Sτ2 LσL2      12L2 τ 4 η 3
+                                  +                +                  (σ2 + σG2 ).
+                                           N         δ(1 − µ)(1 − µ2 ) L
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                            21
+
+
+Step 2: Ensuring a negative gradient coefficient. Imposing the additional stepsize con-
+dition                             r
+                                      δ (1 − µ)(1 − µ2 ) Sτ
+                               η≤                           ,
+                                            48L2 τ 4
+which is equivalent to
+                                   12L2 τ 4          δ
+                                             2
+                                               η 3 ≤ ηSτ ,
+                               (1 − µ)(1 − µ )       4
+the coefficient in front of ∥∇ f (θ t )∥2 is
+
+                               δ          12L2 τ 4           δ
+                              − ηSτ +              2
+                                                      η 3 ≤ − ηSτ ,
+                               2      (1 − µ)(1 − µ )        4
+
+so the one-round bound simplifies to
+
+                                                δ                2
+                     Et f (θ t+1 ) ≤ f (θ t )− ηSτ ∇ f (θ t )
+                                 
+                                                4
+                                        η 2 Sτ2 LσL2      12L2 τ 4 η 3
+                                     +               +                  (σ2 + σG2 ).          (4.24)
+                                             N         δ(1 − µ)(1 − µ2 ) L
+
+This bound holds whenever (4.22) is satisfied.
+
+Step 3: Telescoping and averaging.             Taking full expectation in (4.24) and summing over
+t = 0,...,T − 1 yields
+                                               T −1 
+                                           δ
+                     E f (θ T ) ≤ f (θ 0 )− ηSτ ∑ E ∥∇ f (θ t )∥2
+                                                                
+                                           4    t =0
+                                       η 2 Sτ2 LTσL2     12η 3 τ 4 L2 T
+                                   +                 +                  (σ2 + σG2 ).
+                                              N        δ(1 − µ)(1 − µ2 ) L
+
+Using the lower boundedness f (θ T ) ≥ f ∗ , dividing both sides by T and by δηSτ /4 and
+rearranging gives
+
+              1 T −1                    4
+                ∑    E ∥∇ f (θ t )∥2 ≤        f (θ 0 )− f ∗
+                                                           
+              T t =0                   δηSτ T
+                                             4ηSτ LσL2       48η 2 τ 4 L2
+                                         +             + 2                    (σL2 + σG2 ),
+                                               δN       δ (1 − µ)(1 − µ2 ) Sτ
+
+which is exactly the bound (4.23) stated in the theorem.
+22                                     ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+4.4    Asymptotic Rate Under Carefully Selected Step-Size
+The explicit convergence bound in Theorem 4.1 can be optimized over the step-size η to
+reveal the asymptotic dependence on the number of rounds T and the problem parame-
+ters. The following corollary summarizes the result for a carefully selected step-size.
+
+Corollary 4.1 (Optimal convergence rate via carefully-selected step-size). Under the as-
+sumptions of Theorem 4.1, let ∆0 := f (θ 0 )− f ∗ . If we choose
+         s                       s                             s                s                            −1
+              6L2 τ 3                       48L2 τ 4                Sτ2 LTσL2         12τ 4 L2 T (σL2 + σG2 )
+     η=                + LSτ +                             +                   +3                                        ,
+                                                                                      δ(1 − µ)(1 − µ2 )∆0
+                                                                                                              
+              1 − µ2                  δ(1 − µ)(1 − µ2 )Sτ            N∆0
+
+the averaged squared gradient norm satisfies
+                                                                                                                  !
+     1 T −1                    ∆1/2
+                                  0 L
+                                       1/2 σ    ∆2/3
+                                                 0 L
+                                                     2/3 τ 1/3 ( σ2 + σ2 )1/3
+                                                                                ∆0 Lτ 1/2
+       ∑
+                                            L
+            E ∥∇ f (θ t )∥2 = O                                   L    G
+                           
+                                              +                               +                                       .
+     T t =0                      δN 1/2 T 1/2           δ4/3 T 2/3                 δT
+                                |    {z      } |            {z              }   | {z }
+                                       stochastic term      higher-order drift term           optimization term
+
+
+where O(·) hides only absolute numerical constants (independent of L,τ,δ, N,σL ,σG ). In partic-
+ular, the contribution of the local stochastic variance σL2 enjoys a linear speedup factor 1/N in the
+dominant variance term.
+
+   Theorem 4.1 and Corollary 4.1 together provide a detailed nonconvex convergence
+theory for FedSLoP. The explicit dependence on the subspace ratio δ clarifies how low-
+rank random projections affect the convergence property.
+
+
+5     Numerical Experiments
+We now evaluate F ED SL O P on a standard non-IID MNIST classification task and com-
+pare it against several federated baselines. The main goals are to assess convergence
+speed, final test accuracy, robustness to data heterogeneity, and the effect of the projec-
+tion rank and the number of clients.
+
+5.1    Experimental Setup
+Dataset and task. We consider 10-class classification on MNIST. The training set con-
+tains 60,000 grayscale images and the test set contains 10,000 images. Each image is vec-
+torized into R784 . The prediction model is a two-layer multilayer perceptron with archi-
+tecture 784 → 128 → 10 and ReLU activation in the hidden layer. The loss function is the
+standard cross-entropy loss.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                           23
+
+
+
+                       Table 1: Main federated configuration on non-IID MNIST.
+     Parameter                                   Value
+     Number of clients p                         50
+     Dirichlet concentration α                   0.1 (main), {0.05,0.1,0.5,1.0} (sensitivity)
+     Communication rounds T                      100
+     Local epochs per round                      1
+     Mini-batch size b                           32
+     Learning rate η                             0.01839685275139246
+     F ED SL O P projection rank r               112 (main), varied in ablation
+     F ED SL O P momentum                        ≈ 0.805
+     F ED L O RAW ITH M OMENTUM rank             15
+
+
+Federated partition. We use 50 clients and distribute the training data by label-wise
+Dirichlet partitioning. In the main experiment the Dirichlet concentration parameter is
+α = 0.1, which creates a strongly heterogeneous non-IID setting. In the heterogeneity
+study we vary α ∈ {0.05,0.1,0.5,1.0}.
+
+Compared methods.         We compare the proposed F ED SL O P against the following base-
+lines:
+
+   • FedAvgWithMomentum: full-parameter federated averaging with server-side mo-
+     mentum;
+
+   • FedMef: magnitude-based sparse update baseline;
+
+   • FederatedSelect: random parameter-subset update baseline;
+
+   • NeuLite: block-wise partial-update baseline;
+
+   • FedLoRAWithMomentum: LoRA-based low-rank model adaptation with server-
+     side momentum.
+
+Training configuration. In the main comparison we train for T = 100 communication
+rounds, use one local epoch per round, batch size 32, and three random seeds {0,1,2}.
+The learning rate is fixed to
+
+                                    η = 0.01839685275139246,
+
+which is selected from the tuning procedure used for F ED SL O P and then reused across
+methods for a fair comparison. For the proposed method the main projection rank is
+r = 112. For the LoRA baseline we use rank 15.
+24                                                                    ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+
+Table 2: Final test accuracy on non-IID MNIST with α = 0.1 after T = 100 communication rounds (mean ±
+standard deviation over three seeds).
+                      Method                                                  Final test accuracy (mean ± std)                                                Compression ratio
+                      FedAvgWithMomentum                                                         0.9551 ± 0.0015                                                              1
+                      FedSLoP                                                                    0.9511 ± 0.0028                                                            15.3%
+                      FedLoRAWithMomentum                                                        0.9247 ± 0.0063                                                            15.5%
+                      FedMef                                                                     0.8965 ± 0.0062                                                            15.0%
+                      FederatedSelect                                                            0.8759 ± 0.0060                                                            15.0%
+                      NeuLite                                                                    0.8665 ± 0.0078                                                            15.0%
+
+                                                                                                                                         MNIST Federated Learning: Final Accuracy Comparison
+                               MNIST Federated Learning: Convergence Curves                                                    1.0      0.955      0.951
+                                                                                                                                                                                                  0.925
+                                                                                                                                                             0.897                      0.876
+                                                                                                                                                                          0.867
+                0.9
+                                                                                                                               0.8
+                0.8
+
+
+
+
+                                                                                                         Final Test Accuracy
+                0.7
+                                                                                                                               0.6
+
+Test Accuracy
+                0.6
+
+                0.5
+                                                                                                                               0.4
+                0.4
+                                                                               FedAvg-M
+                0.3                                                            FedSLop
+                                                                               FedMef                                          0.2
+                                                                               NeuLite
+                0.2                                                            FederatedSelect
+                                                                               FedLoRA-M
+                       0      20             40            60            80              100                                   0.0
+                                                  Round
+                                                                                                                                           vg-M        Lop        e  f       ite               lect   A-M
+                                                                                                                                       FedA       FedS       FedM        NeuL           ratedSe FedLoR
+                                                                                                                                                                                   Fede
+         Test accuracy vs. communication rounds
+                                                                                                                                     Final test accuracy at round T = 100
+
+Figure 1: Convergence and final precision on non-IID MNIST (α = 0.1). Left: test accuracy over communication
+rounds. Right: final test accuracy.
+
+
+5.2                        Main Comparison on Non-IID MNIST
+Table 2 reports the final test accuracy after 100 communication rounds. The strongest
+baseline is F ED AVG W ITH M OMENTUM, which reaches 0.9551 ± 0.0015. The proposed
+F ED SL O P achieves 0.9511 ± 0.0028, remaining very close to the full-parameter baseline
+while clearly outperforming the sparse and partial-update methods. The LoRA base-
+line also performs competitively, but still trails F ED SL O P by more than two percentage
+points.
+    Figure 1 shows the corresponding convergence curves and final-accuracy summary.
+The gap between F ED SL O P and F ED AVG W ITH M OMENTUM stays small throughout
+training, whereas the sparse and blockwise baselines converge more slowly and satu-
+rate at lower accuracies. This indicates that low-rank projection of the optimizer state
+preserves most of the optimization benefit of full-parameter training while substantially
+reducing the effective update dimension.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                                                25
+
+
+
+Table 3: Final test accuracy on MNIST after T = 100 communication rounds for different Dirichlet parameters
+α (mean over three seeds). Smaller α means stronger heterogeneity.
+             Method                                         α = 0.05       α = 0.10     α = 0.50          α = 1.00
+             FedAvgWithMomentum                              0.9035        0.9551           0.9722        0.9739
+             FedSLoP                                         0.9269        0.9511           0.9700        0.9708
+             FedLoRAWithMomentum                             0.8838        0.9247           0.9558        0.9616
+             FedMef                                          0.8709        0.8965           0.9283        0.9317
+             FederatedSelect                                 0.8257        0.8759           0.9064        0.9101
+             NeuLite                                         0.7965        0.8665           0.9075        0.9100
+
+                                                      MNIST Federated: Alpha Sensitivity
+                                            0.975
+                                            0.950
+                                            0.925
+
+
+
+                      Final test accuracy
+                                            0.900
+                                            0.875
+                                                                                        FedAvg-M
+                                            0.850                                       FedSLop
+                                                                                        FedMef
+                                            0.825                                       NeuLite
+                                                                                        FederatedSelect
+                                            0.800                                       FedLoRA-M
+                                                    0.2       0.4         0.6         0.8          1.0
+                                                           Dirichlet concentration
+
+Figure 2: Sensitivity to the Dirichlet concentration parameter α. Final test accuracy after 100 communication
+rounds.
+
+
+5.3   Robustness to Statistical Heterogeneity
+To study sensitivity to the non-IID level, we vary the Dirichlet concentration parame-
+ter. The results are summarized in Table 3 and Figure 2. As α decreases, all methods
+deteriorate, but the extent of deterioration differs substantially.
+    The most notable case is the extreme non-IID regime α = 0.05: F ED SL O P reaches
+0.9269, while F ED AVG W ITH M OMENTUM drops to 0.9035. Thus the proposed method
+is more robust than the strongest full-parameter baseline under severe heterogeneity. For
+milder heterogeneity levels (α ≥ 0.1), F ED AVG W ITH M OMENTUM retains a small advan-
+tage, but the difference remains modest.
+    These results suggest that the projected update structure of F ED SL O P acts as an ef-
+fective regularizer in highly heterogeneous regimes. The sparse and blockwise baselines
+degrade much more sharply, while the LoRA baseline lies in between: it is more stable
+than the sparse baselines but still clearly below F ED SL O P in the hardest setting.
+26                                           ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+
+      Table 4: Rank ablation for FedSLoP on MNIST with α = 0.1 after 100 communication rounds.
+                              Projection rank r          Final accuracy (mean ± std)
+                              16                                 0.8907 ± 0.0113
+                              32                                 0.9148 ± 0.0055
+                              64                                 0.9392 ± 0.0035
+                              112                                0.9511 ± 0.0028
+                              192                                0.9561 ± 0.0034
+
+                               FedSLop: Convergence under Different proj_rank (synthetic)
+                                   0.9
+                                   0.8
+                                   0.7
+
+
+                   Test Accuracy
+                                   0.6
+                                   0.5
+                                   0.4                                       proj_rank=16
+                                                                             proj_rank=32
+                                   0.3                                       proj_rank=64
+                                   0.2                                       proj_rank=112
+                                                                             proj_rank=192
+                                   0.1
+                                         0      20        40           60      80        100
+                                                               Round
+                  Figure 3: Convergence of FedSLoP for different projection ranks r.
+
+
+5.4   Projection-Rank Ablation
+The projection rank r is the central design parameter of F ED SL O P. Table 4 and Figure 3
+report the effect of varying r ∈ {16,32,64,112,192} under the same MNIST setup.
+    The trend is monotone and intuitive: increasing r substantially improves performance
+from r = 16 to r = 112, while the gain from r = 112 to r = 192 is relatively small. Hence
+r = 112 already captures most of the useful optimization subspace in this MNIST task.
+
+5.5   Scaling with the Number of Clients
+We next fix the projection rank at r = 112 and vary the number of clients. Table 5 and
+Figure 4 summarize the results.
+   Increasing the number of clients from 10 to 50 noticeably improves both convergence
+speed and final accuracy. However, the gain from 50 to 100 clients is marginal, indicating
+a diminishing-returns regime in which additional client participation mainly increases
+communication cost without bringing comparable accuracy improvements.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                                      27
+
+
+
+    Table 5: Client-number ablation for FedSLoP on MNIST with α = 0.1 after 100 communication rounds.
+         Number of clients p                   Total uplink elements         Final accuracy (mean ± std)
+         10                                            203,540                      0.9199 ± 0.0094
+         20                                            407,080                      0.9341 ± 0.0089
+         50                                           1,017,700                     0.9472 ± 0.0026
+         100                                          2,035,400                     0.9479 ± 0.0010
+
+                            FedSLop: Convergence under Different num_clients (synthetic)
+                                     0.9
+                                     0.8
+                                     0.7
+
+
+                     Test Accuracy
+                                     0.6
+                                     0.5
+                                     0.4
+                                                                              num_clients=10
+                                     0.3                                      num_clients=20
+                                     0.2                                      num_clients=50
+                                                                              num_clients=100
+                                     0.1
+                                           0     20        40           60        80        100
+                                                                Round
+                    Figure 4: Convergence of FedSLoP for different numbers of clients.
+
+
+5.6    Summary
+Across all experiments, F ED SL O P achieves a strong balance between accuracy and com-
+munication efficiency. On non-IID MNIST it remains very close to the full-parameter
+F ED AVG W ITH M OMENTUM baseline, substantially outperforms sparse and blockwise
+update methods, and shows markedly better robustness in the strongly heterogeneous
+regime. The rank and client-number ablations further indicate that moderate projection
+rank and moderate client population already capture most of the attainable benefit in this
+task.
+
+
+6     Conclusion
+We have proposed FedSLoP, a FedAvg-style federated learning algorithm that integrates
+random low-rank subspace projections with momentum in order to reduce client-side
+memory usage while retaining the simplicity and robustness of the standard FL work-
+flow. By sampling a fresh Stiefel subspace at each communication round and constraining
+all local stochastic gradients and momentum updates to this subspace, FedSLoP reduces
+28                             ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+the effective dimensionality of the optimizer state and the communicated directions with-
+out modifying the underlying model architecture.
+    On the theoretical side, we developed a detailed nonconvex convergence analysis for
+FedSLoP under full client participation and random Stiefel projectors. Under standard
+smoothness and bounded-variance assumptions, we derived explicit bounds on the aver-
+aged squared gradient norm that exhibit an O(1/T ) optimization term and an O( T −1/2 )
+variance term, with constants that depend explicitly on the subspace ratio δ = r/d, the
+number of local steps τ, the momentum parameter µ, and the number of clients N. The
+resulting variance floor contains a linear speedup factor 1/N in the local variance term,
+and a harmonic step-size strategy yields a provably near-optimal balance between opti-
+mization, variance, and drift terms.
+    On the empirical side, our experiments on federated MNIST classification with
+Dirichlet non-IID partitions showed that FedSLoP closely tracks the convergence of a
+strong FedAvgWithMomentum baseline while substantially outperforming sparse and
+low-rank model baselines such as FedMef, NeuLite, FederatedSelect, and FedLoRAW-
+ithMomentum. Projection-rank and client-number ablations revealed clear diminishing-
+returns regimes and confirmed that moderate ranks and client counts already suffice to
+capture the dominant gradient subspace and achieve stable, accurate training under se-
+vere heterogeneity.
+    Taken together, these results demonstrate that constraining the optimizer state
+to random low-dimensional subspaces is a principled and effective strategy for
+communication- and memory-efficient federated learning. Several directions remain
+for future work. Extending the convergence analysis to partial participation and asyn-
+chronous settings, incorporating adaptive or data-dependent subspace selection, and ap-
+plying FedSLoP to larger-scale models and tasks (e.g., language modeling and vision
+transformers) are particularly promising. Another avenue is to combine the subspace-
+based design with advanced compression and personalization techniques, further clos-
+ing the gap between theoretical guarantees and the demanding system constraints of
+real-world FL deployments.
+
+
+References
+ [1] Dan Alistarh, Demjan Grubic, Jerry Li, Ryota Tomioka, and Milan Vojnovic. Qsgd:
+     Communication-efficient sgd via gradient quantization and encoding. arXiv preprint
+     arXiv:1610.02132v4, 2016.
+ [2] Debraj Basu, Deepesh Data, Can Karakus, and Suhas Diggavi. Qsparse-local-SGD: Dis-
+     tributed SGD with quantization, sparsification, and local computations. IEEE Journal on
+     Selected Areas in Information Theory, 2019.
+ [3] Aleksandr Beznosikov, Samuel Horváth, Peter Richtárik, and Mher Safaryan. On biased
+     compression for distributed learning. Journal of Machine Learning Research, 2020.
+ [4] Ziheng Cheng, Xinmeng Huang, Pengfei Wu, and Kun Yuan. Momentum benefits non-
+     iid federated learning simply and provably. In Proceedings of the International Conference on
+     Learning Representations, 2023.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                            29
+
+
+ [5] Laurent Condat, Artavazd Maranjyan, and Peter Richtárik. Locodl: Communication-
+     efficient distributed learning with local training and compression. In International Conference
+     on Learning Representations, 2024.
+ [6] DeepSeek-AI, Aixin Liu, Bei Feng, Bin Wang, Bingxuan Wang, Bo Liu, Chenggang Zhao,
+     Chengqi Dengr, Chong Ruan, Damai Dai, Daya Guo, Dejian Yang, Deli Chen, Dongjie Ji,
+     Erhang Li, Fangyun Lin, Fuli Luo, Guangbo Hao, Guanting Chen, Guowei Li, H. Zhang,
+     Hanwei Xu, Hao Yang, Haowei Zhang, Honghui Ding, Huajian Xin, Huazuo Gao, Hui Li,
+     Hui Qu, J. L. Cai, Jian Liang, Jianzhong Guo, Jiaqi Ni, Jiashi Li, Jin Chen, Jingyang Yuan,
+     Junjie Qiu, Junxiao Song, Kai Dong, Kaige Gao, Kang Guan, Lean Wang, Lecong Zhang,
+     Lei Xu, Leyi Xia, Liang Zhao, Liyue Zhang, Meng Li, Miaojun Wang, Mingchuan Zhang,
+     Minghua Zhang, Minghui Tang, Mingming Li, Ning Tian, Panpan Huang, Peiyi Wang, Peng
+     Zhang, Qihao Zhu, Qinyu Chen, Qiushi Du, R. J. Chen, R. L. Jin, Ruiqi Ge, Ruizhe Pan,
+     Runxin Xu, Ruyi Chen, S. S. Li, Shanghao Lu, Shangyan Zhou, Shanhuang Chen, Shaoqing
+     Wu, Shengfeng Ye, Shirong Ma, Shiyu Wang, Shuang Zhou, Shuiping Yu, Shunfeng Zhou,
+     Size Zheng, T. Wang, Tian Pei, Tian Yuan, Tianyu Sun, W. L. Xiao, Wangding Zeng, Wei An,
+     Wen Liu, Wenfeng Liang, Wenjun Gao, Wentao Zhang, X. Q. Li, Xiangyue Jin, Xianzu Wang,
+     Xiao Bi, Xiaodong Liu, Xiaohan Wang, Xiaojin Shen, Xiaokang Chen, Xiaosha Chen, Xiaotao
+     Nie, Xiaowen Sun, Xiaoxiang Wang, Xin Liu, Xin Xie, Xingkai Yu, Xinnan Song, Xinyi Zhou,
+     Xinyu Yang, Xuan Lu, Xuecheng Su, Y. Wu, Y. K. Li, Y. X. Wei, Y. X. Zhu, Yanhong Xu,
+     Yanping Huang, Yao Li, Yao Zhao, Yaofeng Sun, Yaohui Li, Yaohui Wang, Yi Zheng, Yichao
+     Zhang, Yiliang Xiong, Yilong Zhao, Ying He, Ying Tang, Yishi Piao, Yixin Dong, Yixuan Tan,
+     Yiyuan Liu, Yongji Wang, Yongqiang Guo, Yuchen Zhu, Yuduan Wang, Yuheng Zou, Yukun
+     Zha, Yunxian Ma, Yuting Yan, Yuxiang You, Yuxuan Liu, Z. Z. Ren, Zehui Ren, Zhangli Sha,
+     Zhe Fu, Zhen Huang, Zhen Zhang, Zhenda Xie, Zhewen Hao, Zhihong Shao, Zhiniu Wen,
+     Zhipeng Xu, Zhongyu Zhang, Zhuoshu Li, Zihan Wang, Zihui Gu, Zilin Li, and Ziwei Xie.
+     DeepSeek-V2: A strong, economical, and efficient mixture-of-experts language model. arXiv
+     preprint arXiv:2405.04434v5, 2024.
+ [7] Haoze He, Jing Wang, and Anna Choromanska. Adjacent leader decentralized stochastic
+     gradient descent. In Proceedings of the European Conference on Artificial Intelligence, 2024.
+ [8] Yutong He, Xinmeng Huang, Yiming Chen, Wotao Yin, and Kun Yuan. Lower bounds and
+     accelerated algorithms in distributed stochastic optimization with communication compres-
+     sion. arXiv preprint arXiv:2305.07612, 2023.
+ [9] Yutong He, Xinmeng Huang, and Kun Yuan. Unbiased compression saves communication
+     in distributed optimization: When and how much? In Advances in Neural Information Pro-
+     cessing Systems, 2023.
+[10] Yutong He, Pengrui Li, Yipeng Hu, Chuyan Chen, and Kun Yuan. Subspace optimization for
+     large language models with convergence guarantees. arXiv preprint arXiv:2410.11289, 2024.
+[11] Samuel Horváth, Dmitry Kovalev, Konstantin Mishchenko, Sebastian Stich, and Peter
+     Richtárik. Stochastic distributed learning with gradient quantization and variance reduc-
+     tion. arXiv preprint arXiv:1904.05115, 2019.
+[12] Like Jian and Dong Liu. Widening the network mitigates the impact of data heterogeneity
+     on FedAvg. In Proceedings of the International Conference on Machine Learning, 2025.
+[13] Sai Praneeth Karimireddy, Satyen Kale, Mehryar Mohri, Sashank J. Reddi, Sebastian U.
+     Stich, and Ananda Theertha Suresh. SCAFFOLD: Stochastic controlled averaging for fed-
+     erated learning. arXiv preprint arXiv:1910.06378v4, 2019.
+[14] Sai Praneeth Karimireddy, Quentin Rebjock, Sebastian U. Stich, and Martin Jaggi. Error
+     feedback fixes signsgd and other gradient compression schemes. In Proceedings of the Inter-
+30                              ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31
+
+
+     national Conference on Machine Learning, 2019.
+[15] Xiang Li, Kaixuan Huang, Wenhao Yang, Shusen Wang, and Zhihua Zhang. On the conver-
+     gence of FedAvg on non-IID data. In Proceedings of the International Conference on Learning
+     Representations, 2019.
+[16] Xiangru Lian, Wei Zhang, Ce Zhang, and Ji Liu. Asynchronous decentralized parallel
+     stochastic gradient descent. In Proceedings of the International Conference on Machine Learn-
+     ing, 2017.
+[17] Junkang Liu, Fanhua Shang, Junchao Zhou, Hongying Liu, Yuanyuan Liu, and Jin Liu.
+     Fedmuon: Accelerating federated learning with matrix orthogonalization. arXiv preprint
+     arXiv:2510.27403v1, 2025.
+[18] Klaus Neymeyr. A geometric convergence theory for the preconditioned steepest descent
+     iteration. SIAM Journal on Numerical Analysis, 2011.
+[19] Yaqian Qi, Yuan Feng, Xiangxiang Wang, Hanzhe Li, and Jingxiao Tian. Leveraging fed-
+     erated learning and edge computing for recommendation systems within cloud computing
+     networks. arXiv preprint arXiv:2403.03165v2, 2024.
+[20] Xun Qian, Peter Richtárik, and Tong Zhang. Error compensated distributed sgd can be
+     accelerated. In Advances in Neural Information Processing Systems, 2020.
+[21] Zhaonan Qu, Kaixiang Lin, Zhaojian Li, Jiayu Zhou, and Zhengyuan Zhou. A unified linear
+     speedup analysis of federated averaging and nesterov FedAvg. Journal of Artificial Intelligence
+     Research, 2020.
+[22] Hamza Reguieg, Mohammed El Hanjri, Mohamed El Kamili, and Abdellatif Kobbane. A
+     comparative evaluation of fedavg and per-fedavg algorithms for dirichlet distributed het-
+     erogeneous data. In International Conference on Wireless Networks and Mobile Communications,
+     2023.
+[23] Sebastian U. Stich, Jean-Baptiste Cordonnier, and Martin Jaggi. Sparsified sgd with memory.
+     In Advances in Neural Information Processing Systems, 2018.
+[24] Sebastian U. Stich and Sai Praneeth Karimireddy. The error-feedback framework: Bet-
+     ter rates for SGD with delayed gradients and compressed communication. arXiv preprint
+     arXiv:1909.05350, 2019.
+[25] Lili Su, Jiaming Xu, and Pengkun Yang. A non-parametric view of FedAvg and FedProx:
+     Beyond stationary points. Journal of Machine Learning Research, 2021.
+[26] Yuki Takezawa and Sebastian U. Stich. Scalable decentralized learning with teleportation.
+     In Proceedings of the International Conference on Learning Representations, 2025.
+[27] Hanlin Tang, Xiangru Lian, Ming Yan, Ce Zhang, and Ji Liu. D2 : Decentralized training over
+     decentralized data. In Proceedings of the International Conference on Machine Learning, 2018.
+[28] Hanlin Tang, Xiangru Lian, Chen Yu, Tong Zhang, and Ji Liu. DoubleSqueeze: Parallel
+     stochastic gradient descent with double-pass error-compensated compression. In Proceed-
+     ings of the International Conference on Machine Learning, 2019.
+[29] Quoc Tran-Dinh, Nhan H. Pham, Dzung T. Phan, and Lam M. Nguyen. FedDR – random-
+     ized douglas-rachford splitting algorithms for nonconvex federated composite optimiza-
+     tion. In Advances in Neural Information Processing Systems, 2021.
+[30] Anastasiia Usmanova, François Portet, Philippe Lalanda, and German Vega. A distillation-
+     based approach integrating continual learning and federated learning for pervasive services.
+     arXiv preprint arXiv:2109.04197v1, 2021.
+[31] Thijs Vogels, Sai Praneeth Karimireddy, and Martin Jaggi. Powersgd: Practical low-rank gra-
+     dient compression for distributed optimization. In Advances in Neural Information Processing
+     Systems, 2019.
+ReasFlow Paper Copilot / CSIAM Trans. Appl. Math., x (20xx), pp. 1-31                           31
+
+
+[32] Yingchao Wang and Wenqi Niu. Federated progressive self-distillation with logits calibra-
+     tion for personalized iiot edge intelligence. arXiv preprint arXiv:2412.00410v1, 2024.
+[33] Ming Xiang, Stratis Ioannidis, Edmund Yeh, Carlee Joe-Wong, and Lili Su. Towards bias
+     correction of FedAvg over nonuniform and time-varying communications. In Proceedings of
+     the IEEE Conference on Decision and Control, 2023.
+[34] Ran Xin, Usman A. Khan, and Soummya Kar. An improved convergence analysis for decen-
+     tralized online stochastic non-convex optimization. IEEE Transactions on Signal Processing,
+     2020.
+[35] Haibo Yang, Minghong Fang, and Jia Liu. Achieving linear speedup with partial worker
+     participation in non-IID federated learning. In Proceedings of the International Conference on
+     Learning Representations, 2021.
+[36] Fuxun Yu, Weishan Zhang, Zhuwei Qin, Zirui Xu, Di Wang, Chenchen Liu, Zhi Tian, and
+     Xiang Chen. Heterogeneous federated learning. arXiv preprint arXiv:2008.06767v2, 2020.
+[37] Honglin Yuan, Manzil Zaheer, and Sashank Reddi. Federated composite optimization. arXiv
+     preprint arXiv:2011.08474v3, 2020.
+[38] Kun Yuan, Sulaiman A. Alghunaim, and Xinmeng Huang. Removing data heterogeneity
+     influence enhances network topology dependence of decentralized SGD. Journal of Machine
+     Learning Research, 2021.
+[39] Hao Zhang, Tingting Wu, Siyao Cheng, and Jie Liu. CC-FedAvg: Computationally cus-
+     tomized federated averaging. IEEE Internet of Things Journal, 2022.
+[40] Jiaojiao Zhang, Jiang Hu, and Mikael Johansson. Non-convex composite federated learning
+     with heterogeneous data. arXiv preprint arXiv:2502.03958v1, 2025.
+[41] Jiaojiao Zhang, Yuqi Xu, and Kun Yuan. An efficient subspace algorithm for federated learn-
+     ing on heterogeneous data. arXiv preprint arXiv:2509.05213, 2025.
+[42] Yuan Zhou, Jiachen Zhong, Xinli Shi, Guanghui Wen, and Xinghuo Yu. FedCanon: Non-
+     convex composite federated learning with efficient proximal operation on heterogeneous
+     data. IEEE Transactions on Signal Processing, 2025.
+

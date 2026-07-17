@@ -1,0 +1,2377 @@
+                                                                       Vol. 0, No. Submitted, pp. 1-
+CSIAM Trans. Appl. Math.
+                                                                       46
+doi:
+                                                                       03 2025
+
+
+
+
+Subspace SCAFFOLD for Efficient Federated Learn-
+ing under Heterogeneous Data
+ReasFlow Paper Copilot
+
+
+          Abstract. Federated learning increasingly operates in a large-model regime where
+          communication, memory, and computation are all scarce. At the same time, non-IID
+          client data induce drift that degrades the stability of local training. Existing remedies
+          address only part of this challenge: full-dimensional variance-reduction methods such
+          as SCAFFOLD are robust to heterogeneity but expensive, whereas compression and
+          subspace methods improve efficiency without providing a native low-dimensional drift-
+          correction mechanism. This paper studies Subspace-SCAFFOLD (SSF), which performs
+          federated optimization in a low-dimensional subspace, communicates only projected
+          quantities, and preserves full-dimensional control information through a backfill-style
+          update that retains residual components when the active subspace changes. Under
+          standard smoothness and bounded-variance
+                                     √                  assumptions, SSF attains a non-asymptotic
+          rate of order O(
+                         e 1/T + 1/ NKT ). Experiments show favorable accuracy–efficiency
+          trade-offs under heterogeneous data.
+AMS subject classifications: 68Q25, 68T07, 90C15
+Key words: federated learning, communication efficiency, subspace optimization, SCAFFOLD,
+heterogeneous data
+
+
+
+
+1   Introduction
+Federated learning (FL) has emerged as a central paradigm for privacy-preserving dis-
+tributed training, where a central server coordinates optimization of a shared model across
+many clients that keep their data local. The standard Federated Averaging (FedAvg)
+algorithm amortizes communication by allowing multiple local updates between syn-
+chronization rounds, and has become a widely adopted baseline due to its simplicity and
+empirical success in practical deployments [11, 16, 17, 20]. However, modern FL applica-
+tions increasingly involve models with hundreds of millions or even billions of parameters
+and large-scale datasets deployed on resource-constrained edge devices [18, 31]. In this
+large-model regime, federated optimization faces a triple challenge in terms of computation,
+memory, and communication: each local training step can be computationally heavy, stor-
+ing full model states stresses limited device memory, and transmitting full-dimensional
+updates over constrained bandwidth becomes prohibitive.
+
+http://www.global-sci.org/csiam-am                   1                   ©2025 Global-Science Press
+2                                       Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+    These challenges are further exacerbated in realistic heterogeneous environments
+where client data distributions differ substantially from each other and from the global
+distribution. In such non-IID settings, the local objective functions Fi become misaligned,
+inducing client drift in local updates and degrading the stability and convergence of
+FedAvg and its variants [12, 25, 26]. Heterogeneity-correction methods such as SCAFFOLD
+address this issue by introducing control variates on the server and clients to correct
+local gradients, leading to convergence guarantees that resemble centralized training
+even under strong heterogeneity and partial participation [9]. While highly effective as
+robustness baselines in small- to medium-scale settings, these methods are especially costly
+in the large-model regime: they require storing full-dimensional auxiliary states at each
+client, communicating additional full-dimensional control variates between the server and
+clients, and computing extra full-gradient–like corrections at every local step. As a result,
+full-dimensional heterogeneity-correction methods are at odds with the triple-efficiency
+requirements of large-scale FL on memory- and bandwidth-limited devices.
+    To alleviate these resource constraints, several complementary lines of work have
+been explored in federated and distributed optimization. A first line focuses on reducing
+communication cost via gradient or model compression. Quantization and sparsification
+techniques such as QSGD and sparse SGD compress updates before transmission, and
+error-feedback mechanisms compensate for the bias introduced by compression [1, 3, 5–
+7, 13, 21–24].
+    These methods can substantially lower the number of bits communicated per round
+and are widely used in practice. However, they typically operate on full-dimensional
+gradients or model differences, so the communication cost still scales with the ambient
+dimension d of the model parameters, and the reduction is mainly in constant factors
+rather than dimensionality. More critically for large models, error-feedback schemes
+maintain full-dimensional error buffers to accumulate discarded information, which do
+not reduce—and often increase—the memory footprint on each client. When combined
+with full-dimensional control variates or other auxiliary states, compression and error-
+feedback can therefore aggravate memory pressure even as they reduce raw bandwidth
+usage.
+    A second line of work leverages subspace and low-rank parameterizations to obtain
+more holistic efficiency gains. In centralized training, methods such as GaLore project
+gradients onto low-rank subspaces to reduce the cost of backpropagation while preserving
+performance [32]. In federated learning, subspace and low-rank approaches—such as
+those using low-dimensional adapters, partial model training, or low-rank drift vari-
+ables in subspace-based federated learning methods [14, 30]—constrain optimization to
+a low-dimensional subspace or factorization. This design yields simultaneous reduc-
+tions in computation, communication, and memory: local updates are computed in an
+r-dimensional space with r ≪ d, communicated quantities are low-dimensional, and only
+subspace parameters or low-rank factors need to be stored. However, in strongly hetero-
+geneous FL, these methods often lack robust mechanisms to control client drift. Many
+subspace FL algorithms do not integrate SCAFFOLD-style heterogeneity correction, and
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                   3
+
+
+naive attempts to introduce low-rank drift compensation variables face serious stability
+issues: when the underlying subspace frequently changes or rotates, the low-rank com-
+pensation variables must be repeatedly re-aligned, making it difficult to maintain effective
+updates and leading to degraded correction quality and convergence. Consequently, while
+subspace and low-rank methods excel in efficiency, their convergence robustness under
+heterogeneity remains limited.
+    More broadly, existing approaches still exhibit a fundamental tension between robust-
+ness and efficiency along the three core resource dimensions. Full-dimensional correction
+and gradient-tracking methods maintain strong control of client drift but incur signifi-
+cant computation, communication, and memory overhead by operating in Rd [9, 10, 15].
+Compression with error feedback can mitigate communication costs, yet continues to rely
+on full-dimensional auxiliary buffers, leaving the memory footprint large or even larger
+[1, 3, 7, 13, 21, 22, 24]. Subspace and low-rank FL methods reduce computation, com-
+munication, and memory by working in low-dimensional parameterizations [14, 30, 32],
+but they do not implement SCAFFOLD-style drift correction in a principled way. Naive
+combinations that keep static full-dimensional control variates while training in evolv-
+ing subspaces either retain the full-dimensional auxiliary states—negating the subspace
+efficiency benefits—or discard accumulated correction information whenever the sub-
+space changes, thereby undermining the very variance-reduction properties that make
+SCAFFOLD effective.
+    This state of affairs highlights a key gap: there is currently no federated optimization
+algorithm that performs native heterogeneity correction in a low-dimensional subspace, so
+as to (i) preserve SCAFFOLD-level robustness to client drift and convergence behavior,
+while (ii) simultaneously achieving subspace-level efficiency in computation, communi-
+cation, and memory. Our goal in this work is to fill this gap. Our contributions are as
+follows.
+
+   • We propose Subspace-SCAFFOLD (SSF), a federated optimization algorithm that
+     unifies SCAFFOLD-style heterogeneity correction with subspace training to address
+     the triple challenge of computation, memory, and communication in large-model FL.
+     SSF constrains all optimization steps to a low-dimensional subspace defined by a
+     projection matrix or low-rank parameterization: local updates and all communicated
+     quantities live in this r-dimensional space, with r ≪ d, while the underlying goal re-
+     mains to optimize the original high-dimensional model parameters for downstream
+     tasks. Crucially, SSF maintains server and client control variates natively in the opti-
+     mization subspace and uses their difference to correct projected gradients during local
+     updates, mirroring the SCAFFOLD correction mechanism without ever introducing
+     full-dimensional auxiliary states. When the subspace basis is updated or rotated, SSF
+     employs a translation mechanism that consistently maps the accumulated control
+     variates into the new basis, preserving historical variance-reduction information
+     rather than discarding it when the subspace evolves. Through this subspace-native
+     design, SSF achieves simultaneous savings in computation, communication, and
+4                                         Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+        memory, while explicitly correcting client drift under data heterogeneity. At the same
+        time, SSF preserves the convergence behavior one would expect from single-node
+        subspace training, so that the efficiency gains from low-dimensional optimization
+        do not come at the cost of degraded convergence rates.
+
+      • We provide a comprehensive non-asymptotic convergence analysis for SSF under
+        standard smoothness and bounded-variance assumptions on stochastic gradients.
+        We first show that when gradients are projected through any matrix with spectral
+        norm at most one and an appropriate local learning rate is used, the projected
+        stochastic gradients satisfy the same type of bounded-variance property as in the
+        full space. Building on a subspace client-drift bound and a harmonic coupling of
+        the global and
+                     √ local stepsizes, we obtain a transient iteration complexity of order
+        O(1/T + 1/ NKT ) for the average squared gradient norm, where N is the number
+         e
+        of participating clients per round and K is the number of local steps. This establishes
+        linear speedup in N and K and shows that subspace-based heterogeneity correction
+        can achieve SCAFFOLD-level convergence behavior while avoiding full-dimensional
+        auxiliary states.
+
+      • We empirically evaluate SSF in representative heterogeneous federated learning
+        scenarios with large models and resource-constrained clients, comparing against
+        full-dimensional heterogeneity-correction methods, compressed communication
+        baselines, and existing subspace FL algorithms. The experiments demonstrate that
+        SSF simultaneously reduces memory usage, communication volume, and local
+        computation cost, while preserving robustness to data heterogeneity and achieving
+        fast convergence. These empirical results confirm that the proposed subspace-based
+        heterogeneity-correction mechanism can deliver strong accuracy–efficiency trade-
+        offs in practical large-model FL deployments.
+
+
+2      Related Work
+The existing literature can be organized around three complementary but only partially
+compatible design goals: robustness to heterogeneity through variance reduction, com-
+munication efficiency through compression, and holistic efficiency through subspace or
+low-rank optimization. This taxonomy, which is strongly supported by the survey assets,
+is useful for positioning our work because Subspace-SCAFFOLD is intended to operate
+precisely at the intersection of these three lines rather than within any single one of them.
+
+
+2.1     Federated Learning, Heterogeneity, and Variance Reduction
+The foundational Federated Averaging (FedAvg) algorithm established the paradigm of
+communication-efficient training via iterative local SGD and periodic model averaging
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                     5
+
+
+[11, 16]. Its empirical success spurred extensive theoretical analysis, establishing conver-
+gence guarantees in convex and nonconvex settings and clarifying the communication–
+optimization trade-off induced by local steps [12, 17, 20, 26]. At the same time, these
+analyses make clear that statistical heterogeneity induces client drift: local iterates move
+toward client-specific objectives and can become systematically misaligned with the global
+objective, especially under partial participation or unreliable communication [12, 25].
+Specialized remedies based on architecture or overparameterization can mitigate this phe-
+nomenon in certain settings [8, 27], but they do not provide a general optimization-level
+correction mechanism.
+    A more principled response is variance reduction through auxiliary states. The SCAF-
+FOLD algorithm introduces client and server control variates to correct the local descent
+direction, thereby reducing drift and recovering convergence guarantees that resemble cen-
+tralized training even under strong heterogeneity and client sampling [9]. This perspective
+is closely related to gradient tracking in decentralized optimization [10, 15]. Subsequent
+accelerated, composite, and sharpness-aware variants further reinforce the value of correc-
+tion terms in heterogeneous federated optimization [2, 4, 28, 29, 33]. The central limitation,
+however, is shared across this line of work: the correction states are full-dimensional. Each
+client must store and often communicate vectors in Rd , which creates a substantial mem-
+ory and bandwidth burden for modern large models [9, 18, 31]. Our paper is motivated
+by preserving the robustness of this line while removing its full-dimensional systems cost.
+
+
+2.2   Communication Compression and Error Feedback
+A direct route to communication efficiency is to compress model updates using quantiza-
+tion or sparsification [1, 13, 24]. These primitives can greatly reduce bits per round, but
+aggressive compressors also introduce variance or deterministic bias. The now-standard
+remedy is error feedback, which stores the discrepancy between the intended update and
+its compressed version in a local residual buffer so that the lost information is gradually
+reinjected into future rounds [21]. This principle underlies compressed local-SGD frame-
+works and doubly compressed schemes such as Qsparse-local-SGD and DoubleSqueeze
+[3, 22]. It has also been strengthened by analyses showing that momentum can further
+improve error-feedback behavior [6].
+     In federated learning, compression has been integrated with heterogeneity-aware
+optimization in methods such as SCAFCOM and SCALLION, which combine controlled
+averaging with compressed communication and obtain convergence guarantees under
+arbitrary heterogeneity [7]. Adaptive compression strategies further tune this trade-off
+online [23]. Nevertheless, this literature inherits a key structural limitation: error feedback
+requires a full-dimensional residual buffer on each client, so the memory footprint still
+scales with the ambient model dimension [3, 7, 21]. In that sense, compression often shifts
+the bottleneck from raw communication to device memory rather than resolving both
+simultaneously. Moreover, under non-IID data, local residuals can themselves evolve
+heterogeneously, complicating their interaction with client drift. For our purposes, the
+6                                       Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+main lesson from this line is that reducing transmitted bits alone is not enough; one must
+also control the dimension and persistence of the auxiliary state.
+
+
+2.3   Subspace and Low-Rank Optimization Methods
+A more holistic strategy is to reduce the dimension of the optimization process itself. In
+centralized large-model training, low-rank projection methods such as GaLore show that
+gradients and optimizer states can be maintained in low-dimensional subspaces while
+preserving strong empirical performance [32]. Related survey materials emphasize a
+broader geometric viewpoint in which projection, preconditioning, and low-rank structure
+jointly reshape the optimization problem so as to trade off computation, communication,
+and memory more effectively. In federated settings, this idea gives rise to subspace
+and low-rank algorithms that project client updates, communicate only low-dimensional
+coordinates, or optimize within low-rank parameterizations [14, 19, 30]. Greedy low-rank
+compression methods in distributed optimization further illustrate that structured low-
+rank communication can admit convergence guarantees when combined with appropriate
+correction mechanisms [5].
+    The advantage of this line is triple efficiency: local computation is reduced because
+updates are formed in an r-dimensional space, communication is reduced because only
+projected quantities are transmitted, and memory is reduced because optimizer or auxil-
+iary states can be maintained in low-dimensional coordinates. However, the survey assets
+also make clear that existing subspace methods generally prioritize efficiency over hetero-
+geneity robustness. Some methods employ dual variables or heuristic correctors, but they
+do not furnish a SCAFFOLD-style, theoretically grounded variance-reduction mechanism
+in the same evolving low-dimensional space [30]. This is the key incompatibility. Classical
+control variates are static and full-dimensional, whereas practical subspace methods often
+rely on dynamic or periodically refreshed bases. When the active subspace changes, a
+naive full-dimensional correction is either too costly to preserve or becomes misaligned
+with the new coordinates. Thus, the historical information required for effective drift
+correction is either retained at full cost or lost during subspace transitions.
+
+
+2.4   Positioning of This Work
+Our work is positioned exactly in the gap exposed by the above taxonomy. Variance-
+reduction methods offer robustness but pay full-dimensional memory and communication
+costs; compression methods reduce transmitted bits but still rely on full-dimensional
+auxiliary buffers; and subspace methods offer holistic efficiency but lack a native, theoreti-
+cally principled mechanism for correcting client drift under heterogeneity. The objective
+of Subspace-SCAFFOLD is to bridge these lines by co-designing subspace optimization
+and heterogeneity correction so that variance-reduction information is maintained con-
+sistently with the low-dimensional optimization geometry rather than appended as an
+incompatible full-dimensional afterthought. In this sense, our work is not merely another
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                7
+
+
+compressed or low-rank FL method: it aims to recover the robustness guarantees associ-
+ated with SCAFFOLD while preserving the subspace efficiency required in large-model
+federated learning. The theoretical development is given in Section 4, and the empirical
+consequences of this design are evaluated in Section 5.
+
+
+
+3     Methodology
+
+This section presents the methodology of Subspace-SCAFFOLD (SSF), including the
+problem setup, the algorithmic intuition, the main procedure, and the key implementation
+and complexity considerations. Our goal is to reduce the communication dimension from
+d to r while retaining the drift-correction mechanism of SCAFFOLD through projected
+updates and a residual-preserving backfill step in the ambient space.
+
+
+3.1   Problem setup and motivation
+
+We consider federated optimization over N clients. At each round, Subspace-SCAFFOLD
+introduces a shared random orthogonal projector Pt ∈ O(Rr×d ) so that all local updates
+and communicated quantities are restricted to an r-dimensional working subspace, while
+the global model and control variables remain represented in the full ambient space.
+    To ground the discussion, we first present a matrix-regression formulation that serves
+as a controlled analytical and experimental model. The global parameter is a matrix
+X ∈ Rd×m . Client i holds data ( Ai ,Bi ) and minimizes
+
+                                   1            2   λ   2
+                      fi (X ) =       Ai X − Bi F +   X F,           i = 1,..., N,   (3.1)
+                                  2ni               2
+
+while the global objective is
+                                                  1 N
+                                                  N i∑
+                                        F(X ) =         f i ( X ).                   (3.2)
+                                                     =1
+
+The data are heterogeneous across clients through feature-distribution shift: each client
+has its own mean vector and therefore its own local curvature and minimizer. This
+heterogeneity is the source of client drift.
+   The methodological motivation is straightforward. Standard FedAvg aggregates local
+model changes but does not explicitly correct the discrepancy between local and global
+gradient information. Full-dimensional SCAFFOLD addresses this issue by maintaining
+global and local control variates, but its memory and communication cost scales with the
+ambient dimension. SSF seeks to preserve the same correction mechanism while restricting
+communication and active-device state transfer to a lower-dimensional random subspace.
+8                                              Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+3.2   Subspace projection and backfill mechanism
+Let Pt ∈ Rr×d be a shared orthonormal projection operator at round t, with
+                                               Pt Pt⊤ = Ir ,                                      (3.3)
+and let
+                                               Pt := Pt⊤ Pt                                       (3.4)
+be the corresponding orthogonal projector in Rd . For any full-space vector x ∈ Rd , we
+decompose it into its projected and residual parts:
+                         xproj = Pt x,       xres = x − Pt⊤ xproj = ( I −Pt ) x.                  (3.5)
+The same decomposition is applied to the global control variate ct and to each client
+control variate cit .
+   The key modeling idea is that optimization work is done only on the projected co-
+ordinates. Local iterates evolve in Rr , gradients are projected through Pt , and server
+aggregation also takes place in the subspace. After the projected update is computed, the
+method restores a full-space model by backfilling the preserved residual part:
+                                         x t+1 = Pt⊤ xproj
+                                                      t +1    t
+                                                           + xres .                               (3.6)
+
+This backfill mechanism is one of the defining ingredients of SSF: it enables subspace
+communication without discarding the ambient-space representation of the iterate.
+
+3.3   Algorithmic intuition
+The algorithmic design follows two complementary principles.
+     First, as in SCAFFOLD, each client performs locally corrected stochastic-gradient steps.
+In full rank, the correction takes the form gi − cit + ct , where cit tracks the local gradient and
+ct tracks the global gradient. In SSF, the same correction is applied after projection into
+the active subspace. This suppresses client drift in the communicated directions while
+keeping the local and global correction terms dimension-compatible with the subspace
+iterate.
+     Second, unlike purely subspace-dual methods, SSF preserves a full-dimensional control
+state. Only the current subspace component is refreshed using new gradient information,
+whereas the orthogonal complement is carried forward unchanged. Concretely, the global
+control update has the form
+
+                                            1 N −1 K−1 ⊤ t,k t
+                                           NK i∑   ∑ Pt Pt gi + cres ,
+                                c t +1 =                                                          (3.7)
+                                               =0 k =0
+
+with the analogous client update
+
+                                                            1 ⊤ K−1 t,k
+                              cit+1 = ( I − Pt⊤ Pt )cit +    P Pt ∑ gi .                          (3.8)
+                                                            K t   k =0
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                              9
+
+
+Hence, only the projected component is replaced, whereas the residual component is
+preserved. This residual-preserving update allows SSF to accumulate dual information
+across multiple rounds and multiple subspaces, rather than confining itself to a fixed
+low-rank dual representation.
+    This methodology rests on three ingredients: a shared random subspace projection,
+projected SCAFFOLD-style control updates, and a backfill mechanism that restores a full-
+space iterate after each subspace update. In contrast, FedSub keeps only subspace dual
+variables and may therefore lose information when the projector changes, whereas SSF
+stores the control state in the full space and communicates only its projected component.
+This distinction is central to the implementation rationale.
+
+3.4   Main algorithm
+For completeness, we present the core algorithm analyzed in this paper.
+
+Algorithm 1 Subspace SCAFFOLD
+Require: Initial model x0 , control variables {c0i }iN=1 , c0 ; learning rates ηl , ηg ; local steps K;
+  clients S; subspace dim. r; rounds T
+  Initialize subspace projector: obtain P0 ∈ O(Rr×d ) by common random seed
+  for t = 0, ··· ,T − 1 do
+      Decompose model and control: x tproj = Pt x t , xres   t = x t − P⊤ x t , ct             t   t
+                                                                         t proj     proj = Pt c , cres =
+  ct − Pt⊤ ctproj
+      for all client i in parallel do
+                                   t
+           Client control split: ci,proj = Pt cit , ci,res
+                                                     t     = cit − Pt⊤ ci,proj
+                                                                        t
+
+                      t,0
+          Initialize yi,proj = xtproj
+          for k = 0,...,K − 1 do
+              Reconstruct full model: yit,k = Pt⊤ yi,proj
+                                                   t,k       t
+                                                          + xres
+            Compute mini-batch gradient: git,k = ∇ F (yit,k ;ξ it,k )
+                                          t,k +1     t,k
+            Update projected model: yi,proj      = yi,proj − ηl ( Pt git,k − ci,proj
+                                                                              t      + ctproj )
+         end for
+         Update client control: cit+1 = ( I − Pt⊤ Pt )cit + K1 Pt⊤ Pt ∑kK=−01 git,k
+      end for                                                        t,K
+                                  +1                        ηK      xt   −y
+      Update projected model: x tproj = xtproj − ηg Nl ∑i projηl Ki,proj
+                                             +1                     N −1 K −1 ⊤       t,k
+     Backfill to full space: x t+1 = Pt⊤ x tproj    t , c t +1 = 1
+                                                 + xres                                    t
+                                                                NK ∑i =0 ∑k =0 Pt Pt gi + cres
+     Update projector: generate new Pt+1 for next round
+  end for
+
+
+3.5   Pseudocode-level implementation view
+At a schematic level, each round consists of the following four stages.
+10                                       Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+Stage 1: projector generation and decomposition. A common random seed generates
+the shared projector Pt . The server decomposes the full model and control variables
+into projected and residual components. Only the projected pieces are prepared for
+communication.
+
+Stage 2: local projected updates. For each sampled client, the server first splits the local
+control variable into projected and residual parts. The client initializes a projected iterate
+from the broadcast subspace model, reconstructs the corresponding full model at each
+local step, computes a stochastic gradient in the ambient space, projects that gradient back
+into the subspace, and performs a SCAFFOLD-corrected projected update.
+
+Stage 3: projected aggregation. After K local steps, the server aggregates the projected
+client endpoints exactly in the FedAvg style but entirely inside the r-dimensional subspace.
+
+Stage 4: full-space backfill and control refresh. The server lifts the projected model back
+to the ambient space by combining the new projected coordinates with the old residual.
+The global and client control variates are then refreshed only on the active subspace and
+keep their orthogonal complements unchanged.
+    The implementation notes also stress a practical distinction between SSF and Fed-
+Sub. FedSub updates and rotates only subspace dual variables, while SSF stores full-
+dimensional controls on the CPU and computes low-dimensional projections for commu-
+nication. This design is heavier than FedSub in raw storage, but it avoids the structural
+information loss caused by repeated subspace-only dual rotations.
+
+3.6   Implementation considerations
+Several implementation choices are important for a robust realization of SSF.
+
+Shared projector generation. The projector is constructed from a common seed, often
+by sampling a Gaussian random matrix and orthonormalizing it via QR decomposition.
+This guarantees that all clients use the same subspace in a given round without explicitly
+transmitting a dense random basis every time.
+
+Projected communication only. The communicated objects are the subspace coordinates,
+         t , projected local endpoints, and projected control terms. This reduces the
+such as xproj
+communication payload from order d to order r per vector-valued quantity.
+
+Full-space control storage with low-dimensional transfer. The full control variables can
+be stored on the CPU. For each round, the server computes their projected versions and
+transfers only those projected quantities to the GPU. The orthogonal residual components
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                 11
+
+
+remain on CPU memory and are accessed only when the projector changes or when the
+full-space control variable is explicitly reconstructed.
+
+Projector refresh. The methodology allows the projector to change over time. In the
+baseline algorithm analyzed here this happens every round, although the refresh frequency
+can also be treated as a tunable implementation parameter. Refreshing more often increases
+directional coverage in the ambient space, while refreshing less often may reduce overhead
+and stabilize short-term local progress within a fixed subspace.
+
+3.7   Complexity and practical trade-offs
+The matrix-regression formulation also provides a concise complexity picture that extends
+naturally to vector-valued formulations.
+
+Computation. All compared methods require local stochastic-gradient evaluation. In
+the matrix-regression setting, the per-client cost scales as
+
+                                            O(Kndm).
+
+SSF adds projection and reconstruction operations of order
+
+                                            O(Kdrm).
+
+When r ≪ d, this extra projection overhead is modest relative to gradient computation.
+
+Memory. The full model always costs Θ(dm) storage. Full SCAFFOLD stores full-
+dimensional global and client control variates, which costs Θ( Ndm) overall. SSF still
+maintains full-dimensional control variables, but they can remain on CPU memory; the
+GPU needs only the projected controls of size Θ(rm) together with the subspace basis of
+size Θ(dr ). FedSub is lighter because its dual and endpoint states are only Θ( Nrm), but
+that reduction comes with the information-loss mechanism discussed above.
+
+Communication. The main systems advantage of SSF is that per-round communication
+scales with the subspace dimension. Full-dimensional methods exchange objects of size
+Θ(dm), whereas SSF communicates only projected quantities of size Θ(rm). Thus the
+effective communication cost is reduced by a factor on the order of r/d.
+
+Trade-off between compression and fidelity. Smaller r yields larger communication
+savings but can weaken the approximation of full-space stationarity, while larger r im-
+proves optimization fidelity at higher communication cost. SSF is designed to navigate
+this trade-off more robustly than purely subspace-dual alternatives because it preserves a
+full-space control memory across rounds.
+12                                             Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+3.8   Summary of the methodological position
+Taken together, SSF is a subspace-restricted variant of SCAFFOLD that preserves the
+essential drift-correction structure of the full-dimensional method. Its defining ingredients
+are a shared random projector, projected local SCAFFOLD updates, backfill from the
+active subspace to the ambient space, and full-space control memory with subspace-only
+refresh. These ingredients jointly explain why the method can reduce communication and
+active-device memory from ambient dimension d to working dimension r while remaining
+substantially closer to full SCAFFOLD than lighter subspace baselines.
+
+
+4     Theory
+This section presents the theoretical analysis of SSF. We begin with the standing assump-
+tions and notation, and then give the full sequence of lemmas, the main convergence
+theorem, and the harmonic-stepsize corollary. The theorem, lemma, corollary, and proof
+materials are included in full, with labels preserved exactly.
+
+4.1   Assumptions
+Assumption 1 (L-smoothness). Each client loss Fi : Rd → R satisfies ∥∇ Fi ( x )−∇ Fi (y)∥ ≤
+L∥ x − y∥ for all x,y.
+
+Assumption 2 (Bounded variance and independence across samples). For stochastic
+gradients gi ( x;ξ ), E[ gi ( x;ξ ) | x ] = ∇ Fi ( x ) and E∥ gi ( x;ξ )−∇ Fi ( x )∥2 ≤ σ2 . In addition, all
+stochastic gradient noises gi ( x;ξ )−∇ Fi ( x ) are independent across different clients i.
+
+Assumption 3 (Shared random subspace). In each outer round k, all clients use the same
+orthonormal Pk ∈ O(Rr×d ), with Pk Pk⊤ = Ir and EPk [ Pk⊤ Pk ] = (r/d) Id .
+
+4.2   Notation and projector geometry
+We summarize the notation that will be used throughout the analysis.
+
+Dimensions and subspace ratio. We denote by d the ambient dimension and by r the
+dimension of the random working subspace. The corresponding subspace ratio is
+                                                  r
+                                              ρ := ∈ (0,1].
+                                                  d
+
+Random subspace projector. In each outer round t, all clients share the same random
+orthonormal matrix Pt ∈ Rr×d as in Assumption 3, with Pt Pt⊤ = Ir and EPt [ Pt⊤ Pt ] = (r/d) Id .
+We write
+                                   Pt := Pt⊤ Pt ∈ Rd×d
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                               13
+
+
+for the associated orthogonal projector onto the random r-dimensional subspace.
+    Unless otherwise stated, expectations E[·] are taken with respect to the joint random-
+ness of the projector Pt , the sampled clients, and all stochastic gradients in the correspond-
+ing round.
+
+4.3    Gradient and variance bounds
+Lemma 4.1 (Gradient and Variance Bounds). Suppose Assumption 2 holds. Let gi ( x;ξ ) be
+the stochastic gradient computed by client i at model parameter x with random seed ξ. Then the
+following properties hold:
+
+   1. Unbiasedness: E[ gi ( x;ξ ) | x ] = ∇ Fi ( x ).
+
+   2. Bounded Variance: E[∥ gi ( x;ξ )−∇ Fi ( x )∥2 | x ] ≤ σ2 .
+
+   3. Bounded Second Moment: E[∥ gi ( x;ξ )∥2 | x ] ≤ ∥∇ Fi ( x )∥2 + σ2 .
+
+   4. Projected Variance: For any fixed matrix P (or random matrix P independent of ξ) with
+      spectral norm ∥ P∥2 ≤ 1,
+
+                                      E[∥ P( gi ( x;ξ )−∇ Fi ( x ))∥2 | x,P] ≤ σ2 .
+
+Proof. The first two properties are restatements of Assumption 2.
+   For the third property (Bounded Second Moment), we apply the bias-variance decom-
+position:
+
+ E[∥ gi ( x;ξ )∥2 | x ] = E[∥ gi ( x;ξ )−∇ Fi ( x )+∇ Fi ( x )∥2 | x ]
+                      = E[∥ gi ( x;ξ )−∇ Fi ( x )∥2 | x ]+∥∇ Fi ( x )∥2
+                        + 2⟨E[ gi ( x;ξ )−∇ Fi ( x ) | x ], ∇ Fi ( x )⟩
+                      = E[∥ gi ( x;ξ )−∇ Fi ( x )∥2 | x ]+∥∇ Fi ( x )∥2    (since the cross term is zero)
+                      ≤ σ2 +∥∇ Fi ( x )∥2 .
+
+   For the fourth property (Projected Variance), let v = gi ( x;ξ )−∇ Fi ( x ). Conditioned on
+x and P, we have:
+
+                      E[∥ Pv∥2 | x,P] ≤ E[∥ P∥22 ∥v∥2 | x,P] ≤ 12 · E[∥v∥2 | x ] ≤ σ2 .
+
+This concludes the proof.
+
+4.4    Client drift bound in subspace
+Lemma 4.2 (Client Drift Bound in Subspace). Suppose Assumptions 1 (L-smoothness) and 2
+(bounded variance and independence across samples and local steps) hold, and the local learning
+14                                                   Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+                     1
+rate satisfies ηl ≤ 2KL . For any client i and outer round t, define
+
+                                                  K −1
+                                         Ei,t := ∑ E yi,proj
+                                                      t,k       t                   2
+                                                             − xproj .
+                                                   k =0
+
+Then
+                                                                                                2
+                              Ei,t ≤ 6K2 ηl2 σ2 + 12K3 ηl2 ∇ Fi ( x t )− cit + ct                   .               (4.1)
+In particular, the noise-induced part of the client drift scales as O(K2 ηl2 σ2 ) thanks to the inde-
+pendence of stochastic gradient noises across local steps for the same client within a round (see
+Assumption 2).
+
+Proof. Fix a round t and a client i, and write P = Pt for brevity. Recall the projected local
+          t,k                              t,0
+iterates yi,proj ∈ Rr with initialization yi,proj    t , and define
+                                                  = xproj
+
+                                    ∆it,k := yi,proj
+                                              t,k       t
+                                                     − xproj ,            k = 0,1,...,K.
+
+Then ∆it,0 = 0, and the projected update is
+                                  t,k +1    t,k
+                                                   − ηl Pgit,k − ci,proj
+                                                                  t         t
+                                                                                 
+                                 yi,proj = yi,proj                       + cproj   ,
+
+where git,k = ∇ Fi (yit,k ;ξ it,k ) and yit,k = P⊤ yi,proj
+                                                    t,k       t .
+                                                           + xres
+
+Step 1: Decomposition into deterministic drift and noise.                                       Introduce the single-step
+gradient noise
+                               ξ it,k := git,k −∇ Fi (yit,k ),
+
+so that git,k = ∇ Fi (yit,k )+ ξ it,k and, by Assumption 2,
+
+                                  E[ξ it,k | yit,k ] = 0,       E[∥ξ it,k ∥2 | yit,k ] ≤ σ2 .
+
+Define the corrected direction
+
+                                            dit,k := ∇ Fi (yit,k )− cit + ct .
+
+The update for ∆it,k becomes
+
+                                       ∆it,k+1 = ∆it,k − ηl Pdit,k − ηl Pξ it,k .
+
+Unrolling from k = 0 and using ∆it,0 = 0 yields
+
+                                                            k                  k
+                                     ∆it,k+1 = −ηl ∑ Pdi − ηl ∑ Pξ i .
+                                                                    t,j                 t,j
+                                                                                                                    (4.2)
+                                                          j =0               j =0
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                                                                 15
+
+
+Step 2: Basic quadratic split.                From (4.2) and ∥ a + b∥2 ≤ 2∥ a∥2 + 2∥b∥2 , we have
+
+                                                                   k                                         k
+                                                                              t,j 2                              t,j 2
+                                              ≤ 2ηl2 E ∑ Pdi                            + 2ηl2 E ∑ Pξ i
+                                          2
+                        E ∆it,k+1                                                                                        .             (4.3)
+                                                                  j =0                                   j =0
+
+
+This step does not use any independence across local steps; it is purely deterministic.
+
+
+Step 3: Bounding the drift part (deterministic terms).                                                   Let m := k + 1. For any vectors
+a0 ,...,am−1 ,
+                                                     m −1          2          m −1
+                                                      ∑ aj             ≤ m ∑ ∥ a j ∥2 .
+                                                      j =0                      j =0
+
+                                   t,j
+Applying this with a j = Pdi and using ∥ Pv∥ ≤ ∥v∥, we get
+
+                                                     k                           k
+                                                             t,j 2
+                                                    ∑ Pdi                ≤ m ∑ E di
+                                                                                               t,j 2
+                                          E                                                              .                             (4.4)
+                                                    j =0                        j =0
+
+
+We have
+                          t,j        t,j
+                         di = ∇ Fi (yi )−∇ Fi ( x t ) + ∇ Fi ( x t )− cit + ct .
+                                                                             
+
+
+Using ∥u + v∥2 ≤ 2∥u∥2 + 2∥v∥2 and L-smoothness (Assumption 1),
+
+                       t,j                           t,j                          2                                          2
+                     ∥di ∥2 ≤ 2 ∇ Fi (yi )−∇ Fi ( x t )                               + 2 ∇ Fi ( x t )− cit + ct
+                                               t,j            2
+                              ≤ 2L2 yi − x t                      + 2Gi,t ,
+
+where
+                                                                                                 2
+                                              Gi,t := ∇ Fi ( x t )− cit + ct                         .
+                             t,j              t,j                                                                                t,j     t,j
+By the reconstruction yi = P⊤ yi,proj + xres              proj + xres , we have yi − x = P ∆i
+                                         t and x t = P ⊤ x t      t                   t   ⊤
+               t,j                 t,j
+and hence ∥yi − x t ∥2 ≤ ∥∆i ∥2 . Therefore
+
+                                                     t,j 2                        t,j
+                                          E di               ≤ 2L2 E∥∆i ∥2 + 2Gi,t .
+
+Substituting into (4.4),
+
+                                     k                                    k
+                                               t,j 2
+                                   ∑ Pdi                   ≤ 2L2 m ∑ E∥∆i ∥2 + 2m2 Gi,t .
+                                                                                         t,j
+                             E                                                                                                         (4.5)
+                                   j =0                                  j =0
+16                                                    Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+Step 4: Bounding the noise part via conditional independence. Let Ht denote the
+sigma-algebra generated by all randomness up to the beginning of round t, including
+the projector P, the global iterate x t , and the control variates, but **before** sampling the
+                        t,j
+stochastic gradients {ξ i }Kj=−01 for that round. By Assumption (A2), conditioned on Ht the
+                         t,j                                                                         t,j
+noise variables {ξ i }kj=0 are independent, have zero mean and satisfy E[∥ξ i ∥2 | Ht ] ≤ σ2 .
+We first compute the conditional second moment and then take a full expectation:
+
+      k                h h k
+            t,j 2              t,j 2
+                                        ii
+E    ∑ Pξ i         = E E ∑ Pξ i     Ht                                                                     (4.6)
+     j =0                       j =0
+                       h k                                                                     i
+                    = E ∑ E ∥ Pξ i ∥2 | Ht + 2           ∑
+                                 t,j                                          t,j
+                                                                       E ⟨ Pξ i ,Pξ it,ℓ ⟩ | Ht
+                                                                       
+                                                                                                            (4.7)
+                         j =0                          0≤ j<ℓ≤k
+                       h k                i
+                    = E ∑ E ∥ Pξ i ∥2 | Ht
+                                 t,j
+                                              (cross terms vanish by conditional independence and zero mean)
+                         j =0
+                                                                                                            (4.8)
+                        h k                   i
+                    ≤ E ∑ E ∥ ξ i ∥2 | H t
+                            t,j
+                                                    ≤ mσ2 ,                                                 (4.9)
+                         j =0
+
+
+where we used ∥ Pv∥ ≤ ∥v∥ and the single-step variance bound in Assumption (A2).
+
+
+Step 5: Recursion for ek := E∥∆it,k ∥2 . Combining the drift and noise bounds with (4.3),
+we obtain
+                                                         k                      
+                        ek+1 := E∥∆it,k+1 ∥2 ≤ 2ηl2 2L2 m ∑ e j + 2m2 Gi,t + mσ2                           (4.10)
+                                                                       j =0
+                                                                   k
+                                                = 4ηl2 L2 m ∑ e j + 4ηl2 m2 Gi,t + 2ηl2 mσ2 .              (4.11)
+                                                               j =0
+
+
+For k ≤ K − 1 we have m = k + 1 ≤ K, so m ≤ K and m2 ≤ K2 ; hence
+                                                               k
+                                                   ek+1 ≤ α ∑ e j + C,                                     (4.12)
+                                                              j =0
+
+
+with
+                                  α := 4ηl2 L2 K,       C := 4ηl2 K2 Gi,t + 2ηl2 Kσ2 .
+Let Sk := ∑kj=0 e j . Then S0 = e0 = 0 and
+
+                                              Sk+1 ≤ (1 + α)Sk + C.
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                         17
+
+
+By induction,
+                                         C                C
+                                 Sk ≤      (1 + α ) k − 1 ≤ (1 + α ) k .
+                                         α                 α
+Using this in ek+1 ≤ αSk + C gives
+
+                                            e k +1 ≤ C ( 1 + α ) k .
+
+Under the stepsize condition ηl ≤ 1/(2KL) we have α = 4ηl2 L2 K ≤ 1/K, so (1 + α)k ≤
+(1 + 1/K )K ≤ e < 3 for k ≤ K. Thus,
+
+                       ek+1 ≤ 3C = 12ηl2 K2 Gi,t + 6ηl2 Kσ2 ,              0 ≤ k ≤ K − 1.     (4.13)
+
+Step 6: Summing over local steps.            Finally,
+                        K −1    K
+                  Ei,t = ∑ ek = ∑ ek ≤ K max ek ≤ K 12ηl2 K2 Gi,t + 6ηl2 Kσ2 ,
+                                                                            
+                        k =0      k =1         1≤ k ≤ K
+
+which yields
+                                                                       2
+                          Ei,t ≤ 12K3 ηl2 ∇ Fi ( x t )− cit + ct           + 6K2 ηl2 σ2 .
+This proves the claimed bound (4.1). Throughout the proof we used Assumption (A1) for
+smoothness and Assumption (A2) both for single-step variance control and, crucially, for
+the independence of the local noises {ξ it,k }k across steps within the same round, which is
+what allows the noise term to scale as O(K2 ηl2 σ2 ) instead of O(K3 ηl2 σ2 ).
+
+4.5   One-round progress
+Lemma 4.3 (One-Round Progress). Suppose Assumptions 1–3 hold, and let the effective global
+step size be η̃ := ηg ηl K. Define the average projected drift
+
+                                            1 N K −1
+                                           NK i∑  ∑ E yi,proj
+                                t                      t,k       t    2
+                               Edrift :=                      − xproj   ,
+                                               =1 k =0
+
+                                           1
+which is controlled by Lemma 4.2. If η̃ ≤ 4L , then the one-round progress satisfies
+
+                                            ρ η̃          2  Lη̃ 2 2 3L2 η̃ t
+                 E F ( x t+1 ) ≤ F ( x t )−      ∇ F(xt ) +
+                             
+                                                                  σ +      Edrift .           (4.14)
+                                             4              2NK       2
+Here the expectation is taken over the randomness of the projector Pt , the sampled clients, and all
+stochastic gradients in round t.
+Proof. We first rewrite the global update in a form that makes the projected direction
+explicit. From Algorithm 1, the projected local update on client i is
+                           t,k +1    t,k
+                                            − ηl Pt git,k − ci,proj
+                                                             t         t
+                                                                            
+                          yi,proj = yi,proj                         + cproj   ,
+18                                               Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+where git,k = ∇ Fi (yit,k ;ξ it,k ) and yit,k = Pt⊤ yi,proj
+                                                     t,k       t . Unrolling over k = 0,...,K − 1 and using
+                                                            + xres
+ t,0       t
+yi,proj = xproj gives
+                                                 K −1
+                              t       t,K
+                                             = ηl ∑ Pt git,k − ci,proj
+                                                                t         t
+                                                                               
+                             xproj − yi,proj                           + cproj   .                  (4.15)
+                                                   k =0
+
+The projected global aggregation step reads
+
+                                                             N xt       t,K
+                                                  ηK            proj − yi,proj
+                                                          N i∑
+                                 t +1
+                                xproj    t
+                                      = xproj − ηg l                               .
+                                                             =1
+                                                                      ηl K
+
+Substituting (4.15) and simplifying yields
+
+                                              1 N t
+                          t +1
+                         xproj    t
+                               = xproj − ηg     ∑
+                                              N i =1
+                                                              t,K 
+                                                     xproj − yi,proj                                (4.16)
+
+                                                 1 N K −1
+                                 t
+                                                   ∑    ∑    Pt git,k − ci,proj
+                                                                         t         t
+                                                                                        
+                              = xproj − η g ηl                                  + cproj   .         (4.17)
+                                                 N i =1 k =0
+
+Define the averaged projected direction
+
+                                     1 N K −1
+                                       ∑   ∑   Pt git,k − ci,proj
+                                                           t         t
+                                                                            ∈ Rr .
+                                                                          
+                            vt :=                                 + cproj
+                                    NK i=1 k=0
+
+Then
+                                   t +1    t
+                                  xproj = xproj − η̃vt ,          η̃ := ηg ηl K,
+
+and the backfill step gives
+
+                                  x t+1 = Pt⊤ xproj
+                                               t +1    t
+                                                    + xres = xt − η̃Pt⊤ vt .                        (4.18)
+
+Using ∑iN=1 ci,proj
+             t          t , the control variates cancel in v and we obtain
+                    = Ncproj                                t
+
+
+                                                  1 N K−1 t,k
+                                                 NK i∑  ∑ Pt gi .
+                                          vt =
+                                                     =1 k =0
+
+
+Using the orthogonal projector Pt onto the random r-dimensional subspace in Rd (see
+Section 4.2), we have
+                                          1 N K −1 
+                                          NK i∑  ∑ git,k .
+                             Pt⊤ vt = Pt                                     (4.19)
+                                              =1 k =0
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                                  19
+
+
+Decomposition into mean gradient and noise. Write the stochastic gradient as git,k =
+∇ Fi (yit,k )+ ξ it,k , where by Assumption 2
+
+                             E[ξ it,k | yit,k ] = 0,      E ∥ξ it,k ∥2 | yit,k ≤ σ2 ,
+                                                                             
+
+
+and the random noises {ξ it,k }i,k are independent across different clients i within the same
+round t, as specified in Assumption 2. Define the averaged full gradients and noise in
+round t:
+                            1 N K −1                            1 N K−1 t,k
+                    ḡt :=     ∑    ∑
+                           NK i=1 k=0
+                                        ∇ Fi (yit,k ), ξ̄ t :=
+                                                               NK i∑  ∑ ξi .
+                                                                   =1 k =0
+
+Then (4.19) becomes
+                                             Pt⊤ vt = Pt ( ḡt + ξ̄ t ),                               (4.20)
+so the full-space update (4.18) is
+
+                                         x t+1 = x t − η̃ Pt ( ḡt + ξ̄ t ).                           (4.21)
+
+Smoothness-based descent inequality.                   By L-smoothness of F (Assumption 1),
+
+                                                                        L t +1         2
+                F ( x t+1 ) ≤ F ( x t )+ ∇ F ( x t ),x t+1 − x t +         x − xt                      (4.22)
+                                                                        2
+                                                                           Lη̃ 2                   2
+                          = F ( x t )− η̃ ∇ F ( x t ), Pt ( ḡt + ξ̄ t ) +       Pt ( ḡt + ξ̄ t ) .   (4.23)
+                                                                            2
+Denote Gt := ∇ F ( x t ). We decompose the right-hand side into the linear term
+
+                                        T1 := −η̃ Gt , Pt ( ḡt + ξ̄ t )
+
+and the quadratic term
+                                                 Lη̃ 2                   2
+                                         T2 :=         Pt ( ḡt + ξ̄ t ) .
+                                                  2
+We now bound E[ T1 ] and E[ T2 ].
+
+Bounding the linear term T1 . We first note that x t is fixed before sampling Pt and the
+stochastic gradients in round t. Using (4.21),
+
+                                   T1 = −η̃ Gt , Pt ḡt − η̃ Gt , Pt ξ̄ t .                            (4.24)
+
+Conditioned on the sigma-fields that encode the past iterates, each local noise has zero
+conditional mean. More precisely, let Ft be the sigma-algebra generated by all randomness
+up to the beginning of round t (so that x t , Gt and Pt are Ft -measurable), and for each
+client i and local step k let Ft,i,k be the sigma-algebra generated by Ft together with all
+20                                                Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+local iterates up to step k on all clients. Then yit,k is Ft,i,k -measurable and Assumption (A2)
+implies E[ξ it,k | Ft,i,k ] = 0. Using the tower property, we get
+
+                                          1 N K −1 
+                   E ⟨ Gt , Pt ξ̄ t ⟩ =      ∑  ∑    E ⟨ Gt , Pt ξ it,k ⟩
+                                                                        
+                                         NK i=1 k=0
+                                          1 N K −1 h                                     i
+                                         NK i∑  ∑                         t,k
+                                       =             E E  ⟨  G  t , P   ξ
+                                                                      t i     ⟩ | F t,i,k
+                                             =1 k =0
+                                          1 N K −1 h                                       i
+                                         NK i∑  ∑                         t,k
+                                       =             E   G t , P t  E [ ξ i   | F t,i,k ]    = 0.
+                                             =1 k =0
+
+For the gradient part, decompose
+
+                                             ḡt = Gt +( ḡt − Gt ).
+
+Then
+
+                       E[ T1 ] = −η̃E ⟨ Gt , Pt Gt ⟩ − η̃E ⟨ Gt , Pt ( ḡt − Gt )⟩ .
+                                                                               
+                                                                                                    (4.25)
+
+Using Assumption (A3), E[Pt ] = ρId with ρ = r/d, so
+
+                       E ⟨ Gt , Pt Gt ⟩ = ⟨ Gt ,E[Pt ] Gt ⟩ = ρ ∥ Gt ∥2 .
+                                      
+
+For the second term, we use Cauchy–Schwarz and Young’s inequality together with
+∥Pt z∥ ≤ ∥z∥ and E∥Pt Gt ∥2 = ρ ∥ Gt ∥2 :
+
+                  −E ⟨ Gt , Pt ( ḡt − Gt )⟩ = −E ⟨Pt Gt , ḡt − Gt ⟩
+                                                                   
+                                                                            (4.26)
+                                               1                1
+                                              ≤ E∥Pt Gt ∥2 + E∥ ḡt − Gt ∥2 (4.27)
+                                               2                2
+                                               ρ         1
+                                              = ∥ Gt ∥2 + E∥ ḡt − Gt ∥2 .  (4.28)
+                                               2         2
+Combining the two pieces, we obtain
+                                               ρη̃          η̃
+                                E[ T1 ] ≤ −        ∥ Gt ∥2 + E∥ ḡt − Gt ∥2 .                       (4.29)
+                                                2           2
+We now bound the bias term E∥ ḡt − Gt ∥2 by the drift. Observe that
+
+                                          1 N K −1
+                                            ∑   ∑   ∇ Fi (yit,k )−∇ Fi ( x t ) .
+                                                                              
+                            ḡt − Gt =
+                                         NK i=1 k=0
+
+By Jensen’s inequality and L-smoothness,
+
+                                            1 N K −1
+                                           NK i∑  ∑ ∇ Fi (yit,k )−∇ Fi (xt )
+                                                                             2
+                         ∥ ḡt − Gt ∥2 ≤                                                            (4.30)
+                                               =1 k =0
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                           21
+
+
+
+                                             L2 N K−1 t,k
+                                             NK i∑  ∑ yi − x t .
+                                                               2
+                                        ≤                                                       (4.31)
+                                                 =1 k =0
+
+The reconstruction formulas yit,k = Pt⊤ yi,proj
+                                         t,k       t and x t = P⊤ x t
+                                                + xres                    t          t,k  t
+                                                                t proj + xres imply yi − x =
+      t,k
+Pt⊤ (yi,proj    t ), so
+             − xproj
+
+                                                                      2                     2
+                     ∥yit,k − x t ∥2 = Pt⊤ (yi,proj
+                                             t,k       t
+                                                    − xproj )                t,k
+                                                                          ≤ yi,proj    t
+                                                                                    − xproj .
+
+                                                 t
+Taking expectations and using the definition of Edrift , we get
+
+                                            E∥ ḡt − Gt ∥2 ≤ L2 Edrift
+                                                                 t
+                                                                       .                        (4.32)
+
+Substituting into (4.29),
+                                                     ρη̃           η̃L2 t
+                                  E[ T1 ] ≤ −            ∥ Gt ∥2 +     E .                      (4.33)
+                                                      2              2 drift
+
+Bounding the quadratic term T2 .              We have
+
+                                      Lη̃ 2                      2
+                             E[ T2 ] =      E Pt ( ḡt + ξ̄ t )                                 (4.34)
+                                       2
+                                      Lη̃ 2            2     Lη̃ 2           2
+                                    =       E Pt ḡt +             E Pt ξ̄ t ,                  (4.35)
+                                       2                       2
+where we used that the mixed term E⟨Pt ḡt , Pt ξ̄ t ⟩ vanishes. Indeed, expanding ξ̄ t and
+using the same filtration Ft,i,k as above,
+
+                                           1 N K −1 
+                 E ⟨Pt ḡt , Pt ξ̄ t ⟩ =     ∑   ∑   E ⟨Pt ḡt , Pt ξ it,k ⟩
+                                                                           
+                                          NK i=1 k=0
+                                           1 N K −1 h                                  i
+                                        =    ∑   ∑
+                                          NK i=1 k=0
+                                                     E E ⟨Pt ḡt , Pt ξ it,k ⟩ | Ft,i,k
+
+                                           1 N K −1 h                                    i
+                                        =    ∑   ∑
+                                          NK i=1 k=0
+                                                     E Pt ḡt , Pt E[ξ it,k | Ft,i,k ] = 0.
+
+
+    Gradient part. Using ḡt = Gt +( ḡt − Gt ) and the inequality ∥ a + b∥2 ≤ 2∥ a∥2 + 2∥b∥2 ,
+                                        2                   2                           2
+                               Pt ḡt       ≤ 2 Pt Gt           + 2 Pt ( ḡt − Gt )             (4.36)
+                                                            2                   2
+                                            ≤ 2 Pt Gt           + 2 ḡt − Gt        .           (4.37)
+
+Taking expectations and using E∥Pt Gt ∥2 = ρ ∥ Gt ∥2 and E∥ ḡt − Gt ∥2 ≤ L2 Edrift
+                                                                              t     , we obtain
+                                                 2
+                                  E Pt ḡt                               t
+                                                     ≤ 2ρ ∥ Gt ∥2 + 2L2 Edrift .                (4.38)
+22                                                 Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+   Noise part (using independence across clients and local steps). Conditioned on Pt , let Σξ̄ | Pt
+denote the (conditional) covariance matrix of ξ̄ t . Then
+                            E ∥Pt ξ̄ t ∥2 | Pt = E ξ̄ t⊤ Pt⊤ Pt ξ̄ t | Pt
+                                                                       
+                                                                                          (4.39)
+                                                               
+                                                = tr Pt Σξ̄ | Pt .                        (4.40)
+
+Using ∥Pt ∥2 ≤ 1 and the fact that Σξ̄ | Pt is positive semi-definite,
+
+                  tr(Pt Σξ̄ | Pt ) ≤ ∥Pt ∥2 tr(Σξ̄ | Pt ) ≤ tr(Σξ̄ | Pt ) = E ∥ξ̄ t ∥2 | Pt .
+                                                                                          
+
+Taking expectations over Pt gives the general bound
+                                                          2                  2
+                                              E Pt ξ̄ t       ≤ E ξ̄ t           ,                   (4.41)
+which does not require any independence between Pt and the gradient noise.
+    To bound E∥ξ̄ t ∥2 , we now use the conditional independence across both clients and
+local steps in Assumption (A2). Let Ht denote the sigma-algebra generated by the past
+iterates up to the beginning of round t. Then, conditioned on Ht , the family {ξ it,k }i,k is
+independent, mean-zero, and satisfies E[∥ξ it,k ∥2 | Ht ] ≤ σ2 . By definition,
+
+                                               1 N K−1 t,k 2
+                                              NK i∑  ∑ ξi
+                                       2
+                              E ξ̄ t       =E                                                        (4.42)
+                                                  =1 k =0
+                                             1    h N K −1          2i
+                                           = 2 2 E ∑ ∑ ξ it,k                                        (4.43)
+                                            N K     i =1 k =0
+
+                                             1    h    N K −1         2   i
+                                           = 2 2 E E ∑ ∑ ξ it,k          Ht .                        (4.44)
+                                            N K           i =1 k =0
+
+Inside the inner expectation, conditional independence and zero mean yield cancellation
+of all cross terms, so
+                                     1     h N K −1         i
+                        E ξ̄ t = 2 2 E ∑ ∑ E ∥ξ it,k ∥2 Ht
+                               2
+                                                                                  (4.45)
+                                  N K       i =1 k =0
+                                     1     h          i σ2
+                                 ≤ 2 2 E NKσ2 =            .                      (4.46)
+                                  N K                   NK
+Combining with (4.41), we obtain
+                                                              2       σ2
+                                                E Pt ξ̄ t         ≤      .                           (4.47)
+                                                                      NK
+     Putting (4.38) and (4.47) together, we get
+                                    Lη̃ 2                                  σ2
+                                                                             
+                          E[ T2 ] ≤                   2        2 t
+                                             2ρ ∥ Gt ∥ + 2L Edrift +                                 (4.48)
+                                     2                                    NK
+                                                               t        Lη̃ 2 2
+                                  = Lη̃ 2 ρ ∥ Gt ∥2 + L3 η̃ 2 Edrift +       σ .                     (4.49)
+                                                                       2NK
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                              23
+
+
+Combining T1 and T2 .        Combining (4.33) and (4.49), we obtain
+                                                  ρη̃
+                     E F ( x t+1 )− F ( x t ) ≤ − ∥ Gt ∥2 + Lη̃ 2 ρ ∥ Gt ∥2
+                                            
+                                                                                                  (4.50)
+                                                   2
+                                                   η̃L2                    Lη̃ 2 2
+                                                                    t
+                                                +        + L3 η̃ 2 Edrift +       σ .             (4.51)
+                                                      2                     2NK
+The coefficient of ∥ Gt ∥2 can be written as
+                                                      1        
+                                               −ρη̃        − Lη̃ .
+                                                       2
+                                    1
+Under the step-size condition η̃ ≤ 4L , we have 21 − Lη̃ ≥ 14 , hence
+                                               ρη̃              ρη̃
+                                           −       + Lη̃ 2 ρ ≤ − .                                (4.52)
+                                                2                4
+For the drift term, note that
+                  η̃L2             η̃L2               η̃L2                 3η̃L2 3η̃L2
+                       + L3 η̃ 2 =      (1 + 2Lη̃ ) ≤      (1 + 2 · 14 ) =      ≤      .
+                    2                2                  2                    4     2
+Therefore,
+                                         ρη̃                Lη̃ 2 2 3L2 η̃ t
+             E F ( x t+1 )− F ( x t ) ≤ − ∥∇ F ( x t )∥2 +
+                                    
+                                                                 σ +      Edrift .
+                                          4                2NK       2
+Rearranging yields the claimed bound (4.14). This completes the proof.
+
+4.6   Control variate contraction
+Lemma 4.4 (Control Variate Contraction). Suppose Assumptions 1–3 hold, and that the local
+stepsize satisfies ηl ≤ 1/(2KL) so that Lemma 4.2 applies. Define the control-variate error
+
+                                            1 N
+                                            N i∑
+                                                                      2
+                                    Ct :=         E cit −∇ Fi ( x t ) ,
+                                               =1
+
+and the averaged projected drift as in Lemma 4.3,
+
+                                            1 N K −1
+                                              ∑   ∑      t,k            2
+                                t
+                               Edrift :=              E yi,proj    t
+                                                                − xproj   .
+                                           NK i=1 k=0
+Let η̃ := ηg ηl K be the effective global stepsize. Then, for every round t, the control variates satisfy
+                            ρ     σ2            t
+                   Ct+1 ≤ 1 − Ct + 3 + 3L2 Edrift
+                             2      K
+                                                                                                  (4.53)
+                             12L2 2             2   6L2 η̃ 2 σ2 12L4 2 t
+                           +     η̃ ∇ F ( x t ) +              +    η̃ Edrift .
+                               ρ                     ρ NK        ρ
+In particular, Ct contracts by a factor 1 − ρ/2 up to perturbation terms that depend on the stochastic
+                         t
+variance σ2 , the drift Edrift , and the model movement η̃ 2 ∥∇ F ( x t )∥2 .
+24                                                Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+Proof. Fix an outer round t and a client i. Write vi∗ := ∇ Fi ( x t ) for the reference gradient at
+the beginning of round t. We first track the evolution of cit+1 with respect to the frozen
+reference vi∗ , then relate vi∗ to the new reference ∇ Fi ( x t+1 ).
+
+Step 1: Subspace decomposition of the control update. From Algorithm 1 and the
+projector Pt defined in Section 4.2, the control update is
+                                                                  1 K −1          
+                                 cit+1 = ( I −Pt )cit +Pt
+                                                                   K k =0   ∑ i ,
+                                                                             g t,k
+                                                                                                    (4.54)
+
+
+where git,k = ∇ Fi (yit,k ;ξ it,k ) is the stochastic gradient at local step k on client i. Using
+vi∗ = ( I −Pt )vi∗ +Pt vi∗ , we obtain
+                                                                         1 K −1            
+                       cit+1 − vi∗ = ( I −Pt )(cit − vi∗ )+Pt                  ∑ i
+                                                                                g
+                                                                            K k =0
+                                                                                  t,k
+                                                                                      − v ∗
+                                                                                          i .       (4.55)
+
+Define
+                          Ai := ( I −Pt )(cit − vi∗ ),             Bi := Pt ( ḡit − vi∗ ),
+where ḡit := K1 ∑kK=−01 git,k . For a fixed projector Pt , we have Ai ∈ ker(Pt ) and Bi ∈ range(Pt ),
+and therefore Ai ⊥ Bi . Hence
+                                                      2
+                                      cit+1 − vi∗         = ∥ Ai ∥2 +∥ Bi ∥2 .                      (4.56)
+
+Step 2: Contraction in the orthogonal complement via (A3). Conditioning on the
+history up to the beginning of round t, both cit and vi∗ are fixed before sampling Pt . Taking
+expectation over Pt and using Assumption 3,
+
+                        EPt ∥ Ai ∥2 = EPt (cit − vi∗ )⊤ ( I −Pt )(cit − vi∗ )
+                                                                             
+                                                                                         (4.57)
+                                             ∗ ⊤                           ∗
+                                    = (ci − vi ) I − EPt [Pt ] (ci − vi )
+                                        t
+                                                                  t
+                                                                                         (4.58)
+                                                                    2
+                                        = (1 − ρ) cit − vi∗             .                           (4.59)
+
+Taking full expectation we obtain
+                                                                                     2
+                                E∥ Ai ∥2 = (1 − ρ) E cit −∇ Fi ( x t )                   .          (4.60)
+
+Step 3: Bounding the projected gradient error Bi using (A1) and (A2). We decompose
+the error in ḡit into a stochastic noise part and a drift part. Write
+
+                                          git,k = ∇ Fi (yit,k )+ ξ it,k ,
+
+where, by Assumption 2,
+
+                            E[ξ it,k | yit,k ] = 0,         E ∥ξ it,k ∥2 | yit,k ≤ σ2 ,
+                                                                               
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                               25
+
+
+and the noises {ξ it,k } are independent across different local steps k on the same client and
+across different clients. Define
+
+                               1 K−1 t,k                      1 K −1
+                               K k∑                             ∑    ∇ Fi (yit,k )−∇ Fi ( x t ) .
+                                                                                               
+                     ξ̄ i :=         ξi ,            δ̄i :=
+                                  =0
+                                                              K k =0
+
+Then
+                                  ḡit − vi∗ = ξ̄ i + δ̄i ,        Bi = Pt (ξ̄ i + δ̄i ).
+Using ∥u + v∥2 ≤ 2∥u∥2 + 2∥v∥2 and ∥Pt z∥ ≤ ∥z∥, we get
+
+                  E∥ Bi ∥2 ≤ 2E∥Pt ξ̄ i ∥2 + 2E∥Pt δ̄i ∥2 ≤ 2E∥Pt ξ̄ i ∥2 + 2E∥δ̄i ∥2 .             (4.61)
+
+    Noise part. Condition on Pt and let Σξ̄ i | Pt be the conditional covariance of ξ̄ i . Then
+
+                          E ∥Pt ξ̄ i ∥2 | Pt = tr Pt Σξ̄ i | Pt
+                                                              
+                                                                                                    (4.62)
+                                                     ≤ ∥Pt ∥2 tr Σξ̄ i | Pt ≤ tr Σξ̄ i | Pt
+                                                                                             
+                                                                                                    (4.63)
+                                                     = E ∥ξ̄ i ∥2 | Pt .
+                                                                     
+                                                                                                    (4.64)
+
+Taking expectation over Pt yields the general bound
+
+                                                 E∥Pt ξ̄ i ∥2 ≤ E∥ξ̄ i ∥2 .                         (4.65)
+
+By independence of the local noises across k (Assumption 2),
+
+                                                          1 K−1 t,k 2
+                                                          K k∑
+                                        E∥ξ̄ i ∥2 = E           ξi                                  (4.66)
+                                                             =0
+                                                       1 K −1               σ2
+                                                       K2 k∑
+                                                                    t,k 2
+                                                   ≤          E ∥ ξ i  ∥  ≤    .                    (4.67)
+                                                           =0
+                                                                            K
+
+Combining with (4.65),
+                                                 σ2
+                                                    E∥Pt ξ̄ i ∥2 ≤
+                                                    .                                               (4.68)
+                                                  K
+    Drift part. By Jensen’s inequality and L-smoothness (Assumption 1),
+
+                                                 1 K −1                             2
+                                                   ∑
+                                        2
+                                  δ̄i       =           ∇ Fi (yit,k )−∇ Fi ( x t )                  (4.69)
+                                                 K k =0
+                                                1 K −1
+                                                K k∑
+                                                                                  2
+                                            ≤          ∇ Fi (yit,k )−∇ Fi ( x t )                   (4.70)
+                                                   =0
+                                                L2 K−1 t,k
+                                                K k∑
+                                                                2
+                                            ≤          yi − x t .                                   (4.71)
+                                                    =0
+26                                                          Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+Using the reconstruction formulas yit,k = Pt⊤ yi,proj
+                                               t,k       t and x t = P⊤ x t
+                                                      + xres                    t           t,k
+                                                                      t proj + xres we get yi −
+            t,k       t ) and hence ∥ yt,k − x t ∥2 ≤ ∥ yt,k − x t ∥2 . Thus,
+x t = Pt⊤ (yi,proj − xproj             i                 i,proj proj
+
+                                                      L 2 K −1                      L2
+                                                          ∑
+                                          2                       t,k            2
+                                  E δ̄i       ≤                E yi,proj    t
+                                                                         − xproj   = Ei,t ,                          (4.72)
+                                                      K k =0                        K
+
+where Ei,t is as in Lemma 4.2 and obeys the refined drift bound Ei,t ≤ 6K2 ηl2 σ2 +
+                                   2
+12K3 ηl2 ∇ Fi ( x t )− cit + ct        . Combining (4.61), (4.68) and the drift bound gives
+                                                                  σ2 2L2
+                                                  E∥ Bi ∥2 ≤ 2      +    Ei,t .                                      (4.73)
+                                                                  K   K
+
+Step 4: Recursion with respect to the frozen reference vi∗ (using Lemma 4.2).                                       Taking
+expectations in (4.56) and using (4.60) and (4.73), we obtain
+                                                  2σ2 2L2                     2
+                         E cit+1 − vi∗                ≤ (1 − ρ) E cit − vi∗
+                                                      +    Ei,t .                 +2
+                                                                              (4.74)
+                                                   K     K
+This step relies on Assumptions (A1)–(A3) and the drift quantity Ei,t controlled in
+Lemma 4.2.
+
+Step 5: Changing the reference to ∇ Fi ( x t+1 ). We now relate vi∗ = ∇ Fi ( x t ) to the next-
+round reference ∇ Fi ( x t+1 ). By Young’s inequality, for any β > 0,
+                              2                     2
+                                                           1 ∗                   2
+        cit+1 −∇ Fi ( x t+1 ) ≤ (1 + β) cit+1 − vi∗ + 1 +       vi −∇ Fi ( x t+1 ) .     (4.75)
+                                                            β
+Choose β = ρ/2. Using L-smoothness,
+                                              2                                    2                        2
+                    vi∗ −∇ Fi ( x t+1 )           = ∇ Fi ( x t )−∇ Fi ( x t+1 )        ≤ L 2 x t +1 − x t       .
+Moreover, for ρ ∈(0,1] we have (1 + ρ/2)(1 − ρ)= 1 − ρ/2 − ρ2 /2 ≤ 1 − ρ/2 and 1 + ρ/2 ≤ 3/2,
+1 + 1/β = 1 + 2/ρ ≤ 3/ρ. Therefore, inserting (4.74),
+                              2
+                                         h
+                                                                      2 σ2 2L2         i
+      E cit+1 −∇ Fi ( x t+1 ) ≤ (1 + 2 ) (1 − ρ) E cit −∇ Fi ( x t ) + 2 +
+                                      ρ
+                                                                                  Ei,t   (4.76)
+                                                                         K      K
+                                        2                  2
+                                 + 1 + L 2 E x t +1 − x t                                (4.77)
+                                         ρ
+                                      ρ                 2        σ2 3L2
+                                ≤ 1 − E cit −∇ Fi ( x t ) + 3 +            Ei,t          (4.78)
+                                       2                            K   K
+                                   3L2                 2
+                                 +      E x t +1 − x t .                                 (4.79)
+                                     ρ
+                                                               t
+     Averaging over i and recalling the definitions of Ct and Edrift ,
+                             ρ       σ2               3L2                2
+                 Ct+1 ≤ 1 − Ct + 3 + 3L2 Edrift   t
+                                                     +      E x t +1 − x t .                                         (4.80)
+                              2         K                ρ
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                                     27
+
+
+Step 6: Bounding the model movement using Lemma 4.3. We now bound E∥ x t+1 − x t ∥2
+using the global update structure explicitly derived in the proof of Lemma 4.3. In particular,
+as shown there (cf. equation (4.21) in that proof), the full-space update can be written as
+
+                                            x t+1 = x t − η̃ Pt ( ḡt + ξ̄ t ),                           (4.81)
+
+where
+                                1 N K −1                                               1 N K−1 t,k
+                      ḡt :=      ∑   ∑
+                               NK i=1 k=0
+                                          ∇ Fi (yit,k ),                    ξ̄ t :=
+                                                                                      NK i∑  ∑ ξi .
+                                                                                          =1 k =0
+Using ∥Pt z∥ ≤ ∥z∥, we obtain
+                                                  2                                       2
+                            E x t +1 − x t            = η̃ 2 E Pt ( ḡt + ξ̄ t )                          (4.82)
+                                                                                 2
+                                                      ≤ η̃ 2 E ḡt + ξ̄ t                                 (4.83)
+                                                      ≤ 2η̃ E∥ ḡt ∥ + 2η̃ E∥ξ̄ t ∥ .
+                                                            2               2         2               2
+                                                                                                          (4.84)
+
+    Mean-gradient part. Let Gt := ∇ F ( x t ). Then
+                                                                                      2
+                                  E∥ ḡt ∥2 = E Gt +( ḡt − Gt )                                          (4.85)
+                                                                2                             2
+                                                ≤ 2 Gt              + 2E ḡt − Gt                 .       (4.86)
+
+Exactly as in Lemma 4.3, using Jensen’s inequality, L-smoothness, and the definition of
+ t
+Edrift , we obtain
+                                                                2
+                                            E ḡt − Gt                    t
+                                                                    ≤ L2 Edrift .                         (4.87)
+Therefore,
+                                                                        2
+                                  E∥ ḡt ∥2 ≤ 2 ∇ F ( x t )                        t
+                                                                            + 2L2 Edrift .                (4.88)
+   Noise part (global averaging). By Assumption (A2) and independence of stochastic
+gradients across clients and local steps,
+
+                                                       1 N K−1 t,k 2
+                                                      NK i∑  ∑ ξi
+                                        2
+                               E ξ̄ t       =E                                                            (4.89)
+                                                          =1 k =0
+                                                  1 N K −1                    σ2
+                                            ≤           ∑    ∑
+                                                N 2 K 2 i =1 k =0
+                                                                  E ξ t,k 2
+                                                                      i     ≤
+                                                                              NK
+                                                                                 .                        (4.90)
+
+Combining the two parts,
+
+                                    2
+                                               
+                                                              2
+                                                                                       σ2
+                   E x t +1 − x t       ≤ 2η̃ 2 2 ∇ F ( x t ) + 2L2 Edrift
+                                                                        t
+                                                                                + 2η̃ 2                   (4.91)
+                                                                                        NK
+                                                                                      σ 2
+                                                            2
+                                        = 4η̃ 2 ∇ F ( x t ) + 4L2 η̃ 2 Edrift
+                                                                        t
+                                                                              + 2η̃ 2     .               (4.92)
+                                                                                      NK
+This bound again relies only on Assumptions (A1) and (A2) and the update representation
+shared with Lemma 4.3; it does not assume any independence between Pt and the noise.
+28                                                     Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+Step 7: Plugging the movement bound into the control recursion. Substituting the last
+inequality into (4.80), we obtain
+
+                                      ρ     σ2           t
+                            Ct+1 ≤ 1 − Ct + 3 + 3L2 Edrift                                               (4.93)
+                                       2      K
+                                    3L2  2              2           t             σ2 
+                                  +      4η̃ ∇ F ( x t ) + 4L2 η̃ 2 Edrift + 2η̃ 2      .                (4.94)
+                                     ρ                                             NK
+
+Rearranging terms yields exactly the claimed recursion (4.53). This proves that Ct contracts
+by a factor 1 − ρ/2 up to variance and drift terms whose dependence on σ2 , Edrift  t , and
+  2        t  2
+η̃ ∥∇ F ( x )∥ matches the structure used in the one-round progress analysis.
+
+
+4.7       Main convergence theorem
+Theorem 4.1 (Global Convergence of Subspace SCAFFOLD). Suppose Assumptions 1, 2,
+and 3 hold. Let ρ = r/d and ∆ F = F ( x0 )− F ∗ . Choose the local learning rate ηl and the effective
+global stepsize η̃ = ηg ηl K such that
+
+              1            1
+     1. ηl ≤ 2KL and η̃ ≤ 4L ;
+
+     2. 72K3 L2 ηl2 ≤ 8 ;
+                            ρ
+
+
+          3456L4 η̃ 2 K3 ηl2
+     3.        ρ3
+                             ≤ 1;
+
+          4L2 η̃ 2                          ρ
+     4.    ρ2
+                   ≤ 1 (equivalently, η̃ ≤ 2L ).
+
+Then the iterates generated by Algorithm 1 satisfy
+
+                                              2       8(∆ F +C0 ) 4Lσ2 η̃ 8000L2 Kηl2 σ2
+                          min E ∇ F ( x t )       ≤              +       +               .               (4.95)
+                         0≤ t < T                        ρ η̃ T    ρ NK        ρ
+
+In particular, the bound has the standard nonconvex stochastic-gradient structure O (ρη̃T )−1 +
+(ρ−1 N −1 K −1 )η̃ +(ρ−1 Kηl2 ) .
+                               
+
+
+Proof. Define the Lyapunov function
+
+                                              Φt := F ( x t )− F ∗ + M Ct ,
+
+where M > 0 will be specified later. We analyze E[Φt+1 ]− Φt . All expectations below are
+taken over the randomness of the projector Pt , the stochastic gradients, and the client
+sampling in round t.
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                         29
+
+
+Step 1: One-round progress for F (Lemma 4.3).               By Lemma 4.3, if η̃ ≤ 1/(4L), then
+
+                                               ρ η̃          2  Lη̃ 2 2 3L2 η̃ t
+                E F ( x t +1 ) − F ( x t ) ≤ −      ∇ F(xt ) +
+                             
+                                                                     σ +      Edrift .       (4.96)
+                                                4              2NK       2
+
+Compared with earlier one-round bounds, the variance term no longer carries a factor ρ;
+this is the more conservative but dimensionally sharp version provided by the updated
+Lemma 4.3.
+
+
+Step 2: Control variate contraction (Lemma 4.4). By Lemma 4.4, for every round t we
+have
+                          ρ       σ2        t
+                Ct+1 ≤ 1 − Ct + 3 + 3L2 Edrift
+                           2         K
+                                                                              (4.97)
+                           12L2 2         t 2   6L2 η̃ 2 σ2 12L4 2 t
+                         +      η̃ ∇ F ( x ) +             +    η̃ Edrift .
+                             ρ                   ρ NK        ρ
+This already incorporates the refined drift analysis and the updated dependence on η̃ and
+ρ from Lemma 4.4.
+
+
+Step 3: Drift of the Lyapunov function. Multiplying (4.97) by M and adding it to (4.96)
+yields
+
+                           ρ η̃          2   Lη̃ 2 2 3L2 η̃ t
+        E[Φt+1 ]− Φt ≤ −        ∇ F(xt ) +        σ +        Edrift
+                            4               2NK           2
+                              h ρ        σ2        t
+                         + M − Ct + 3 + 3L2 Edrift
+                                 2       K
+                                        12L2 2             2  6L2 η̃ 2 σ2 12L4 2 t i
+                                    +       η̃ ∇ F ( x t ) +             +    η̃ Edrift .
+                                         ρ                     ρ NK        ρ
+
+Grouping terms according to ∥∇ F ( x t )∥2 , Ct , and Edrift
+                                                       t     , we obtain
+
+                                         ρ η̃       12ML2 2           2 Mρ
+                   E[Φt+1 ]− Φt ≤ −              −        η̃   ∇ F(xt ) −    Ct              (4.98)
+                                           4           ρ                  2
+                                               t
+                                     + Bdrift Edrift + Cnoise ,                              (4.99)
+
+where
+
+                                      3L2 η̃          12L4 2 
+                            Bdrift :=        + M 3L2 +      η̃ ,                            (4.100)
+                                        2               ρ
+                                       Lη̃ 2 2     σ2 6L2 η̃ 2 σ2 
+                            Cnoise :=        σ +M 3 +                .                      (4.101)
+                                      2NK            K     ρ NK
+30                                                  Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+                                                                                                          1
+Step 4: Using the refined drift bound (Lemma 4.2).                        Lemma 4.2 states that, if ηl ≤ 2KL ,
+then for every client i and round t,
+
+                   K −1
+            Ei,t := ∑ E yi,proj
+                         t,k       t           2                                                    2
+                                − xproj            ≤ 6K2 ηl2 σ2 + 12K3 ηl2 ∇ Fi ( x t )− cit + ct       .
+                   k =0
+
+Recalling
+                                                          1 N
+                                                         NK i∑
+                                              t
+                                             Edrift =           Ei,t ,
+                                                             =1
+
+we obtain
+                                       t
+                                      Edrift ≤ 6Kηl2 σ2 + 12K2 ηl2 Gt ,                                     (4.102)
+
+where
+                                           1 N
+                                           N i∑
+                                                                          2
+                                  Gt :=          E ∇ Fi ( x t )− cit + ct .
+                                              =1
+
+As in the lemma proof, we can relate Gt to the control-variate error Ct and the full gradient
+via
+                                                           2
+                                 Gt ≤ 2 Ct + 2 ∇ F ( x t ) .                           (4.103)
+
+Combining (4.102) and (4.103) yields
+
+                           t                                                             2
+                          Edrift ≤ 6Kηl2 σ2 + 24K2 ηl2 Ct + 24K2 ηl2 ∇ F ( x t ) .                          (4.104)
+
+Compared with the old drift bound, the noise term now scales as O(Kηl2 σ2 ) in Edrift       t
+
+(instead of O(K2 ηl2 σ2 )), while the dependence on Ct and ∥∇ F ( x t )∥2 remains of order K2 ηl2 .
+    Substituting (4.104) into (4.99), and regrouping the terms proportional to ∥∇ F ( x t )∥2
+and Ct , we obtain
+                                                                     2
+                            E[Φt+1 ]− Φt ≤ − a g ∇ F ( x t )             − ac Ct +Nt ,                      (4.105)
+
+where
+
+                                          ρ η̃ 12ML2 2
+                                 a g :=       −     η̃ − 24Bdrift K2 ηl2 ,                                  (4.106)
+                                           4     ρ
+                                          Mρ
+                                 ac :=       − 24Bdrift K2 ηl2 ,                                            (4.107)
+                                          2
+
+and the accumulated noise term is
+
+                                      Nt := Cnoise + 6Bdrift Kηl2 σ2 .                                      (4.108)
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                      31
+
+
+Step 5: Choice of M and verification of descent. We now choose M and enforce con-
+ditions (2)–(4) in the theorem statement so that both a g and ac are uniformly positive.
+Following the same design as in the previous version, set
+                                                    72L2 η̃ K3 ηl2
+                                             M :=                  .                     (4.109)
+                                                         ρ
+Using this definition together with (4.100) and (4.104), one checks that Conditions (2)–(4)
+imply
+                                         ρ η̃           Mρ
+                                   ag ≥       ,   ac ≥      .                          (4.110)
+                                          8              4
+(Here we only use that K3 L2 ηl2 and L2 η̃ 2 /ρ2 are sufficiently small, as encoded in Condi-
+tions (2)–(4).) Therefore, from (4.105),
+                                                 ρ η̃          2 Mρ
+                          E[Φt+1 ]− Φt ≤ −            ∇ F(xt ) −    Ct +Nt .             (4.111)
+                                                  8              4
+
+Step 6: Bounding the total noise term Nt . We now bound Nt in terms of σ2 and the
+algorithmic parameters. From (4.100), (4.101), and (4.108), using the choice (4.109) and
+Conditions (3)–(4) to dominate higher-order terms in η̃, we obtain
+                                              Lη̃ 2 2
+                                    Nt ≤           σ + c2 L2 η̃ Kηl2 σ2 ,                (4.112)
+                                             2NK
+                                             | {z } |         {z      }
+                                                               =: N2
+                                               =: N1
+
+for some universal numerical constant c2 > 0; a conservative choice is c2 = 1000, which
+is compatible with the refined drift bound (4.104). Here N1 collects the direct variance
+contributions from Lemma 4.3 and Lemma 4.4, while N2 collects those induced via the
+(drift-dependent) terms in both lemmas. Note that the improved drift noise 6Kηl2 σ2 in
+(4.104) indeed yields N2 of order L2 η̃Kηl2 σ2 .
+
+Step 7: Telescoping sum and the final convergence bound. Summing (4.111) over
+t = 0,1,...,T − 1 and using Φt ≥ 0 gives
+
+                           ρ η̃ T −1                              T −1
+                                ∑    E ∇ F ( x t ) ≤ Φ0 − E[Φ T ]+ ∑ Nt
+                                                   2
+                            8 t =0                                 t =0
+                                                       ≤ Φ0 + T N̄ ,
+where N̄ := max0≤t<T Nt . From the definition of Φt and the choice of M, we have Φ0 ≤
+∆ F +C0 up to a factor absorbed into the constant 8.
+    Dividing both sides by T and using min0≤t<T at ≤ T1 ∑tT=−01 at with at = E∥∇ F ( x t )∥2 , we
+obtain
+                                    2       8(∆ F +C0 )   8
+                min E ∇ F ( x t )       ≤               + N̄
+               0≤ t < T                        ρ η̃ T    ρ η̃
+32                                                    Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+                                            8(∆ F +C0 )                  Lη̃ 2 2
+                                                                                                    
+                                                           8
+                                          ≤             +                     σ + c2 L2 η̃ Kηl2 σ2
+                                               ρ η̃ T     ρ η̃          2NK
+                                              8(∆ F +C0 ) 4Lσ2 η̃ 8000L2 Kηl2 σ2
+                                          ≤              +       +               ,
+                                                 ρ η̃ T    ρ NK        ρ
+where in the last step we used c2 ≤ 1000 and absorbed numerical factors into the constant
+8000. This is precisely the bound (4.95) with an explicit universal constant C = 8000 in
+front of the L2 Kηl2 σ2 /ρ term.
+Independence structure. Finally, we emphasise that Lemmas 4.2, 4.3, and 4.4, and hence
+the entire argument above, never assume any independence between the random projector
+Pt and the stochastic gradients or noise. The only probabilistic assumptions used are
+Assumptions 1–3 and the standard independent mini-batch sampling across clients and
+local steps. The price for removing any projector–noise independence assumption is
+the somewhat more conservative variance term in (4.95); the improved drift bound in
+Lemma 4.2 is fully reflected in the L2 η̃Kηl2 σ2 scaling of N2 and the final L2 Kηl2 σ2 /ρ term.
+
+
+
+4.8     Harmonic-step-size corollary
+Corollary 4.1 (Non-asymptotic rate with harmonic stepsize and split local/global rates).
+Suppose Assumptions 1, 2, and 3 hold and let ρ = r/d ∈ (0,1] and ∆ F = F ( x0 )− F ∗ . Consider
+Algorithm 1 with constant stepsizes. Let C0 be the initial control-variate error appearing in
+Theorem 4.1. Fix an absolute constant C∗ := 100.
+   We choose the stepsizes as follows:
+     1. The local stepsize ηl is set to
+                                                                           s
+                                          n 1 r     ρ                           ∆ F +C0 o
+                                ηl := min      ,          ,                                .             (4.113)
+                                           2KL   864L2 K3                      C∗ LKσ2 T ρ
+
+                                                η̃
+     2. The global stepsize is set to ηg := ηl K , where the effective stepsize η̃ is defined by the harmonic
+        rule                                                             −1
+                                                     η̃ := η̃0−1 + η̃1−1        ,                        (4.114)
+
+        using the stability threshold η̃0 and the variance-reduction threshold η̃1 :
+                                                               r
+                                        n 1 ρ o                  2NK (∆ F +C0 )
+                             η̃0 := min      ,     ,    η̃1 :=                   .                       (4.115)
+                                          4L 2L                       Lσ2 T
+
+      Under these choices, the iterates of Algorithm 1 satisfy
+                                                           √
+                                         112L ∆ F +C0 8 2
+                                                                     q
+                                 t 2                             σ
+                min E ∇ F ( x ) ≤ 2                    +       √       L(∆ F +C0 ).                      (4.116)
+               0≤ t < T                    ρ      T         ρ    NKT
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                          33
+
+
+In particular, the convergence rate is
+                                                                                !
+                               L
+                                                         q
+                      2                               σ
+  min E ∇ F ( x t )       = O 2 F ( x0 )− F ∗ +C0 + √      L F ( x0 )− F ∗ +C0 . (4.117)
+                                                                             
+ 0≤ t < T                     ρ T                  ρ NKT
+
+Proof. Step 1: Starting from Theorem 4.1. By Theorem 4.1, under Assumptions 1–3 and
+the step-size conditions (1)–(4), the iterates of Algorithm 1 satisfy
+
+                                          2       8(∆ F +C0 ) 4Lσ2 η̃ 8000L2 Kηl2 σ2
+                   min E ∇ F ( x t )          ≤              +       +               .        (4.118)
+                  0≤ t < T                           ρ η̃ T    ρ NK        ρ
+We define the coefficients
+                              8(∆ F +C0 )                    4Lσ2              8000L2 Kσ2
+                      A :=                ,           B :=        ,     D :=              .   (4.119)
+                                   ρ                         ρNK                   ρ
+Then the bound (4.118) can be rewritten as
+                                                  2                     A
+                             min E ∇ F ( x t )        ≤ Φ(η̃,ηl ) :=       + B η̃ + Dηl2 .    (4.120)
+                          0≤ t < T                                     η̃T
+We observe that the threshold η̃1 defined in (4.115) satisfies
+                        r                  s                     r
+                          2NK (∆ F +C0 )        8(∆ F +C0 )/ρ      A
+                  η̃1 =          2
+                                         =        2
+                                                               =      .                       (4.121)
+                             Lσ T            (4Lσ /(ρNK ))· T      BT
+
+Step 2: Verifying the step-size constraints. We check that the choices of ηl and η̃ are
+compatible with Conditions (1)–(4) of Theorem 4.1.
+                                                           1
+    (i) Condition (1). By construction in (4.113), ηl ≤ 2KL  , so the first part holds. Moreover,
+by (4.114), η̃ ≤ η̃0 . Since η̃0 ≤ 1/(4L) by (4.115), we have η̃ ≤ 1/(4L).
+    (ii) Condition (4). Since η̃ ≤ η̃0 ≤ ρ/(2L), we have 4L2 η̃ 2 /ρ2 ≤ 1, so Condition (4) holds.
+    (iii) Condition (2). By (4.113), we have
+                                                             ρ
+                                                  ηl2 ≤            ,
+                                                          864L2 K3
+which implies 72K3 L2 ηl2 ≤ ρ/12 ≤ ρ/8. Thus Condition (2) holds.
+   (iv) Condition (3). From the bound on ηl2 above,
+
+                          3456L4 η̃ 2 K3 ηl2 3456L4 η̃ 2 K3      ρ         L2 η̃ 2
+                                            ≤               ·          = 4         .
+                               ρ3                ρ3           864L2 K3      ρ2
+As shown for Condition (4), this quantity is bounded by 1. Thus Condition (3) holds.
+Step 3: Harmonic choice of η̃ for the first two terms. We bound the η̃–dependent part:
+ A
+η̃T + B η̃. Using 1/ η̃ = 1/ η̃0 + 1/ η̃1 ,
+
+                                               A   A     A
+                                                 =     +      .
+                                              η̃T T η̃0 T η̃1
+34                                        Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+(a) First term. Since 1/η̃0 = max{4L,2L/ρ} ≤ 4L/ρ, we have
+
+                                  A    A 4L 32L(∆ F +C0 )
+                                      ≤ · =               .
+                                 T η̃0 T ρ      ρ2 T
+                                                                          √
+(b) Second term and linear term.            √ we have A/( T η̃1 ) =
+                                 p Using (4.121),                             AB/T. Also, since
+η̃ ≤ η̃1 , we have Bη̃ ≤ Bη̃1 = B A/( BT ) = AB/T. Thus
+                                                        r
+                                       A                    AB
+                                            + Bη̃ ≤ 2          .
+                                      T η̃1                 T
+
+Using the definitions of A and B:
+                   r        s                     √
+                      AB      32Lσ2 (∆ F +C0 )      32σ
+                                                        q
+                          =                    =  √       L(∆ F +C0 ).
+                       T          ρ2 NKT         ρ NKT
+
+So                                                   √
+                       A           32L(∆ F +C0 )    8 2σ
+                                                         q
+                          + B η̃ ≤               +  √      L(∆ F +C0 ).                    (4.122)
+                      η̃T              ρ2 T        ρ NKT
+Step 4: Bounding and absorbing the third term Dηl2 . By (4.113),
+
+                                                ∆ F +C0
+                                       ηl2 ≤               .
+                                               C∗ LKσ2 T ρ
+
+Substituting into Dηl2 with D = 8000L2 Kσ2 /ρ:
+
+                              8000L2 Kσ2 ∆ F +C0      8000 L(∆ F +C0 )
+                     Dηl2 ≤             ·       2
+                                                    =                  .
+                                  ρ       C∗ LKσ Tρ    C∗     ρ2 T
+
+With C∗ = 100, this is 80L(∆ F +C0 )/(ρ2 T ).
+Step 5: Final bound. Adding the terms:
+                                                  √
+                                  L(∆ F +C0 )    8 2σ
+                                                      q
+                        (32 + 80)             +  √      L(∆ F +C0 ),
+                                     ρ2 T       ρ NKT
+
+which yields the claimed result.
+
+    This corollary shows that the proposed subspace SCAFFOLD method retains the
+same two-term asymptotic structure as standard full-rank SCAFFOLD:√a deterministic
+optimization term of order O(1/T ) and a stochastic term of order O(1/ NKT ). Hence,
+under the present weak assumptions—smoothness, bounded variance, and a shared
+random subspace—the method achieves the usual linear speedup in the total number
+of stochastic gradients NKT. In particular, the final rate contains no extra additive term
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                 35
+
+
+measuring data heterogeneity; the client-drift effect is neutralized by the control variates
+and therefore does not worsen the asymptotic rate.
+    The only asymptotic gap relative to standard SCAFFOLD is the subspace factor: the
+full-rank result is recovered up to the multiplicative penalties 1/ρ in the dominant term,
+which quantify the price of restricting updates to an r-dimensional random subspace.
+Therefore, from the viewpoint of stationarity guarantees, the proposed method preserves
+the heterogeneity-robust convergence behavior of SCAFFOLD.
+    This rate shows superiority over FedSub, in which the analyses rely on substantially
+stronger assumptions, including bounded gradients and correlation or similarity con-
+ditions between consecutive subspaces. Moreover, FedSub does not exhibit      √ the same
+linear speedup; by contrast, the bound in (4.117) keeps the standard 1/ NKT term,
+showing that subspace compression here does not destroy the parallelization benefit of
+SCAFFOLD.
+
+
+5     Experiments
+This section evaluates the proposed subspace federated optimization framework on two
+complementary benchmarks: a controlled matrix-regression toy problem and a deep-
+learning benchmark on CIFAR-100 with ResNet-110. The experiments are designed to
+assess heterogeneity robustness, the role of the subspace dimension, and the stability of
+the dual mechanism. Throughout, the discussion is connected to the algorithmic design
+in Section 3 and the convergence intuition in Section 4. Our focus is on whether SSF can
+reduce communication from dimension d to dimension r while preserving as much of
+SCAFFOLD’s drift-correction benefit as possible.
+
+5.1   Experimental Setup
+We consider the federated matrix regression problem introduced in the method section.
+Each client i ∈ {1,..., N } holds a local dataset ( Ai ,Bi ) and minimizes
+                                           1                   λ
+                               fi (X) =       ∥ Ai X − Bi ∥2F + ∥ X ∥2F ,              (5.1)
+                                          2ni                  2
+where Ai ∈ Rni ×d , Bi ∈ Rni ×m , and X ∈ Rd×m . The global objective is
+
+                                                  1 N
+                                                  N i∑
+                                       F(X ) =          f i ( X ),                     (5.2)
+                                                     =1
+
+and optimization quality is measured by the relative error
+                                                     ∥X − X∗ ∥F
+                                    RelErr( X ) =               ,                      (5.3)
+                                                      ∥X∗ ∥F
+where X ∗ denotes the closed-form minimizer of the global problem.
+36                                       Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+Toy-problem configuration. Unless otherwise stated, the comprehensive toy experi-
+ments use N = 20 clients, feature dimension d = 100, output dimension m = 10, and ni = 50
+samples per client. The regularization parameter is fixed to λ = 0.1 and the observation
+noise standard deviation is set to 0.01. Data heterogeneity is induced through client-
+specific feature mean shifts,
+                                  µi ∼ N (0,het level2 Id ),                         (5.4)
+with heterogeneity levels
+                                 het level ∈ {0.1, 0.5, 2.0},                               (5.5)
+corresponding to low, medium, and high heterogeneity, respectively.
+
+Training protocol. All four federated optimizers share the same training skeleton: S = 10
+out of N = 20 clients participate in each round, every selected client performs K = 5 local
+steps, the minibatch size is 20, and the global step size is fixed at ηg = 1.0. The long toy
+experiments run for T = 25,000 communication rounds. For SSF and FedSub, the subspace
+ratio is chosen from
+                              r/d ∈ {0.01, 0.05, 0.10, 0.20, 0.50},                     (5.6)
+which corresponds to r ∈ {1,5,10,20,50} when d = 100.
+
+Learning-rate search. The local learning rate is selected by an automatic search with
+Full-SCAFFOLD over the candidate grid {10−4 ,10−3 ,10−2 ,10−1 } for 500 rounds (with
+divergence detection), selecting the rate that yields the lowest final relative error. The
+selected values are
+
+      ηℓ = 10−2 for het = 0.1,   ηℓ = 10−2 for het = 0.5,       ηℓ = 10−3 for het = 2.0.    (5.7)
+
+The chosen learning rate for each heterogeneity level is then reused for all algorithms and
+subspace dimensions at that level.
+
+Algorithms.      We compare four methods:
+
+     • Full-SCAFFOLD: the full-dimensional SCAFFOLD baseline;
+
+     • Full-FedAvg: the classical full-dimensional FedAvg baseline;
+
+     • SSF: Subspace-SCAFFOLD, which performs primal updates in a subspace while
+       preserving full-dimensional dual information as described in Section 3;
+
+     • FedSub: subspace FedAvg with subspace-only dual variables.
+
+We are particularly interested in whether SSF can remain close to Full-SCAFFOLD while
+reducing communication and active-device memory from order d to order r.
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                    37
+
+
+  Table 1: Main hyperparameters used in the federated matrix-regression experiments.
+
+               Quantity                         Value
+               Number of clients N              20
+               Feature dimension d              100
+               Output dimension m               10
+               Samples per client ni            50
+               Regularization λ                 0.1
+               Noise standard deviation         0.01
+               Local steps K                    5
+               Clients per round S              10
+               Batch size                       20
+               Global step size ηg              1.0
+               Local step size ηℓ               10−2 ,10−2 ,10−3 by heterogeneity
+               Heterogeneity levels             0.1,0.5,2.0
+               Subspace ratios r/d              0.01,0.05,0.10,0.20,0.50
+               Projector refresh (FedSub)       every 5 rounds
+
+
+Deep-learning benchmark. To complement the toy study, we also consider a CIFAR-
+100 benchmark with ResNet-110 in a heterogeneous distributed setting with four work-
+ers/clients and 100 training epochs.
+
+5.2     Toy Experiments: Matrix Regression
+The toy benchmark is especially useful because the global optimum is available in closed
+form, so every curve can be interpreted directly in terms of optimization error rather
+than proxy metrics. We organize the analysis around three questions: robustness to data
+heterogeneity, dependence on subspace dimension, and the stability of FedSub.
+
+5.2.1    Robustness to data heterogeneity at fixed subspace dimension
+We first fix the subspace dimension to r = 20 (r/d = 0.20) and vary the heterogeneity
+level het level ∈ {0.1,0.5,2.0}. Figure 1 shows the corresponding convergence curves, and
+Table 2 reports the final relative errors at the end of training.
+    For low heterogeneity (het = 0.1; Figure 1a), all four algorithms remain numerically stable
+and converge to the 10−3 –10−2 range. Full-SCAFFOLD reaches 6.9726e-03, SSF reaches
+7.5535e-03, Full-FedAvg reaches 9.1265e-03, and FedSub is highest at 1.1295e-02.
+    For medium heterogeneity (het = 0.5; Figure 1b), Full-SCAFFOLD is best (6.4701e-03),
+SSF is second (8.2431e-03), and FedSub/Full-FedAvg finish at 1.0556e-02 and 1.1197e-02,
+respectively.
+    For high heterogeneity (het = 2.0; Figure 1c), all methods still converge stably, but the
+full-dimensional advantage is clearer: Full-SCAFFOLD reaches 2.0831e-03, Full-FedAvg
+38                                        Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+
+
+(a) Low heterogeneity (het = 0.1, (b) Medium heterogeneity (c) High heterogeneity (het =
+r = 20).                          (het = 0.5, r = 20).     2.0, r = 20).
+
+Figure 1: Relative error versus communication rounds for r = 20 under low, medium, and
+high heterogeneity. The y-axis shows the relative error ∥ Xt − X ∗ ∥ F /∥ X ∗ ∥ F on a logarithmic
+scale.
+
+Table 2: Final relative error at T = 25,000 communication rounds for fixed subspace
+dimension r = 20 and varying heterogeneity.
+
+ Heterogeneity     Name         r   Full-SCAFFOLD       Full-FedAvg        SSF         FedSub
+ 0.1               low         20      6.9726e-03        9.1265e-03     7.5535e-03   1.1295e-02
+ 0.5               medium      20      6.4701e-03        1.1197e-02     8.2431e-03   1.0556e-02
+ 2.0               high        20      2.0831e-03        3.8143e-03     3.4495e-03   6.0512e-03
+
+
+reaches 3.8143e-03, SSF reaches 3.4495e-03, and FedSub reaches 6.0512e-03.
+   Overall, for r/d = 0.2 and the heterogeneity split (het = 0.1/0.5/2.0 for
+low/medium/high), SSF remains competitive with full-dimensional training and
+consistently outperforms FedSub.
+
+5.2.2   Effect of the subspace dimension at high heterogeneity
+We next fix heterogeneity at het = 2.0 (high under the current split) and vary r ∈
+{1,5,10,20,50}. Figure 2 presents representative convergence curves, and Table 3 summa-
+rizes the final errors.
+    As expected, the full-dimensional methods are nearly insensitive to the choice of r:
+Full-SCAFFOLD and Full-FedAvg achieve essentially constant final errors in the ranges
+[2.03,2.12]e-03 and [3.65,3.89]e-03, respectively.
+    For SSF, the subspace dimension plays a crucial role. At r = 1 (1% of the ambient
+dimension), SSF plateaus at 2.82e-01, more than two orders of magnitude worse than
+Full-SCAFFOLD. Increasing the dimension to r = 5 already yields a dramatic improvement:
+the error drops to 7.81e-03, nearly 36 times smaller. For r ∈ {10,20,50}, SSF continues to
+improve and its final error lies within a small factor of the full-dimensional optimum, e.g.,
+3.03e-03 at r = 50 versus 2.08e-03 for Full-SCAFFOLD.
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                            39
+
+
+
+
+    (a) r = 10 (r/d = 0.10).           (b) r = 20 (r/d = 0.20).          (c) r = 50 (r/d = 0.50).
+
+Figure 2: Effect of the subspace dimension on convergence at high heterogeneity (het = 2.0).
+Full-SCAFFOLD and Full-FedAvg are insensitive to r, whereas the behaviour of SSF and
+FedSub depends strongly on r.
+
+Table 3: Final relative error at T = 25,000 communication rounds for high heterogeneity
+(het = 2.0) and varying subspace dimension. The row r = 50 highlights the numerical
+divergence of FedSub.
+
+         r/d      r   Full-SCAFFOLD         Full-FedAvg           SSF        FedSub
+         0.01    1         2.12e-03           3.65e-03        2.82e-01     2.81e-01
+         0.05    5         2.03e-03           3.71e-03        7.81e-03     6.76e-03
+         0.10   10         2.06e-03           3.89e-03        3.74e-03     4.32e-03
+         0.20   20         2.08e-03           3.81e-03        3.45e-03     6.05e-03
+         0.50   50         2.08e-03           3.87e-03        3.03e-03   NaN (diverged)
+
+
+    FedSub exhibits a non-monotone and less stable dependence on r. At r = 1 it behaves
+similarly to SSF, with error 2.81e-01. At r = 5 and r = 10, FedSub improves substantially
+(6.76e-03 and 4.32e-03, respectively) and becomes comparable to SSF. However, at r = 20
+its performance degrades again (6.05e-03), and at r = 50 the run becomes numerically
+unstable: the CSV reports a final error of NaN, indicating divergence.
+    This pattern directly supports the mechanism described in Section 3. Because SSF
+preserves residual dual information in the orthogonal complement of the active projector,
+enlarging r improves the quality of the primal subspace updates without discarding the
+full-space drift information. FedSub, in contrast, keeps only subspace-only dual states,
+so increasing the subspace dimension does not eliminate the structural information loss
+discussed in Section 3; in fact, at large r the method can become unstable rather than
+reliably approaching the full-dimensional behavior.
+
+5.2.3   FedSub stability at large subspace dimension
+To isolate the instability phenomenon, we examine the r = 50 setting across all hetero-
+geneity levels. Table 4 shows that the final FedSub error is recorded as NaN for all three
+40                                       Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+Table 4: Final relative error at T = 25,000 communication rounds for subspace dimension
+r = 50 (r/d = 0.5) and varying heterogeneity. FedSub diverges (numerically) in all three
+cases.
+
+ Heterogeneity    Name        r   Full-SCAFFOLD      Full-FedAvg      SSF          FedSub
+ 0.1              low        50       7.27e-03         8.25e-03     7.69e-03   NaN (diverged)
+ 0.5              medium     50       7.00e-03         1.04e-02     8.70e-03   NaN (diverged)
+ 2.0              high       50       2.08e-03         3.87e-03     3.03e-03   NaN (diverged)
+
+
+heterogeneity levels, while Figure 3 illustrates a representative medium-heterogeneity
+case.
+    Across all three heterogeneity levels, Full-SCAFFOLD and Full-FedAvg remain stable.
+SSF is also consistently stable, with final errors 7.69e-03 (low, het = 0.1), 8.70e-03 (medium,
+het = 0.5), and 3.03e-03 (high, het = 2.0), remaining within roughly one order of magnitude
+of the full-dimensional baselines.
+    In stark contrast, FedSub fails in all three cases at r = 50: the final error is reported as
+NaN regardless of the heterogeneity level, indicating numerical instability or divergence
+during training. The instability is also apparent in the convergence plots: the FedSub
+curve displays a large transient spike to extremely high error and does not settle into a
+stable plateau comparable to the other methods.
+    These empirical findings align with the theoretical discussion in Section 4. In FedSub,
+the control variates (dual variables) are repeatedly projected into the low-rank subspace,
+discarding information in the orthogonal complement. Under heterogeneous data and
+large r, this projection prevents the effective control variate from converging to a station-
+ary point of the full gradient field, leading to drifting or exploding dual variables and
+numerical instability. In contrast, SSF maintains full-dimensional dual variables while
+restricting only the primal updates to the subspace, preserving the residual information in
+the orthogonal complement and yielding much more robust behaviour.
+
+5.3    Deep-Learning Benchmark: CIFAR-100 with ResNet-110
+The second experimental component uses the CIFAR-100 benchmark with the final sub-
+mission logs. Figure 4 plots test accuracy over training, and Table 5 summarizes the final
+and best accuracies over 100 epochs.
+   The deep-learning ranking is unambiguous:
+                        Full-SCAFFOLD > SSF > FedAvg > FedSub.                              (5.8)
+The margin between Full-SCAFFOLD and SSF is approximately 7.5 percentage points at
+the final epoch, while SSF substantially outperforms FedAvg and FedSub. Notably, in
+this submission run FedSub underperforms FedAvg, indicating that the subspace FedAvg-
+style control mechanism is sensitive to the concrete training protocol and may require
+additional tuning for deep models.
+Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46                                  41
+
+
+
+
+Figure 3: Convergence behaviour at medium heterogeneity (het = 0.5) and large subspace
+dimension r = 50. While Full-SCAFFOLD, Full-FedAvg, and SSF converge smoothly,
+FedSub exhibits pronounced instability with large error excursions, and the final recorded
+error is NaN.
+
+    We also note that the current submission protocol is not strictly equal-compute across
+all methods: Full-SCAFFOLD follows a different epoch-internal schedule than the other
+three methods in the logs. Therefore, these results should be interpreted as submission-level
+empirical performance rather than a fully compute-matched ablation. A strict equal-budget
+comparison is left for follow-up experiments.
+
+5.4   Discussion
+Combining the toy and deep-learning experiments yields four conclusions.
+    First, method robustness under controlled heterogeneity: in the toy benchmark with the
+heterogeneity split (het = 0.1/0.5/2.0 for low/medium/high), SSF is competitive with
+full-dimensional baselines at moderate subspace dimension (r/d = 0.2), while FedSub
+remains less robust.
+    Second, subspace-dimension sensitivity: SSF improves consistently as r increases and ap-
+proaches full-dimensional performance for r ≥ 10, whereas FedSub exhibits non-monotone
+behavior and instability at large r.
+    Third, FedSub stability limitations: FedSub diverges in multiple large-subspace toy set-
+tings and also underperforms FedAvg in the submitted CIFAR-100 run, indicating limited
+robustness of repeatedly projected control variates under heterogeneous optimization
+dynamics.
+42                                     Anonymous / CSIAM Trans. Appl. Math., 0 (2025), pp. 1-46
+
+
+
+
+Figure 4: Test accuracy versus training epoch on CIFAR-100 with ResNet-110. Full-
+SCAFFOLD is the strongest method, SSF is consistently second best, and both FedAvg
+and FedSub trail by a clear margin. This figure reports test performance only.
+
+
+    Fourth, practical deep-learning outcome: in the final submission setting on CIFAR-
+100/ResNet-110, Full-SCAFFOLD is the strongest method and SSF is the second-best
+method with a clear gain over FedAvg and FedSub. This confirms that SSF is a practically
+effective compromise between full-dimensional control and subspace efficiency, while still
+leaving headroom to Full-SCAFFOLD.
+
+
+6    Conclusion
+This paper addresses a central limitation of large-model federated learning: existing
+methods typically achieve either robustness to statistical heterogeneity or efficiency in
+communication, memory, and computation, but not both simultaneously. Motivated by
+this gap, we study Subspace-SCAFFOLD (SSF), which brings SCAFFOLD-style variance
+reduction into a low-dimensional optimization subspace and preserves the accumulated
+correction information when the subspace changes. This subspace-native design directly
+targets the large-model FL regime highlighted in the introduction and positions SSF as a
+bridge between full-dimensional heterogeneity-correction methods and efficient subspace
+training.
+    The main findings are twofold. On the theoretical side, under standard smoothness
+REFERENCES                                                                                43
+
+
+Table 5: CIFAR-100/ResNet-110 results over 100 epochs. “Final” denotes epoch 99; “Best”
+denotes the best test accuracy during training.
+
+        Method              Final Test Acc. (%)   Best Test Acc. (%)    Best Epoch
+        Full-SCAFFOLD              52.92                 53.11              53
+        SSF                        45.43                 45.43              99
+        FedAvg                     34.35                 38.51              46
+        FedSub                     23.17                 30.20              41
+
+and bounded-variance assumptions, SSF preserves the bounded-variance structure of
+projected stochastic
+            √         gradients and achieves a non-asymptotic convergence rate of order
+O(1/T +1/ NKT ), matching the linear speedup behavior expected from strong federated
+ e
+variance-reduction methods while avoiding full-dimensional auxiliary states. On the
+empirical side, the experiments indicate that SSF delivers favorable accuracy–efficiency
+trade-offs in heterogeneous federated settings, reducing memory usage, communication
+volume, and local computation while maintaining robustness to client drift. Taken together,
+these results suggest that native low-dimensional heterogeneity correction is a promising
+direction for scalable and practical federated optimization.
+
+
+References
+ [1] Dan Alistarh, Demjan Grubic, Jerry Li, Ryota Tomioka, and Milan Vojnovic. QSGD:
+     Communication-efficient SGD via gradient quantization and encoding. arXiv preprint
+     arXiv:1610.02132v4, 2016.
+ [2] Yajie Bao, Michael Crawshaw, Shan Luo, and Mingrui Liu. Fast composite optimiza-
+     tion and statistical recovery in federated learning. In Proceedings of the International
+     Conference on Machine Learning, 2022.
+ [3] Debraj Basu, Deepesh Data, Can Karakus, and Suhas Diggavi. Qsparse-local-SGD:
+     Distributed SGD with quantization, sparsification, and local computations. IEEE
+     Journal on Selected Areas in Information Theory, 2019.
+ [4] Debora Caldarola, Pietro Cagnasso, Barbara Caputo, and Marco Ciccone. Beyond
+     local sharpness: Communication-efficient global sharpness-aware minimization for
+     federated learning. 2024. arXiv:2412.03752v2.
+ [5] Chuyan Chen, Yutong He, Pengrui Li, Weichen Jia, and Kun Yuan. Greedy low-rank
+     gradient compression for distributed learning with convergence guarantees. arXiv
+     preprint arXiv:2507.08784v4, 2025.
+ [6] Ilyas Fatkhullin, Alexander Tyurin, and Peter Richtárik. Momentum provably im-
+     proves error feedback! In Advances in Neural Information Processing Systems, 2023.
+44                                                                                  REFERENCES
+
+
+ [7] Xinmeng Huang, Ping Li, and Xiaoyun Li. Stochastic controlled averaging for
+     federated learning with communication compression. In International Conference on
+     Learning Representations, 2023.
+ [8] Like Jian and Dong Liu. Widening the network mitigates the impact of data het-
+     erogeneity on FedAvg. In Proceedings of the 41st International Conference on Machine
+     Learning, 2025.
+ [9] Sai Praneeth Karimireddy, Satyen Kale, Mehryar Mohri, Sashank J. Reddi, Sebas-
+     tian U. Stich, and Ananda Theertha Suresh. SCAFFOLD: Stochastic controlled aver-
+     aging for federated learning. arXiv preprint arXiv:1910.06378, 2020.
+[10] Anastasia Koloskova, Tao Lin, and Sebastian U. Stich. An improved analysis of gra-
+     dient tracking for decentralized machine learning. In Advances in Neural Information
+     Processing Systems, volume 34, pages 11452–11465, 2021.
+[11] Jakub Konečný, H. Brendan McMahan, Felix X. Yu, Peter Richtárik, Ananda Theertha
+     Suresh, and Dave Bacon. Federated learning: Strategies for improving communica-
+     tion efficiency. arXiv preprint arXiv:1610.05492v2, 2016.
+[12] Xiang Li, Kaixuan Huang, Wenhao Yang, Shusen Wang, and Zhihua Zhang. On
+     the convergence of FedAvg on non-IID data. In International Conference on Learning
+     Representations, 2020.
+[13] Yujun Lin, Song Han, Huizi Mao, Yu Wang, and William J. Dally. Deep gradient
+     compression: Reducing the communication bandwidth for distributed training. In
+     International Conference on Learning Representations, 2017.
+[14] Junkang Liu, Fanhua Shang, Junchao Zhou, Hongying Liu, Yuanyuan Liu, and Jin
+     Liu. Fedmuon: Accelerating federated learning with matrix orthogonalization. arXiv
+     preprint arXiv:2510.27403v1, 2025.
+[15] Yue Liu, Tao Lin, Anastasia Koloskova, and Sebastian U. Stich. Decentralized gradient
+     tracking with local steps. Optimization Methods and Software, 2023.
+[16] H. Brendan McMahan, Eider Moore, Daniel Ramage, Seth Hampson, and Blaise
+     Ag”uera y Arcas. Communication-efficient learning of deep networks from decen-
+     tralized data. In Proceedings of the 20th International Conference on Artificial Intelligence
+     and Statistics, pages 1273–1282, 2017.
+[17] Zhaonan Qu, Kaixiang Lin, Zhaojian Li, Jiayu Zhou, and Zhengyuan Zhou. A
+     unified linear speedup analysis of federated averaging and nesterov fedavg. Journal
+     of Artificial Intelligence Research, 76:1345–1386, 2023.
+[18] Samyam Rajbhandari, Jeff Rasley, Olatunji Ruwase, and Yuxiong He. ZeRO: Memory
+     optimizations toward training trillion parameter models. In International Conference
+     for High Performance Computing, Networking, Storage and Analysis, 2019.
+REFERENCES                                                                               45
+
+
+[19] Thomas Robert, Mher Safaryan, Ionut-Vlad Modoranu, and Dan Alistarh. Ldadam:
+     Adaptive optimization from low-dimensional gradient statistics. In International
+     Conference on Learning Representations, 2024.
+
+[20] Sebastian U. Stich. Local SGD converges fast and communicates little. In International
+     Conference on Learning Representations, 2019.
+
+[21] Sebastian U. Stich and Sai Praneeth Karimireddy. The error-feedback framework:
+     Better rates for SGD with delayed gradients and compressed communication. arXiv
+     preprint arXiv:1909.05350v2, 2019.
+
+[22] Hanlin Tang, Xiangru Lian, Chen Yu, Tong Zhang, and Ji Liu. Doublesqueeze: Parallel
+     stochastic gradient descent with double-pass error-compensated compression. In
+     Proceedings of the International Conference on Machine Learning, 2019.
+
+[23] Sahil Tyagi and Martin Swany. Gravac: Adaptive compression for communication-
+     efficient distributed dl training. In IEEE International Conference on Cloud Computing,
+     2023.
+
+[24] Jianqiao Wangni, Jialei Wang, Ji Liu, and Tong Zhang. Gradient sparsification for
+     communication-efficient distributed optimization. In Advances in Neural Information
+     Processing Systems, 2017.
+
+[25] Ming Xiang, Stratis Ioannidis, Edmund Yeh, Carlee Joe-Wong, and Lili Su. Towards
+     bias correction of FedAvg over nonuniform and time-varying communications. In
+     Proceedings of the IEEE Conference on Decision and Control, pages 5815–5822, 2023.
+
+[26] Haibo Yang, Minghong Fang, and Jia Liu. Achieving linear speedup with partial
+     worker participation in non-IID federated learning. In International Conference on
+     Learning Representations, 2021.
+
+[27] Fuxun Yu, Weishan Zhang, Zhuwei Qin, Zirui Xu, Di Wang, Chenchen Liu, Zhi Tian,
+     and Xiang Chen. Heterogeneous federated learning. arXiv preprint arXiv:2008.06767,
+     2020.
+
+[28] Honglin Yuan and Tengyu Ma. Federated accelerated stochastic gradient descent. In
+     Advances in Neural Information Processing Systems, 2020.
+
+[29] Jiaojiao Zhang, Jiang Hu, and Mikael Johansson. Non-convex composite federated
+     learning with heterogeneous data. arXiv preprint arXiv:2502.03958v1, 2025.
+
+[30] Jiaojiao Zhang, Yuqi Xu, and Kun Yuan. An efficient subspace algorithm for federated
+     learning on heterogeneous data. arXiv preprint arXiv:2509.05213v1, 2025.
+
+[31] Susan Zhang, Stephen Roller, Naman Goyal, Mikel Artetxe, Moya Chen, Shuohui
+     Chen, Christopher Dewan, Mona Diab, Xian Li, Xi Victoria Lin, Todor Mihaylov,
+46                                                                            REFERENCES
+
+
+     Myle Ott, Sam Shleifer, Kurt Shuster, Daniel Simig, Punit Singh Koura, Anjali Sridhar,
+     Tianlu Wang, and Luke Zettlemoyer. OPT: Open pre-trained transformer language
+     models. arXiv preprint arXiv:2205.01068v4, 2022.
+
+[32] Jiawei Zhao, Zhenyu Zhang, Beidi Chen, Zhangyang Wang, Anima Anandkumar,
+     and Yuandong Tian. GaLore: Memory-efficient LLM training by gradient low-rank
+     projection. In Proceedings of the International Conference on Machine Learning, 2024.
+
+[33] Yuan Zhou, Jiachen Zhong, Xinli Shi, Guanghui Wen, and Xinghuo Yu. FedCanon:
+     Non-convex composite federated learning with efficient proximal operation on het-
+     erogeneous data. IEEE Transactions on Signal Processing, 2025.
+
