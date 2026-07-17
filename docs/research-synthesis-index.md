@@ -234,6 +234,7 @@ and validity records suffice, and the real consented-session gate remains blocke
 | [OccuBench](../papers/agent-benchmarks/2026-07-15-occubench-language-simulator-validity.md) | A | Demonstrates cheap cross-domain synthetic tool-environment packaging while separating occupational labels and closed-loop simulator/verifier agreement from transition validity, professional authority, matched fault resilience, and real-environment transport |
 | [AutomationBench](../papers/agent-benchmarks/2026-07-15-automationbench-workflow-projection-validity.md) | A | Adds broad executable multi-app state, strict conjunction with negative guards, task-local reset, and tool-discoverability interventions while separating synthetic contract conformance from work-demand provenance, production transition transport, complete consequence coverage, and readiness |
 | [HealthAdminBench](../papers/agent-benchmarks/2026-07-16-healthadminbench-workflow-projection-validity.md) | A | Converts observed cross-system administrative work into 135 inspectable tasks and 1,698 checks while showing why path evidence, intermediate state, final consequence, prerequisite masking, strict conjunction, and occupational reliability are non-substitutable |
+| [DevicesWorld](../papers/agent-benchmarks/2026-07-17-devicesworld-cross-device-state-validity.md) | B | Separates dependency-edge fidelity, role-bound endpoint persistence, distributed closure, collateral state, and reset; its placeholder release, unnamed health-selected 200-task subset, one-shot cells, and unaudited failure coding limit the evidence to a proposed cross-substrate instrument rather than reproducible reliability, coordination, transfer, or professional validity |
 | [StructureClaw](../papers/agent-benchmarks/2026-07-17-structureclaw-artifact-trace-validity.md) | A | Makes a request→model→validation→provider→result→report evidence chain and positive safe terminals executable, while its coarse model comparator, lossy semantic observer, single-run cells, absent result rows, revision drift, and broken standalone fixture paths show why provenance edges, semantic edge validity, expert acceptance, and professional readiness are non-substitutable |
 | [WindowsWorld](../papers/agent-benchmarks/2026-07-17-windowsworld-process-checkpoint-validity.md) | A | Makes 181 cross-application Windows task strings and 899 trajectory-wide milestone judgments inspectable while showing that free-path state appearance is not durable stage completion or process validity; flat checks, screenshot-only evidence, invalid records, unenforced setup, and an empty/final-`FAIL` L4 shortcut block occupational, reliability, safety, and readiness claims |
 | [UI-CUBE](../papers/agent-benchmarks/2026-07-18-ui-cube-operational-reliability-validity.md) | B | Crosses deterministic application-state predicates with viewport variants and short versus composed interactions, while exposing why a 136/90 declared suite, an unexplained roughly 67-result complex denominator, family-macro human aggregation, manifest/source drift, and post-paper task repairs cannot support operational-reliability, expert-parity, or enterprise-readiness claims |
@@ -449,6 +450,32 @@ single shots support configured-instrument evidence—not healthcare-administrat
 coverage, safety, occupational capability, economic value, production fitness, or
 readiness. Existing projection, benchmark-bundle, criterion, trace, task-health,
 execution-validity, metric, and validity records are the durable homes.
+
+DevicesWorld sharpens the same graph into a cross-substrate **edge-and-endpoint
+validity chain**: `source availability → access → claim/value capture → authority and
+semantic-role retention → permitted transformation → target selection → attempted
+write/action → persisted authoritative endpoint state → acceptable collateral state
+→ joint postcondition → cleanup/reset`. A passing endpoint conjunction establishes
+only the final predicates observed. It does not prove the intended source was used,
+that meaning and authority survived the edge, or that the target was not guessed,
+leaked, or independently reconstructed. Report dependency-edge fidelity, endpoint
+attainment, global closure, collateral effects, and reset as separate families.
+
+Prerequisite failures also censor downstream opportunities: failed source access is
+not evidence that target operation or persistence would have failed. Coordination or
+role-binding claims require matched forms that hold local operations, information,
+check count, horizon, and budget fixed while varying topology or same-substrate role
+assignment. Preserve selected, initialized, attempted, valid, retried, provider- or
+environment-invalid, scored, and excluded counts; then use repeated reset and order
+perturbations with task/topology-clustered uncertainty for reliability claims. The
+paper's coherent aggregate arithmetic implies 200 tasks per system and 887 failed
+runs, but the subset is unnamed and health-selected, each cell appears one-shot, the
+failure codebook and reset audit are unavailable, and the pinned official repository
+contains only a README and teaser ([DevicesWorld review](../papers/agent-benchmarks/2026-07-17-devicesworld-cross-device-state-validity.md)). Thus its 6,140-task,
+diagnostic, reliability, transfer, and reproducibility claims remain author reports.
+Existing bundle, trace, persistent-workspace, task-health, metric, validity, and
+trial-accounting records are sufficient; no device-specific schema or scope
+commitment follows.
 
 StructureClaw adds a complementary **provenance-edge versus semantic-edge rule**:
 an artifact identity, upstream hash, provider receipt, and completed status establish

@@ -598,6 +598,40 @@ edges or repeated trials, while requirement-level observation/expert lineage and
 paper runs are absent [HAB]. Existing criterion, projection, bundle, trace, task-
 health, execution-validity, metric, and validity objects already host the repair.
 
+Cross-substrate workflows require a more explicit **edge-and-endpoint contract**:
+
+```text
+source availability → access → claim/value capture
+  → authority and semantic-role retention → permitted transformation
+    → target selection → attempted action/write → persisted authoritative state
+      → collateral-state check → joint postcondition → cleanup/reset
+```
+
+Type endpoints by semantic role (`authoritative_source`, `transformation_workspace`,
+`required_destination`, `approval_endpoint`, `verification_endpoint`) independently
+of device or store class. Each dependency edge binds source identity/locator,
+authority and valid time, required transform, permitted invariances, destination
+field, authorization/confidentiality, and downstream checks. Record availability,
+access, capture, transformation, attempt, acknowledgement, re-query/reopen,
+persistence, collateral state, closure, and reset as separate observations. A final
+conjunction is endpoint-closure evidence, not source-use, semantic-transfer,
+coordination, or professional-consequence evidence [DW].
+
+Prerequisite failure masks or censors descendants rather than proving they failed.
+Any coordination or role-binding claim needs matched topology forms that hold local
+operations, information, checks, horizon, and budget fixed while varying only the
+dependency edge or same-substrate role assignment. Trial ledgers must reconcile
+selected, initialized, attempted, valid, retried, provider/environment-invalid,
+scored, and excluded runs; operational reliability additionally requires repeated
+reset and order perturbations with task/topology-clustered uncertainty. DevicesWorld
+provides a coherent proposed contract and aggregate arithmetic consistent with 200
+attempts per system and 887 failures, but its health-selected subset is unnamed, its
+cells appear one-shot, failure coding and reset are unaudited, and its pinned official
+repository is a README/teaser placeholder. Its scale, diagnostic, reliability,
+transfer, reproducibility, and professional-validity claims therefore remain author
+reports [DW]. Existing bundle, trace, workspace, task-health, metric, validity, and
+trial-accounting objects host the requirements; no device-specific schema follows.
+
 ResearchRubrics provides unusually inspectable evidence for a three-role
 draft/review/final-review pipeline and criterion-level judging, but not for
 criterion atomicity, domain-professional authority, independence, or calibrated
@@ -4018,6 +4052,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Harness event-view projection | canonical runtime ledger→declared visible entry/typed omission→separate response/action/artifact/outcome endpoints | harness narrative treated as world truth; invented repair/verifier/action-result events; relabeling, reordering, stale hashes, undeclared omissions; self-report promoted to belief or outcome | full immutable HIBD v1 paper plus post-v1 release audit support prompt-conditioned report divergence only [HIBD]; internal zero-call two-shape replay matches 12 clean and 10 planted cases but supplies detector, not agent or semantic-equivalence evidence [HEP] |
 | Cross-family execution substrate (BrowserGym) | canonical benchmark contract + adapter realization + trial-policy identity; differential conformance | common method signature or scalar hides heterogeneous evaluator, reset, retry, backend, observation, and error semantics | full immutable v2 paper plus inspected March 2026 official release; broad transport evidence, not exact-paper reproduction, native/adapted equivalence, common scale, safety, or professional validity [BG] |
 | Executable workflow composition (WorkArena++) | typed obligation DAG, composable setup/oracle/validator, milestone/terminal split, reversal and reset evidence | chained atomic difficulty or polling history mistaken for planning, realism, or complete consequential work | full immutable v2 paper plus inspected February 2026 official release, which postdates the paper; strong construction evidence, but floor effects, small convenience human study, single software, reset uncertainty, and no occupational, safety, or exact-reproduction validation [WA]; internal replay is synthetic conformance only [CW] |
+| Cross-substrate dependency and endpoint workflow (DevicesWorld) | role-bound endpoints, typed information-flow edges, attempt/persistence split, distributed closure, collateral-state and reset evidence | endpoint conjunction mistaken for intended source use, semantic transfer, coordination, useful partial progress, reliability, or consequence; prerequisite masking and health-selected subsets omitted | full immutable v1 paper plus review-time placeholder-release audit; aggregate arithmetic is internally reconcilable, but tasks, subset IDs, runtime, verifiers, attempts, traces, failure labels, and reset evidence are unavailable [DW] |
 | Trajectory-judge calibration (AgentRewardBench) | typed observer evidence view, plural immutable labels, explicit adjudication lineage, predicate-specific error surface | unequal human/judge observability; mostly single labels; row-order authority; class imbalance; pooled unclustered metrics; invalid output conflated with negatives | full immutable v2 paper plus pinned code/annotation release inspection; bounded web-task agreement evidence, not general judge or professional-validity calibration [ARB] |
 | Trajectory review selection (Signals) | probability-sentinel and enriched-discovery streams linked by an immutable population/inclusion/review/use episode | enriched yield mistaken for prevalence, comparison, detector accuracy, labor efficiency, supported defect, intervention effect, or utility; descriptive signals silently promoted to quality scores | full immutable v1 paper/source plus post-v1 author-associated implementation audit; bounded 300-slot queue-yield evidence, with empirical pool, selection ledger, labels, costs, and analysis unreleased [SIG] |
 | Deterministic evidence-path evaluation (GroundEval) | actor/time policy, staged information-flow observation, bounded negative-search basis, configured-dependency checks, and dual answer/path evidence | authored contract determinism mistaken for authority, completeness, alternative-path coverage, causality, safety, or observer superiority; hidden exact labels; equation/code drift | full immutable v2 paper plus complete author-owned preprint snapshot and local 82-test/example audit; selected mechanics are inspectable, while the reported corpus, questions, trajectories, judge records, and results are absent [GE] |
@@ -4550,6 +4585,15 @@ them:
 
 ## Provenance keys
 
+- **[DW]**
+  `papers/agent-benchmarks/2026-07-17-devicesworld-cross-device-state-validity.md`;
+  reviewed immutable v1 PDF/text and review-time official placeholder repository
+  provenance are recorded there. The paper supplies a proposed cross-substrate
+  endpoint/dependency mechanism and internally reconcilable aggregate arithmetic,
+  but the 6,140 tasks, health-selected subset IDs, runtime, verifiers, attempts,
+  traces, failure labels, and reset evidence are unavailable. It does not establish
+  reproducibility, operational reliability, coordination, semantic transfer,
+  professional validity, production fitness, or readiness.
 - **[HCAST]**
   `papers/agent-benchmarks/2026-07-17-hcast-human-time-calibrated-autonomy-validity.md`;
   reviewed immutable arXiv v1 PDF/text and timing-bounded official release at commit
