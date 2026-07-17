@@ -803,6 +803,47 @@ review, and report selection-adjusted criterion and decision error with clustere
 uncertainty. Existing criterion, evidence-view, rater, task-health, response-matrix,
 metric, and validity records suffice; no finance-specific schema follows.
 
+### 2.3d Criterion and case evolution are coupled instrument changes
+
+A living benchmark adapts two populations at once: the criterion space determines
+which failures are visible, while the admitted cases determine which criterion
+gaps and system differences appear important. Preserve one joint lifecycle:
+
+```text
+raw authority-bearing observations + typed disagreement
+  → criterion candidates and complete dispositions → criterion version
+    → case candidates and complete dispositions → case-assembly version
+      → development-only discrimination/coverage observations
+        → untouched confirmation + pre-frozen cross-version bridge
+          → refine/add/restructure, retire, rollback, or bounded claim
+```
+
+Version criterion sets and case assemblies independently but bind each evolution
+cycle to both old/new identities. Every proposed candidate needs a retained
+rejection, admission, or rollback disposition; retirements remain historical
+records. Record the trigger and approver for anchor refinement, criterion addition,
+structural rescoping, case admission, retirement, and rollback. Raw human labels,
+criterion authority, typed disagreement, model transformation, judge observation,
+and aggregation policy do not inherit one another.
+
+Separate development, confirmation, and frozen-bridge population manifests before
+adaptation. Record the development models and judges because improved separation
+against that pool is an admission outcome, not validity evidence. Construct-
+continuity or untouched-transport claims require old/new score **and decision**
+bridges on a pre-frozen population, systems and judges outside the adaptation pool,
+uncertainty, cost, and an explicit rollback target. A structural change may break
+score comparability even when current discrimination improves.
+
+GrowLoop supplies the coupled `(R_t, C_t, L_t)` abstraction and a useful
+refine/add/restructure vocabulary, but its unanimity-selected labels do not establish
+criterion authority, its final cases are tuned to one expected model order, and the
+reported study never executes the fresh-case→new-human-seed→revised-rubric outer
+transition [GL]. The implemented optional task-health cycle and positive/negative
+fixtures make the non-inheritance boundary executable [CEL]. Metric populations and
+uncertainty remain in metric-monitoring, detailed rater observations in plural-
+judgment, and claim warrants in validity arguments; no conversation- or self-
+evolution-specific subsystem follows.
+
 ### 2.4 Evolving evidence is a typed state transition, not a changed answer key
 
 A task's private basis must not collapse every event, source statement, and
@@ -5161,3 +5202,16 @@ them:
   or complete result ledger. Nested output rows, a bundled treatment, all-positive
   evaluation, and absent consequence evidence block mechanism, prevalence, realized-
   harm, defense-efficacy, production-safety, and readiness claims.
+- **[GL]**
+  `papers/agent-benchmarks/2026-07-17-growloop-human-seeded-rubric-case-coevolution-validity.md`;
+  reviewed immutable v2 PDF/text and complete pinned post-v2 official tree are
+  recorded there. The source supports a coupled rubric/case lifecycle abstraction
+  and configured adaptive discrimination only—not criterion authority, legitimate-
+  disagreement coverage, an executed outer evolution cycle, construct continuity,
+  untouched transport, professional validity, or readiness.
+- **[CEL]** `schemas/task-health.schema.json`, `schemas/TASK_HEALTH.md`,
+  `scripts/validate_task_health.py`, `tests/fixtures/valid-task-health.json`, and
+  `tests/fixtures/task-health-evolution-negative-mutations.json`; deterministic
+  builder-authored contract calibration only. The fixtures establish representation
+  and fail-closed semantic-validator behavior, not empirical evolution benefit,
+  expert validity, construct continuity, transport, capability, or readiness.

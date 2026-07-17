@@ -44,6 +44,19 @@ static suite labels or pass-rate aliases.
    while preserving the record), state comparability, and bind old/new versions.
 8. **Coverage-aware retirement.** Retirement records replacement, critical
    coverage, evidence, and comparability rather than deleting saturated items.
+9. **Coupled instrument evolution.** Optional evolution cycles jointly bind old/new
+   criterion sets and case assemblies; raw human authority and typed disagreement;
+   complete proposed/rejected/admitted/retired/rolled-back event history with
+   refine/add/restructure or operational triggers and approvers; development,
+   untouched confirmation, and pre-frozen bridge populations; development and
+   external system/judge pools; score and decision bridges; uncertainty, cost,
+   rollback targets, and claim dispositions. Confirmation and bridge partitions
+   must remain invisible to adaptation. A development-pool discrimination gain or
+   gate pass cannot support construct-continuity or untouched-transport claims
+   without a passed frozen bridge, disjoint external pools, both score and decision
+   evidence, uncertainty, and cost. Metric estimates remain in
+   `metric-monitoring`; typed rater observations remain in `plural-judgment`; and
+   bounded validity claims remain in `validity-argument`.
 
 ## Calibration fixture
 
@@ -54,6 +67,14 @@ to exercise the contract. It includes:
 - builder-authored repeat, saturation, contrast, and owner records explicitly
   labeled synthetic rather than observed health evidence;
 - a capability-to-regression transition shape with all required evidence types;
+- a coupled synthetic criterion/case evolution cycle with separate development,
+  confirmation, and frozen-bridge manifests; authority/disagreement lineage;
+  complete candidate dispositions; disjoint development/bridge system and judge
+  identities; score/decision bridge, uncertainty, cost, and rollback fields;
+- `tests/fixtures/task-health-evolution-negative-mutations.json` supplies planted
+  counterexamples for development-only discrimination promoted as validity, a
+  bridge population leaked to adaptation, and a candidate dropped without a
+  terminal disposition;
 - a planted grader-defect adjudication that creates `grader-v2`, excludes the
   affected result from capability aggregation, and preserves the old score;
 - explicit denial of agent capability, treatment effect, grader accuracy,
@@ -72,6 +93,7 @@ claims that the live pilot grader is defective or corrected.
 | Defects create new versions and preserve old scores | same concept note, semantic invariants 3–4 |
 | Saturation cannot alone graduate or retire critical coverage | same concept note, semantic invariants 1 and 6 |
 | Outcome-conditioned selection history | `papers/agent-benchmarks/2026-07-10-skillsbench-paired-skill-efficacy.md`, Transferable design pattern 1 and Concrete change 6 |
+| Coupled criterion/case history, typed disagreement, adaptation/confirmation/bridge separation, and claim gate | `papers/agent-benchmarks/2026-07-17-growloop-human-seeded-rubric-case-coevolution-validity.md`, Unique insight and Transferable design pattern |
 
 Anthropic's article is an official experience report, not a controlled study;
 SkillsBench establishes the selection threat in its own released inventory but

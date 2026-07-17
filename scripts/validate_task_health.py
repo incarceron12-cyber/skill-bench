@@ -156,6 +156,114 @@ def semantic_errors(package: dict[str, Any]) -> list[str]:
         if retirement["status"] == "retired" and not retirement["evidence_ids"]:
             errors.append(f"{owner}: retirement requires evidence and an explicit critical-coverage disposition")
 
+        evolution = record.get("instrument_evolution")
+        if evolution:
+            evo_owner = f"{owner} evolution {evolution['cycle_id']}"
+            version_refs = {
+                evolution["from_criterion_ref_id"]: "criterion_set",
+                evolution["to_criterion_ref_id"]: "criterion_set",
+                evolution["from_case_assembly_ref_id"]: "case_assembly",
+                evolution["to_case_assembly_ref_id"]: "case_assembly",
+            }
+            _refs(evo_owner, version_refs, artifact_ids, "version artifact_ref_id", errors)
+            for ref, expected_type in version_refs.items():
+                if ref in artifacts and artifacts[ref]["artifact_type"] != expected_type:
+                    errors.append(f"{evo_owner}: {ref!r} must reference {expected_type}")
+            if evolution["from_benchmark_version"] == evolution["to_benchmark_version"]:
+                errors.append(f"{evo_owner}: from and to benchmark versions must differ")
+            if evolution["from_criterion_ref_id"] == evolution["to_criterion_ref_id"] or evolution["from_case_assembly_ref_id"] == evolution["to_case_assembly_ref_id"]:
+                errors.append(f"{evo_owner}: criterion and case-assembly versions must both be explicit and distinct")
+
+            authority_ids = evolution["raw_human_authority_evidence_ids"]
+            disagreement_ids = evolution["typed_disagreement_evidence_ids"]
+            _refs(evo_owner, [*authority_ids, *disagreement_ids], evidence_ids, "authority/disagreement evidence_id", errors)
+            if any(evidence[eid]["evidence_type"] != "human_authority" for eid in authority_ids if eid in evidence):
+                errors.append(f"{evo_owner}: raw_human_authority_evidence_ids must reference human_authority evidence")
+            if any(evidence[eid]["evidence_type"] != "typed_disagreement" for eid in disagreement_ids if eid in evidence):
+                errors.append(f"{evo_owner}: typed_disagreement_evidence_ids must reference typed_disagreement evidence")
+
+            roles: dict[str, dict[str, Any]] = {}
+            for partition in evolution["partitions"]:
+                if partition["role"] in roles:
+                    errors.append(f"{evo_owner}: duplicate population partition role {partition['role']!r}")
+                roles[partition["role"]] = partition
+                _refs(evo_owner, [partition["manifest_ref_id"]], artifact_ids, "population manifest_ref_id", errors)
+                if partition["manifest_ref_id"] in artifacts and artifacts[partition["manifest_ref_id"]]["artifact_type"] != "population_manifest":
+                    errors.append(f"{evo_owner}: partition manifests must reference population_manifest artifacts")
+            if set(roles) != {"development", "confirmation", "frozen_bridge"}:
+                errors.append(f"{evo_owner}: development, confirmation, and frozen_bridge partitions are all required")
+            if roles.get("development", {}).get("visible_to_adaptation") is not True:
+                errors.append(f"{evo_owner}: development partition must be visible to adaptation")
+            for role in ("confirmation", "frozen_bridge"):
+                if roles.get(role, {}).get("visible_to_adaptation") is not False:
+                    errors.append(f"{evo_owner}: {role} partition must remain untouched by adaptation")
+
+            _refs(evo_owner, evolution["development_system_ref_ids"], artifact_ids, "development system_ref_id", errors)
+            _refs(evo_owner, evolution["development_judge_ref_ids"], artifact_ids, "development judge_ref_id", errors)
+            for ref in evolution["development_system_ref_ids"]:
+                if ref in artifacts and artifacts[ref]["artifact_type"] != "configured_system":
+                    errors.append(f"{evo_owner}: development systems must reference configured_system artifacts")
+            for ref in evolution["development_judge_ref_ids"]:
+                if ref in artifacts and artifacts[ref]["artifact_type"] != "grader":
+                    errors.append(f"{evo_owner}: development judges must reference grader artifacts")
+
+            events = evolution["events"]
+            for duplicate in sorted(_duplicates(event["event_id"] for event in events)):
+                errors.append(f"{evo_owner}: duplicate event_id {duplicate!r}")
+            if len({event["sequence"] for event in events}) != len(events):
+                errors.append(f"{evo_owner}: evolution event sequence values must be unique")
+            event_actions: dict[str, set[str]] = {}
+            for event in events:
+                event_actions.setdefault(event["object_ref_id"], set()).add(event["action"])
+                _refs(f"{evo_owner} event {event['event_id']}", [event["object_ref_id"]], artifact_ids, "object_ref_id", errors)
+                _refs(f"{evo_owner} event {event['event_id']}", event["evidence_ids"], evidence_ids, "evidence_id", errors)
+                if event["object_ref_id"] in artifacts and artifacts[event["object_ref_id"]]["artifact_type"] != event["object_type"]:
+                    errors.append(f"{evo_owner} event {event['event_id']}: object_type must match artifact type")
+            for ref, actions in event_actions.items():
+                if "proposed" in actions and not actions & {"rejected", "admitted", "rolled_back"}:
+                    errors.append(f"{evo_owner}: proposed candidate {ref!r} lacks a terminal disposition")
+            for admitted_ref in (evolution["to_criterion_ref_id"], evolution["to_case_assembly_ref_id"]):
+                if "admitted" not in event_actions.get(admitted_ref, set()):
+                    errors.append(f"{evo_owner}: admitted target {admitted_ref!r} needs an admitted history event")
+
+            bridge = evolution["bridge"]
+            bridge_refs = [*bridge["external_system_ref_ids"], *bridge["external_judge_ref_ids"]]
+            if bridge["measurement_ref_id"] is not None:
+                bridge_refs.append(bridge["measurement_ref_id"])
+            _refs(evo_owner, bridge_refs, artifact_ids, "bridge artifact_ref_id", errors)
+            for ref in bridge["external_system_ref_ids"]:
+                if ref in artifacts and artifacts[ref]["artifact_type"] != "configured_system":
+                    errors.append(f"{evo_owner}: external bridge systems must reference configured_system artifacts")
+            for ref in bridge["external_judge_ref_ids"]:
+                if ref in artifacts and artifacts[ref]["artifact_type"] != "grader":
+                    errors.append(f"{evo_owner}: external bridge judges must reference grader artifacts")
+            if bridge["measurement_ref_id"] in artifacts and artifacts[bridge["measurement_ref_id"]]["artifact_type"] != "bridge_measurement":
+                errors.append(f"{evo_owner}: bridge measurement must reference a bridge_measurement artifact")
+            _refs(evo_owner, [*bridge["score_bridge_evidence_ids"], *bridge["decision_bridge_evidence_ids"], *bridge["cost_evidence_ids"]], evidence_ids, "bridge evidence_id", errors)
+            _refs(evo_owner, evolution["rollback_target_ref_ids"], artifact_ids, "rollback target_ref_id", errors)
+            if set(evolution["development_system_ref_ids"]) & set(bridge["external_system_ref_ids"]):
+                errors.append(f"{evo_owner}: bridge systems must be untouched by the development pool")
+            if set(evolution["development_judge_ref_ids"]) & set(bridge["external_judge_ref_ids"]):
+                errors.append(f"{evo_owner}: bridge judges must be untouched by the development pool")
+
+            promoted = {bridge["construct_continuity"], bridge["untouched_transport"]} & {"provisional", "supported"}
+            if promoted:
+                bridge_ready = (
+                    bridge["status"] == "passed"
+                    and bridge["frozen_before_cycle"]
+                    and bridge["measurement_ref_id"] is not None
+                    and bool(bridge["external_system_ref_ids"])
+                    and bool(bridge["external_judge_ref_ids"])
+                    and bool(bridge["score_bridge_evidence_ids"])
+                    and bool(bridge["decision_bridge_evidence_ids"])
+                    and bridge["uncertainty_method"] != "not_estimated"
+                    and bool(bridge["cost_evidence_ids"])
+                    and not (set(evolution["development_system_ref_ids"]) & set(bridge["external_system_ref_ids"]))
+                    and not (set(evolution["development_judge_ref_ids"]) & set(bridge["external_judge_ref_ids"]))
+                )
+                if not bridge_ready:
+                    errors.append(f"{evo_owner}: adaptive discrimination or gate success cannot support construct continuity or untouched transport without a frozen, independent score-and-decision bridge with uncertainty and cost")
+
     return errors
 
 

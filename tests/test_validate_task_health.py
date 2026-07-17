@@ -10,6 +10,7 @@ from scripts.validate_task_health import DEFAULT_SCHEMA, ValidationFailure, sema
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "valid-task-health.json"
+EVOLUTION_NEGATIVES = ROOT / "tests" / "fixtures" / "task-health-evolution-negative-mutations.json"
 
 
 class TaskHealthTests(unittest.TestCase):
@@ -88,6 +89,34 @@ class TaskHealthTests(unittest.TestCase):
         package["task_health_records"][0]["reference_attempts"][0]["result"] = "invalid"
         errors = semantic_errors(package)
         self.assertTrue(any("not witnesses" in error for error in errors))
+
+    def test_rejects_adaptive_discrimination_as_continuity_or_transport(self) -> None:
+        negatives = json.loads(EVOLUTION_NEGATIVES.read_text(encoding="utf-8"))
+        case = next(item for item in negatives["cases"] if item["case_id"] == "adaptive-discrimination-only")
+        package = copy.deepcopy(self.valid)
+        bridge = package["task_health_records"][0]["instrument_evolution"]["bridge"]
+        for path, value in case["changes"].items():
+            bridge[path.removeprefix("bridge.")] = value
+        errors = semantic_errors(package)
+        self.assertTrue(any(case["expected_error"] in error for error in errors))
+
+    def test_rejects_bridge_population_exposed_to_adaptation(self) -> None:
+        negatives = json.loads(EVOLUTION_NEGATIVES.read_text(encoding="utf-8"))
+        case = next(item for item in negatives["cases"] if item["case_id"] == "bridge-population-leaked")
+        package = copy.deepcopy(self.valid)
+        partitions = package["task_health_records"][0]["instrument_evolution"]["partitions"]
+        next(item for item in partitions if item["role"] == "frozen_bridge")["visible_to_adaptation"] = True
+        errors = semantic_errors(package)
+        self.assertTrue(any(case["expected_error"] in error for error in errors))
+
+    def test_rejects_candidate_without_terminal_history(self) -> None:
+        negatives = json.loads(EVOLUTION_NEGATIVES.read_text(encoding="utf-8"))
+        case = next(item for item in negatives["cases"] if item["case_id"] == "candidate-without-disposition")
+        package = copy.deepcopy(self.valid)
+        evolution = package["task_health_records"][0]["instrument_evolution"]
+        evolution["events"] = [event for event in evolution["events"] if event["event_id"] != "criterion-v2-admitted"]
+        errors = semantic_errors(package)
+        self.assertTrue(any(case["expected_error"] in error for error in errors))
 
     def test_rejects_stale_artifact_hash(self) -> None:
         def mutate(package):
