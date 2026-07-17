@@ -193,6 +193,7 @@ already host this chain; no personal-agent or sovereignty schema follows.
 | [HippoCamp](../papers/agent-benchmarks/2026-07-11-hippocamp-personal-context-validity.md) | B | Separates composite contextual evidence and answer agreement from task-time authorization, causal adoption, consequential action, affected-party validation, and faithful personalization |
 | [Workflow-GYM](../papers/agent-benchmarks/2026-07-11-workflow-gym-professional-state-validity.md) | A | Contributes professional workflow/state realism and exposes the need to distinguish task validity, environment validity, and agent failure |
 | [DeskCraft](../papers/agent-benchmarks/2026-07-14-deskcraft-interactive-workflow-validity.md) | B | Adds native professional-artifact checks and phased requirement delivery while separating authored interaction opportunity, trigger realization, authority, adoption, state-preserving repair, endpoint effect, burden, recipient uptake, and consequence |
+| [HiLSVA](../papers/agent-benchmarks/2026-07-17-hilsva-mixed-initiative-validity.md) | B | Makes editable plans, approval, direct native-tool manipulation, rollback/history, selectable autonomy, and retrieval-based adaptation inspectable while showing that control availability, exercise, semantic uptake, verified artifact/state change, quality effect, burden, and professional value are separate estimands |
 | [MAG](../papers/agent-benchmarks/2026-07-15-mag-action-guide-transfer-validity.md) | B | Captures action-linked user-facing instructions over interactive state while showing that source success, one-path text overlap, author-rated reference usefulness, independent recipient execution, transfer, maintenance, and professional consequence are separate claims |
 | [User-simulator decision fidelity](../papers/agent-benchmarks/2026-07-15-user-simulator-decision-fidelity.md) | A | Uses real payment-linked dialogue to expose outcome-correlated disengagement error while showing that future-outcome stratification, observable-state sufficiency, person-specific simulation, free-running fidelity, policy transport, and real consequence require separate warrants |
 | [WorkArena L1](../papers/agent-benchmarks/2026-07-12-workarena-l1-knowledge-work-validity.md) | B | Makes parameterized enterprise-UI setup, selected native-state predicates, and task-owned cleanup inspectable while separating atomic operation success from work sampling, collateral-state, professional-use, and readiness claims |
@@ -501,6 +502,34 @@ professional-validity, capability, safety, production-fitness, and readiness
 claims. Existing participation/authority, trace, artifact-transition, task-health,
 metric, and validity machinery is the durable home; no desktop-specific schema
 follows.
+
+[HiLSVA](../papers/agent-benchmarks/2026-07-17-hilsva-mixed-initiative-validity.md)
+adds a complementary **realized-intervention ladder**: `mechanism
+availability → decision opportunity/exposure → exercise with typed intent, basis,
+and authority → agent receipt and semantic uptake/rejection → authoritative
+artifact/state consequence and collateral preservation → independent task/quality
+effect → human burden and bounded value`. Plans, approvals, direct edits, rollback,
+uncertainty prompts, and retrieved guidance are intervention types, not evidence of
+effective oversight merely because the interface exposes them. Preserve frozen
+pre-state, exercised control, proposition and scope, agent interpretation, changed
+locus and branch, independent native/rendered/export checks, rollback/adoption,
+task effect, reliance, time, attention, latency, rework, and recipient consequence.
+Use opportunity, exposure, exercise, valid uptake, verified state change, quality,
+rollback, and burden denominators separately, with task/participant/order clusters.
+
+The complete immutable-paper, study-instrument, and post-v1 release audit supports
+mechanism availability and positive perceived control only. Twelve participants
+completed four prescribed ParaView cases and rated the overall bundle highly, but
+each mode is realized on a different task within participant, mixed initiative also
+enables retrieval-based learning, the timing contrast is nonsignificant, mode-level
+exercise and independent artifact-quality evidence are absent, and final autonomy
+choice is observational. The release omits allocation, study logs, approvals/edits,
+native states and outputs, graders, raw ratings, analysis, and tests; rollback
+equivalence, action-guard coverage, persistence/reset, and execution safety remain
+unverified. Existing participation/intervention, feedback, artifact/state,
+rollback, metric, task-health, and validity records suffice; no visualization or
+mixed-initiative subsystem follows, and no oversight-efficacy, expert-equivalence,
+general-transfer, professional-utility, safety, or readiness claim is licensed.
 
 Action-derived guidance adds a distinct **trajectory-to-recipient projection
 chain**: `source requirement/environment version → executed action and observed
@@ -973,6 +1002,7 @@ specific schema or pilot follows.
 | [Anthropic agent evaluation lifecycle](concepts/anthropic-agent-evaluation-lifecycle.md) | A | Provides a production vocabulary of tasks, trials, graders, transcripts, and multi-grader evaluation patterns |
 | [AgentRewardBench](../papers/agent-benchmarks/2026-07-10-agentrewardbench-judge-reliability.md) | B | Exposes judge reliability, evidence-view, trajectory, annotation, and observer-access issues |
 | [Signals trajectory triage](../papers/agent-benchmarks/2026-07-14-signals-trajectory-triage-sampling-validity.md) | B | Separates probability-sentinel monitoring from enriched case discovery and makes the trajectory-population → inclusion policy → review → adjudication → intervention boundary explicit; its unreleased pool and selection ledger support queue-yield evidence, not prevalence or production utility |
+| [Agentic CLEAR](../papers/agent-benchmarks/2026-07-17-agentic-clear-dynamic-diagnostic-validity.md) | B | Makes heterogeneous trace normalization, multi-resolution judge views, open-vocabulary issue induction, and evidence backlinks inspectable while showing that sampled judge-text categories are review hypotheses—not stable prevalence, criterion-valid diagnoses, supported roots, or actionable repairs |
 | [Measuring Agents in Production](../papers/agent-benchmarks/2026-07-14-measuring-agents-production-practitioner-evidence.md) | B | Supplies a transparent practitioner instrument and selected reports of bounded workflows, human gates, sensitive context, delayed outcomes, and mixed evaluators; outcome-conditioned recruitment, optional-question denominators, unknown respondent/organization dependence, and no system audit make this portfolio evidence, not representative prevalence or practice efficacy |
 | [Agentic Confidence Calibration](../papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md) | B | Separates predicted success for one configured trajectory from repeated reliability and causal diagnosis; its unreleased labels/configurations, post-outcome features, clustering omissions, asymmetric transfer, and logprob dependence block decision-utility or universal-calibration claims |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
@@ -1174,6 +1204,31 @@ estimation; an enriched stream can increase discoveries per review budget. Do no
 pool or compare systems from the latter without known support and design weights.
 `signal activation`, `review-worthy`, `supported defect`, `accepted fix`,
 `replay/field effect`, and `utility` are non-substitutable states.
+
+[Agentic CLEAR](../papers/agent-benchmarks/2026-07-17-agentic-clear-dynamic-diagnostic-validity.md)
+adds a nested **dynamic-diagnosis transformation ladder**:
+`raw trace/state → transformed evidence view → judge observation → sampled issue
+phrase → induced category/stability → criterion-aligned diagnosis → supported root
+→ intervention-tested actionability`. Preserve raw/normalized hashes, omitted and
+truncated channels, judge and prompt, eligible/sampled/valid mapping denominators,
+sampling probability and order, category cap and merge/split lineage, independent
+labels, dependency/rival-cause evidence, and repair outcomes. A recurring phrase
+among low-score critiques is neither failure prevalence nor a root. Stability needs
+resampling and judge/order/cap perturbations; criterion alignment needs independent
+held-out labels; root promotion needs temporal/dependency evidence; actionability
+needs matched repair with sham, regression, false-lead, burden, and cost outcomes.
+Include successful alarming-language traces, legitimate retries, correct refusals,
+and downstream-symptom cases as negatives.
+
+The full immutable-v1/release audit finds useful machinery but a low claim ceiling:
+the only category-alignment slice has 117 TRAIL traces and best macro-F1 0.459 with
+partial matches. The 1,129-trace corpus is curated and family-imbalanced; adapters
+and compact views are lossy; induction is outcome-conditioned and order-dependent;
+remapping is self-referential; invalid mappings can become all-zero; repeats,
+clustered uncertainty, independent issue-truth/root labels, paper-run records,
+human-utility evidence, and intervention tests are absent. Existing trace,
+evidence-view, grader, review-selection, root/surface, task-health, metric, recovery,
+and validity records suffice; no CLEAR-specific schema follows.
 
 [Signals](../papers/agent-benchmarks/2026-07-14-signals-trajectory-triage-sampling-validity.md)
 reports 82/100 majority-positive signal-selected slots versus 54/100 random slots

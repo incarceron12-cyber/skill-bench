@@ -2415,6 +2415,48 @@ supported divergence. A known injected step is a construction label; it is not
 automatically a unique causal root or evidence that the same diagnosis applies to
 natural failures [WWP].
 
+Open-vocabulary diagnosis adds a prior, non-causal transformation ladder:
+
+```text
+raw trace/state → transformed evidence view → judge observation
+  → sampled issue phrase → induced category and stability
+    → criterion-aligned diagnosis → supported root
+      → intervention-tested actionability
+```
+
+Preserve the raw record and adapter; selected channels; ordering, deduplication,
+truncation, and omitted-content manifest; judge/prompt and raw critique; eligible
+critique pool, inclusion probability, score threshold, sample seed/order, and
+invalid calls; category induction, cap, merge/split lineage, and mapping; and every
+promotion disposition. Type `candidate`, `stable`, `criterion_aligned`,
+`supported_root`, and `intervention_validated` independently. Discovery frequency
+among low-score judge texts is not failure prevalence; a node backlink localizes
+where evidence appeared rather than what caused it. Missing state, failed parsing,
+or truncated decisive evidence must yield `invalid` or `insufficient_evidence`, not
+category absence [CLEAR].
+
+Category stability requires resampled traces, order permutations, judge/prompt
+repeats, and cap/merge sensitivity with task/configuration clustering. Criterion
+alignment requires independent held-out labels of issue truth, evidence location,
+surface/root status, and severity. Root promotion additionally requires temporal
+and dependency support plus rival causes; actionability requires a targeted repair
+or intervention on equivalent held-out work, with sham/unrelated fixes, regressions,
+false leads, review time, and cost retained. Successful traces with alarming
+language, legitimate retries, correct refusals, and downstream symptoms caused
+upstream are mandatory negative cases [CLEAR].
+
+Agentic CLEAR makes trace normalization, multi-resolution judging, issue induction,
+and backlinks inspectable over 1,129 curated traces, but its only category study
+uses 117 TRAIL traces and reaches best macro-F1 0.459 with partial matches. Judge
+dependence, outcome-conditioned sampling, self-referential remapping, all-zero
+invalid mappings, absent repeats/clustered uncertainty, lossy LLM-call views, and no
+paper-run corpus or intervention study bound it to exploratory review-queue and
+hypothesis-generation evidence—not stable taxonomy, autonomous diagnosis, root
+cause, prevalence, human-labor savings, professional validity, or readiness
+[CLEAR]. Existing trace/evidence-view, grader, review-selection, root/surface,
+task-health, metric, recovery, and validity records host this ladder; no dynamic-
+diagnosis schema follows.
+
 The Saturation Trap supplies a useful negative case but only one 56-action coding
 trajectory with three under-specified annotators. Its post-v1 release reproduces
 sparse-label reliability while revealing that the reported replay hard-coded
@@ -2677,6 +2719,45 @@ availability, call precision/recall and timing, semantic uptake, changed/protect
 state, endpoint effect, burden, cost, invalidity, and task/participant-clustered
 uncertainty separately. Human-versus-simulator parity requires its own evidence;
 neither a social-role label nor a natural-language message supplies it.
+
+Mixed-initiative controls sharpen the same episode into a realized-intervention
+ladder rather than a feature inventory:
+
+```text
+mechanism availability → decision opportunity and exposure
+  → exercise with typed intent, basis, and authority
+    → agent receipt and semantic uptake/rejection
+      → authoritative artifact/state consequence and collateral preservation
+        → independent task/quality effect → human burden and bounded value
+```
+
+For plans, approvals, local edits, direct manipulation, rollback, uncertainty
+queries, or retrieved guidance, retain the frozen pre-intervention native state;
+control visibility and actual exercise; proposition, scope, authority, and agent
+interpretation; intended and realized changed loci; branch/rollback identity;
+independent native, rendered, exported, and semantic checks; later task or decision
+effect; and time, attention, latency, rework, reliance, and recipient consequence.
+Report opportunity, exposure, exercise, valid uptake, verified state change,
+quality effect, rollback success, and burden on their own denominators. A globally
+available control, high perceived control, session completion, or post-study mode
+choice cannot fill later links [HIL].
+
+Causal tests should cross controls on identical frozen states or matched defect and
+decision opportunities, preserve task × participant × order clusters, and include
+no-control, unnecessary-intervention, correct, context-limited, contradictory,
+wrong, justified-rejection, rollback, and collateral-regression cases. Factor
+retrieval/learning from human guidance, record reset/persistence and all
+crash/retry/assistance states, and validate rollback through native state identity,
+allowed invariances, and branch isolation. HiLSVA establishes substantial mechanism
+availability and positive perceived control in one 12-person, four-case ParaView
+study. Different tasks realize each mode within participant; mixed initiative
+bundles retrieval-based learning; artifact quality and intervention episodes are
+unreported; timing differences are nonsignificant; and the post-v1 release omits
+study logs, graders, states, allocation, and tests. It therefore supports neither
+effective oversight, causal quality improvement, safe execution, expert equivalence,
+general transfer, professional utility, nor readiness [HIL]. Existing participation,
+intervention, feedback, artifact/state, rollback, task-health, metric, and validity
+records suffice; no visualization- or mixed-initiative-specific subsystem follows.
 
 DeskCraft makes native artifact checks and 152 authored phased packages
 inspectable, but the exact paper-time implementation is unavailable: the only
@@ -3956,6 +4037,23 @@ them:
 
 ## Provenance keys
 
+- **[CLEAR]**
+  `papers/agent-benchmarks/2026-07-17-agentic-clear-dynamic-diagnostic-validity.md`;
+  reviewed immutable v1 PDF/text and the complete exact-commit post-v1 official
+  release audit are recorded there. The release exposes substantial trace-review
+  machinery but omits the paper-run corpus, mappings, raw judge records, analysis,
+  tests, and intervention evidence. The source supports exploratory issue discovery
+  and bounded category association—not stable taxonomy, root cause, prevalence,
+  actionability, professional validity, production fitness, or readiness.
+- **[HIL]**
+  `papers/agent-benchmarks/2026-07-17-hilsva-mixed-initiative-validity.md`;
+  reviewed immutable v1 PDF/text, full paper-linked study instrument, and complete
+  exact-commit post-v1 release audit are recorded there. The archive establishes
+  mechanism inspectability but contains no participant allocation, intervention
+  logs, native study states/artifacts, graders, raw ratings, analysis, or tests. The
+  source supports availability and perceived-control claims—not realized oversight
+  efficacy, artifact-quality improvement, safe execution, expert equivalence,
+  professional utility, general transfer, production fitness, or readiness.
 - **[OSM]**
   `papers/agent-benchmarks/2026-07-16-online-skill-memory-budget-value.md`;
   reviewed immutable v1 PDF/text and project-page acquisition provenance are
