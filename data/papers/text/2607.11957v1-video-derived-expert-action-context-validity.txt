@@ -1,0 +1,906 @@
+Anomalous Frame Detection Using VLM-Based
+Description Comparison for Extracting Expert-
+Specific Actions and Contextual Decision-Making
+Scenes with Intra-Video Self-Similarity
+Ryo Sakai1 and Kaname Yokoyama1
+1
+    Robotics Research Department, Research and Development Group, Hitachi, Ltd., Ibaraki, Japan
+
+Corresponding author: Ryo Sakai (e-mail: ryo.sakai.cx@hitachi.com).
+
+
+
+ABSTRACT Maintenance of critical infrastructures, such as railways and power plants, is essential for
+ensuring operational safety and reliability. However, the declining number of skilled maintenance workers
+highlights the need to transfer expert know-how to less experienced workers. Previous studies have attempted
+to extract candidates of expert knowledge by comparing videos of manual-based work with those of expert
+workers, mainly focusing on differences in observable actions. However, expert know-how is often embedded
+not only in actions but also in contextual decision-making during task execution. This paper proposes a
+method that detects anomalous frames between two task videos to automatically extract candidate scenes
+containing expert-specific actions and contextual decision-making scenes. The method generates frame-wise
+visual descriptions using a visionlanguage model (VLM). Expert-specific actions are extracted based on
+frame similarities computed from description comparisons between two videos, while contextual decision-
+making scenes are extracted using segment similarities derived from intra-video self-similarity of the
+descriptions. In simulated distribution board maintenance experiments involving 27 task scenarios, the
+proposed method achieved extraction rates of 65% for action candidates and 61% for decision-scene
+candidates, improving over conventional methods that achieved 59% and 33%, respectively. These results
+demonstrate the effectiveness of the proposed approach in discovering candidate scenes containing expert
+know-how.
+
+INDEX TERMS Anomalous frame detection, video similarity analysis, vision–language models, expert
+actions, expert contextual decision-making, maintenance skill transfer
+
+
+I. INTRODUCTION                                                                           how is often tacit, its codification is essential for systematic
+ Maintenance work is one of the critical tasks in the                                     education and efficiently expanding the pool of inspectors
+operation of infrastructure facilities such as railways and                               s [5]. Therefore, there is a growing need to extract work
+power plants. On the other hand, there is a shortage of                                   know-how from experts, codify it as explicit knowledge,
+skilled maintenance personnel with sufficient technical                                   and pass it on to new maintenance personnel.
+skills at each site [1, 2, 3]. One potential solution to this                              One method for codifying the work know-how of skilled
+shortage is the training of new maintenance inspectors. For                               maintenance workers (hereinafter referred to as "experts") is
+new inspectors to acquire know-how equivalent to that of                                  the interview technique [4, 6, 7, 8, 9, 10, 11]. However, it is
+experts, it takes time to re-experience the work performed                                difficult to obtain information regarding know-how that the
+by those experts. For example, cases have been reported                                   interviewer cannot anticipate in advance or that the expert
+where expert know-how in ship operations is used for the                                  themselves is unaware of. Furthermore, work know-how
+early training of personnel [4]. However, as expert know-                                 that is second nature to the expert or that they do not
+
+
+
+   * This work was carried out as part of an internship by Kaname Yokoyama; he is currently with Graduate school of Engineering, Toyota Technological
+Institute.
+
+VOLUME XX, XXXX                                                                                                                                          1
+perceive as important may not be uncovered. Since such              between images increases the computational complexity on
+know-how may actually underpin the quality of the work,             the order of the square of the number of images, thereby
+it is desirable to codify it, including this unconscious know-      increasing calculation time.
+how.                                                                   Therefore, this study proposes a method that uniformly
+  To codify know-how that even experts are unaware of, the          realizes the extraction of action candidates and decision-
+conventional method extracts differences as action                  making scene candidates within a single framework.
+candidates that may contain know-how by generating and              Specifically, action candidates are obtained through a
+comparing image descriptions for each video—one created             filtering process using a cross-video frame similarity map
+based on a manual (hereinafter referred to as a "manual-            created from image descriptions generated from each frame.
+based work video") and the other recording the expert’s             For decision-making scene extraction, each video is first
+work (hereinafter referred to as an "expert's work video")          segmented into semantically stable intervals using a self-
+[12]. This technology has demonstrated that actions added           similarity map, and different scenes are then extracted by
+by experts or skipped relative to the manual can be detected        comparing image pairs within these segments. A key
+as differences in behavior corresponding to "what to do" in         feature of the proposed method is that it realizes the
+work procedures.                                                    extraction of both action and decision-making scene
+  In addition to such "what to do" actions, expert know-how         candidates in a unified manner and expands the comparison
+can also include contextual decision-making, such as                unit for decision-making scene extraction from an image-
+"where and which item to operate," even when performing             wise to a segment-wise basis. This approach suppresses the
+the same task. For example, consider a case where a                 reduction in extraction accuracy caused by description
+manual-based work video records a breaker-off task for a            instability and mitigates the impact of increased
+certain distribution board during maintenance, and an               computational complexity.
+expert's work video records the same task for a different              In experiments involving 27 task scenarios of simulated
+distribution board. In this case, the task is the same breaker-     distribution board maintenance, the proposed method
+off operation, so no difference in action occurs. However,          achieved extraction rates of 65.0% for action candidates
+the decision regarding which distribution board to operate          and 61.0% for decision-scene candidates. These results
+may reflect the expert's advanced know-how concerning               mark a significant improvement over the conventional
+system configuration, load status, safety, and other factors.       method, which achieved 59.0% and 33.0% for action and
+  In this way, even if the action is the same, differences in       decision-scene candidates, respectively. These findings
+the work scenes such as the target or location—may contain          demonstrate that the proposed method can effectively
+decision-related know-how. Therefore, it is important to            support the codification of expert know-how by improving
+extract decision-making scenes that may contain such                extraction accuracy while maintaining computational
+know-how. However, since the conventional method [12]               efficiency comparable to existing approaches.
+generates descriptions independently for each image in                 The main contributions of this paper are summarized as
+each video, the focus of description generation may not             follows:
+align between videos, and different descriptions may be             i.      A method for automatically extracting candidate
+generated for individual frames even for the same task.                     expert-specific actions and contextual decision-
+Consequently, differences in descriptions may not                           making scenes from task videos. We formulate the
+necessarily reflect differences in decision-making scenes,                  problem of identifying candidate expert actions and
+but may arise from differences in visual focus, making it                   contextual decision-making scenes by detecting
+difficult to extract appropriate decision-making scenes.                    anomalous frames between manual-based work
+  A simple way to realize the extraction of decision-making                 videos and expert worker videos, all without the
+scenes while suppressing the influence of attention shifts in               need for additional training.
+the conventional method [12] is to input all image pairs           ii.      A unified framework that integrates frame-level and
+from each video into an image description generator,                        segment-level video comparisons based on VLM-
+directly compare the images, and output descriptions of                     generated descriptions. Expert-specific actions are
+whether the scenes are different to extract candidates. With                extracted using frame similarities computed from
+this method, the image description generator can determine                  VLM-based description comparisons between two
+if a scene is a decision-making one while referring to both                 videos, while contextual decision-making scenes are
+images and aligning the focus between them. However, in                     extracted using segment similarities derived from
+this approach, descriptions for image pairs that are                        intra-video self-similarity analysis.
+temporally close are expected to be similar. Yet the              iii.      Experimental validation on simulated distribution
+generator may produce different descriptions depending on                   board maintenance tasks. Experiments on 27
+minute differences between images transitioning over time,                  simulated maintenance scenarios demonstrate that
+potentially leading to lower extraction accuracy based on                   the proposed method achieves extraction rates of
+incorrect descriptions. Furthermore, direct comparison                      65% for action candidates and 61% for decision-
+
+VOLUME XX, XXXX                                                                                                              7
+       scene candidates, outperforming conventional                  Furthermore, VideoDiff [21] has been proposed as a
+       methods (59% and 33%).                                      method for detecting differences between two videos without
+ The remainder of this paper is organized as follows.              additional training. VideoDiff uses multiple pre-trained
+Section II reviews related work on video difference                models to generate natural language descriptions of
+detection. Section III details problem definition. Section IV      differences between two input videos, optionally guided by
+details the proposed method, including similarity map              textual descriptions of the video content. However, while
+generation and video segmentation. Section V and VI                VideoDiff handles temporal information regarding when
+explain the experimental design and results. Finally,              differences occur, it does not explicitly identify difference
+Section VII presents the conclusion of this study.                 segments. Moreover, it focuses on differences in actions,
+                                                                   such as variations in form or skill within the same action and
+                                                                   does not address differences in work scenes arising from
+II. RELATED WORK                                                   contextual decision-making.
+  Various methods have been proposed to compare two                  In our previous work [12], we proposed a difference
+videos and extract their differences. For example, some            detection method based on similarity maps constructed from
+approaches compute similarities between two videos to              VLM-based captioning texts between two videos. This
+construct a similarity map and detect anomalous frames             method was shown to be effective in extracting anomalous
+based on this map [13, 14, 15, 16]. These methods generally        frames related to expert action knowledge. However, since
+consist of two main steps: (1) constructing a similarity map       the method is based on frame-level difference detection, it is
+and (2) detecting differences using the similarity map. By         difficult to capture differences in entire work scenes arising
+employing deep learning–based techniques, they can                 from contextual decision-making. This study extends this
+robustly detect crucial differences even in the presence of        framework to handle both action-level and scene-level
+noise that should not be the focus, such as variations in          differences in a unified manner.
+camera angles and lighting conditions.                                Another related research area is scene change detection,
+  In addition, studies have been proposed that utilize large       which aims to detect differences in scenes between two
+language models (LLMs) and vision–language models                  videos. Scene change detection compares a reference video
+(VLMs) to extract task-related differences between two             and a target video to identify visual changes such as object
+videos [17]. In these approaches, the level of abstraction of      appearance/disappearance and background structural
+the differences to be detected can be specified as a text query,   changes. Padilla et al. [22] proposed a method that
+enabling flexible adjustment of the detection process. These       synchronizes two videos temporally and computes feature
+methods directly detect differences by taking two videos as        differences to detect newly appearing objects. Recently,
+input.                                                             training-free methods have also been proposed. Cho et al.
+  However, many of these methods require large amounts of          [23] detect changes by combining object detection results
+video data and training based on the collected data. Although      from a pre-trained model with tracking-based identity
+the cost of data collection can be reduced in domains where        management. Kim et al. [24] proposed a change detection
+data are readily available on the web, in domains such as          method based on pseudo-mask generation using internal
+maintenance and inspection, where data are generally not           features of pre-trained models and two-stage matching using
+publicly available, the cost of data collection and training       geometric and semantic information.
+becomes high. Therefore, for practical applications, it is           These methods [22, 23, 24] mainly focus on detecting local
+important to detect differences with as low cost as possible.      visual changes such as object appearance and disappearance.
+  To address this issue, this paper proposes a difference          In contrast, the anomalous decision-scene detection targeted
+detection method that utilizes similarity maps constructed         in this study aims to extract segments in which the overall
+from descriptions generated by pre-trained VLMs and                work scene differs between a manual-based video and an
+captioning models, aiming to minimize the cost of                  expert video, due to differences in expert decision-making,
+deployment in real environments.                                   such as changes in operation targets, inspection targets,
+  Related to this study, there has been growing research on        movement destinations, or gaze points. The differences
+video understanding and video comparison using VLMs.               considered in this study may include local changes such as
+Recent studies have explored the use of pre-trained VLMs           object appearance/disappearance but are not limited to them.
+for video understanding tasks [18]. For example,                   Rather, the key objective is to detect task-semantic scene
+ActionCLIP [19] reformulates action recognition as a               differences that reflect differences in decision-making within
+matching problem between videos and text and achieves              the work context, rather than pixel-level or object-level
+zero-shot transfer through prompt-based fine-tuning.               differences. Furthermore, while existing scenes change
+VideoLLM [20] employs a decoder-only LLM to perform                detection methods typically output change masks or regions,
+unified inference across multiple video tasks. These studies       our method outputs video segments containing anomalous
+demonstrate the potential of leveraging pre-trained models to      candidates. In addition, these methods
+understand video content with minimal additional training.
+
+VOLUME XX, XXXX                                                                                                                7
+FIGURE 1. Conceptual flow diagram illustrating the process of extracting candidate actions and candidate scenes containing expert know-how from
+both the manual-based work video 𝑽𝑴 and the expert’s work video 𝑽𝑬 .
+
+
+ do not address action anomalies and decision-scene                        frame 𝐹𝑒 , candidate actions or candidate decision scenes that
+anomalies within a unified framework.                                      may contain expert know-how can be extracted by retrieving
+ Therefore, this paper proposes a method that directly                     the images between these frames (the frames enclosed by the
+compares a manual video and an expert video to extract both                red dashed line in Figure 1; hereafter referred to as
+candidate action anomalies and candidate decision-scene                    anomalous frames). The remaining images (the frames
+anomalies in a unified and training-free manner, contributing              enclosed by the blue solid line in Figure 1; hereafter referred
+to the extraction of expert know-how.                                      to as normal frames) are considered to correspond to work
+                                                                           performed by the expert in accordance with the manual, and
+                                                                           are therefore treated as not containing expert know-how.
+III. PROBLEM DEFINITION                                                       Figure 2 shows examples of 𝑉𝑀 , 𝑉𝐸 , and the target start
+   The objective of this study is to automatically extract                 frame 𝐹𝑠 and end frame 𝐹𝑒 to be detected. Figure 2(a)
+candidate actions or candidate decision scenes that may                    assumes, as a task example, shutting off the power of a
+contain expert know-how from a manual video and an expert                  distribution panel breaker after work, and illustrates the case
+video. Here, a decision scene refers to a work scene that may              where 𝑉𝐸 contains (A) an action additionally performed
+contain know-how related to the expert’s judgment, for                     because the expert deemed it necessary. 𝑉𝑀 is a work video
+example, a scene in which, even for the same power                         created based on the manual for the task, in which the worker
+distribution panel shutdown task, the expert selects which                 performs the breaker shutdown described in the manual. The
+panel to shut down based on the on-site situation and their                additional action in 𝑉𝐸 is the action of checking the outlet
+own experience. Figure 1 shows a conceptual diagram of the                 box connected to the distribution panel before shutting off
+flow for extracting candidate actions or candidate decision                the breaker power. These frames belong to the anomalous
+scenes that may contain expert know-how from the above                     frames in 𝑉𝐸 (the red dashed frames in Figure 2(a)). In such
+two videos.                                                                a case where an additional action exists, the goal is to detect
+   Let the manual video be denoted by 𝑉𝑀 = {𝐼𝑀 𝑖 | 1 ≤ 𝑖 ≤                 the start frame 𝐹𝑠 and end frame 𝐹𝑒 for the anomalous frame
+                                                                           interval in 𝑉𝐸 .
+𝑁𝑀 }, and the expert video by 𝑉𝐸 = {𝐼𝐸 𝑗 | 1 ≤ 𝑗 ≤ 𝑁𝐸 }. Here,                Figure 2(b) assumes, as a task example, a patrol inspection
+𝐼𝑀 𝑖 is the image of the 𝑖-th frame constituting 𝑉𝑀 , and 𝐼𝑗𝐸 is           of the work room conducted before shutting off the power of
+the image of the 𝑗-th frame constituting 𝑉𝐸 . Both 𝑉𝑀 and 𝑉𝐸               a distribution panel breaker and illustrates the case where (B)
+are first-person-view videos captured from the worker’s                    an action present in the manual is not performed in 𝑉𝐸 .
+perspective.                                                               Compared with 𝑉𝑀 , the expert in 𝑉𝐸 skips the action of
+   In this study, to extract candidate actions or candidate                confirming that the door is closed. This action belongs to the
+decision scenes that contain expert know-how, we propose a                 anomalous frames in 𝑉𝑀 (the red dashed frames in Figure
+method that takes 𝑉𝑀 and 𝑉𝐸 as input and detects the start                 2(b)). In such a case where an action is skipped, the goal is
+frame 𝐹𝑠 and end frame 𝐹𝑒 of the interval in which such                    to detect the start frame 𝐹𝑠 and end frame 𝐹𝑒 within the
+candidates appear. After detecting the start frame 𝐹𝑠 and end              anomalous frames of 𝑉𝑀 .
+
+
+VOLUME XX, XXXX                                                                                                                                   7
+FIGURE 2. Examples of the manual-based work video (𝑽𝑴), the expert’s work video (𝑽𝑬 ) and the start frame (𝑭𝒔 ) and end frames (𝑭𝒆 ) to be detected. (a)
+An example of anomalous frame detection (including additional action). (b) An example of anomalous frame detection (with skipping action). (c) An
+example of anomalous frame detection (including scene difference).
+
+
+                                                                               expert video 𝑉𝐸 . The proposed method detects the start frame
+   Figure 2(c) assumes the same breaker shutdown task as in                    𝐹𝑠 and end frame 𝐹𝑒 by comparing 𝑉𝑀 and 𝑉𝐸 and
+Figure 2(a) and illustrates the case where 𝑉𝐸 contains (C) a                   determining whether there exists a portion depicting an
+work scene involving a different distribution panel from that                  action that appears only in one of the videos (hereafter
+in 𝑉𝑀 , based on the expert’s situational judgment. From the                   referred to as an anomalous action). It also detects the start
+viewpoint of task content, 𝑉𝑀 and 𝑉𝐸 involve the same task,                    frame 𝐹𝑠 and end frame 𝐹𝑒 by comparing 𝑉𝑀 and 𝑉𝐸 and
+and thus no action difference arises. On the other hand, from                  determining whether there exists a portion depicting a scene
+the viewpoint of the work scene, 𝑉𝑀 and 𝑉𝐸 differ, and                         that appears only in one of the videos (hereafter referred to
+therefore the corresponding frames belong to the anomalous                     as an anomalous scene). To realize this detection scheme, the
+frames in 𝑉𝐸 (the red dashed frames in Figure 2(c)). In such                   proposed method performs anomalous-action detection in
+a case where there exists an interval in which the work scene                  two steps and anomalous-scene detection also in two steps.
+differs, the goal is to detect the start frame 𝐹𝑠 and end frame                   In the first step of anomalous-action detection, a similarity
+𝐹𝑒 for the anomalous frame interval in 𝑉𝐸 .                                    map is generated whose elements are the similarities
+   In Figure 2(c), the entire video corresponds to a different                 between pairs of images constituting 𝑉𝑀 and 𝑉𝐸 , respectively
+work scene; however, there are also cases where only part of                   (the green block in Figure 3). To compute the similarity
+the video corresponds to a different scene. For example, the                   between images, the method uses a vision-language model
+outlet box confirmation in Figure 2(a) can be interpreted as                   (VLM) and a captioning instruction prompt to generate a
+an action resulting from the expert’s situational judgment                     description for each image and then computes the similarity
+regarding the work scene. Even in such a case where only                       between the generated descriptions. The captioning
+part of the video corresponds to a different work scene, the                   instruction prompt specifies that the purpose of the VLM is
+goal is similar to detect the start frame 𝐹𝑠 and end frame 𝐹𝑒                  to caption the action-related content in the video. In this
+for the anomalous frame interval in 𝑉𝐸 .                                       similarity map, when similar actions are performed in the
+                                                                               two videos, regions with high similarity are expected to
+                                                                               appear. On the other hand, when an anomalous action exists
+IV. PROPOSED METHOD                                                            only in one of the videos, regions with low similarity to all
+                                                                               images in the other video are expected to appear.
+    A. Overview                                                                   Therefore, in the second step of anomalous-action
+  Figure 3 shows an overview of the proposed method for                        detection, the method identifies regions with low similarity
+detecting the start frame 𝐹𝑠 and end frame 𝐹𝑒 of intervals                     in the similarity map and detects portions depicting actions
+containing candidate actions and decision scenes that may                      that exist only in one of the videos (the blue block in Figure
+include expert know-how, from a manual video 𝑉𝑀 and an                         3). Specifically, filtering is applied to the similarity map to
+
+8                                                                                                                                      VOLUME XX, XXXX
+FIGURE 3. Conceptual flowchart of the proposed method.
+
+
+
+
+FIGURE 4. Workflow for creating similarity maps between videos 𝑽𝑴and 𝑽𝑬 . For each frame of the videos, the proposed method generates image
+captions 𝑪𝑴 and 𝑪𝑬 using a VLM 𝑴𝐜𝐚𝐩 . To improve the quality of the generated descriptions, the method vectorizes images and captions, compares their
+                                                                                                                                 ̃𝑴 and 𝑪
+similarities to select the closest caption, and uses it as the cleaned caption. Then, the method vectorizes the cleaned captions 𝑪      ̃𝑬 using a text
+encoder 𝝓𝑻 , calculates the similarity between each pair of vectors 𝐕𝐞𝐜𝑴 and 𝐕𝐞𝐜𝑬 , and creates a frame similarity map 𝑺𝐟𝐦𝐚𝐩whose elements are the
+calculated similarities.
+
+
+determine whether the similarity satisfies a certain condition,               condition for being regarded as an anomalous scene are
+and the beginning and end of the frames satisfying the                        detected as the start frame 𝐹𝑠 and end frame 𝐹𝑒 , respectively.
+condition are detected as the start frame 𝐹𝑠 and end frame 𝐹𝑒 ,                 Section IV-B explains how to generate the similarity map
+respectively.                                                                 between images in 𝑉𝑀 and 𝑉𝐸 . Next, Section IV-C explains
+   In the first step of anomalous-scene detection, each of 𝑉𝑀                 the filtering method for detecting anomalous frames from the
+and 𝑉𝐸 is first segmented into video segments, and a                          similarity map. Section IV-D describes the video
+similarity map is then created whose elements are the                         segmentation method based on the self-similarity map
+similarities between pairs of segments (the orange block in                   constructed from the image descriptions in Section IV-B.
+Figure 3). In video segmentation, the similarities between the                Finally, Section IV-E explains how to create a similarity map
+descriptions of images within each video, which were                          between video segments.
+generated in the first step of anomalous-action detection, are
+computed to construct a self-similarity map for each
+individual video. In this self-similarity map, regions with                      B. Generation of a Similarity Map Between Videos
+high similarity are expected to appear for similar frames                       Figure 4 illustrates the procedure for constructing a
+whose descriptions are alike, whereas regions with low                        similarity map between 𝑉𝑀 and 𝑉𝐸 . First, captions are
+similarity are expected to appear for dissimilar frames. Since                generated for the images, and the captions are vectorized
+neighboring frames in a work video are generally expected                     using a text encoder. Then, a similarity map is constructed
+to be similar, segmenting the video according to diagonal                     by computing similarities between the vectors corresponding
+blocks in the self-similarity map makes it possible to divide                 to the images. Although it is also possible to vectorize
+the video into groups of frames with semantically similar                     images directly using an image encoder, such an approach is
+descriptions. Because these segments can be interpreted as                    expected to be strongly affected by changes in images that
+portions of the video separated at a certain semantic                         are not directly related to the task, such as differences in
+granularity, comparing segments between 𝑉𝑀 and 𝑉𝐸 enables                     camera angle or lighting conditions. Therefore, to achieve
+comparison between the videos at an appropriate level of                      robustness to such variations and to vectorize task-relevant
+granularity.                                                                  content in the images, the proposed method performs
+   Accordingly, in the second step of anomalous-scene                         captioning for each image and generates vectors representing
+detection, the similarities between the segments of 𝑉𝑀 and                    the captions.
+𝑉𝐸 created in the first step are computed to construct a                        Since the processing for extracting candidate actions is
+segment-level similarity map, and processing similar to that                  described in detail in the previous method [12], only the
+in the second step of anomalous-action detection is                           outline and the main improvements are explained here. First,
+performed (the blue block in Figure 3). In this study, the                    captions corresponding to the frames constituting a video are
+beginning and end of the frames satisfying a specific
+
+
+8                                                                                                                                     VOLUME XX, XXXX
+generated using a caption-capable VLM (𝑀cap ) according to         frame 𝐹𝑒 by comparing the maximum similarity in each
+Eq. (1):                                                           column or each row with this average maximum similarity.
+                                                                      Algorithm 1 shows the filtering procedure for anomalous-
+           𝐶 = {𝑐𝑖 = 𝑀𝑐𝑎𝑝 (𝐼𝑖 , 𝑃𝑐𝑎𝑝 )| 0 ≤ 𝑖 ≤ 𝑁}          (1)    frame detection based on the similarity map. In Algorithm 1,
+                                                                   the case where anomalous frames exist in 𝑉𝐸 , i.e., the case
+Here, 𝑁 is the number of frames constituting the video, and        where 𝑉𝐸 contains (A) an action additionally performed
+𝑐𝑖 is the caption corresponding to the 𝑖-th frame. 𝑃cap is a       because the expert judged it necessary, is assumed for
+                                                                   explanation.
+captioning instruction prompt, and is an improvement newly
+introduced in this study over the previous method [12] to             First, the average maximum similarity 𝑀𝑎𝑥𝐴𝑣𝑒 of 𝑆𝑓𝑚𝑎𝑝
+improve the accuracy of similarity-map generation by               is computed by Eq. (3). Each column of 𝑆𝑓𝑚𝑎𝑝 corresponds
+controlling the content of the captions. 𝐶 denotes the set of      to a frame in 𝑉𝐸 , and each element of the similarity vector
+captions 𝑐𝑖 , i.e., the captions for all images constituting the   𝑆𝑓𝑚𝑎𝑝,𝑘 in the 𝑘-th column indicates how similar the 𝑘-th
+video. This caption generation is performed for the frames of      image 𝐼𝑘𝐸 in 𝑉𝐸 is to each image in 𝑉𝑀 . If the expert is
+both 𝑉𝑀 and 𝑉𝐸 , producing the caption sets 𝐶𝑀 for 𝑉𝑀 and          performing work in accordance with the manual, then an
+𝐶𝐸 for 𝑉𝐸 . The same captioning model is used for both 𝑉𝑀          image corresponding to 𝐼𝑘𝐸 should exist among the images
+and 𝑉𝐸 .                                                           constituting 𝑉𝑀 , and therefore one of the similarity values in
+   Next, low-quality captions for a given image are corrected      𝑆𝑓𝑚𝑎𝑝,𝑘 should be high; ideally, if the same image exists, that
+by replacing them with a more appropriate caption selected         similarity should become the maximum value in 𝑆𝑓𝑚𝑎𝑝,𝑘
+from among the captions assigned to other images, thereby          Based on this observation, the proposed method adopts the
+generating a corrected caption set 𝐶̃ . The outline of the         mean of the maximum values of the column-wise similarity
+construction of 𝐶̃ is given by Eq. (2):                            vectors in 𝑆𝑓𝑚𝑎𝑝 as a criterion for judging whether 𝐼𝑘𝐸 is an
+                                                                   anomalous frame, and defines it as the average maximum
+                𝑐̃𝑖 = arg max ⟨𝜀𝐼 (𝐼𝑖 ), 𝜀𝑇 (𝑐)⟩            (2)    similarity 𝑀𝑎𝑥𝐴𝑣𝑒:
+                           𝑐∈𝐶
+
+Here, 𝜀𝐼 and 𝜀𝑇 are the image encoder and text encoder,                                       ∑𝑁 𝐸
+                                                                                               𝑙=0 max(𝑆𝑚𝑎𝑝,𝑘 )
+respectively, jointly trained in an image-text foundation                        𝑀𝑎𝑥𝐴𝑣𝑒 =                                     (3)
+                                                                                                     𝑁𝐸
+model, and the latent vectors 𝜀𝐼 (𝐼𝑖 ) and 𝜀𝑇 (𝑐) output by
+these encoders can be treated as vectors in the same space.        Next, Eq. ( 4 ) is used to determine whether 𝐼𝑘𝐸 is an
+Therefore, by computing the latent vector 𝜀𝐼 (𝐼𝑖 ) of image 𝐼𝑖     anomalous frame. The threshold 𝜏 is a coefficient multiplied
+and comparing it with the latent vectors 𝜀𝑇 (𝑐) of all captions    by 𝑀𝑎𝑥𝐴𝑣𝑒 , and controls how sensitively the proposed
+𝑐 ∈ 𝐶, the caption most similar to the image is regarded as        method reacts to differences between the two videos, where
+the corrected caption 𝑐̃𝑖 , thereby correcting low-quality         𝜏 > 0. The larger 𝜏 is, the more likely the method is to regard
+captions. In Eq. (2), ⟨⋅,⋅⟩ denotes the similarity measure, for    even a slight decrease in similarity as an anomalous frame
+which cosine similarity is used. By constructing 𝑐̃𝑖 for each      and extract it as a candidate action containing expert know-
+image, the corrected caption sets 𝐶̃𝑀 and 𝐶̃𝐸 are obtained.        how. If the maximum similarity of 𝑆𝑓𝑚𝑎𝑝,𝑘 is less than or
+   Next, the corrected caption sets 𝐶̃𝑀 and 𝐶̃𝐸 are converted      equal to the value obtained by multiplying the average
+into sets of latent vectors, denoted by Vec𝑀 and Vec𝐸 , using      maximum similarity MaxAve by the threshold, then 𝐼𝑘𝐸 is
+the text encoder 𝜙 𝑇 . Cosine similarity is then computed          regarded as an anomalous frame and recorded in the
+between every pair of latent vectors, and a frame-level            anomalous frame set 𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 :
+similarity map 𝑆𝑓𝑚𝑎𝑝 is constructed whose elements are
+these similarities. 𝑆𝑓𝑚𝑎𝑝 is an 𝑁𝑀 × 𝑁𝐸 matrix, and the                            max(𝑆𝑚𝑎𝑝,𝑘 ) ≤ 𝜏 ∙ 𝑀𝑎𝑥𝐴𝑣𝑒                  (4)
+element in the 𝑖-th row and 𝑗-th column of 𝑆𝑓𝑚𝑎𝑝 represents
+the similarity between the 𝑖-th frame image 𝐼𝑖𝑀 of 𝑉𝑀 and the      After this judgment is performed for all columns of 𝑆𝑓𝑚𝑎𝑝 ,
+𝑗-th frame image 𝐼𝑗𝐸 of 𝑉𝐸 .                                       the first frame in 𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 , obtained by the function
+                                                                   GetFirstValue(𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 ), is regarded as the start frame 𝐹𝑠 .
+    C. Filtering of Anomalous Frames Based on the                  Similarly, the last frame in 𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 , obtained by the
+    Similarity Map                                                 function GetEndValue(𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 ), is regarded as the end
+  In the similarity map 𝑆𝑓𝑚𝑎𝑝 created in Section IV-B, the         frame 𝐹𝑒 .
+similarities of images corresponding to (A) actions                   When anomalous frames exist in 𝑉𝑀 , i.e., in case (B)
+additionally performed in 𝑉𝐸 because the expert                    where an action present in the manual is not performed, the
+independently judged them necessary, and (B) actions               start frame 𝐹𝑠 and end frame 𝐹𝑒 can likewise be detected by
+present in the manual but not performed in 𝑉𝐸 , are relatively     changing the scanning direction of Algorithm 1 from
+smaller than those of other images. Exploiting this property,      column-wise to row-wise. In this way, by applying the
+the proposed method computes the average maximum                   processing of Algorithm 1 in both the row and column
+similarity in 𝑆𝑓𝑚𝑎𝑝 , and detects the start frame 𝐹𝑠 and end       directions of 𝑆𝑓𝑚𝑎𝑝 , the proposed method detects frames
+
+8                                                                                                                  VOLUME XX, XXXX
+depicting candidate actions that may contain expert know-            effective for extracting candidate actions contained only in
+how, as described in Section III.                                    one of the videos. On the other hand, even when the action
+   The direction of the above filtering process is determined        itself is the same, differences in the work scene, such as the
+as follows: when 𝑁𝑀 < 𝑁𝐸 , the difference is regarded as case        work target or work location, may contain know-how related
+(A), i.e., an additional action by the expert, and the filtering     to the expert’s judgment. However, in the previous method
+is performed in the column direction of 𝑆𝑓𝑚𝑎𝑝 ; otherwise, it        [12], image descriptions are generated independently for
+is regarded as case (B), i.e., an action skipped by the expert,      each video, and thus the focus of the description generation
+and the filtering is performed in the row direction.                 is not necessarily aligned across videos. As a result,
+   Figure 5 shows a conceptual diagram of filtering applied          differences between descriptions may be caused not by
+to 𝑆fmap using Algorithm 1. Figure 5(a) shows the case               differences in judgment-relevant work scenes but by
+where 𝑉𝐸 contains (A) an action additionally performed               mismatches in attention. To avoid this problem, one possible
+because the expert independently judged it necessary, and            approach is to input pairs of images, one from 𝑉𝑀 and one
+Figure 5(b) shows the case where anomalous frames exist in           from 𝑉𝐸 , into a VLM and directly compare image pairs.
+𝑉𝑀 , i.e., (B) an action present in the manual is not performed.     However, this approach has the drawback that the number of
+For the 𝑆fmap shown in Figure 5, the average maximum                 comparisons increases and the computational cost grows
+similarity is computed by Eq. (3), and the anomalousity of           quadratically. In addition, a description generator that takes
+                                                                     image pairs as input may generate different descriptions
+each frame is sequentially judged by Eq. (4), as indicated by
+                                                                     depending on subtle differences between temporally
+the arrows in Figures 5(a) and 5(b).
+                                                                     adjacent images, which may lead to degraded extraction
+                                                                     accuracy due to erroneous decision-scene extraction based
+Algorithm 1 Average filtering process for detecting                  on incorrect descriptions. Therefore, in this study, the videos
+anomalous frame                                                      are segmented into semantically stable intervals based on the
+Require: 𝑆𝑓𝑚𝑎𝑝 , 𝜏                                                   self-similarity map of each video, and inter-video
+Ensure: 𝐹𝑠 , 𝐹𝑒                                                      comparison is performed at the segment level, thereby
+                                                                     achieving both robustness and computational efficiency in
+             ∑𝑁  𝐸
+               𝑙=0 max (𝑆𝑓𝑚𝑎𝑝,𝑙 )                                    decision-scene extraction. In addition, candidate action
+𝑀𝑎𝑥𝐴𝑣𝑒 ⇐                          (3)                                extraction is realized, as in the previous method, by filtering
+                     𝑁𝐸
+𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 = 𝜙                                                       a frame-level similarity map, and is handled within a unified
+for 𝑘 = 0 to 𝑁𝐸 do                                                   framework together with decision-scene extraction.
+    if max(𝑆𝑓𝑚𝑎𝑝,𝑘 ) ≤ 𝜏 ∗ 𝑀𝑎𝑥𝐴𝑣𝑒 (4) then                              First, as shown in Figure 6(a), cosine similarities are
+                                                                     computed between the latent vectors in Vec𝑀 , which
+       𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 = 𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 ⋃ 𝑘
+                                                                     correspond to the corrected caption set 𝐶̃𝑀 defined in Eq. (2)
+  end if
+                                                                     in Section IV-B, to create a similarity map 𝑆𝑠𝑒𝑙𝑓,𝑀 whose
+end for
+𝐹𝑠 ⇐ 𝐺𝑒𝑡𝐹𝑖𝑟𝑠𝑡𝑉𝑎𝑙𝑢𝑒(𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 )                                      elements are similarities between image descriptions within
+𝐹𝑒 ⇐ 𝐺𝑒𝑡𝐸𝑛𝑑𝑉𝑎𝑙𝑢𝑒(𝐹𝑎𝑛𝑜𝑚𝑎𝑙𝑜𝑢𝑠 )                                        a single video. 𝑆𝑠𝑒𝑙𝑓,𝑀 is an 𝑁𝑀 × 𝑁𝑀 matrix, and the
+                                                                     element in the 𝑖 -th row and 𝑗 -th column represents the
+                                                                     similarity between the 𝑖 -th frame image 𝐼𝑖𝑀 and the 𝑗 -th
+                                                                     frame image 𝐼𝑗𝑀 in 𝑉𝑀 . The same procedure is applied to 𝑉𝐸
+                                                                     to create 𝑆𝑠𝑒𝑙𝑓,𝐸 . 𝑆𝑠𝑒𝑙𝑓,𝐸 is an 𝑁𝐸 × 𝑁𝐸 matrix, and the
+                                                                     element in the 𝑖 -th row and 𝑗 -th column represents the
+                                                                     similarity between the 𝑖 -th frame image 𝐼𝑖𝐸 and the 𝑗 -th
+                                                                     frame image 𝐼𝑗𝐸 in 𝑉𝐸 .
+                                                                        Next, as shown in Figure 6(b), 𝑉𝑀 and 𝑉𝐸 are segmented
+                                                                     according to the diagonal blocks of the self-similarity maps
+                                                                     𝑆𝑠𝑒𝑙𝑓,𝑀 and 𝑆𝑠𝑒𝑙𝑓,𝐸 . To clearly distinguish diagonal blocks
+                                                                     composed of highly similar elements from the other regions
+                                                                     in the self-similarity maps, the maps are treated as grayscale
+                                                                     images and binarized using a threshold, producing binary
+FIGURE 5. Conceptual diagram of filtering applied to 𝑺𝐟𝐦𝐚𝐩. (a) An            𝑔𝑟𝑒𝑦        𝑔𝑟𝑒𝑦
+example of detected anomalous frames in 𝑽𝑬 . (b) An example of       maps 𝑆𝑠𝑒𝑙𝑓,𝑀 and 𝑆𝑠𝑒𝑙𝑓,𝐸 , in which highly similar diagonal
+detected anomalous frames in 𝑽𝑴.                                     blocks appear white and the other regions appear black.
+                                                                        Then, the Connected Component method [25] is applied
+                                                                           𝑔𝑟𝑒𝑦         𝑔𝑟𝑒𝑦
+                                                                     to 𝑆𝑠𝑒𝑙𝑓,𝑀 and 𝑆𝑠𝑒𝑙𝑓,𝐸 , respectively, to extract connected
+    D. Video Segmentation Based on a Self-Similarity Map
+                                                                     components of white regions. Among the extracted
+  The similarity map 𝑆𝑓𝑚𝑎𝑝 created in Section IV-B can
+                                                                     connected components, those located on the diagonal and
+quantify the frame-to-frame correspondence between the
+manual video 𝑉𝑀 and the expert video 𝑉𝐸 , and is therefore
+
+8                                                                                                                    VOLUME XX, XXXX
+FIGURE 6. Video segmentation process based on a self-similarity map. (a) Calculation of self-similarity map 𝑺𝒔𝒆𝒍𝒇. (b) Binarization of the self-similarity
+map and video segmentation.
+
+
+
+
+FIGURE 7. Generation process of the segment similarity map. (a) Overview of segment similarity map 𝑺𝐬𝐦𝐚𝐩. (b) Details of the segment similarity
+calculation process in (a).
+
+
+having an area greater than or equal to a given threshold are                     Using 𝑆𝑒𝑔𝑀 and 𝑆𝑒𝑔𝐸 , which are the segment sequences
+regarded as a sequence of video segments, denoted by 𝑆𝑒𝑔.                       created for 𝑉𝑀 and 𝑉𝐸 in Section IV-D, a similarity map
+𝑆𝑒𝑔 is defined by Eq. (5):                                                      𝑆𝑠𝑚𝑎𝑝 is constructed whose elements are the similarities
+                                                                                between pairs of video segments. Figure 7(a) shows an
+               𝑆𝑒𝑔 = [𝑠𝑖 = [𝐹𝑖𝑠 , 𝐹𝑖𝑒 ] ∣ 0 ≤ 𝑖 ≤ 𝐿]                  (5)       overview of the generation process of 𝑆𝑠𝑚𝑎𝑝 .
+                                                                                  As shown in Figure 7(a), all possible pairs are formed
+Here, for each segment 𝑠𝑖 , the start frame 𝐹𝑖𝑠 and end frame                   between the segments constituting 𝑆𝑒𝑔𝑀 and those
+𝐹𝑖𝑒 , corresponding to the extent of the component along the                    constituting 𝑆𝑒𝑔𝐸 , and the similarity for each pair is
+diagonal direction, are obtained and defined as the                             calculated.
+boundaries of the video segment. By computing 𝑆𝑒𝑔𝑀 and                            Figure 7(b) shows the details of the similarity calculation
+𝑆𝑒𝑔𝐸 for 𝑉𝑀 and 𝑉𝐸 , respectively, multiple semantically                        for a pair of video segments. First, frames are sampled from
+stable video segments are obtained for each video. Section                      segment 𝑠𝑀𝑖 , which is a segment constituting 𝑆𝑒𝑔𝑀 , to
+IV-E describes how similarities are computed for all                            obtain images 𝐼𝑀  𝑘
+                                                                                                      . Similarly, frames are sampled from
+combinations of these segments to create a segment-level                                            𝑖
+                                                                                segment 𝑠𝐸𝑗 , which is a segment constituting 𝑆𝑒𝑔𝐸 , to
+similarity map.
+                                                                                obtain images 𝐼𝐸𝑙 𝑗 . Next, using a VLM (𝑀𝑒𝑥𝑝 ) that can
+                                                                                accept multiple images as input, a scene-consistency
+    E. Construction of a Segment-Level Similarity Map
+
+8                                                                                                                                         VOLUME XX, XXXX
+                                        𝑘
+description 𝐸𝑆𝑘,𝑙 , indicating whether 𝐼𝑀 𝑖
+                                            and 𝐼𝐸𝑙 𝑗 depict the     on a manual and videos of expert work, and conducted
+same scene, is generated according to Eq. (6):                       experiments to automatically extract candidate actions and
+                                                                     candidate decision scenes that may contain expert know-how.
+                                  𝑘
+                   𝐸𝑆𝑘,𝑙 = 𝑀𝑒𝑥𝑝 (𝐼𝑀  , 𝐼𝑙 , 𝑃 )                (6)   First, a worker performed the task according to the manual,
+                                    𝑖 𝐸𝑗 𝑒𝑥𝑝
+                                                                     and a first-person-view video 𝑉𝑀 was recorded during the
+                                                                     work. Next, the worker performed the task while adding
+Here, 𝑃𝑒𝑥𝑝 is a prompt instructing the model to determine            actions corresponding to expert behavior and recorded a
+whether the two input images belong to the same scene.               video 𝑉𝐸 that included (A) actions additionally performed
+Specifically, 𝑃𝑒𝑥𝑝 instructs the model to answer “Yes” if the        because the expert independently judged them necessary. In
+two images depict the same scene, and “No” otherwise.                addition, for experiments assuming the formalization of
+However, depending on the prompt-following ability of the            expert behavior in which redundant actions described in the
+VLM (𝑀𝑒𝑥𝑝 ), the model may produce variations of these               manual are appropriately skipped, the worker performed the
+answers, such as alternative expressions conveying “Yes” or          task without executing (B) certain actions in the manual and
+“No”, or additional explanations following “Yes” or “No”.            recorded the resulting video 𝑉𝐸 . Furthermore, for
+Therefore, it is necessary to introduce a mechanism for              experiments aimed at detecting differences in decision
+automatically determining whether the free-form scene-               scenes as a basis for formalizing the expert’s situational
+consistency description 𝐸𝑆𝑘,𝑙 indicates that the two images          judgment, the worker recorded a video 𝑉𝐸 containing work
+belong to the same scene.                                            performed in a different scene. In this experiment, 𝑉𝑀 and 𝑉𝐸
+   To this end, the proposed method compares the latent              were compared to extract candidate actions and candidate
+vector 𝑣𝑘,𝑙 , corresponding to the scene-consistency                 decision scenes that may contain expert know-how.
+description 𝐸𝑆𝑘,𝑙 , with template latent vectors 𝑣yes and 𝑣no ,
+corresponding to template sentences explicitly indicating
+“Yes” and “No,” using a text encoder 𝜙 𝑇𝑆 . Specifically, the          B. Collected data
+dissimilarity probability 𝑃(𝑘, 𝑙) of 𝑣𝑘,𝑙 with respect to the           In this experiment, data were collected for the following
+template sentences is computed according to Eq. (7):                 three maintenance tasks related to distribution panels:
+                                                                     (task1) breaker shutdown work for a distribution panel,
+                             exp (⟨𝑣𝑘,𝑙 , 𝑣no ⟩)                     (task2) inspection work of a work room before a distribution
+      𝑃(𝑘, 𝑙) =                                                (7)   panel            shutdown            operation,           and
+                  exp (⟨𝑣𝑘,𝑙 , 𝑣no ⟩) + exp (⟨𝑣𝑘,𝑙 , 𝑣yes ⟩)
+                                                                     (task3) disassembly work of a management PC for a
+                                                                     distribution panel.
+As in Eq. (2), cosine similarity is used for comparing latent           For task1, as shown in 𝑉𝑀 in Figure 2(a), the following
+vectors, and the similarity operation is denoted by ⟨⋅,⋅⟩. If the    actions were defined as manual-based actions and recorded
+dissimilarity probability 𝑃(𝑘, 𝑙) is higher than the threshold       in 𝑉𝑀 : checking the distribution panel breaker and turning
+𝑡ℎexp , the two images are judged not to belong to the same          the breaker OFF. In contrast to these actions, as shown in 𝑉𝐸
+scene, and their similarity is set to 0. Otherwise, the two          in Figure 2(a), the following were added as (A) expert
+images are judged to belong to the same scene, and their             actions and recorded in 𝑉𝐸 : checking the connected devices
+similarity is set to 1.                                              in the outlet box connected to the breaker before turning the
+   This frame sampling process and judgment process are              breaker OFF (A-1), and checking related equipment below
+performed at equal intervals for an arbitrary number of              the distribution panel before turning the breaker OFF (A-2).
+frames within 𝑠𝑀𝑖 and 𝑠𝐸𝑗 . The results are then integrated          The recording of 𝑉𝑀 and 𝑉𝐸 for (A-1) in task1 was conducted
+such that, if even one of the sampled comparisons yields a           in two different buildings (Building 1 and Building 2). In
+similarity of 0, the similarity of the segment pair is set to 0;     Building 1, one worker collected one 𝑉𝑀 and three 𝑉𝐸 videos,
+otherwise, it is set to 1. This integrated value is used as the      and another worker collected one 𝑉𝐸 video. In Building 2,
+similarity between the two segments, i.e., as each element of        two workers each collected one 𝑉𝑀 and one 𝑉𝐸 . In addition,
+the segment-level similarity map 𝑆𝑠𝑚𝑎𝑝 . Finally, the filtering      the recording of 𝑉𝑀 and 𝑉𝐸 for (A-2) in task1 was conducted
+process described in Section IV-C is applied to the                  in Building 1, where one worker collected one 𝑉𝑀 and one
+constructed 𝑆smap . In decision-scene extraction, the filtering      𝑉𝐸 . As a result, a total of seven pairs of 𝑉𝑀 and 𝑉𝐸 were
+is performed in the column direction of 𝑆𝑠𝑚𝑎𝑝 in order to            collected for the extraction experiment of candidate expert
+detect the start frame 𝐹𝑠 and end frame 𝐹𝑒 within the                actions in task1.
+anomalous frames of 𝑉𝐸 .                                                In addition, as expert videos 𝑉𝐸 containing decision
+                                                                     scenes different from those in 𝑉𝑀 , as shown in Figure 2(c),
+                                                                     we collected (c-1) expert videos in which the work scene
+V. EXPERIMENT                                                        differs throughout the entire video, and (c-2) expert videos
+                                                                     in which only part of the work scene differs from 𝑉𝑀 . The
+    A. Overview                                                      videos in (c-2) further include two cases: one in which the
+  In this study, using maintenance tasks for distribution            manual-based action and the expert action are the same, but
+panels as the target scenario, we created a work video based         part of the work scene differs, and another in which the
+
+8                                                                                                                  VOLUME XX, XXXX
+expert performs an additional action, resulting in a partial      continues the work while ignoring the equipment left on the
+change in the work scene. For (c-1), we assumed the same          desk (c-2-2). One pair of 𝑉𝑀 and 𝑉𝐸 containing action (c-2-
+breaker shutdown task but targeting a different distribution      1) in 𝑉𝐸 was collected; however, this pair was also used as a
+panel. One pair was collected in which the work video from        pair for the extraction experiment of candidate expert actions
+Building 1 was treated as 𝑉𝑀 and the work video from              and was therefore not newly collected. One pair of 𝑉𝑀 and
+Building 2 was treated as 𝑉𝐸 , and two pairs were collected in    𝑉𝐸 containing action (c-2-2) in 𝑉𝐸 was also collected. As a
+which the work video from Building 2 was treated as 𝑉𝑀 and        result, a total of four pairs of 𝑉𝑀 and 𝑉𝐸 were collected for
+the work video from Building 1 was treated as 𝑉𝐸 . For (c-2),     the extraction experiment of candidate expert decision
+we assumed tasks in which part of the work scene in               scenes in task2.
+𝑉𝐸 differs from 𝑉𝑀 because one of the following actions is           For task3, as manual-based actions, the sequence of
+added: checking the connected devices in the outlet box           separating a desktop PC used for distribution panel
+connected to the breaker before turning the breaker OFF (c-       management into the CPU cooler, GPU, and memory, in that
+2-1), opening the door of the distribution panel (c-2-2), or      order, was defined and recorded in 𝑉𝑀 . In contrast, as a video
+turning on a lighting switch (c-2-3). Three pairs of 𝑉𝑀 and       recording expert behavior of type (B), a 𝑉𝐸 video was
+𝑉𝐸 containing action (c-2-1) in 𝑉𝐸 were collected; however,       recorded in which the memory was not removed. One worker
+one of these pairs was also used as a pair for the extraction     collected one 𝑉𝑀 and one 𝑉𝐸 . As a result, a total of one pair
+experiment of candidate expert actions, so only two pairs         of 𝑉𝑀 and 𝑉𝐸 was collected for the extraction experiment of
+were newly collected. In addition, one pair containing action     candidate expert actions in task3.
+(c-2-2) in 𝑉𝐸 and one pair containing action (c-2-3) in 𝑉𝐸           Consequently, a total of 15 pairs were collected across
+were collected. As a result, a total of eight pairs of 𝑉𝑀 and     tasks 1 to 3 for the extraction experiment of candidate expert
+𝑉𝐸 were collected for the extraction experiment of candidate      actions. In addition, a total of 12 pairs were collected across
+expert decision scenes in task1.                                  tasks 1 to 3 for the extraction experiment of candidate expert
+   For task2, as shown in 𝑉𝑀 in Figure 2(b), the following        decision scenes. The operators wore a Microsoft Hololens2
+were defined as manual-based actions and recorded in 𝑉𝑀 :         integrated helmet [26] for data collection. The operators
+checking the desk, door, air-conditioner power supply, and        recorded data via a modified StreamRecorder application
+distribution panel in that order. In contrast to these actions,   from Hololens2ForCV library [27], modified to start and
+the following were added as (A) expert actions and recorded       stop recording and to display holograms.
+in 𝑉𝐸 : actually, moving to the air conditioner and confirming
+that it was not operating (A-1), and storing equipment if
+equipment was present on the desk (A-2). The recording of           C. Metrics
+𝑉𝑀 and 𝑉𝐸 for task2 was conducted in Building 1, and one             For each collected 𝑉𝑀 and 𝑉𝐸 , the start frame 𝐹𝑆𝑔𝑡 and end
+𝑉𝑀 , one 𝑉𝐸 including action (A-1), and one 𝑉𝐸 including          frame 𝐹𝐸𝑔𝑡 of each action and each work scene in the video
+action (A-2) were collected for each of two workers. In           were manually annotated to create ground-truth data. In this
+addition, as a video recording expert behavior of type (B), a     report, to evaluate the automatic extraction of candidate
+𝑉𝐸 video was recorded in which the action of checking the         actions and candidate decision scenes that may contain
+door was not performed. For this type-(B) recording, one          expert know-how, we used the metric shown in Eq. (8),
+worker collected one 𝑉𝐸 , and the other worker collected two      which calculates how well the interval defined by the
+𝑉𝐸 videos. As a result, a total of seven pairs of 𝑉𝑀 and 𝑉𝐸       extracted start frame 𝐹𝑆 and end frame 𝐹𝐸 covers the ground-
+were collected for the extraction experiment of candidate         truth interval defined by the start frame 𝐹𝑆𝑔𝑡 and end frame
+expert actions in task2.
+   In addition, as expert videos 𝑉𝐸 containing decision           𝐹𝐸𝑔𝑡 . Eq. (8) was computed for each collected pair of data,
+scenes different from those in 𝑉𝑀 , we collected, as in task1,    and the average value over all pairs was used for evaluation.
+(c-1) expert videos in which the work scene differs
+throughout the video, and (c-2) expert videos in which only                         (𝐹𝐸 − 𝐹𝑆 + 1) ∩ (𝐹𝐸𝑔𝑡 − 𝐹𝑆𝑔𝑡 + 1)
+part of the work scene differs. For (c-1), we first assumed the       𝐴𝑐𝑐𝑢𝑛𝑖𝑜𝑛 =                                               (8)
+same inspection task but in a different target room. One pair                       (𝐹𝐸 − 𝐹𝑆 + 1) ∪ (𝐹𝐸𝑔𝑡 − 𝐹𝑆𝑔𝑡 + 1)
+was collected in which the work video from Building 1 was
+treated as 𝑉𝑀 and the work video from Building 2 was treated      In the extraction experiment for candidate actions, for pairs
+as 𝑉𝐸 . We also assumed the same inspection task under a          in which the type of candidate action was incorrectly
+different lighting environment and collected one pair in          estimated, such as estimating an action addition when the
+which a work video recorded under a normal environment            action was actually skipped or estimating an action skip
+was treated as 𝑉𝑀 , and a work video recorded in a dark           when the action was actually added, the value of Eq. (8) was
+environment without lighting was treated as 𝑉𝐸 .                  set to 0. In addition, the extraction time for each pair was also
+   For (c-2), we assumed tasks in which part of the work          measured.
+scene in 𝑉𝐸 differs from 𝑉𝑀 because one of the following is       To confirm the effectiveness of the proposed method,
+added: a task in which equipment is stored when equipment         comparative experiments with conventional methods were
+is present on the desk (c-2-1), or a task in which the worker     conducted. In addition to the previous method [12], a method
+
+8                                                                                                                   VOLUME XX, XXXX
+in which prompt instructions were given to the VLM used in
+the previous method [12] (hereafter referred to as previous
+method + instruction prompt) was evaluated in order to
+examine whether prompt instructions to the VLM increase or
+decrease extraction performance. Furthermore, in order to
+confirm the effectiveness of the video segmentation and
+segment-level similarity-map-based decision process of the
+proposed method, a method that directly compares each
+image of the videos by simultaneously inputting them into an
+image-description generator (hereafter referred to as the
+naive method) was also evaluated. In addition, as a simple
+method for comparing two videos, a method that compares
+two videos using a video-capable VLM (hereafter referred to
+as the video comparison method) was also evaluated.
+To select the VLM (𝑀𝑐𝑎𝑝 ) used in the proposed method, the        FIGURE 8. Example of the frame similarity map 𝑺𝐟𝐦𝐚𝐩 generated from 𝑽𝑴
+following models were tested in the candidate-action              and 𝑽𝑬 using the proposed method.
+
+extraction experiment: BLIP-2 [28], InstructBLIP [29],
+InternVL2 [30], LLaVA [31], and Qwen3-VL-Instruct [32],
+which had also been used in the previous method. InternVL2,
+which achieved the best performance, was adopted (details
+are described in Section VI). In addition, the text encoder 𝜙 𝑇
+used for candidate-action extraction in Section IV-B was
+ImageBind [33]. The threshold 𝜏 in Algorithm 1 was set to
+0.6 with reference to the previous method [12]. The
+binarization process used for video segmentation in Section
+IV-D employed the binarization function provided by
+OpenCV [25], with the threshold set to 100. Furthermore, the
+text encoder 𝜙 𝑇𝑆 described in Section IV-E was
+SentenceBERT [34], and the threshold 𝑡ℎ𝑒𝑥𝑝 was set to 0.5.
+The sampling process was performed five times. In addition,
+Qwen3-VL-Instruct, which can perform inference on                 FIGURE 9. Example of the segment similarity map 𝑺𝐬𝐦𝐚𝐩 generated from
+multiple images, was used as 𝑀𝑒𝑥𝑝 .                               𝑽𝑴 and 𝑽𝑬 using the proposed method.
+
+                                                                                             TABLE I
+                                                                  EXTRACTION RESULTS OF CANDIDATE ACTIONS FOR THE VLM USED IN THE
+VI. RESULTS                                                                                PROPOSED METHOD
+   Figure 8 shows an example of the frame-level similarity         VLM                   Params. of       𝐴𝑐𝑐𝑢𝑛𝑖𝑜𝑛       Inference time
+                                                                                           VLM
+map 𝑆𝑓𝑚𝑎𝑝 generated by the proposed method from 𝑉𝑀 and             BLIP-2                   2.7B           53.0 %            3 min
+𝑉𝐸 for task1. As shown in Figure 8, the action of turning the      InstructBLIP              7B            44.0 %            8 min
+                                                                   LLaVA                     7B            63.0 %            7 min
+distribution panel breaker OFF is present in both 𝑉𝑀 and 𝑉𝐸 ,      InternVL2                 4B            65.0 %            6 min
+and the corresponding region in the similarity map 𝑆𝑓𝑚𝑎𝑝 is        Qwen3-VL-Instruct         8B            49.0 %            5 min
+confirmed to have high similarity. In this way, actions that
+are present in both 𝑉𝑀 and 𝑉𝐸 exhibit high similarity in the      Figure 9 shows an example of the segment-level similarity
+corresponding regions of 𝑆𝑓𝑚𝑎𝑝 . In contrast, the action of       map 𝑆𝑠𝑚𝑎𝑝 generated by the proposed method from 𝑉𝑀 and
+checking the connected devices in the outlet box connected        𝑉𝐸 for task1. As shown in Figure 9, for the same work scene
+to the breaker before turning the breaker OFF does not exist      in 𝑉𝑀 and 𝑉𝐸 , the corresponding region in the similarity map
+in any part of 𝑉𝑀 , and therefore the corresponding region        𝑆𝑠𝑚𝑎𝑝 is confirmed to have high similarity. On the other hand,
+shows low similarity when the similarity map 𝑆𝑓𝑚𝑎𝑝 is             checking the connected devices in the outlet box connected
+viewed in the column direction. These results confirm that        to the breaker before turning the breaker OFF causes a
+the similarity map 𝑆𝑓𝑚𝑎𝑝 generated by the proposed method         change in the work scene, and since this work scene does not
+can represent regions depicting candidate actions that may        exist in any part of 𝑉𝑀 , the corresponding region shows low
+contain expert know-how in the manual-based work video            similarity when the similarity map 𝑆𝑠𝑚𝑎𝑝 is viewed in the
+and the expert work video.                                        column direction. These results confirm that the segment-
+                                                                  level similarity map 𝑆𝑠𝑚𝑎𝑝 generated by the proposed
+                                                                  method can represent regions depicting candidate decision
+                                                                  scenes that may contain expert know-how in the manual-
+                                                                  based work video and the expert work video.
+
+8                                                                                                                      VOLUME XX, XXXX
+                                                               TABLE II
+                      EVALUATION RESULTS ON THE COLLECTED DATA USING THE PROPOSED METHOD AND THE BASELINE METHODS
+    Target type   Method ID            Method                        VLM               Params. of VLM       𝐴𝑐𝑐𝑢𝑛𝑖𝑜𝑛        Inference time
+    Action           (a)         Previous method [12]               BLIP-2                  2.7B             59.0 %              2 min
+                     (b)           Baseline (video)            Qwen3-VL-Instruct             8B              27.0 %             0.5 min
+                     (c)           Baseline (Naive)            Qwen3-VL-Instruct             8B              28.0 %             36 min
+                     (d)           Proposed method                InternVL2                  4B              65.0 %              6 min
+    Scene            (e)         Previous method [12]               BLIP-2                  2.7B             33.0 %              2 min
+                     (f)               Baseline                     BLIP-2                  2.7B             28.0 %              2 min
+                                  (Previous+prompt)
+                     (g)               Baseline                  InstructBLIP               7B              28.0 %              8 min
+                                  (Previous+prompt)
+                     (h)               Baseline                     LLaVA                   7B              36.0 %             11 min
+                                  (Previous+prompt)
+                     (i)               Baseline                   InternVL2                 4B              31.0 %             32 min
+                                  (Previous+prompt)
+                     (j)               Baseline                Qwen3-VL-Instruct            8B              37.0 %             26 min
+                                  (Previous+prompt)
+                     (k)           Baseline (Video)            Qwen3-VL-Instruct            8B              43.0 %              1 min
+                      (l)          Baseline (Naive)            Qwen3-VL-Instruct            8B              46.0 %             36 min
+                     (m)           Proposed method             Qwen3-VL-Instruct            8B              61.0 %              3 min
+
+
+                                                                              extracting candidate actions that may contain expert know-
+                                                                              how, which is 6 percentage points higher than that of the
+                                                                              previous method (a). It can also be seen that the proposed
+                                                                              method extracts candidate actions containing expert know-
+                                                                              how more accurately than the other baseline methods,
+                                                                              namely the naive method (c) and the video comparison
+                                                                              method (b). In terms of computation time, the proposed
+                                                                              method (d) required several minutes, which is of the same
+                                                                              order as that of the previous method (a).
+                                                                                 In addition, as shown in the decision-scene candidate
+                                                                              extraction results in Table 2, the proposed method (m)
+                                                                              achieved an accuracy of 61.0% for extracting candidate
+                                                                              decision scenes that may contain expert know-how, which is
+                                                                              28 percentage points higher than that of the previous method
+                                                                              (e). It can also be seen that the proposed method extracts
+                                                                              candidate decision scenes containing expert know-how more
+FIGURE 10. Comparison between the segment similarity map 𝑺𝒔𝒎𝒂𝒑 of
+the proposed method (m) and the frame similarity map 𝑺𝒇𝒎𝒂𝒑 of the             accurately than the other baseline methods, namely the
+baseline naive method (l).                                                    previous method + instruction prompt methods (f)–(j), the
+                                                                              naive method (l), and the video comparison method (k). In
+                                                                              terms of computation time, the proposed method (m)
+                                                                              required several minutes, which is of the same order as that
+                                                                              of the previous method (e).
+                                                                                 Figure 10 shows an example comparison between the
+                                                                              similarity map of the naive method (l) and that of the
+                                                                              proposed method (m). Ideally, all regions inside the red box
+                                                                              are expected to become black, that is, to exhibit low
+                                                                              similarity. However, compared with the proposed method
+FIGURE 11. Example of a failure case of the proposed method.
+                                                                              (m), the naive method (l) contains scattered white regions,
+                                                                              that is, regions of high similarity. In the naive method (l),
+  Table 1 shows the action-candidate extraction results
+                                                                              images from the two videos are directly treated as pairs for
+obtained with different VLMs used in the proposed method.
+                                                                              judgment. However, the image description generator may
+As shown in Table 1, the extraction accuracy of candidate
+                                                                              generate different descriptions depending on subtle
+actions varies depending on the VLM used. In this
+                                                                              differences between temporally adjacent images, which is
+experiment, InternVL2, which achieved the highest accuracy,
+                                                                              considered to cause such scattered high-similarity regions
+was adopted as the VLM ( 𝑀cap ) for candidate-action
+                                                                              and consequently reduce the extraction accuracy.
+extraction.                                                                      Figure 11 shows an example failure case of the proposed
+  Table 2 shows the evaluation results on the collected data                  method (m) for extracting decision-scene candidates. In this
+using the proposed method and the baseline methods. As                        example, the manual-based work video 𝑉𝑀 shows the
+shown in the action-candidate extraction results in Table 2,                  distribution panel door open, whereas the expert work video
+the proposed method (d) achieved an accuracy of 65.0% for                     𝑉𝐸 shows the distribution panel door closed, and therefore
+
+8                                                                                                                            VOLUME XX, XXXX
+this case is expected to be extracted as a candidate decision      iii.    These results demonstrate that the proposed
+scene. One reason for this failure is that the prompt input to             technique can improve the extraction rates of
+the VLM during decision-scene candidate extraction                         candidate actions and candidate decision scenes
+includes a prompt for determining whether the two images                   while maintaining computation time, suggesting that
+were recorded at the same location (described in Appendix                  it can support the extraction of candidates for
+A-C). Since 𝑉𝑀 and 𝑉𝐸 were recorded at the same location,                  formalizing work know-how that even skilled
+this judgment is appropriate with respect to the input prompt.             maintenance workers themselves may not be
+On the other hand, the prompt is not designed to determine                 consciously aware of.
+differences in the state of the work target, which should be         Future work will focus on enhancing the accuracy of the
+extracted as candidate decision scenes. Therefore, prompt          proposed method by analyzing actions and decision-making
+adjustment and improvement methods tailored to the target          scenes at a finer level of granularity. Furthermore, we plan
+work situation are considered necessary.                           to develop a technique to detect the reordering of work
+                                                                   procedures, as such adjustments often represent a key
+                                                                   component of expert expertise. Finally, while the current
+VII. CONCLUSION                                                    evaluation was limited to simulated distribution board
+     In the inspection and maintenance of infrastructure           maintenance experiments, we aim to verify the
+facilities, there is a shortage of skilled maintenance workers,    generalizability of our approach by applying it to a broader
+and there is a strong need to formalize and transfer the work      range of practical tasks.
+know-how of skilled workers in order to accelerate the
+training of new maintenance personnel. In particular, when
+the target is know-how of which even skilled workers               APPENDIX A
+themselves are not consciously aware, it is difficult to extract   Overview of the Video Comparison Method
+such knowledge through interviews and similar methods,
+and therefore a technique is required to efficiently extract          An overview of the video comparison method (k), which is
+candidate know-how from work videos. Conventionally,               one of the comparison methods used in this study, is given
+differences between a manual video and an expert video have        below. The video comparison method consists of two steps. In
+made it possible to extract candidate actions corresponding        the first step, event detection and event descriptions are output
+to “what to do,” whereas stable extraction of situational          as captions for each of the videos 𝑉𝑀 and 𝑉𝐸 . This method is
+judgment know-how corresponding to “where” and “which              based on the implementation provided in the official GitHub
+one to operate” (i.e., decision scenes) has remained a             repository of Qwen3-VL. In the second step, the captions
+challenge.                                                         obtained for each video are input to a VLM, which outputs, as
+     In this report, we proposed a method for manual videos        captions, which events in one video do not exist in the other
+and expert videos that extracts candidate actions through          video. Based on this output, candidate actions and candidate
+inter-video comparison based on image descriptions and             decision scenes are extracted.
+extracts candidate decision scenes through comparison at the
+level of segmented intervals based on intra-video self-            A. Event Detection
+similarity. The proposed method realizes the extraction of           First, using a VLM capable of video captioning, denoted by
+both candidate actions and candidate decision scenes within        𝑀vid , event detection and descriptions for the video are
+a unified framework. Its key feature is that, by extending the     generated according to Eqs. (9) and (10):
+comparison unit in decision-scene extraction from the frame
+level to the interval level, it suppresses both the degradation                         𝐸 = 𝑀vid (𝑉, 𝑃𝑣𝑖𝑑𝑒𝑣𝑒 )                  (9)
+in extraction accuracy caused by instability in generated
+descriptions and the increase in computational cost. Based
+                                                                          𝐸 = {(𝑠𝑡𝑎𝑟𝑡, 𝑒𝑛𝑑, 𝑑𝑒𝑠𝑐𝑟𝑖𝑝𝑡𝑖𝑜𝑛)𝑖 | 0 ≤ 𝑖 ≤ 𝐾}        (10)
+on the above method, we developed a technique for
+automatically extracting candidate actions and candidate
+decision scenes that may contain know-how and obtained the         Here, 𝐸 is a set whose elements consist of the detected start
+following conclusions.                                             time 𝑠𝑡𝑎𝑟𝑡, end time 𝑒𝑛𝑑, and description 𝑑𝑒𝑠𝑐𝑟𝑖𝑝𝑡𝑖𝑜𝑛 for
+  i.       Through evaluation using a total of 27 data             each event, and 𝑃𝑣𝑖𝑑𝑒𝑣𝑒 is the captioning instruction prompt.
+           simulating distribution panel maintenance tasks, we     Caption generation is performed for both 𝑉𝑀 and 𝑉𝐸 ,
+           confirmed that the proposed technique operates with     producing the captions 𝐸𝑀 for 𝑉𝑀 and 𝐸𝐸 for 𝑉𝐸 . The same
+           computation time comparable to that of the previous     captioning model is used for both 𝑉𝑀 and 𝑉𝐸 .
+           method [12].
+ ii.       The extraction rate was 65.0% for candidate actions     B. Anomaly Detection Using Event Detection
+           (+6 points over the previous method) and 61.0% for        Next, extraction of candidate actions and candidate decision
+           candidate decision scenes (+28 points over the          scenes using the captions 𝐸𝑀 and 𝐸𝐸 of 𝑉𝑀 and 𝑉𝐸 is
+           previous method), both outperforming the previous
+                                                                   performed according to Eq. (11):
+           method.
+
+
+8                                                                                                                    VOLUME XX, XXXX
+       𝐴𝑛𝑜𝑚𝑎𝑙𝑦 𝐸𝑣𝑒𝑛𝑡 = 𝑀𝑣𝑖𝑑 (𝐸𝑀 , 𝐸𝐸 , 𝑃𝑣𝑖𝑑𝑎𝑛𝑜 )            (11)     “Localize a series of activity events in the video, output the
+                                                                     start and end timestamp for each event, and describe each
+Here, 𝑃vidano is the anomaly-event detection instruction             event with sentences. Provide the result in json format with
+prompt. Anomaly Event is a caption containing information            ‘mm:ss.ff’ format for time depiction.”
+about which event in one video does not exist in the other
+video. However, because 𝐴𝑛𝑜𝑚𝑎𝑙𝑦 𝐸𝑣𝑒𝑛𝑡 is produced in a                 For 𝑃𝑣𝑖𝑑𝑒𝑣𝑒 in Appendix A-A of the video comparison
+free-description format, the output may not always be fixed,         method (k), the following prompt was used for extracting
+making it difficult to process automatically in a unified            candidate decision scenes.
+manner. Therefore, in the last step, a human checks
+Anomaly Event and performs post-processing required for              “Localize a series of locations in the video, output the start
+computing the evaluation metric. For example, when the               and end timestamp for each locations, and describe each
+detected event start and end times are output in seconds, they       locations with sentences. Provide the result in json format with
+are converted into frame units.                                      ‘mm:ss.ff’ format for time depiction.”
+
+                                                                        For 𝑃𝑣𝑖𝑑𝑎𝑛𝑜 in Appendix A-B of the video comparison
+                                                                     method (b) and (k), the following prompt was used for both
+C. Prompts Used in This Study
+ The following prompt was used as 𝑃𝑐𝑎𝑝 in the proposed               candidate-action extraction and candidate-decision-scene
+method (m) described in Section IV-B.                                extraction. In practice, 𝐸𝑀 and 𝐸𝐸 , which are the outputs of the
+                                                                     VLM in Appendix A-A, are passed to {captions of the
+“You are describing an egocentric view images. Focus on              reference video} and {captions of the target video}.
+operator's action and the object being acted upon. Describe
+the concrete action shortly. Avoid mentioning the location or        “A series of locations in the reference video:
+goal - only describe the specific action and target visible in the   {captions of the reference video}
+frame.”                                                              A series of locations in the target video:
+                                                                     {captions of the target video}
+ The following prompt was used as 𝑃𝑒𝑥𝑝 in the proposed               Based on the above two sets of locations, detect anomalies
+method (m) described in Section IV-E.                                between       the     reference       and     target     videos.
+                                                                     Define anomalies as follows:
+“Do the two images show the same location? Answer ‘Yes’ or            - "additional anomaly": a locations that appears in the
+‘No’.”                                                                     target video but does not exist in the reference video.
+                                                                      - "unseen anomaly": a locations that appears in the
+   The following prompt was used as the instruction prompt                 reference video but does not appear in the target video.
+for extracting candidate decision scenes in the baseline              Determine which type of anomaly is present, and output
+methods (previous method + instruction prompt), (f) to (j).           **only one type**—either additional anomalies or unseen
+                                                                      anomalies, whichever is detected.
+“Describe where you are in detail.”                                   Do not output both types simultaneously.
+                                                                      For the detected anomaly type, output the result in the same
+   The following prompt was used as the instruction prompt            JSON format as before, including:
+for extracting candidate actions in the naive method (c).             - the start and end timestamps (‘mm:ss.ff’),
+                                                                      - **the anomaly type** (“additional anomaly” or
+“Do the two images show the same Action? Answer ‘Yes’ or                   “unseen anomaly”),
+‘No’.”                                                                - a description of the locations,
+                                                                      - and a brief explanation of why it is classified as that
+   The following prompt was used as the instruction prompt                 anomaly type.”
+for extracting candidate decision scenes in the naive method
+(l).
+
+“Do the two images show the same location? Answer ‘Yes’ or           REFERENCES
+‘No’.”
+                                                                     [1] Recruit Works Institute, "Future Predictions 2040 in Japan,"
+                                                                         [Online]. Available: https://www.gii.co.jp/report/tbrc1465862-
+  For 𝑃𝑣𝑖𝑑𝑒𝑣𝑒 in Appendix A-A of the video comparison
+                                                                         power-plant-maintenance-global-market-report.html. [Accessed 11
+method (b), the following prompt was used for extracting                 March 2025].
+candidate actions.                                                   [2] E. Fenoglio, E. Kazim, H. Latapie and A. Koshiyama, "Tacit
+                                                                         knowledge elicitation process for industry 4.0," Discover Artificial
+                                                                         Intelligence, 2022.
+
+
+8                                                                                                                             VOLUME XX, XXXX
+[3] International Atomic Energy Agency, "Knowledge Management for          [22] R. Padilla, A. F. da Silva, E. A. B. da Silva , S. L. Netto, “Change
+    Nuclear Industry Operating Organizations," International Nuclear            detection in moving-camera videos with limited samples using twin-
+    Information System & Nuclear Knowledge Management Section                   CNN features and learnable morphological operations,” Signal
+    International Atomic Energy Agency, 2006.                                   Processing: Image Communication, 2023.
+[4] M. Nakanishi , Y. Kido, “Externalization and Formalization of          [23] K. Cho, D. Y. Kim , E. Kim, “Zero-Shot Scene Change Detection,”
+    "Tacit Knowledge": Case of Skills Transfer of Pilot Boat                    AAAI, 2025.
+    Operations,” Sanno University Bulletin, 2017.                          [24] J.-W. Kim , U.-H. Kim, “Towards Generalizable Scene Change
+[5] S. Kernan Freire, C. Wang, S. Ruiz-Arenas and E. Niforatos, "Tacit          Detection,” Proceedings of the Computer Vision and Pattern
+    Knowledge Elicitation for Shop-floor Workers with an Intelligent            Recognition Conference, 2025.
+    Assistant," CHI Conference on Human Factors in Computing               [25] OpenCV team, "OpenCV," [Online]. Available: https://opencv.org/.
+    Systems, 2023.                                                              [Accessed 10 9 2023].
+[6] R. Mancy and N. Reid, "Using interviews to investigate implicit        [26] Trimble Inc., "Trimble XR10 with HoloLens 2," 2022. [Online].
+    knowledge in computer programming," Proceedings of the 7th                  Available: https://fieldtech.trimble.com/en/products/mixed-
+    international conference on Learning sciences, 2006.                        reality/trimble-xr10-with-hololens-2.
+[7] R. R. Hoffman, N. R. Shadbolt, A. Burton and G. Klein, "Eliciting      [27] D. Ungureanu, F. Bogo, S. Galliani, P. Sama, X. Dua, C. Meekhof,
+    knowledge from experts: A methodological analysis,"                         J. Stühmer, T. J.Cashman, B. Tekin, J. L. Schönberger, P. Olszta ,
+    Organizational behavior and human decision processes, 1995.                 M. Pollefeys, “HoloLens 2 Research Mode as a Tool for Computer
+[8] J. Summerscales, "Harvesting tacit knowledge for composites                 Vision Research,” arXiv, 2020.
+    workforce development," Composites Part A: Applied Science and         [28] J. Li, D. Li, S. Savarese and S. Hoi, "BLIP-2: bootstrapping
+    Manufacturing, 2024.                                                        language-image pre-training with frozen image encoders and large
+[9] T. Gavrilova, "Knowledge elicitation techniques in a knowledge              language models," Proceedings of the 40th International Conference
+    management context," Journal of Knowledge Management, 2012.                 on Machine Learning, 2023.
+[10] R. R. Hoffman, "A survey of methods for eliciting the knowledge of    [29] W. Dai, J. Li, J. Li, D. Li, A. Tiong, A. M. H. Tiong, J. Zhao, W.
+     experts," ACM SIGART Bulletin, 1989.                                       Wang, B. Li, P. N. Fung , S. Hoi, “InstructBLIP: Towards General-
+[11] N. Shadbolt and P. R. Smart, "Knowledge Elicitation: Methods,              purpose Vision-Language Models with Instruction Tuning,”
+     Tools and Techniques," 2015. [Online]. Available:                          NeurIPS, 2023.
+     https://api.semanticscholar.org/CorpusID:18724737.                    [30] Z. Chen, J. Wu, W. Wang, W. Su, G. Chen, S. Xing, M. Zhong, Q.
+[12] R. Sakai, C. Yongpeng , N. Kimura, “Anomalous Frame Detection              Zhang, X. Zhu, L. Lu, B. Li, P. Luo, T. Lu, Y. Qiao , J. Dai,
+     by Grouping Frame Similarities between Two Videos Computed by              “InternVL: Scaling up Vision Foundation Models and Aligning for
+     Vision-Language Model to Extract Expert Workers' Unique                    Generic Visual-Linguistic Tasks,” CVPR, 2024.
+     Actions,” IEEE Access, under review, 2025.                            [31] H. Liu, C. Li, Y. Li , Y. J. Lee, “Improved Baselines with Visual
+[13] C. Jiang, K. Huang, S. He, X. Yang, W. Zhang, X. Zhang, Y.                 Instruction Tuning,” CVPR, 2024.
+     Cheng, L. Yang, Q. Wang, F. Xu, T. Pan and W. Chu, "Learning          [32] Qwen Team, “Qwen3-VL Technical Report,” arXiv, 2025.
+     Segment Similarity and Alignment in Large-Scale Content Based         [33] G. Rohit, E.-N. Alaaeldin, L. Zhuang, S. Mannat, A. Kalyan
+     Video Retrieval," Proceedings of the 29th ACM International                Vasudev, J. Armand and M. Ishan, "ImageBind: One Embedding
+     Conference on Multimedia, 2021.                                            Space To Bind Them All," Proceedings of the IEEE/CVF
+[14] G. Kordopatis-Zilos, G. Tolias, C. Tzelepis, I. Kompatsiaris, I.           Conference on Computer Vision and Pattern Recognition, 2023.
+     Patras and S. Papadopoulos, "Self-Supervised Video Similarity         [34] N. Reimers and I. Gurevych, "Sentence-BERT: Sentence
+     Learning," Proceedings of the IEEE/CVF Conference on Computer              Embeddings using Siamese BERT-Networks," Proceedings of the
+     Vision and Pattern Recognition Workshops, 2023.                            Conference on Empirical Methods in Natural Language Processing,
+[15] S. He, Y. He, M. Lu, C. Jiang, X. Yang, F. Qian, X. Zhang, L. Yang         2019.
+     and J. Zhang, "TransVCL: Attention-enhanced Video Copy
+     Localization Network with Flexible Supervision," 37th AAAI
+     Conference on Artificial Intelligence, 2023.                                            RYO SAKAI received Master of Information Science
+[16] Z. Han, X. He, M. Tang and Y. Lv, "Video Similarity and                                 from Osaka University in 2016. He is currently a senior
+     Alignment Learning on Partial Video Copy Detection," Proceedings                        researcher at the Robotics Research Department in
+     of the 29th ACM International Conference on Multimedia, 2021.                           Research and Development Group, Hitachi, Ltd. His research
+[17] T. Nagarajan and L. Torresani, "Step Differences in Instructional                       interests includes computer vision, machine learning,
+     Video," Proceedings of the IEEE/CVF Conference on Computer                              tacit knowledge extraction, robotics, and intelligent
+     Vision and Pattern Recognition, 2024.                                                   system. He is a member of the Robotics Society of Japan.
+[18] T. Yunlong, B. Jing, X. Siting, S. Luchuan, L. Susan, W. Teng, Z.
+     Daoan, A. Jie, L. Jingyang, Z. Rongyi, V. Ali, H. Chao, Z. Zeliang,
+     L. Pinxin, F. Mingqian, Z. Feng, Z. Jianguo, L. Ping, L. Jiebo and                       Kaname Yokoyama received the bachelor’s degree
+     X. Chenliang, "Video Understanding with Large Language Models:                           from Toyota Technological Institute in 2025. He is a
+     A Survey," IEEE Transactions on Circuits and Systems for Video                           master’s student at the Graduate School of Engineering,
+     Technology, 2025.                                                                        Toyota Technological Institute, where he is a member
+[19] W. Mengmeng, X. Jiazheng and L. Yong, "ActionCLIP: A New                                 of the Intelligent Information Media Laboratory. His
+     Paradigm for Video Action Recognition," arXiv, 2021.                                     research interests lie in computer vision and machine
+[20] C. Guo, Z. Yin-Dong, W. Jiahao, X. Jilan, H. Yifei, P. Junting, W.                       learning.
+     Yi, W. Yali, Q. Yu, L. Tong and W. Limin, "VideoLLM: Modeling
+     Video Sequence with Large Language Models," arXiv, 2023.
+[21] J. Burgess, X. Wang, Y. Zhang, A. Rau, A. Lozano, L. Dunlap, T.
+     Darrell , S. Yeung-Levy, “Video Action Differencing,” International
+     Conference on Learning Representations, 2025.
+
+
+
+
+8                                                                                                                                    VOLUME XX, XXXX
+
