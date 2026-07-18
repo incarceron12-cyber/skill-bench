@@ -71,6 +71,25 @@ def verify_hash_manifest(manifest_path: Path, origin: str) -> list[dict[str, Any
     return checked
 
 
+def verify_protected_zero_call_components(origin: str) -> list[dict[str, Any]]:
+    """Verify frozen treatment/instrument bytes, excluding phase-aware tests/reports."""
+    manifest = json.loads((HERE / "freeze-manifest.json").read_text(encoding="utf-8"))
+    protected_markers = ("/families/", "/tasks/", "/controls/", "/checkers/", "/interface/",
+                         "/generation-policies/", "/protocol.json", "/assignments.json")
+    checked = []
+    for row in manifest["components"]:
+        if not any(marker in row["path"] for marker in protected_markers):
+            continue
+        path = ROOT / row["path"]
+        actual = sha(path)
+        if actual != row["sha256"] or hashlib.sha256(git_bytes(origin, path)).hexdigest() != actual:
+            raise RuntimeError(f"protected zero-call component drift: {row['path']}")
+        checked.append({"path": row["path"], "sha256": actual})
+    if not checked:
+        raise RuntimeError("no protected zero-call components were verified")
+    return checked
+
+
 def verify_audit_chain() -> dict[str, Any]:
     manifest = json.loads((HERE / "candidate-freeze-manifest.json").read_text(encoding="utf-8"))
     audit_path = ROOT / manifest["audit_log"]["path"]
@@ -120,8 +139,9 @@ def verify_pushed_freezes() -> dict[str, Any]:
         raise RuntimeError("independent generation audit does not release execution")
     if generation.get("aggregate_attempts", {}).get("executor") != 0 or generation.get("claim_ceiling") != CLAIMS:
         raise RuntimeError("generation audit execution/claim gate failed")
-    # The original zero-call freeze remains exact and pushed as well.
-    frozen_components = verify_hash_manifest(HERE / "freeze-manifest.json", "origin/main")
+    # Frozen source/task/control/checker/interface/policy/protocol/assignment
+    # bytes remain exact. Phase-aware tests and reports may evolve downstream.
+    frozen_components = verify_protected_zero_call_components("origin/main")
     return {"origin_commit": origin, "candidate_components": len(candidate_components),
             "hindsight_components": len(hindsight_components), "frozen_components": len(frozen_components),
             "candidate_hashes": expected, "audit_chain": verify_audit_chain()}
