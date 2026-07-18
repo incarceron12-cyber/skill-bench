@@ -303,6 +303,39 @@ minutes, earnings, burden, attrition, disputes, and cost. Existing participation
 expertise-transfer, task-health, metric, and validity records are the durable homes;
 no synthetic participant or incentive schema follows.
 
+### 2.1e Domain scaffolds need clause-level uptake and consequence evidence
+
+A source corpus or procedural library can be a real, useful intervention without
+being verified expertise. Preserve the strongest observed link in this typed chain:
+
+```text
+authorized and versioned source span → extracted clause, scope, and omissions
+  → independent authority/disagreement disposition
+    → eligible retrieval opportunity → candidate shown → content loaded
+      → clause adopted, rejected, or unresolved
+        → exact decision or artifact-span delta
+          → evidence/trace verification → human-authorized judgment
+            → independently checked consequence
+```
+
+Inventory membership, search, load, adoption, artifact change, internal consistency,
+authorized acceptance, and consequence are distinct denominators. Bind each event to
+the source/Skill version, configured system, visible content, decision time, artifact
+before/after hashes, evidence view, actor, and missingness reason. A source-faithful
+clause can still be inapplicable; a citation-bearing distillation can distort scope;
+an adopted clause can be harmful; and an authorized human acceptance remains a
+judgment observation rather than proof of correctness or downstream value.
+
+BrainPilot makes the distinction concrete: its post-v1 release contains 74 inspectable
+Skill files, but none is marked community- or expert-verified; 51 are marked
+AI-generated and 23 omit review status. Its knowledge-enabled BrainPilotBench cells
+improve 8, worsen 14, and tie 4 among the 26 valid pairs, with one run per cell and a
+compound treatment. This supports an inspectable domain-scaffold and adverse-ablation
+case—not source fidelity, expertise transfer, causal benefit, scientific validity, or
+readiness [BP]. Existing expertise-transfer, participation/authority, evidence-state,
+context-treatment, persistent-workspace, trace, artifact, metric, and validity records
+are the implementation homes; no domain- or Skill-specific schema follows.
+
 ### 2.2 A legitimate trap is a decision-boundary critical incident
 
 Do not equate realistic messiness with arbitrary obscurity. For each trap,
@@ -2735,6 +2768,38 @@ ResearchRubrics' criterion-label macro-F1 does not calibrate its weighted aggreg
 or a professional threshold; criterion dependence and grader failures must remain
 visible rather than being converted to ordinary zeros [RR].
 
+### 3.3a Trace integrity and trace interpretation are separate gates
+
+A narrative workflow graph is not automatically an execution record. Preserve an
+append-only event stream with monotonic sequence identity, prior-event hash, actor and
+configured-system identity, source/read/command/write receipts, artifact content
+hashes, timestamps, and typed invalid/missing events. Corrections append superseding
+events or nodes; they do not mutate prior descriptions, parents, artifacts, or
+metadata. Validate parent existence and acyclicity, retain omitted/failed-attempt
+denominators, and test tampering, orphan, cycle, stale-hash, retrospective-mutation,
+and omitted-event cases.
+
+Edge authority must remain explicit: `self_asserted`, `agent_inferred`,
+`execution_observed_read_write`, `human_confirmed_dependency`, and
+`mutation_supported_causal` do not inherit one another. A plausible inferred edge is
+a hypothesis; read/write co-occurrence is not semantic uptake; and graph closure is
+not scientific correctness or root-cause proof. Audit is another configured observer:
+record its immutable evidence entitlement and exclusions, source access, ability to
+inspect the trace, mailbox/tool visibility, re-execution rights, follow-up budget,
+independence/correlated-failure risks, and `confirmed`, `unverified`, `disputed`,
+`insufficient_evidence`, or `invalid` disposition. Plant coherent false files, wrong
+citations, omissions, stale artifacts, contradictory traces, and clean sentinels to
+estimate detection and false reassurance before promoting an Auditor report.
+
+BrainPilot's current GoT permits node mutation and unvalidated parent/cycle edges, and
+its Trace agent may merge, skip, split, or infer events. Its Auditor cannot inspect
+GoT, mailboxes, external sources, or rerun analyses. The release therefore supports
+an inspectable agent-curated account and bounded workspace audit—not append-only or
+tamper-evident execution lineage, trace completeness, edge causality, independent
+scientific verification, or root diagnosis [BP]. Existing trace, evidence-view,
+artifact-state, task-health, root/surface, candidate-defect, metric, participation,
+and validity records host the repair; no new graph schema follows.
+
 ### Failure attribution vocabulary
 
 Use three coordinates rather than one flat failure tag:
@@ -4042,6 +4107,7 @@ and validity records are the implementation homes; no new schema follows.
 | Task projection manifest | detect drift among public requirements, affordances, witnesses, and checks | evidence-backed requirement atoms, IR/sampler/projector/output hashes, bidirectional coverage, declared invariances, solver/validity separation, conformance tests |
 | Suite assembly argument | distinguish a broad frame and healthy pool from the administered sample and licensed population inference | frame/content exclusions, eligible pool, selection/seed/order, lineage clusters, intended/realized mixture, weights, precision/stopping, invalid/missing policy, alternate-assembly sensitivity, bounded claim |
 | Portfolio estimand | keep heterogeneous component evidence primary and make any suite scalar an explicit use policy rather than a latent capability claim | component construct and unit hierarchy; selection and configured-system/tool eligibility; evidence view/scorer/metric; plural denominators; clustering/uncertainty; raw resource boundary; weights, hard gates, missingness/loss policy, sensitivity, excluded interpretations |
+| Result-row reconstruction record | establish that a reported table cell is reproducible from released evidence rather than merely consistent with an inspectable later instrument | paper/form identity; task, prompt, grader, data, environment, Skill/intervention, configured-system, and adapter hashes; immutable raw attempts and score rows; eligible/valid/invalid/missing/excluded states and reasons; seeds/resource events; selection policy; table-building code and exact reproduced cell |
 | Candidate-defect lifecycle | route automated or human audit findings through adjudication, repair, and revalidation without rewriting history or laundering auditor authority | immutable instrument and auditor/evidence-view identity; path-grounded candidate; clean sentinels/known-defect controls; plural authority/disagreement; retain/quarantine/repair/retire disposition; changed loci and hashes; alternative-path and equivalent-form rerun; original/deletion/common-task/repaired-form sensitivity |
 | Persistent-workspace record | distinguish file presence and authored relevance from observed or causal use while preserving state integrity | inventory/overlay hashes, placement and valid time, permissions/network, typed and alternate relations, evidence-view-bound access/write, protected/mutable zones, pre/post mutations, cleanup |
 | Sparse workflow-transition record | distinguish one witness path and final state from run-attributable stage completion | pinned initial state, pre/postconditions, alternative paths, necessity/sufficiency, state delta, evidence views, downstream consequence, invalid-environment policy |
@@ -4070,6 +4136,19 @@ commensurability. Component vectors and eligibility patterns remain primary;
 portfolio aggregation is a versioned stakeholder policy over typed evidence.
 AstaBench's incompatible component units, metrics, evidence views, custom/private
 tool treatments, and cost boundaries make this distinction concrete [ASTA].
+BrainPilotBench likewise contains four materially different artifact/scoring tasks.
+Keep their score, eligibility, missingness, and resource vectors primary; scientific-
+integrity or evidence-validity gates remain noncompensatory. No macro-average licenses
+a general domain-capability claim without an intended-use weighting and loss argument
+[BP].
+
+Instrument inspection also does not reconstruct a reported row. A release-audited
+cell requires the exact paper/form bridge, raw attempt, configured-system manifest,
+task/prompt/grader/data/intervention hashes, typed missingness, resource events,
+selection rule, and table builder to reproduce it. BrainPilot's tested post-v1 task
+packages materially drift on three protocols and omit paper runs, score rows, traces,
+manifests, and cost receipts; they establish later machinery inspectability, not the
+paper's 56-cell table or case-study reconstruction [BP].
 
 Task-health audit findings enter as candidates, not deletions. Static and
 outcome-visible trajectory audits are distinct observer conditions; path citation,
@@ -4094,6 +4173,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
 | Procedural-memory transfer (AFTER) | typed source-context, equivalent-form, changed-context, and cross-model transfer edges with paired outcomes and harm gates | shared authoring/verifier lineage, feedback leakage, complete-case selection, diversity/volume confounding, missing configured-system identity, and macro gains hiding negative transfer | full immutable v1 paper plus pinned post-v1 release audit; 129 released test packages are inspectable, but the 382-task instrument, evolution machinery, traces, configurations, evolved procedures, and result rows are unavailable [AFTER] |
+| Domain-scaffolded scientific workflow (BrainPilot) | source/Skill authority → retrieval/load → clause adoption → artifact delta → typed trace/audit evidence → authorized judgment → independent consequence chain; event-sourced trace and result-row bridge | material presence or load promoted to expertise/benefit; mutable inferred graph promoted to execution lineage; bounded workspace audit promoted to scientific validity; heterogeneous single-run tasks pooled as capability | full immutable v1 paper plus pinned post-v1 system/benchmark releases and code/task audit; current framework and four task packages are inspectable and tested, but Skill authority, corpus bytes, raw runs, exact paper bridges, trace integrity, Auditor validity, independent scientific consequence, and readiness are unsupported [BP] |
 | Delayed-obligation dual-task evaluation (PM-Bench; internal pilot) | obligation state machine linked to harness-observed cue access, timed realized action, and separately graded primary-work preservation | ungraded nominal ongoing work, privileged reminders mislabeled as memory support, self-report promoted to access/internal-memory evidence, ceiling forms, and single-attempt cells promoted to causal effects | PM-Bench full immutable v1 paper plus pinned paper-time release audit [PMB]; internal frozen six-cell pilot and exact replay support instrument behavior and exact retained observations only [DOT] |
 | Plan/context-treatment validity (Plans Don't Persist) | proposition-level obligation→visible and derived views→matched treatment→representation/recovery→free action→artifact/state consequence→policy cost ladder | broad span removal and last-token distance promoted to plan forgetting; derived-trace contamination; forced replay promoted to behavior; broad history truncation attributed to plan eviction | full immutable v1 PDF/text review [PDP]; manuscript-reported forced-prefix and compression evidence only, with no code, task manifests, trajectories, hidden states, prompts, or result rows released |
 | Production agent evaluation (Anthropic, Amazon) | task/trial/grader/trace separation, task-health lifecycle, metric/monitoring contract, and operational failure taxonomy | engineering guidance may not establish construct validity; named metrics omit populations/estimands; synthetic and online samples drift | full official Anthropic and Amazon articles and concept reviews; experience/prescription evidence, not controlled effectiveness studies [AN, AM] |
@@ -5586,3 +5666,12 @@ them:
   eight planted envelope defects and one declared alternative under the current
   validator, not empirical isolation, workflow, capability, professional, safety,
   production, or readiness evidence.
+- **[BP]**
+  `papers/agent-benchmarks/2026-07-18-brainpilot-domain-skill-scientific-trace-validity.md`;
+  reviewed immutable v1 PDF/text/source plus pinned post-v1 BrainPilot and
+  BrainPilotBench releases, Skill inventory, GoT/Auditor code audit, task-protocol
+  comparison, and benchmark test evidence are recorded there. Current framework and
+  task machinery are inspectable, but corpus payload, verified Skill authority, raw
+  paper runs, exact paper-to-release bridges, tamper-evident trace integrity, Auditor
+  validity, independent scientific consequence, reliability, cost-effectiveness,
+  professional validity, and readiness are unsupported.

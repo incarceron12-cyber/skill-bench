@@ -73,6 +73,44 @@ Most relevant sources:
 
 Paper-derived procedural distillation adds an authorship fork that must remain explicit: `source_explicit`, `model_inferred`, `expert_supplied`, `expert_approved`, and `benchmark_optimized` are not interchangeable knowledge states. A useful card should bind problem pattern, prerequisites, forbidden shortcuts, execution logic, expected consequence, source spans, scope, and authority; then log retrieval opportunity, delivery, adoption, and affected artifact transition. ReasFlow demonstrates candidate-card and long-artifact production, but its model-generated proof comparators, LLM verifier, selected co-produced cases, absent intervention ledger, unavailable implementation, and an unpolished manuscript with literal placeholder references block tacit-transfer, correctness, autonomy, burden, professional-validity, and readiness promotion. Critical deterministic predicates must gate holistic reviewer scores rather than be averaged away.
 
+Domain scaffolds add a finer **material-to-consequence chain**:
+`authorized/versioned source span → extracted clause with scope and omissions →
+independent authority/disagreement → eligible retrieval → candidate shown → content
+loaded → clause adopted/rejected → exact decision or artifact-span delta → evidence/
+trace verification → human-authorized judgment → independently checked consequence`.
+Inventory, search, load, adoption, artifact change, acceptance, and consequence are
+separate denominators. Source fidelity does not prove case applicability; an accepted
+human judgment does not prove independent correctness; and named oversight is only an
+affordance until exposure, authority, decision, correction, burden, and effect are
+observed.
+
+[BrainPilot](../papers/agent-benchmarks/2026-07-18-brainpilot-domain-skill-scientific-trace-validity.md)
+makes the boundary unusually concrete. Its pinned post-v1 framework contains 74
+Skills, but none is marked community- or expert-verified; 51 are AI-generated and 23
+have no review status. Among 26 valid paired BrainPilotBench cells, the compound
+knowledge treatment improves eight, worsens 14, and ties four, with single runs. Its
+GoT is an editable agent-curated account, not event-sourced or tamper-evident: current
+code permits retrospective node mutation and does not enforce parent existence or
+acyclicity, while the Trace agent may merge, skip, split, and infer. Edge authority
+must therefore distinguish self-asserted, agent-inferred, execution-observed,
+human-confirmed, and mutation-supported causal relations.
+
+The Auditor's `confirmed / unverified / disputed` vocabulary is worth retaining, but
+its evidence ceiling is structural: it cannot inspect GoT, mailboxes, external
+sources, or rerun analyses. Preserve observer entitlements and omissions and test
+coherent false files, wrong citations, stale artifacts, contradictory traces, omitted
+failures, and clean sentinels before claiming audit validity. The four benchmark tasks
+remain a typed portfolio with noncompensatory scientific-integrity gates, not one
+neuroscience-capability scale. A published row is release-reconstructible only when
+immutable raw attempts, configured-system identity, task/prompt/grader/data/
+intervention hashes, typed missingness, resource events, selection policy, and table
+code reproduce it. BrainPilot's current task packages are tested and inspectable, but
+three protocols drift from the paper and raw runs, score rows, exact manifests, trace
+bundles, and receipts are absent. The warranted ceiling is later instrument and
+configured-workflow inspectability—not verified expertise transfer, trace integrity,
+scientific correctness, reliability, cost-effectiveness, professional validity, or
+readiness. Existing contracts suffice; neuroscience remains a bounded mechanism case.
+
 Objective-grounded elicitation adds a narrower **question-to-consequence chain**:
 `question opportunity/form → caused respondent observation or refusal → supported
 claim adoption/revision → objective progress → artifact/check uptake or legitimate
