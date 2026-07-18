@@ -1,0 +1,792 @@
+                                             Project K ALEIDOSCOPE: Contextual, Human-Aligned Evaluation for
+                                                               Real-World AI Applications
+
+                                                              Leanne Tan1 * , Rohan Jaggi2† , Shaun Khoo1 , Roy Ka-Wei Lee1,3 ,
+                                             1
+                                                 GovTech, Singapore, 2 National University of Singapore, 3 University of British Columbia
+                                                                   leanne_tan@tech.gov.sg, roy.lee@ubc.ca
+
+
+
+                                                                   Abstract                             what counts as “good” depends on the application
+                                                                                                        context, users, policies, workflow, and risk toler-
+                                                 Evaluations (Evals) are a deployment bottle-
+                                                                                                        ance. For example, a math learning chatbot may
+                                                 neck for real-world AI applications: public
+                                                 benchmarks rarely match a team’s users, con-
+                                                                                                        need step-by-step worked solutions, while an HR
+                                                 text, or policies, and human review is often           policy assistant may need concise, policy-grounded
+                                                 tedious to scale. Motivated by our work with           answers.
+                                                 AI applications in the public sector, this project        In organizational contexts, application owners
+                                                 addresses recurring evaluation challenges en-          rely on manual, fragmented evaluation processes in
+
+
+
+
+arXiv:2607.14673v1 [cs.AI] 16 Jul 2026
+                                                 countered when applications must satisfy lo-           which teams curate tests, run them through their ap-
+                                                 cal policy and governance requirements. We
+                                                                                                        plications, and then slowly review long responses.
+                                                 present K ALEIDOSCOPE, an integrated work-
+                                                 flow for contextual functional evaluation that         More informed engineers may reuse general eval-
+                                                 links persona-based test generation, contextual-       uation benchmarks or generate synthetic tests, but
+                                                 ized rubrics, and human review for reliability-        these can be repetitive, unrealistic, or misaligned
+                                                 gated automated scoring. Generated test cases          with application-specific behaviors that matter in
+                                                 are scored against application-specific rubrics;       deployment (OpenAI, 2025). Existing tools, bench-
+                                                 human annotations provide reviewable labels;           mark suites, and LLM-as-judge methods address
+                                                 and LLM judges automate scoring only when
+                                                                                                        parts of this workflow, but the remaining gap is the
+                                                 their agreement with those labels meets a con-
+                                                 figured threshold. K ALEIDOSCOPE is therefore
+                                                                                                        integration of contextual test construction, config-
+                                                 a practical, inspectable, iterative workflow for       urable rubrics, human calibration, reliability-gated
+                                                 product teams. We report early evidence from           LLM judging, and error analysis into a single in-
+                                                 a three-week pilot across four organizational          spectable workflow.
+                                                 use cases and custom-rubric judge experiments             These operational constraints motivated K ALEI -
+                                                 on 108 annotated Q&A pairs spanning four               DOSCOPE , an evaluation workflow for real-world
+                                                 domains and 14 evaluation dimensions. The
+                                                                                                        AI applications. Rather than introducing a new
+                                                 results highlight useful features for end-to-end
+                                                 reliable, automated scoring.                           benchmark or a universal evaluation model, K ALEI -
+                                                                                                        DOSCOPE is designed around the observation that
+                                         1       Introduction                                           contextual evaluation requires careful test construc-
+                                                                                                        tion, domain-specific quality criteria, and auto-
+                                         Large language model (LLM) applications are in-                mated judging calibrated against human-reviewed
+                                         creasingly easy to prototype, but harder to evaluate           labels before scores are aggregated. These reliabil-
+                                         in the setting in which they will be deployed. In              ity checks help guide automated scoring decisions.
+                                         this paper, we focus on functional evaluation: task-
+                                                                                                           We make three contributions: (i) We present
+                                         specific assessment of whether an AI application
+                                                                                                        K ALEIDOSCOPE1 , an end-to-end workflow arti-
+                                         response satisfies the user and policy requirements
+                                                                                                        fact for contextual functional evaluation of AI ap-
+                                         for a given use case. This is distinct from gen-
+                                                                                                        plications, covering target setup, persona-based
+                                         eral capability benchmarking and broader safety
+                                                                                                        test generation, application output collection, hu-
+                                         or security assessment, although these concerns
+                                                                                                        man review, automated judging, and error analysis.
+                                         may constrain the rubric for a given deployment.
+                                                                                                        (ii) We describe its rubric and judging design, in-
+                                         Functional evaluation is especially difficult because
+                                             * Contributed equally                                         1
+                                                                                                            Code repositor and documentation can be accessed via:
+                                             †
+                                                 Work done during an internship at GovTech Singapore.   govtech-responsibleai.github.io/kaleidoscope
+cluding configurable evaluation criteria, claim- or      related inconsistencies (Pignatiello et al., 2020;
+response-level scoring, and reliability-gated aggre-     Karim et al., 2025). Related work on building hu-
+gation of LLM judge scores using human-reviewed          man expert datasets suggests that audit-oriented
+calibration labels. (iii) We report early empirical      review processes can lead to more reliable anno-
+lessons and limitations of a three-week pilot in four    tations. (Saligrama, 2026). Together, these find-
+organizational use cases and rubric/judge experi-        ings motivate a focus on human reviewability and
+ments on 108 annotated Q&A pairs spanning four           on reducing annotation fatigue when calibrating
+domains and 14 evaluation dimensions.                    automated evaluations. A complementary practi-
+                                                         tioner pattern is LLM-as-a-jury, where multiple
+2   Related Work                                         evaluator models expose judge variation and dis-
+Benchmarks and contextual evaluation metrics.            agreement (Arize AI, 2026). These considerations
+General-purpose benchmarks help compare model            inform K ALEIDOSCOPE’s reliability-gated jury de-
+capabilities, but in practice, they rarely capture the   sign in Section 4.5.
+specific users, policies, workflows, and risk tol-
+                                                         Evaluation tools. Existing tools support many
+erance of a deployed AI application. Prior work
+                                                         parts of the eval lifecycle, including defining, run-
+has moved from standard coding, language, reason-
+                                                         ning, scoring, and logging evals. OpenAI Evals and
+ing, or cybersecurity tasks to behavioral and task-
+                                                         Inspect AI provide reusable evaluation workflows
+oriented criteria. For instance, HELM proposes the
+                                                         for LLM systems (OpenAI, 2026; UK AI Secu-
+use of holistic, multi-dimensional evaluation across
+                                                         rity Institute and Meridian Labs, 2026), Prompt-
+risks and use contexts (Liang et al., 2023) while
+                                                         foo supports test cases, assertions, and regression
+other work measures sensibleness and specificity in
+                                                         checks (Promptfoo, 2026), and EvalAssist helps
+open-domain dialogue, answerability for chatbot
+                                                         users create and refine LLM-as-a-judge evalua-
+responses, and empathy in conversational systems
+                                                         tions (IBM, 2026). In our organizational context,
+(Adiwardana et al., 2020; Gupta et al., 2022; Chen
+                                                         however, teams still needed a way to construct
+et al., 2024; Krishna et al., 2023). Beyond these spe-
+                                                         context-specific test sets, translate domain goals
+cialized metrics, recent contextualized evaluation
+                                                         into customizable criteria, and make automated
+work further shows that under-specified queries
+                                                         scoring transparent, inspectable, and gated on judge
+can force arbitrary judgments and produce incon-
+                                                         alignment with human-reviewed labels. K ALEI -
+sistent conclusions about model quality (Malaviya
+                                                         DOSCOPE therefore assembles ideas from existing
+et al., 2025). These findings motivate K ALEIDO -
+                                                         evaluation research, user feedback, and organiza-
+SCOPE ’s emphasis on custom, contextual criteria.
+                                                         tional context into an end-to-end workflow for con-
+Unlike benchmarks or leaderboards, K ALEIDO -
+                                                         textual functional evaluation.
+SCOPE produces application-specific evaluations
+whose scores support local governance decisions,
+not direct comparison across applications.               3   Design Considerations
+
+LLM-as-a-judge and Human Review. LLM                     The design requirements for K ALEIDOSCOPE fol-
+evaluators can scale scoring against natural-            low from the constraints described above: product
+language criteria; G-Eval shows that structured          teams need evaluation artifacts that reflect their
+prompts can help large models approximate human          target application, can be reviewed and calibrated
+judgment for generation tasks (Liu et al., 2023).        by humans, and can expose when automated scor-
+Yet LLM judges can show position, style, length,         ing is or is not appropriate. Rather than propos-
+or concreteness biases (Gu et al., 2025), low intra-     ing a universal benchmark or a general solution to
+rater reliability even under nominally determinis-       LLM-judge reliability, K ALEIDOSCOPE supports
+tic settings (Haldar and Hockenmaier, 2025), and         contextual functional evaluation of a specific AI ap-
+agreeable bias with high true-positive but low true-     plication. Its scores are intended to be interpreted
+negative rates (Jain et al., 2025). Agreement with       locally, with respect to the application under test,
+human judgment, measured through metrics such            the configured rubric, and the calibration set used
+as percentage agreement, Cohen’s kappa, and rank         to assess judge alignment.
+correlation, therefore remains a common reliability         Accordingly, K ALEIDOSCOPE operationalizes
+check (Gu et al., 2025); however, human-in-the-          these requirements through four design considera-
+loop (HITL) review is costly and can suffer fatigue-     tions.
+                                                         4.1       Defining the Target Application
+                                                         The user specifies the application under evalua-
+                                                         tion, including its organization, purpose, target
+                                                         users, and knowledge base. This application pro-
+                                                         file grounds three downstream steps: (i) generating
+                                                         domain-appropriate test cases, (ii) executing test
+                                                         cases against the target application and collecting
+                                                         responses, and (iii) supporting preset rubrics such
+                                                         as groundedness checks against source material.
+                                                            When user-provided context is sparse, the back-
+                                                         end can optionally retrieve public web informa-
+                                                         tion about the application to give the generator
+                                                         additional grounding. Users also define evaluation
+                                                         rubrics and goals during setup, as described in Sec-
+                                                         tion 4.4. At runtime, K ALEIDOSCOPE instantiates
+                                                         candidate LLM judges from these criteria and eval-
+                                                         uates them against the human-labeled calibration
+                                                         set before aggregation.
+
+                                                         4.2       Persona-Based Test Generation
+                                                         Users may upload an evaluation set or utilize
+       Figure 1: K ALEIDOSCOPE’s workflow.
+                                                         K ALEIDOSCOPE to generate one. Generation
+                                                         varies questions along the five configurable dimen-
+R1: Representative test cases. Evaluation data           sions specified in Table 1 to improve domain cov-
+should approximate realistic users, tasks, and con-      erage and user variation.
+texts for the target AI system.
+                                                         Dim           Values                      Goal
+R2: Configurable evaluation rubrics. Different           Persona       Selected / Defined by User Test cases are distributed across se-
+agencies have different policy requirements. The         Type          Typical / Edge
+                                                                                                  lected user personas.
+                                                                                                  Covers common and boundary-
+workflow should translate evaluation goals into spe-                                              testing inputs.
+                                                         Scope         In / Out KB                In-KB inputs use uploaded docu-
+cific, explicit, reviewable scoring criteria.                                                     ments; out-KB inputs test unsup-
+                                                                                                  ported requests.
+                                                         Input style   Brief / Regular / Detailed Varies input formality and length.
+R3: HITL User Experience. If human review is             Language      Selected / Defined by user Splits questions across requested lan-
+required for calibration and high-risk applications,                                              guages.
+
+an evals workflow should optimize for human re-
+viewability while minimizing reviewer fatigue.           Table 1: Dimensions diversifying generated test cases.
+
+R4: Transparent, reliability-gated automated               Personas provide the user model for this
+scoring. LLM judge behavior should be transpar-          diversification. Each persona specifies back-
+ent and reliable because automated scoring requires      ground, communication style, and product use
+governance confidence. The workflow should ag-           case. Personas can be generated from the target-
+gregate automated scores only when a judge meets         application profile, sampled from open-source per-
+a certain alignment threshold on a human-reviewed        sona datasets (NVIDIA, 2026), or entered manually.
+subset, and should support multiple judges to sur-       After configuration, the system allocates questions
+face disagreement and error analysis.                    across the selected dimensions using configurable
+                                                         default ratios described in Appendix A.3.
+4   The K ALEIDOSCOPE Workflow
+                                                         4.3       Human Review and Annotation
+K ALEIDOSCOPE implements these requirements as
+an end-to-end workflow (Figure 1). The workflow          K ALEIDOSCOPE collects all responses from the
+separates three artifacts: the evaluation set, the hu-   target application and guides reviewers to label a
+man labels used for calibration and quality control,     review set for quality control. This set may con-
+and automated scores produced after calibration.         tain all responses in a small evaluation or a subset
+of responses in a larger evaluation. The rubric de-
+termines the annotation unit: claim-level rubrics
+are labeled on individual extracted claims, while
+response-level rubrics receive one label for the re-
+sponse as a whole. Additional claim-level imple-
+mentation details are provided in Appendix A.4.1.
+   The review interface incorporates an LLM-
+assisted annotation workflow, displaying candidate
+labels and highlighted claims from a first-pass LLM
+judge (Figure 2). This shifts the reviewer task from   Figure 2: LLM-assisted review interface showing high-
+one-shot labeling towards auditing suggested anno-     lighted evidence and judge verdicts.
+tations to improve annotation reliability. To reduce
+automation bias, reviewers must select a label from
+the rubric options instead of simply approving or
+rejecting a judge label.
+   Human review is used to establish a trusted ref-
+erence set for downstream judge alignment with
+human judgment. Only judges that meet the con-
+figured threshold are included in the aggregated       Figure 3: Screenshot of 3 LLM Judges. Only reliable
+automated score described in Section 4.5.              judges are aggregated.
+
+4.4   Evaluation Rubrics
+                                                       to be evidence of universal judge correctness, but a
+During setup, users either select preset rubrics for   local quality-control check against human labels.
+common organizational evaluation needs or define          This jury design reduces reliance on a single
+custom rubrics with natural-language criteria, scor-   automated evaluator, allows smaller or lower-cost
+ing options, and annotation level.                     models to be used when they pass the local align-
+   This design was informed by experiments on          ment threshold, and exposes judge disagreements.
+a hand-labeled set spanning four organizational        These disagreements are useful for error analy-
+use cases and 14 evaluation criteria (Appendix B).     sis because they can indicate ambiguous examples
+In brief, generic rubric insertion was not reli-       or responses requiring closer human review (Fig-
+able enough across metrics, and asking one judge       ure 4).
+prompt to score multiple rubric dimensions substan-
+tially degraded performance. Accordingly, K ALEI -     5   Testing with Business Users
+DOSCOPE uses presets where available, a one-
+metric-per-judge-prompt design for custom rubrics,     A three-week pilot was conducted across four or-
+and an LLM-based augmenter that rewrites user-         ganizational use cases to assess whether K ALEI -
+defined criteria into more structured judge prompts    DOSCOPE’s workflow fit practical evaluation work
+before scoring.                                        and to collect design feedback. The pilot examined
+                                                       perceived usability, workflow fit, and interpretation
+4.5   Automated Scoring and LLM-as-a-Jury              of evaluation artifacts; it was not a controlled com-
+For each rubric, K ALEIDOSCOPE creates three can-      parison against manual evaluation or existing tools,
+didate judges using the user’s configured model        nor a validation of evaluation correctness. Table 2
+providers. Each judge scores the relevant annota-      summarizes the use cases; Appendix C provides
+tion units, and its alignment is measured only on      data-collection details.
+the human-labeled calibration units.
+                                                       Use case             Evaluation focus
+   Only judges that pass the local reliability gate
+of Macro F1 > 0.5 are eligible for majority-vote       Finance claims bot   Accuracy for finance queries.
+                                                       HR bot               Realistic and relevant questions.
+aggregation shown in Figure 3. If no judge passes,     Procurement bot      Contract grounding and accuracy.
+the system withholds an automated aggregate for        Staff assistant      App usefulness and tone.
+that rubric and flags it for further human review or
+rubric/judge reconfiguration. The gate is not meant                    Table 2: Pilot use cases.
+                                                          and upload relevant knowledge-base content, but pi-
+                                                          lot users sometimes lacked access to this material or
+                                                          supplied only brief descriptions. To reduce sparse-
+                                                          context failure modes, we added a backend web-
+                                                          search grounding step that supplements setup with
+                                                          public information about the application’s domain
+  Figure 4: Judge disagreements for error analysis.
+                                                          and organizational goals where available. This fit
+                                                          the pilot setting, where most applications had rel-
+   The pilot involved eight users/testers (one to         evant public information online, but narrower or
+three per application) from four teams across the         more specialized use cases still require users to
+four use cases. Six users completed the post-pilot        inject application- or domain-specific context.
+questionnaire (75% response rate). Each tester was
+                                                          Guiding users towards multi-judge evaluation.
+asked to generate an evaluation set of at least 30 test
+                                                          Although K ALEIDOSCOPE supports comparing
+cases and run it across three snapshots of the tar-
+                                                          several LLM-based judges, most pilot users stayed
+get. Throughout the pilot, participants completed
+                                                          with the default automated judge rather than con-
+approximately 12 evaluation runs, 180 generated
+                                                          figuring additional judges. We attribute this partly
+test cases, and 40 human-reviewed outputs under
+                                                          to limited familiarity with judge configuration and
+the default 20% review setting.
+                                                          multi-judge evaluation and therefore retain the jury
+5.1   User Feedback                                       approach, while improving interface cues to ex-
+                                                          plain when judge disagreements are informative.
+Questionnaire responses and follow-up interviews
+suggested that participants perceived K ALEIDO -          Supporting flexible data uploads and exports.
+SCOPE as reducing the manual effort required to or-       Pilot users often needed only parts of the end-to-
+ganize and inspect evaluations, particularly through      end workflow: some brought existing evaluation
+automated test orchestration and the human-review         datasets for automated scoring, while others wanted
+interface. In the post-pilot questionnaire, 83% of        generated test cases for offline annotation or analy-
+respondents (5 of 6) reported that K ALEIDOSCOPE          sis. We therefore added import and export points
+helped them evaluate their applications more effi-        so users can upload test cases and export generated
+ciently, and all respondents reported considering         evaluations. This lets K ALEIDOSCOPE integrate
+the judge reliability score when interpreting auto-       with existing evaluation processes rather than re-
+mated results. These responses are early usability        quire teams to restructure around the tool.
+evidence that the workflow artifacts and calibration
+signal were salient to decision-making.                   6   Deployment Considerations
+
+5.1.1 Lessons for System Design                           We outline deployment considerations when
+                                                          K ALEIDOSCOPE moves toward an integrated test-
+The same qualitative feedback identified practical
+                                                          ing product.
+friction points and mismatches between the initial
+workflow assumptions and users’ evaluation needs,         Operational Integration. Evaluation cost is a
+leading to several design revisions.                      practical constraint, especially as AI evaluation is
+                                                          itself becoming a compute bottleneck (Ghosh et al.,
+Revising test-case allocation for realistic cover-
+                                                          2026). This concern applies to K ALEIDOSCOPE,
+age. The initial generator spread test cases evenly
+                                                          where cost scales with the number of test cases,
+across typical and edge-case queries and in- and
+                                                          scoring granularity, and judge calls. Claim-level
+out-of-knowledge-base scopes. Pilot users found
+                                                          scoring and multi-judge evaluation are especially
+that this over-represented inputs unlike expected
+                                                          expensive, as they require more model calls per
+application usage, so we revised the allocation con-
+                                                          evaluation run. Although the workflow can use
+trols and added “input style” as a generation dimen-
+                                                          smaller models and reliability-filtered judging to
+sion to better capture colloquial queries. Ratios are
+                                                          control token cost, deployed systems should expose
+detailed in Appendix A.3.
+                                                          and monitor cost controls so teams can trade-off
+Grounding target setup with additional context.           evaluation depth, latency, and expense.
+The workflow depends on sufficient application               Evaluation quality also depends on how well
+context: users are asked to describe the application      test generation and scoring are grounded in the ap-
+plication knowledge. The pilot showed that users           for deciding whether an application passes gover-
+may not know which context to provide in K ALEI -          nance requirements. K ALEIDOSCOPE can report
+DOSCOPE . Therefore, future deployments should             that an application scored a certain percentage on a
+support enhanced integration options with applica-         given rubric, but whether that score is acceptable
+tions and their retrieval systems so that evaluations      largely depends on the product and its risk level.
+can access relevant context with less manual setup.        For instance, the same aggregate "Accuracy" score
+                                                           may be acceptable for a low-risk criterion but in-
+Validation and Calibration at Scale. The pilot
+                                                           sufficient for a high-risk one. Governance teams
+provided early practical feedback but is not fully
+                                                           should hence interpret scores alongside the rubrics,
+representative of the workflow’s long-term validity.
+                                                           test cases, human annotations, judge failures, and
+Use cases were limited, and users were of varying
+                                                           domain-specific risk requirements.
+technical backgrounds, most of whom were new
+to evaluations (Section 5). Production deployment          Expanding Evaluation Scope. Finally, the cur-
+should test the workflow with a larger user base           rent workflow is strongest for input-output evalua-
+and higher-risk technical use cases.                       tion: it can evaluate any application where inputs
+   A key calibration challenge is balancing review         can be sent to the target system and collect out-
+set size against evaluation frequency. If evaluations      puts for review. This covers many practical AI
+are run infrequently, reviewers may be willing to          applications, but does not fully capture the interme-
+annotate a larger set which produces more robust           diate behaviors in more complex systems. Agentic
+reliability estimates. On the other hand, if evalua-       applications may involve tool calls, multi-agent
+tions are run frequently, such as after incremental        interactions, long-horizon planning; while RAG
+application changes, it becomes impractical for            applications may require checks on retrieval accu-
+users to review large sets – and may lead to review-       racy. Evaluating such systems holistically would
+ers skipping the calibration step altogether, relying      require richer traces for more comprehensive diag-
+solely on LLM judge scores. This is useful as a            nostics. The team is actively working on extending
+stopgap, but increases risk substantially.                 the workflow in these directions.
+   The current workflow also relies on a limited
+annotation process. A stronger setup would involve         7   Conclusion and Future Extensions
+multiple annotators and aggregation of their ratings,
+                                                           K ALEIDOSCOPE shows that contextual evalua-
+enabling the system to capture annotator variation
+                                                           tion for real-world AI applications requires more
+and reduce individual reviewer bias. However, this
+                                                           than fixed benchmarks or automated judge scores.
+increases overall manual effort and may slow down
+                                                           Teams need support for constructing representative
+testing and governance processes.
+                                                           tests, defining application-specific rubrics, review-
+   K ALEIDOSCOPE therefore treats human calibra-
+                                                           ing outputs efficiently, and calibrating automated
+tion and reliability scores as a quality check rather
+                                                           judges. We present K ALEIDOSCOPE as a workflow
+than a golden substitute for automated scoring, and
+                                                           for contextual, functional evaluation. Our pilot and
+there is the need for applications to configure cal-
+                                                           experiments suggest that persona-based test gen-
+ibration settings based on their risk level and re-
+                                                           eration, claim-level review, and judge calibration
+viewer tolerance and capacity.
+                                                           and analysis can make this process more practical,
+Interpreting Results for Governance. K ALEI -              while keeping the HITL for defining task contexts
+DOSCOPE can inform governance, assurance, or               and staying accountable for automated scores.
+quality-assurance workflows, but its results should           The next phase is to productize these lessons in
+be interpreted locally with respect to the user’s          a broader testing platform, which we are actively
+rubric, test set, and labels rather than as standalone     working towards. Beyond scaling the workflow, a
+scores. The reliability gate in Section 4.5 provides a     key extension is to close the loop from diagnosis to
+quality check and passes selected judges as scalable       improvement. Evaluation results could help teams
+scorers, but does not provide guarantees of correct-       propose targeted changes to prompts, retrieval set-
+ness or coverage. Teams are encouraged to select           tings, application behavior, or judge configurations.
+reliability gate thresholds that fit their applications’   Future work should also extend the testing scope
+purpose. The same goes for evaluation scores,              beyond input-output evaluation to more complex
+which depend largely on user-defined acceptable            AI applications with agentic components, multi-
+thresholds. There is no single “best” threshold            turn workflows, or retrieval systems.
+References                                                 Percy Liang, Rishi Bommasani, Tony Lee, Dimitris
+                                                             Tsipras, Dilara Soylu, Michihiro Yasunaga, Yian
+Daniel Adiwardana, Minh-Thang Luong, David R So,             Zhang, Deepak Narayanan, Yuhuai Wu, Ananya Ku-
+  Jamie Hall, Noah Fiedel, Romal Thoppilan, Zi Yang,         mar, Benjamin Newman, Binhang Yuan, Bobby Yan,
+  Apoorv Kulshreshtha, Gaurav Nemade, Yifeng Lu,             Ce Zhang, Christian Cosgrove, Christopher D. Man-
+  and Quoc V Le. 2020. Towards a human-like open-            ning, Christopher Ré, Diana Acosta-Navas, Drew A.
+  domain chatbot. arXiv preprint arXiv:2001.09977.           Hudson, and 31 others. 2023. Holistic evaluation of
+                                                             language models. Preprint, arXiv:2211.09110.
+Arize AI. 2026. Llm-as-a-jury: What it is and how to im-
+  plement. https://arize.com/llm-as-a-jury/.               Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang,
+  Accessed 2026-06-02.                                       Ruochen Xu, and Chenguang Zhu. 2023. G-eval:
+                                                             Nlg evaluation using gpt-4 with better human align-
+Yirong Chen, Shijie Yan, Sijia Liu, Yinxiao Li, and          ment. arXiv preprint arXiv:2303.16634.
+  Yanghua Xiao. 2024. Emotionqueen: A benchmark
+  for evaluating empathy of large language models. In      Chaitanya Malaviya, Joseph Chee Chang, Dan
+  Findings of the Association for Computational Lin-         Roth, Mohit Iyyer, Mark Yatskar, and Kyle
+  guistics: ACL 2024, pages 2149–2176. Association           Lo. 2025.      Contextualized evaluations: Judg-
+  for Computational Linguistics.                             ing language model responses to underspec-
+                                                             ified queries.      https://allenai.org/blog/
+                                                             contextualized-evaluations. Accessed 2026-
+Avijit Ghosh, Yifan Mai, Georgia Channing, and
+                                                             06-02.
+  Leshem Choshen. 2026. Ai evals are becoming the
+  new compute bottleneck. https://huggingface.             NVIDIA. 2026.    Nemotron-personas collection:
+  co/blog/evaleval/eval-costs-bottleneck.                   Region-specific synthetic persona datasets.
+  Accessed 2026-06-03.                                      https://huggingface.co/collections/
+                                                            nvidia/nemotron-personas.    Accessed 2026-
+Jiawei Gu, Xuhui Jiang, Zhichao Shi, Hexiang Tan,           06-03.
+   Xuehao Zhai, Chengjin Xu, Wei Li, Yinghan Shen,
+   Shengjie Ma, Honghao Liu, Saizhuo Wang, Kun             OpenAI. 2025. How evals drive the next chapter in
+   Zhang, Zhouchi Lin, Bowen Zhang, Lionel Ni, Wen           ai for businesses. https://openai.com/index/
+   Gao, Yuanzhuo Wang, and Jian Guo. 2025. A survey          evals-drive-next-chapter-of-ai/. Accessed
+   on llm-as-a-judge. Preprint, arXiv:2411.15594.            2026-06-02.
+                                                           OpenAI. 2026. Evals: A framework for evaluating llms
+Prakhar Gupta, Adithya A Rajasekar, Ameet Patel,
+                                                             and llm systems. https://github.com/openai/
+  Manav Kulkarni, Anirudh Sunell, Khyathi Kim,
+                                                             evals. Accessed 2026-06-02.
+  Karthik Ganapathy, and Ashish Trivedi. 2022. An-
+  swerability: A custom metric for evaluating chatbot      Grant A. Pignatiello, Richard J. Martin, and Ronald
+  performance. In Proceedings of the Second Work-            L. Jr. Hickman. 2020. Decision fatigue: A conceptual
+  shop on Natural Language Generation, Evaluation,           analysis. Journal of Health Psychology, 25(1):123–
+  and Metrics, pages 316–325. Association for Com-           135.
+  putational Linguistics.
+                                                           Promptfoo. 2026. Promptfoo: Build secure ai applica-
+Rajarshi Haldar and Julia Hockenmaier. 2025. Rat-            tions. https://www.promptfoo.dev/. Accessed
+  ing roulette: Self-inconsistency in LLM-as-a-judge         2026-06-02.
+  frameworks. arXiv preprint arXiv:2510.27106.
+                                                           Venkatesh Saligrama. 2026.       Ground truth
+                                                             is a process, not a dataset.    Amazon Sci-
+IBM. 2026. Evalassist. https://ibm.github.io/
+                                                             ence,      https://www.amazon.science/blog/
+  eval-assist/. Accessed 2026-06-02.
+                                                             ground-truth-is-a-process-not-a-dataset.
+                                                             Accessed 2026-07-02.
+Suryaansh Jain, Umair Z. Ahmed, Shubham Sahai, and
+  Ben Leong. 2025. Beyond consensus: Mitigating the        UK AI Security Institute and Meridian Labs. 2026. In-
+  agreeableness bias in LLM judge evaluations. arXiv         spect: An open-source framework for large language
+  preprint arXiv:2510.11822.                                 model evaluations. https://inspect.aisi.org.
+                                                             uk/. Accessed 2026-06-02.
+Md Monjurul Karim, Sangeen Khan, Dong Hoang Van,
+ Xinyue Liu, Chunhui Wang, and Qiang Qu. 2025.             A     Key Features of the Workflow
+ Transforming data annotation with ai agents: A re-
+ view of architectures, reasoning, applications, and       The key pages in the K ALEIDOSCOPE workflow
+ impact. Future Internet, 17(8):353.                       consist of target setup, rubric definition, persona
+                                                           configuration, and scoring.
+Kalpesh Krishna, Emily Bransom, Bailey Kuehl, Mohit
+  Iyyer, Pradeep Dasigi, Arman Cohan, and Kyle Lo.         A.1    Target Setup
+  2023. Longeval: Guidelines for human evaluation
+  of faithfulness in long-form summarization. arXiv        Figure 5 showcases the fields collected by K ALEI -
+  preprint arXiv:2301.13298.                               DOSCOPE during target setup.
+                                                                    Figure 7: Persona configurations.
+
+Figure 5: Target setup page, where users provide appli-
+cation context for test generation and evaluation.        A.4     Automated Scoring
+                                                          Figure 8 displays the aggregated judge result and
+A.2   Defining Rubrics                                    error analysis table. Users are able to filter for
+Users can select from preset rubrics or create cus-       specific personas, test case dimensions, judges, and
+tom rubrics in Figure 6.                                  view disagreements.
+
+
+
+
+Figure 6: Rubric configuration page, where users define
+                                                          Figure 8: Scoring page, where users inspect automated
+preset or custom evaluation criteria.
+                                                          scores and evaluation results.
+
+A.3   Persona Configuration and Test
+                                                          A.4.1    Claim-Level Scoring
+      Generation
+                                                          For accuracy-oriented metrics, K ALEIDOSCOPE
+Users have three options to curate personas in Fig-
+                                                          can score a response at the claim level rather than
+ure 7.
+                                                          holistically judging the full chatbot response. Fig-
+   Table 3 shows the default test allocation, tuned
+                                                          ure 9 summarises this pipeline.
+after pilot feedback to better reflect real-world us-
+age.
+
+       KB setting    Type and scope        Ratio
+       With KB       Typical + in-KB        70%
+                     Edge + in-KB           15%
+                     Typical + out-of-KB    10%
+                     Edge + out-of-KB        5%
+       Without KB    Typical + out-of-KB    80%
+                     Edge + out-of-KB       20%
+
+ Table 3: Default allocation for generated questions.             Figure 9: Claim-level scoring pipeline.
+Sentence tokenization. Responses are chunked                          Simple                   Complex
+with NLTK’s sentence tokenization. This step is           Factual    Driving Tutor Bot       Housing Bot (N=30):
+intentionally deterministic and preserves context.                   (N=30):                 neutral policy specialist
+                                                                     factual and serious     → emotional,
+                                                                     tutor → strict          outspoken, prejudiced
+Transform and post-processing. Tokenised sen-                        “no-nonsense”           officer
+tences are post-processed into meaningful chunks.                    instructor with sarcasm
+                                                          Subjective Career Friend Bot       Responsible AI Bot
+Filtering and checkworthiness. This stage re-                        (N=28):                 (N=20):
+                                                                     helpful career support encouraging AI
+moves claims that should bypass the accuracy                         staff → formal,         consultant → strict,
+judge, and consists of (i) simple deterministic fil-                 exhaustive career       authoritative mentor
+ters that handle short fragments and citation arti-                  executive
+facts, and (ii) an LLM-based checkworthiness step,
+                                                          Table 4: AI systems in the calibration set. Each cell
+which decides whether a candidate claim is worth
+                                                          shows the baseline style → contrastive style.
+checking. This reduces claim checks on headings,
+filler text, or irrelevant phrases. In addition, the
+checkworthy model (user-configured) sees the can-         resulting accuracy, positive-class binary F1, preci-
+didate claim in local context rather than in isolation.   sion, recall, and Cohen’s κ values were averaged
+                                                          across the two comparisons.
+Judging and aggregation. Checkworthy claims
+are then judged against the knowledge base or re-         B.2    Candidate Judges and Scoring
+trieval citations, producing a binary accuracy ver-
+                                                          Table 5 lists the eight candidate judge models tested
+dict for each claim. Aggregation is strict: any un-
+                                                          across the experiment phases. The judge outputs
+supported claim makes the response inaccurate.
+                                                          were scored against human annotations using accu-
+                                                          racy, positive-class binary F1, precision, recall, and
+B       Rubric and Judge Experiments
+                                                          Cohen’s κ. Each judge configuration was run three
+In the process of designing how rubrics and judges        times, and judge outputs were combined by major-
+are set up, we ran experiments across different ar-       ity vote before calculation of alignment metrics.
+chitectures. These experiments were conducted
+iteratively during system development. Their pur-                     Model                    Provider
+pose was to compare candidate rubric and judge ar-                    GPT-4.1                  OpenAI
+chitectures, diagnose sources of misalignment, and                    GPT-5-mini               OpenAI
+                                                                      Claude Haiku 4.5         Anthropic
+inform the design of Kaleidoscope. They should                        Grok 4.1 Fast            xAI
+therefore be interpreted as formative design experi-                  Gemini 2.5 Flash         Google
+ments on a shared development dataset rather than                     Gemini 3 Flash           Google
+                                                                      Gemini 3.1 Flash Lite    Google
+as a comprehensive benchmark of the evaluated                         GLM-5                    Zhipu AI
+models.
+                                                          Table 5: Candidate judge models evaluated across the
+B.1      Calibration Data                                 rubric experiments.
+The calibration set consists of 108 question–answer
+pairs from four AI systems in RubricBench,2 an-           Metric hierarchy for judge selection. When se-
+notated by two human annotators across 14 dimen-          lecting the best judge per metric, we prioritized:
+sions.                                                    (1) Cohen’s κ, as it corrects for chance agreement
+   Questions were synthetically generated using           and penalizes degenerate classifiers; (2) F1, as a
+K ALEIDOSCOPE and Answers were produced by                secondary check on problem-detection ability; (3)
+4 AI systems, each with two prompt styles.                recall, as a tiebreaker when kappa and F1 are com-
+   The two annotators independently evaluated all         parable — preferring judges that catch more prob-
+108 question–answer pairs across the 14 dimen-            lems over those that are conservative.
+sions. We did not combine their annotations into             We used Cohen’s κ for comparative analysis but
+a single consensus label. Instead, each judge was         the Kaleidoscope workflow uses Macro F 1 for the
+evaluated separately against each annotator, and the      runtime reliability gate because it is easier to in-
+    2
+    https://huggingface.co/datasets/govtech/              terpret across user-defined categorical rubrics and
+RubricBench                                               gives equal weight to each class.
+B.3 Phase 1: Multi-Metric Bracket Approach                     scores hid substantial differences between the in-
+Objective. In initial experiments, we explored a               dividual metrics evaluated in the same judge call.
+multi-metric judge architecture intended to reduce             After examining performance separately for each
+evaluation cost. Evaluation metrics were grouped               metric in the Voice bracket, we found that perfor-
+into three families or "brackets" of evaluation crite-         mance varied substantially across metrics. Agree-
+ria, with one judge call producing structured labels           ment was relatively strong for bias and clarity but
+for every metric in the corresponding bracket.                 weaker for verbosity, fluency, and coherence. The
+                                                               best-performing model differed across metrics, sug-
+• Relevancy: sensibleness, specificity, context re-            gesting that no single judge model was consis-
+  call, and instruction following.                             tently strongest across the dimensions in the Voice
+                                                               bracket.
+• Voice: bias, coherence, fluency, empathy, clarity,              These findings suggested that low per-metric
+  professionalism, structure, and verbosity.                   performance may reflect both the multi-metric ar-
+• Accuracy: faithfulness and factual correctness.              chitecture and the inherent ambiguity or class dis-
+                                                               tribution of individual metrics. Phase 1 alone could
+   This reduced the number of judge calls required             not distinguish between these explanations, which
+for evaluation.                                                led us to investigate whether prompt iteration could
+   Hypothesis. Related evaluation metrics can                  improve performance.
+be assessed together within a single bracket-level
+judge call without materially reducing evaluation              B.4    Phase 2: Prompt Iteration on Brackets
+quality.                                                       Objective. Phase 2 tested whether the multi-metric
+Setup. The Relevancy and Voice brackets were                   bracket architecture could be retained while im-
+both tested across 8 models. The Accuracy bracket              proving performance through prompt optimization.
+was excluded from the experiments as it requires                  Hypothesis. Adding calibration notes, stricter
+a different evaluation pipeline described in Sec-              definitions, and reasoning structures would im-
+tion A.4.1                                                     prove bracket performance.
+   For each metric, judge alignment was calculated                Across three rounds, we retained the same multi-
+separately against each annotator and averaged                 metric voice and relevancy brackets while progres-
+across the two annotators. The resulting per-metric            sively revising their prompts. Round 1 used base-
+scores were then averaged equally to obtain the                line prompts with concise metric definitions and
+overall bracket-level Cohen’s κ and Macro F 1.                 label criteria. Round 2 expanded these definitions
+                                                               with concrete failure cases, calibration guidance
+   Bracket         Best κ     Best F1       Best Judge         against defaulting to positive labels, dimension-
+   Relevancy       0.239       0.596          GLM-5            specific checks, and evidence-based justifications.
+   Voice           0.376       0.675      Claude Haiku 4.5
+                                                               Round 3 built on variants of the Round 2 prompts,
+                                                               testing explicit verification steps, clearer decision
+Table 6: Best judge per bracket (Phase 1, multi-metric).
+                                                               thresholds, illustrative examples, and a shorter,
+                                                               compressed formulation.
+ Metric              Best κ     Best F1        Best Judge         For each round and bracket, Table 8 reports
+ Bias                0.818       0.842          GPT-4.1
+                                                               the judge–prompt configuration with the highest
+ Clarity             0.648       0.777      Claude Haiku 4.5   bracket-level Cohen’s κ among the configurations
+ Professionalism     0.540       0.660      Claude Haiku 4.5   evaluated in that round. The Round 3 value there-
+ Structure           0.514       0.652         Gemini 2.5
+ Empathy             0.485       0.775          GPT-4.1        fore represents the best-performing model–prompt
+ Verbosity           0.337       0.805      Claude Haiku 4.5   variant, rather than an average across prompt vari-
+ Fluency             0.220       0.346         Gemini 2.5      ants.
+ Coherence           0.174       0.276      Claude Haiku 4.5
+                                                               Bracket     R1 κ    R2 κ    R3 κ     ∆κ      R1 F1   R3 F1
+Table 7: Per-metric results within the Voice bracket
+                                                               Relevancy   0.239   0.205   0.192   −19.5%   0.596   0.567
+(Phase 1). Metrics are ordered by kappa.                       Voice       0.376   0.344   0.373   −0.9%    0.675   0.674
+
+
+ Overall agreement was low for Relevancy and                   Table 8: Prompt iteration across three rounds (Phase 2).
+moderate for Voice. However, the aggregated                    Performance degraded or plateaued.
+   Prompt iteration degraded Relevancy and failed                             Gemini 3.1 Flash Lite for verbosity (κ = 0.376,
+to improve Voice. One possible explanation is                                 F1= 0.810).
+scope overload. Each bracket-level judge must                                    We then compared these configurations with the
+maintain distinct decision boundaries for several                             corresponding Phase 1 results, where empathy and
+metrics within a single call. However, rubric ambi-                           verbosity were evaluated alongside the other dimen-
+guity, label distribution, and prompt-specific effects                        sions within the multi-metric Voice judge. Both
+may also contribute.                                                          comparisons use the same metrics, evaluation ex-
+                                                                              amples, and human annotations. However, they
+B.5    Phase 3: Single-Metric Judges                                          compare the strongest prompt–model configuration
+Objective. Phase 3 tested whether narrowing the                               found under each architecture, and the selected
+judge’s scope to one metric would improve align-                              judge model may differ between the multi-metric
+ment with human annotations.                                                  and single-metric setups. The observed differences
+  Hypothesis. Dedicated metric-level judges                                   therefore reflect the combined effects of prompt
+would produce better alignment by allowing full                               scope and model selection and should not be at-
+focus on a single dimension.                                                  tributed solely to single-metric prompting.
+Metric selection. Empathy and verbosity were                                  Metric      Multi. κ   Sing. κ    ∆κ      Multi. F1   Sing. F1   ∆F1
+selected based on two criteria: (1) organizational                            Empathy      0.485     0.559     +15.2%     0.775      0.824     +6.3%
+                                                                              Verbosity    0.337     0.376     +11.6%     0.805      0.810     +0.6%
+priority - these were the top dimensions flagged
+as important by pilot adopters; and (2) moderate-                             Table 11: Best single-metric judges compared with the
+to-low multi-metric kappa in Phase 1 (empathy:                                same metrics evaluated within the multi-metric Voice
+0.485, verbosity: 0.337), indicating room for im-                             judge.
+provement under a different architecture.
+                                                                                 The stronger empathy result is consistent with
+Setup. We developed three single-metric prompt
+                                                                              the hypothesis that narrowing the judging scope
+variants for each metric. For each prompt vari-
+                                                                              can help apply metric-specific criteria more consis-
+ant, we evaluated multiple candidate models and
+                                                                              tently, although the comparison also reflects differ-
+selected the model with the highest Cohen’s κ. Ta-
+                                                                              ences in the selected judge model. The verbosity
+bles 9 and 10 report the best-performing judge con-
+                                                                              results were more modest. The multi-metric judge
+figuration for each prompt iteration.
+                                                                              had already achieved a high F1 score, and the dedi-
+Pmt   Best Judge              κ            F1       Rec.     Prec.    Acc.    cated judge primarily improved agreement rather
+1     Gemini 3 Flash      0.559           0.824     0.767    0.892    0.787   than overall classification performance.
+2     GPT-5-mini          0.494           0.744     0.602    0.977    0.732      Overall, the results provide partial support
+3     GPT-5-mini          0.545           0.794     0.688    0.941    0.769
+                                                                              for the hypothesis. Single-metric configurations
+Table 9: Single-metric judge results for empathy                              achieved higher alignment with the human annota-
+(pos_label = “not empathetic”).                                               tions, but the gains were modest and the resulting
+                                                                              κ values remained moderate. This suggests that
+                                                                              judging scope may contribute to misalignment, but
+Pmt   Best Judge                   κ         F1       Rec.    Prec.   Acc.    is unlikely to be its only source.
+1     Gemini 3.1 Flash Lite       0.376     0.810    0.878    0.756   0.736
+2     Gemini 3 Flash              0.332     0.604    0.443    0.953   0.625
+3     Gemini 3 Flash              0.340     0.795    0.851    0.750   0.718   B.6      Phase 4: LLM-Based Prompt
+                                                                                       Augmentation
+Table 10: Single-metric judge results for verbosity
+                                                                              Objective. Phases 1–2 (B.4) showed that general-
+(pos_label = “verbose”).
+                                                                              purpose multi-metric templates produced incon-
+                                                                              sistent performance across criteria, while Phase 3
+Comparison with the multi-metric baseline.                                    (B.5) showed that dedicated single-metric prompts
+For each metric, we selected the prompt–model                                 could improve alignment for selected metrics.
+configuration with the highest Cohen’s κ across                               However, manually developing a dedicated prompt
+the three variants, using F1 as a secondary mea-                              for every possible user-defined criterion is not scal-
+sure of classification performance. This resulted                             able.
+in Prompt 1 with Gemini 3 Flash for empathy                                      We therefore explored an LLM-based prompt
+(κ = 0.559, F1= 0.824) and Prompt 1 with                                      augmentation setup. Given a user-defined rubric,
+an augmentation model expands the rubric into a            Augmenter + Complexity                  κ           F1         Acc.
+metric-specific judge prompt containing additional         Gemini 3.1 Pro + Detailed              0.548      0.692       0.801
+definitions and calibration guidance. A fixed judge        GPT-5.4 + Few-shot                     0.514      0.652       0.792
+                                                           Gemini 3.1 Pro + Few-shot              0.488      0.626       0.782
+model then evaluates using the augmented prompt.           GLM-5 + Detailed                       0.482      0.613       0.782
+   Figure 10 illustrates how this hybrid design is         Gemini 3.1 Pro + Barebones             0.481      0.640       0.773
+incorporated into the broader judging workflow.
+   Hypothesis. An augmentation model can gen-             Table 12: Top 5 augmentation results for structure.
+erate a metric-specific judge prompt that improves
+alignment relative to evaluating the same criterion        Augmenter + Complexity                  κ           F1         Acc.
+within a general-purpose multi-metric prompt.              GPT-5.4 + Barebones                    0.336      0.446       0.769
+                                                           Gemini 3.1 Pro + Barebones             0.329      0.473       0.750
+Metric selection. Structure and specificity were           Gemini 3.1 Pro + Few-shot              0.298      0.465       0.732
+selected because: (1) both were organizational pri-        Claude Sonnet + Detailed               0.293      0.471       0.722
+                                                           GLM-5 + Detailed                       0.289      0.427       0.741
+orities flagged during pilot discussions, and (2)
+their properties are relatively orthogonal, providing     Table 13: Top 5 augmentation results for specificity.
+a stress test of the augmentation approach across
+metric types.
+                                                        did not consistently produce stronger augmented
+Setup. We evaluated four augmentation models—           prompts.
+GPT-5.4, Claude Sonnet 4.6, Gemini 3.1 Pro, and
+GLM-5—across three levels of rubric detail:             Comparison with the multi-metric baseline.
+  All three levels represented the same underlying      For each metric, we selected the augmented config-
+metric, label set, and intended decision boundary.      uration with the highest Cohen’s κ and compared
+The detailed and few-shot versions added guidance       it with the metric’s Phase 1 performance within the
+without intentionally changing what the rubric mea-     multi-metric judge.
+sured.
+                                                        Metric        Multi. κ   Aug. κ    ∆κ      Multi. F1    Aug. F1     ∆F1
+• Barebones: a brief description of the metric and      Structure      0.514     0.548    +6.6%      0.652       0.692      +6.2%
+                                                        Specificity    0.366     0.336    −8.1%      0.484       0.446      −7.7%
+  its labels;
+                                                        Table 14: Best augmented-prompt configuration com-
+• Detailed: the same underlying metric expanded         pared with the same metric evaluated within the Phase 1
+  with decision criteria, clarifications, and edge      multi-metric judge.
+  cases; and
+
+• Few-shot: the detailed definition supplemented           Prompt augmentation produced mixed results.
+  with annotated examples illustrating the intended     For structure, the best augmented prompt increased
+  application of the labels.                            κ from 0.514 to 0.548 and F1 from 0.652 to 0.692,
+                                                        modestly outperforming the multi-metric baseline.
+   Gemini 3.1 Flash Lite was held fixed as the             For specificity, however, κ decreased slightly
+downstream judge due to its performance in              from 0.366 to 0.336 and F 1 decreased from 0.484
+Phase 3 ( B.5), to isolate the effects of the aug-      to 0.446. The weaker specificity result should also
+mentation model. We evaluated two metrics: struc-       be interpreted alongside the lower inter-annotator
+ture (pos_label = “poorly structured”) and speci-       agreement for this metric (κ=0.317, compared with
+ficity (pos_label = “generic”). This produced 24        0.666 for structure). Because judges were eval-
+configurations: four augmentation models × three        uated separately against each annotator and the
+rubric-detail levels × two metrics.                     resulting metrics were averaged, inconsistent hu-
+   Tables 12 and 13 report the five highest-κ con-      man decision boundaries make it more difficult
+figurations for each metric.                            for a judge to achieve strong average agreement
+   The strongest augmentation configuration dif-        across both annotators. The specificity result may
+fered across the two metrics. For structure, Gem-       therefore reflect ambiguity in the rubric or its appli-
+ini 3.1 Pro with the detailed rubric achieved the       cation, in addition to limitations of the augmented
+highest agreement (κ = 0.548). For specificity,         prompt.
+GPT-5.4 with the barebones rubric performed best           The results provide partial support for the hy-
+(κ = 0.336). More detailed rubric inputs therefore      pothesis. LLM-based augmentation can produce
+Figure 10: Hybrid rubric and judge workflow in K ALEIDOSCOPE. Preset rubrics use pre-tuned prompts, while
+custom rubrics are expanded through LLM-based augmentation. Candidate judges are evaluated against human
+annotations, and only judges that meet the configured reliability threshold contribute to majority-vote aggregation.
+
+
+competitive metric-specific prompts, but its effec-
+tiveness depends on the criterion, augmentation
+model, and amount of rubric detail. No single aug-
+mentation configuration performed best across both
+metrics.
+Design implication. These findings suggest that
+augmentation should not replace validated metric-
+specific presets. Instead, they support a hybrid
+design. Kaleidoscope provides preset rubrics for
+commonly used metrics that have been tested and
+refined across user applications. For custom user-
+defined rubrics, prompt augmentation provides a
+scalable way to generate an initial metric-specific
+judge prompt, which users can review and edit.
+   Both preset and augmented judges are treated as
+starting points and are not fixed evaluators. Kalei-
+doscope allows users to measure judge alignment
+against their own human annotations and iteratively
+refine the rubric, prompt, model, or judge configu-
+ration. In future work, the reviewed examples and
+alignment results accumulated through this process
+could support a more automated feedback loop,
+in which application-specific data is used to pro-
+pose or optimize judge prompts before they are
+re-evaluated against human labels.
+
+C    Pilot Setup Details
+Feedback was collected through a post-pilot ques-
+                                                            Figure 11: Post-pilot feedback form used to collect
+tionnaire and follow-up interviews. Beyond nu-              ratings and qualitative comments from pilot users.
+meric ratings, we collected detailed comments
+from users and interviewed them about their us-
+age patterns. Due to privacy considerations, details        teraction with the system, where some friction may
+of the individual applications, test cases, and eval-       have been due to limited familiarity with AI eval-
+uation results are redacted. Figure 11 shows the            uation concepts, such as rubric configuration and
+feedback form used for post-pilot collection.               multi-judge evaluation. The next phase will test the
+   The pilot provided useful early feedback on the          workflow as part of a broader testing product, al-
+K ALEIDOSCOPE workflow, but was limited in scale            lowing K ALEIDOSCOPE to be evaluated in a more
+and duration. It also captured users’ first-time in-        operational setting with broader use cases.
+
