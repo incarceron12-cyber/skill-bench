@@ -16,12 +16,42 @@ Design evidence is the complete review `papers/agent-benchmarks/2026-07-17-bridg
 
 The replay supports only exact behavior of builder-authored deterministic records. It does **not** establish agent capability, professional validity, portable document utility, semantic mediation, population prevalence, cross-domain generalization, deployment readiness, or an external treatment effect. It reuses existing benchmark, validity, and metric concepts and adds no retrieval-specific schema.
 
+## v0.2 staged-lineage continuation
+
+The immutable-parent v0.2 continuation adds cross-stage conservation without changing
+`fixture.json` or `replay-report.json`. It is grounded in the complete AutoSynthesis
+review and tests the general hypothesis that endpoint proximity is a lossy observation,
+not validation of a professional chain. Controlled-intervention and nonintervention
+association synthesis are unlike mechanism cases, not benchmark scope commitments.
+
+Ten frozen cases preserve protocol → search → screen → study-map → extraction →
+transformation → analysis → report lineage. In each shape, the matrix includes a clean
+control, duplicate reports incorrectly treated as independent, a verbatim number bound
+to the wrong role, offsetting extraction errors that leave the endpoint unchanged, and
+an authorized protocol difference whose endpoint and decision legitimately diverge.
+The replay reports endpoint distance and decision agreement separately, diagnoses the
+earliest failed stage, blocks all six close-endpoint cases with consequential breaks,
+and accepts the two authorized divergences only when their authority locators remain.
+
+This deterministic internal calibration does not establish statistical correctness,
+agent capability, professional validity, population prevalence, cross-domain
+generalization, an external treatment effect, or readiness. Its evidence is limited to
+exact behavior over the frozen synthetic records and fail-closed mutations.
+
 ## Execute
 
 ```bash
+# Immutable v1 matrix
 python pilots/source-at-state-omission-conformance/build_fixture.py
 python pilots/source-at-state-omission-conformance/validate.py \
   pilots/source-at-state-omission-conformance/fixture.json \
   --report pilots/source-at-state-omission-conformance/replay-report.json
 python -m unittest tests.test_source_at_state_omission_conformance -v
+
+# Immutable-parent v0.2 continuation
+python pilots/source-at-state-omission-conformance/build_lineage_v02.py
+python pilots/source-at-state-omission-conformance/validate_lineage_v02.py \
+  pilots/source-at-state-omission-conformance/lineage-fixture-v0.2.json \
+  --report pilots/source-at-state-omission-conformance/lineage-report-v0.2.json
+python -m unittest tests.test_source_chain_lineage_v02 -v
 ```
