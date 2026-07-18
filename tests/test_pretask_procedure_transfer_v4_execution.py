@@ -69,6 +69,22 @@ class PretaskProcedureTransferV4ExecutionTests(unittest.TestCase):
             self.assertEqual(32, report["denominators"]["service_valid"])
             self.assertEqual(32, report["denominators"]["environment_valid"])
 
+    def test_posthoc_audit_preserves_frozen_scores_and_fails_claims_closed(self):
+        audit_path = HERE / "posthoc-endpoint-audit.json"
+        if not audit_path.exists():
+            self.skipTest("post-hoc endpoint audit has not run")
+        audit = json.loads(audit_path.read_text())
+        self.assertEqual("posthoc_instrument_defect_diagnosis_not_rescoring", audit["audit_kind"])
+        self.assertTrue(audit["frozen_checker_result"]["unchanged"])
+        self.assertEqual(0, audit["frozen_checker_result"]["endpoint_pass"])
+        self.assertEqual(32, audit["frozen_checker_result"]["checker_scored"])
+        self.assertEqual(32, audit["diagnostic_core_denominator"])
+        finding_ids = {row["finding_id"] for row in audit["findings"]}
+        self.assertEqual({"k4n7-private-endpoint-contradiction", "journal-id-hidden-literal",
+                          "reason-wording-exactness", "controlling-seals-type-undisclosed"}, finding_ids)
+        self.assertIn("not replacement scores", audit["use_limit"])
+        self.assertTrue(all(value is False for value in audit["claim_ceiling"].values()))
+
 
 if __name__ == "__main__":
     unittest.main()
