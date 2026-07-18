@@ -33,6 +33,7 @@ The review files below are deep reviews unless their own evidence-status section
 | [MSE-Bench execution redundancy](agent-benchmarks/2026-07-15-msebench-execution-redundancy-validity.md) | How should within-trial execution scope and expansion be measured, and why is an authored sufficient witness not a proven minimum? | resource ledgers, execution scope, oracle validity, adaptive expansion |
 | [Benchmark Ceiling](agent-benchmarks/2026-07-10-benchmark-ceiling-expert-labor-scarcity.md) | What expert-labor and renewal constraints are hypothesized, and how strong is their evidence? | economics, expert scarcity, lifecycle |
 | [Benchmark-to-risk expert elicitation](agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | What evidence is required between a configured-system benchmark observation and a consequential workflow or stakeholder decision claim? | consequence validity, structured judgment, disagreement, decision loss |
+| [Scalable Delphi](agent-benchmarks/2026-07-18-scalable-delphi-proxy-elicitation-validity.md) | When do verifiable proxy prediction, evidence responsiveness, and human-panel resemblance support only a configured proxy-estimator claim rather than calibrated latent risk, expert authority, decision utility, or substitution? | LLM panels, proxy calibration, answer-bearing evidence, observer dependence, expert participation |
 | [OfficeEval](agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | When does adapting an external standardized exam preserve lineage but require a new validity and threshold-transport argument? | external instruments, native artifacts, criterion dependence |
 | [AIDABench](agent-benchmarks/2026-07-17-aidabench-end-to-end-artifact-validity.md) | When do separately routed answer, chart, and spreadsheet observers support configured-package scores rather than one end-to-end analytics, procurement, or readiness claim? | package closure, plural artifact views, mixed score semantics, release drift, ConsensusEval |
 | [Nubank production evaluation](agent-benchmarks/2026-07-14-nubank-offline-online-production-validity.md) | When does an adaptively selected offline-to-online association support prospective production-validity claims rather than retrospective co-movement among treatment bundles? | production evaluation, A/B testing, metric funnels, selection, configured systems |
@@ -55,7 +56,11 @@ ranges, calibrated uplift, cyber risk, expected harm, or decision use. Preserve
 packet/order identity, initial and revised rationales, deliberative dependence,
 estimand forks, calibration status, aggregation sensitivity, excluded links, and
 the next discriminating evidence; use the existing validity, metric, participation,
-and elicitation machinery rather than a domain-specific schema. Add the criterion-
+and elicitation machinery rather than a domain-specific schema. Scalable Delphi
+adds a machine-proxy boundary: correlation on small benchmark-summary tables and
+movement under outcome-authored descriptions do not establish probabilistic
+calibration, independent expertise, or target transport; persona calls remain
+configured model observers, not expert contributors. Add the criterion-
 validity case for the empirical rung between score and outcome: concurrent whole-
 episode association is not pre-outcome prediction, incremental information, a causal
 lever, outcome legitimacy, decision utility, or readiness. Preserve score timing,

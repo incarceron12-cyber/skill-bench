@@ -59,6 +59,7 @@ Most relevant sources:
 | [Industrial expertise codification](../papers/agent-benchmarks/2026-07-11-industrial-expertise-codification-agent.md) | A | Types codified knowledge by execution semantics and bounds a co-designed package effect away from tacit transfer, expert equivalence, and cross-domain generalization |
 | [JobBench](../papers/agent-benchmarks/2026-07-12-jobbench-delegation-desire-validity.md) | A | Makes worker-reported delegation preference a typed portfolio-selection signal while separating it from package fidelity, present consent, workflow uptake, and worker outcomes |
 | [Benchmark-to-risk expert elicitation](../papers/agent-benchmarks/2026-07-12-benchmark-to-risk-expert-elicitation.md) | A | Makes the score-to-consequence warrant observable as structured disagreement and separates capability interpretation, scenario use, workflow effect, outcome composition, and decision loss |
+| [Scalable Delphi](../papers/agent-benchmarks/2026-07-18-scalable-delphi-proxy-elicitation-validity.md) | A | Adds a necessary-condition ladder for model-based latent estimation while showing that correlation over answer-cued benchmark summaries, five same-model personas, and resemblance to two subgroups from one human workshop do not establish calibration, expert authority, target transport, decision utility, cost equivalence, or substitution |
 | [OfficeEval](../papers/agent-benchmarks/2026-07-12-officeeval-standardized-exam-validity.md) | B | Separates external requirement/weight lineage from the validity of a transformed subset, administration, aggregate, or transported decision threshold |
 | [Laboratory workflow twins](../papers/agent-benchmarks/2026-07-13-laboratory-workflow-expert-elicitation.md) | A | Adds claim-level authority gates, mandatory nulls, exact evidence→claim→projection lineage, and masking-channel diagnosis while separating graph executability from knowledge truth or operational validity |
 | [Context-Mediated Domain Adaptation](../papers/agent-benchmarks/2026-07-16-context-mediated-domain-adaptation-edit-validity.md) | A | Makes before/after artifact edits a provenance-rich elicitation channel while separating observed delta, model interpretation, contributor acceptance, promotion, delivery, adoption, downstream effect, and transfer |
@@ -74,6 +75,19 @@ Most relevant sources:
 | [c-CRAB](../papers/agent-benchmarks/2026-07-17-c-crab-review-test-projection-validity.md) | A | Makes a real human-feedback→fail/pass-test→repair-agent consequence chain unusually inspectable while showing that outcome-informed projection, selection on the evaluation mediator, missing finding-to-action attribution, and unscored false positives bound the result to a configured selected chain rather than review quality generally |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
+
+Model-panel elicitation adds a separate **proxy-estimator ladder**:
+`configured panel realization → repeated behavior → frozen verifiable-proxy error →
+non-answer-bearing evidence response → matched qualified-human agreement → target
+transport or target calibration → decision utility → total-cost equivalence → bounded
+complement/substitution claim`. Persona biographies are prompt treatments, not
+participant authority, and same-model calls do not create independent raters. Proxy
+success does not transport when benchmark descriptions encode target-relative labels
+or when the latent target requires a different causal warrant. Preserve source/target
+firewalls, observer covariance, raw revisions, mediator lineage, target-level
+denominators, human disagreement, excluded interpretations, and total validation
+cost. Existing configured-system, source-pack, participation, metric, validity, and
+benchmark-to-consequence records suffice; no synthetic-expert schema is needed.
 
 Production corrections add a promotion boundary inside that graph: `observed
 edit → typed cause and authority → reviewed disposition → recurring finding →
