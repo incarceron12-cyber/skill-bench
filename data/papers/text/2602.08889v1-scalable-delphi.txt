@@ -1,0 +1,840 @@
+                                             Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+
+                                                                                       Tobias Lorenz 1 Mario Fritz 1
+
+
+                                                                 Abstract                                   they share a common structure: they are central to high-
+                                                                                                            stakes decisions, yet they cannot be answered through direct
+                                             Quantitative risk assessment in high-stakes do-
+                                                                                                            measurement. We cannot run controlled experiments on
+                                             mains relies on structured expert elicitation to
+                                                                                                            real adversaries, simulate the full complexity of global sup-
+                                             estimate unobservable properties. The gold stan-
+                                                                                                            ply chains, or observe the counterfactual where a reactor
+                                             dard—the Delphi method—produces calibrated,
+
+
+
+
+arXiv:2602.08889v1 [cs.AI] 9 Feb 2026
+                                                                                                            design fails. Instead, practitioners rely on structured expert
+                                             auditable judgments but requires months of co-
+                                                                                                            judgment—panels of specialists who provide probability
+                                             ordination and specialist time, placing rigorous
+                                                                                                            estimates conditioned on available evidence.
+                                             risk assessment out of reach for most applica-
+                                             tions. We investigate whether Large Language                   The most established methodology for such elicitation is
+                                             Models (LLMs) can serve as scalable proxies for                the Delphi method (Dalkey & Helmer, 1963), developed
+                                             structured expert elicitation. We propose Scal-                at RAND in the 1950s and now standard practice in high
+                                             able Delphi, adapting the classical protocol for               stakes domains. A typical Delphi study proceeds in rounds:
+                                             LLMs with diverse expert personas, iterative re-               experts first receive detailed briefing materials describing
+                                             finement, and rationale sharing. Because target                the problem, available evidence, and the specific quanti-
+                                             quantities are typically unobservable, we develop              ties to be estimated. Each expert independently provides
+                                             an evaluation framework based on necessary con-                probability distributions or point estimates, along with writ-
+                                             ditions: calibration against verifiable proxies, sen-          ten rationales. A facilitator then aggregates the responses,
+                                             sitivity to evidence, and alignment with human                 anonymizes them, and circulates a summary—including
+                                             expert judgment. We evaluate in the domain of                  areas of agreement, disagreement, and the reasoning behind
+                                             AI-augmented cybersecurity risk, using three ca-               outlier judgments. Experts revise their estimates in light of
+                                             pability benchmarks and independent human elic-                this feedback, and the process repeats until convergence or
+                                             itation studies. LLM panels achieve strong cor-                a predetermined number of rounds. The result is a struc-
+                                             relations with benchmark ground truth (Pearson                 tured, auditable record of expert judgment that accounts for
+                                             r = 0.87–0.95), improve systematically as ev-                  uncertainty and mitigates some forms of individual bias.
+                                             idence is added, and align with human expert
+                                                                                                            This rigor comes at considerable cost. A three-round Delphi
+                                             panels—in one comparison, closer to a human
+                                                                                                            study typically takes three to four months, including prepa-
+                                             panel than the two human panels are to each
+                                                                                                            ration, elicitation, and analysis (Gordon, 2009). Each round
+                                             other. This demonstrates that LLM-based elic-
+                                                                                                            requires coordinating schedules among a panel of multiple
+                                             itation can extend structured expert judgment to
+                                                                                                            experts, who may each charge several hundred dollars per
+                                             settings where traditional methods are infeasible,
+                                                                                                            hour. The NUREG-1150 study—a landmark risk assess-
+                                             reducing elicitation time from months to minutes.
+                                                                                                            ment for five U.S. nuclear plants—involved several hundred
+                                                                                                            experts estimating hundreds of parameters over multiple
+                                                                                                            years (U.S. Nuclear Regulatory Commission, 1990). Such
+                                        1. Introduction                                                     investments are justified when the stakes are high enough,
+                                        What is the probability that a ransomware attack against a          but they place quantitative risk assessment out of reach
+                                        regional hospital succeeds? How likely is a semiconductor           for most applications. Small and mid-sized organizations
+                                        shortage to disrupt automotive production next quarter? By          cannot afford it; rapidly evolving domains like AI security
+                                        how much does access to AI tools increase a phishing cam-           cannot wait for it; and risk models with hundreds of interde-
+                                        paign’s success rate? How safe is a proposed small modular          pendent parameters cannot be populated one expert panel at
+                                        reactor design? These questions span different domains, but         a time. The result is a widening gap: we have increasingly
+                                                                                                            sophisticated tools for building risk models, but populating
+                                          1
+                                            CISPA Helmholtz Center for Information Security, Germany.       them with defensible estimates remains a bottleneck.
+                                        {tobias.lorenz,fritz}@cispa.de.
+                                                                                                            This paper explores a different approach: using Large Lan-
+                                        Preprint. February 10, 2026.
+
+                                                                                                        1
+                           Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+guage Models (LLMs) as scalable proxies for structured                systematically as evidence is added, and align with human
+expert elicitation. The intuition is that LLMs, trained on            expert panels—in one comparison, closer to a human panel
+vast technical corpora including academic literature, threat          than the two human panels are to each other (5.0 vs. 16.6
+reports, and domain-specific documentation, may have in-              pp mean absolute difference). These results suggest that
+ternalized enough knowledge and reasoning abilities to                LLM-based elicitation can serve as a useful complement to
+provide useful probability estimates—particularly when                traditional methods, particularly in resource-constrained or
+prompted with the same structured evidence that would                 time-sensitive contexts.
+be provided to human experts. There is reason for cautious
+                                                                      Concretely, we make the following contributions:
+optimism: LLMs have demonstrated calibration on fore-
+casting tasks (Kadavath et al., 2022; Halawi et al., 2024),              • We propose Scalable Delphi, adapting structured ex-
+can synthesize information across diverse technical sources,               pert elicitation for LLMs with personas, iterative re-
+and can articulate reasoning that can be inspected and chal-               finement, and rationale sharing.
+lenged. If these capabilities extend to structured risk estima-          • We develop an evaluation framework for latent quan-
+tion, the economics of risk assessment change dramatically:                tity estimation: calibration on verifiable proxies, sen-
+LLM-based elicitation is cheap enough to apply broadly,                    sitivity to evidence, and alignment with human judg-
+fast enough to keep pace with evolving threats, reproducible               ment.
+enough to audit and version, and able to handle thousands of             • We demonstrate strong empirical results: LLM es-
+estimates without the quality degradation seen in extended                 timates correlate with benchmark ground truth (r =
+human elicitation sessions (Gordon, 2009). This intuition                  0.87–0.95) and align with human expert panels.
+has begun to surface in preliminary studies (Nóbrega et al.,
+2023; Mueller et al., 2024; Papakonstantinou et al., 2025;            2. Scalable Delphi Method
+Barrett et al., 2025). However, LLMs can produce con-
+fident but poorly-grounded estimates and are not explic-              Structured risk models decompose complex risks into net-
+itly trained for probabilistic reasoning. Whether they can            works of conditional probabilities—whether formalized as
+serve as reliable proxies for expert judgment is an empirical         fault trees, Bayesian networks, or influence diagrams (Bed-
+question—one that requires careful analysis. We develop               ford & Cooke, 2001). Each node requires a probability
+this intuition into a principled methodology: formalizing             estimate. Some quantities can be measured directly; many
+the framework, instantiating it across multiple models and            others cannot. For these latent quantities, structured expert
+benchmarks, and systematically evaluating the conditions              elicitation is the standard approach (Cooke, 1991). We fo-
+under which it produces reliable estimates.                           cus on the core subtask: producing calibrated estimates for
+                                                                      individual quantities, which can then populate such models.
+Answering this question is not straightforward. Because
+the target quantities are unobservable by construction, va-           Traditional Delphi elicitation convenes a panel of hu-
+lidity cannot be established through direct comparison to             man experts who provide independent estimates, review
+ground truth. But the absence of ground truth does not                anonymized peer feedback, and iteratively refine their judg-
+preclude meaningful evaluation. We assess whether LLM-                ments until convergence. This produces calibrated, au-
+based estimates exhibit properties central to reliable estima-        ditable estimates—but as discussed in the introduction (Sec-
+tion: appropriate sensitivity to relevant evidence, accurate          tion 1), is costly and requires months. We propose Scalable
+prediction of quantities we can verify, and alignment with            Delphi: given the same structured evidence provided to hu-
+human expert judgment where available.                                man experts, a panel of LLM agents produces probability
+                                                                      estimates through the same deliberative process.
+We instantiate this investigation in the domain of AI-
+augmented cybersecurity risk. This domain offers three
+properties that make it well-suited as a testbed: threat mod-         2.1. The Estimation Task
+els are well-specified and decomposable into capabilities,            Let Q denote a quantity to be estimated in a risk model, and
+benchmarks with known ground truth allow partial valida-              let E denote the relevant evidence. The elicitation task is to
+tion, and a recent expert elicitation study provides human            produce an estimate p̂ of P (Q | E) together with a measure
+baselines for comparison (Murray et al., 2025).                       of uncertainty.
+Concretely, we evaluate LLM-based Delphi panels on three              Mirroring traditional Delphi, we build a panel of k expert
+cybersecurity benchmarks (BountyBench, Cybench, Cyber-                agents. Each agent j is instantiated with a distinct persona
+Gym), testing calibration, evidence sensitivity, and align-           πj representing a particular perspective or expertise. These
+ment with human experts. Our findings are encouraging:                agents produce independent estimates for each round r,
+LLM estimates achieve strong correlations with benchmark              conditioned on Q, E, and the anonymized and aggregated
+ground truth (Pearson correlation r = 0.87–0.95), improve
+
+
+                                                                  2
+                            Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+feedback of the previous round F (r−1) :                             2.3. Design Rationale
+                (r)
+               p̂j    = M(Q, E, πj , F (r−1) ).           (1)        LLM-based elicitation differs from human Delphi in ways
+                                                                     that create both challenges and opportunities.
+M is the language model, and F (0) = ∅ for the first round.
+                                                                     First, elicitation is repeatable and perturbable. Repeated
+The final estimate is aggregated across the panel after the
+                                                                     querying of human experts for the same quantity is con-
+final round:
+                              k                                      strained by fatigue, anchoring, and cost. LLMs can be
+                           1 X (R)                                   queried indefinitely under systematically varied conditions.
+                      p̂ =      p̂ ,                     (2)
+                           k j=1 j                                   This enables analyses that are impractical with human pan-
+where R is the total number of rounds.                               els: running identical scenarios under different assumptions
+                                                                     to understand which factors most influence the outcome;
+                                                                     perturbing individual pieces of evidence to identify which
+2.2. Elicitation Protocol
+                                                                     are load-bearing and which are redundant; computing value-
+We instantiate the full Delphi protocol with LLM agents in           of-information estimates to determine where additional evi-
+all roles: expert panelists and mediator. This enables fully         dence would most improve the model; and exploring coun-
+automated elicitation with no human involvement beyond               terfactuals that would be difficult to pose to human experts
+problem specification.                                               without biasing subsequent responses. In effect, LLM-based
+                                                                     elicitation transforms risk models from static snapshots into
+Expert Panel. We instantiate a panel of k experts with               objects that can be stress-tested, interrogated, iteratively
+personas Π = {π1 , . . . , πk } chosen to reflect diverse per-       refined, and easily updated with new information.
+spectives on the task. Diversity in personas mirrors the
+diversity sought in human Delphi panels, where heteroge-             Second, independence is controllable. Human experts can-
+neous expertise reduces systematic bias (Rowe & Wright,              not forget their prior estimates; once they have reasoned
+1999).                                                               about Q1 , that reasoning inevitably influences Q2 . With
+                                                                     LLMs, we choose: independent estimation (fresh context
+Round Structure. In round 1, each expert receives evidence           per quantity) avoids anchoring but may sacrifice coherence;
+                                            (1)
+E and independently produces an estimate p̂j along with a            sequential estimation (preserved history) maintains consis-
+written rationale. A mediator then synthesizes the responses         tency but risks compounding errors. This is a design choice
+into feedback F (1) : summary statistics of the estimates,           that depends on the problem structure.
+key arguments for higher and lower values, and areas of              Third, diversity must be constructed. Human panels are
+agreement or disagreement—without attributing views to               diverse by default—experts bring different training, ex-
+specific experts. In subsequent rounds, each expert receives         perience, and priors. A single LLM queried with iden-
+                                                   (r)
+this feedback and submits a revised estimate p̂j . This              tical prompts risks mode collapse: a narrow distribution
+multi-round structure balances independent judgment with             of estimates that understates genuine uncertainty. We ad-
+structured deliberation.                                             dress this by instantiating multiple experts with distinct
+                                                                     personas—different backgrounds, specializations, and rea-
+Aggregation. The final panel estimate is the mean of round
+                                                                     soning styles—to recover the variance that reflects real dis-
+R estimates, following the linear opinion pool standard
+                                                                     agreement among informed perspectives.
+in expert elicitation. We report the 95% confidence inter-
+val across panelists as a measure of panel disagreement.
+Alternative aggregation schemes—median, performance-                 3. Evaluation Framework
+weighted averaging, or fitting parametric distributions—can
+                                                                     The central question—whether LLMs can serve as reliable
+be substituted when downstream applications require them.
+                                                                     proxies for expert elicitation—cannot be answered by direct
+Prompt Structure. Prompts are organized into system-level            comparison to ground truth. In supervised learning, we
+and user-level components. The system prompt establishes:            evaluate against held-out labels; in forecasting, we compare
+(1) the Delphi process context, explaining the expert’s role;        predictions to realized outcomes. Neither applies here. The
+(2) the expert persona; and (3) output format requirements,          probability that a novel exploit is found or that an adversary
+including point estimates, confidence intervals, and ratio-          escalates from reconnaissance to attack lacks ground truth
+nales. The user prompt provides the specific elicitation task:       we can observe.
+a description of the quantity to be estimated, the evidence E,       This does not make evaluation impossible, only indirect.
+and any relevant context. This separation allows the same            We adopt a falsificationist and evidence-gathering stance:
+evidence to be presented to multiple experts with different          rather than asking whether LLM estimates are correct, we
+personas, and allows the same expert to be queried across            ask whether they fail tests that any reliable estimator must
+multiple quantities. Prompt details are in Appendix A.
+
+                                                                 3
+                           Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+pass—calibration and evidence sensitivity. Failure on either         pendent baselines (Murray et al., 2025). We test calibration
+is disqualifying. We supplement these necessary conditions           and evidence sensitivity across three benchmarks, compare
+with corroborating evidence from expert comparisons and              estimates to human expert panels, and evaluate with two
+qualitative analysis of model reasoning.                             leading model families.
+
+3.1. Necessary Conditions                                            4.1. Experimental Setup
+We require that reliable elicitation satisfy two properties:         Benchmarks. We evaluate on three cybersecurity bench-
+calibration and sensitivity.                                         marks with published agent success rates (Appendix C).
+                                                                     BountyBench (Zhang et al., 2025a) reports success rates
+Calibration. For quantities where ground truth is observ-
+                                                                     for 10 agents across three task types (detection, exploitation,
+able, estimates correlate positively with true values, and
+                                                                     patching) on 25 real-world systems with 40 bug bounties.
+stated confidence intervals approximate nominal coverage.
+                                                                     Cybench (Zhang et al., 2025b) reports success rates for
+While we typically cannot observe values that are the sub-
+                                                                     16 agents on 40 professional-level Capture the Flag tasks.
+ject of elicitation, we can use proxy tasks of similar nature
+                                                                     CyberGym (Wang et al., 2025) reports success rates for 12
+where ground-truth values are available.
+                                                                     agents tasked to generate proof-of-concept exploits across
+Sensitivity. Estimates respond appropriately to available            1,507 vulnerabilities in 188 open-source projects.
+information: adding decision-relevant evidence changes
+                                                                     Models. We evaluate two frontier models: GPT-5.1 (Ope-
+estimates in the appropriate direction; removing evidence
+                                                                     nAI; knowledge cutoff September 2024) and Claude Opus
+degrades estimates toward uninformed priors.
+                                                                     4.1 (Anthropic; knowledge cutoff January 2025). Bounty-
+While these conditions cannot validate estimates on ulti-            Bench (May 2025) and CyberGym (June 2025) postdate
+mate quantities of interest, they provide strong evidence            both cutoffs, precluding contamination. Cybench (August
+that estimates are well calibrated and sensibly influenced by        2024) predates both, raising potential contamination con-
+available information.                                               cerns; however, Cybench shows the lowest baseline per-
+                                                                     formance and highest evidence sensitivity (Section 4.3),
+3.2. Corroborating Evidence                                          suggesting models reason from provided evidence rather
+                                                                     than recall memorized results.
+To further strengthen the evidence, we supplement these
+necessary conditions with two additional forms of evidence:          Metrics. We report Pearson correlation r (linear relation-
+alignment with human experts and reasoning quality.                  ship), Spearman correlation ρ (rank-order agreement), and
+                                                                     mean absolute error (MAE) between predicted and actual
+Alignment with human experts. Where human expert esti-               success rates.
+mates are available, we compare LLM estimates to expert
+judgments. Human experts are fallible, so disagreement is            Baselines. We compare against simple heuristics: for Boun-
+not automatically disqualifying, but alignment with inde-            tyBench, task mean (average across agents for each task
+pendent expert panels suggests that estimates are tracking           type) and agent mean (average across tasks for each agent);
+genuine properties of the domain rather than artifacts of the        for Cybench and CyberGym, global mean (leave-one-out
+model or protocol.                                                   average of all agents).
+Reasoning quality. The Delphi protocol elicits rationales
+                                                                     4.2. Calibration
+alongside estimates. We examine selected examples to ver-
+ify that reasoning reflects available evidence rather than           We test whether LLM estimates correlate with verifiable
+generic patterns.                                                    ground truth using leave-one-out prediction tasks.
+Together, these evaluations provide the evidential basis for         Task. We use leave-one-out prediction tasks adapted to each
+using LLM-based elicitation in practice.                             benchmark’s structure. BountyBench reports success rates
+                                                                     for 10 agents across three task types (detection, exploita-
+4. Experiments                                                       tion, patching); we hold out one cell and ask the LLM to
+                                                                     estimate it given the remaining matrix and agent descrip-
+We instantiate our evaluation framework in the domain of             tions. Cybench and CyberGym report aggregate success
+AI-augmented cybersecurity. This domain offers three prop-           rates per agent (16 and 12 agents respectively); we hold out
+erties essential for our evaluation: benchmarks that provide         one agent and ask the LLM to estimate its overall success
+observable ground truth (LLM agent success rates on secu-            rate given the remaining agents and their descriptions. For
+rity tasks), structured information that can be systematically       each prediction, we query a panel of five LLM experts with
+varied, and a recent human expert study that provides inde-
+
+                                                                 4
+                                    Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+                          BountyBench                                    Cybench                                     CyberGym
+ 100                                                    60                                          20
+
+
+
+
+  Estimate
+
+                                                                                                                                GPT-5.1
+                                                                                                                                Opus-4.1
+                                                                                                                                Task mean
+                                                                                                                                Model mean
+      0                                                  0                                           0
+              0            True Value            100         0                                60         0                               20
+
+             Model           r↑          ρ↑     MAE ↓
+                                                             Model        r↑        ρ↑     MAE ↓         Model         r↑       ρ↑    MAE ↓
+             GPT-5.1         0.92       0.86     8.52
+                                                             GPT-5.1     0.87       0.89     5.84        GPT-5.1      0.94    0.81     1.33
+             Opus-4.1        0.94       0.87     7.27
+                                                             Opus-4.1    0.95       0.95     3.56        Opus-4.1     0.95    0.78     1.22
+             Task mean       0.79       0.58    12.26
+                                                             Task mean   -1.00     -1.00    12.13        Task mean    -1.00   -1.00    4.35
+             Model mean     -0.42       -0.31   32.75
+
+Figure 1. Calibration: predicted vs. actual success rates. Top: scatter plots with mean estimates. Bottom: summary statistics. Dashed line
+indicates perfect calibration.
+
+
+distinct personas and report the mean estimate.                                  4.3. Evidence Sensitivity
+
+Results. Figure 1 shows predicted versus actual success                          A reliable estimator must respond appropriately to available
+rates. Both frontier models achieve strong Pearson cor-                          information. We test this by systematically varying the
+relations across all three benchmarks: on BountyBench,                           evidence provided to the model.
+Opus-4.1 reaches r = 0.94 and GPT-5.1 reaches r = 0.92;
+                                                                                 Task. We repeat the leave-one-out prediction under four
+on Cybench, r = 0.95 and r = 0.87 respectively; on Cy-
+                                                                                 information conditions: (1) none—anonymized agents and
+berGym, both exceed r = 0.94. Spearman correlations
+                                                                                 tasks, only numerical values; (2) benchmark—benchmark
+are also high (ρ = 0.78 to 0.95), suggesting stable relative
+                                                                                 description with anonymized agents; (3) model—real agent
+ordering of the performance of different models. Estimates
+                                                                                 names and descriptions, anonymized benchmark; and (4)
+cluster tightly around the diagonal. GPT-5.1 and Opus-4.1
+                                                                                 full—both benchmark and agent information.
+produce similar predictions—suggesting estimates reflect
+task properties rather than model-specific artifacts.                            Results. Figure 2 shows Pearson correlation with ground
+Both models substantially outperform baseline heuristics.                        truth across information conditions. Performance improves
+On BountyBench, the task-type mean baseline achieves                             as decision-relevant information is added across all bench-
+r = 0.79, while the agent mean baseline shows negative                           marks, but the strength of the effect varies by benchmark
+correlation (r = −0.42), confirming that predictions capture                     structure. On Cybench, correlation increases from near-zero
+task-specific difficulty rather than exploiting simple patterns.                 (or negative) with no information to r > 0.85 with full
+For Cybench and CyberGym, we can only compute the task                           information—a shift from noise to strong signal. Agent de-
+mean, which is equivalent to the global mean. This baseline                      scriptions drive most of this gain: knowing which model is
+exhibits perfect negative correlation (r = −1.00) because                        being evaluated matters more than knowing the benchmark
+excluding each point biases the estimate against it: high-                       when predicting agent performance. BountyBench shows
+performing agents are underestimated (mean of lower val-                         high baseline correlation (r ≈ 0.82) even with anonymized
+ues) and low-performing agents are overestimated. Despite                        information, improving modestly to r > 0.92 with full con-
+this, LLMs maintain strong positive correlations, indicating                     text. This reflects its richer numerical structure: a 10 × 3
+they reason about agent capabilities from descriptions rather                    matrix provides statistical patterns that a single column can-
+than exploiting distributional regularities.                                     not. CyberGym falls between these extremes, with baseline
+                                                                                 correlation around r = 0.5–0.7 improving to r > 0.94.
+                                                                                 Critically, the benchmark most susceptible to contamina-
+                                                                                 tion (Cybench, published August 2024) shows the lowest
+
+                                                                           5
+                                              Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+                                       BountyBench                             Cybench                                                       CyberGym
+                         1.0
+                                                                         Model
+                         0.8                                              GPT-5.1
+
+
+
+
+ Pearson correlation r
+                                                                          Opus-4.1
+                         0.4
+
+
+                         0.0
+
+
+                         -0.4
+                                None Benchmark Model   Full          None Benchmark Model                         Full             None Benchmark Model         Full
+
+Figure 2. Evidence sensitivity: Pearson correlation with ground truth across information conditions. Performance increases as decision-
+relevant information is added, confirming estimates reflect reasoning about provided evidence.
+
+
+baseline and highest evidence sensitivity. If models were                                                         Expert Alignment: Human vs. LLM Panels
+recalling memorized results, we would expect the opposite                                      100%
+                                                                                                               Baseline (no LLM)
+pattern. This confirms that estimates reflect reasoning about
+provided evidence rather than retrieval of training data.                                                75%
+
+
+
+                                                                                     Estimated success
+4.4. Qualitative Analysis                                                                                50%
+
+To illustrate how evidence shapes reasoning, we compare
+rationales from the same expert under different information.                                             25%
+
+Without evidence. Given only anonymized values, the                                                      0%
+expert resorts to statistical interpolation: “The values form                                                    It Has     Network   Unbreak- Just Another   Frog
+                                                                                                                 Begun       Tools      able    Pickle Jail   WAF
+a rough performance ladder in increments of 2.5–5 points
+[. . . ] placing Model J at 32.5% fits this progression.”                                                          Human (A/B)            GPT-5.1             Opus-4.1
+
+With evidence. Given model identities and descriptions,                            Figure 3. Expert alignment: LLM estimates compared to human
+reasoning becomes substantive: “GPT-4o is weaker than                              expert panels from Murray et al. (2025). Tasks ordered by difficulty
+Claude 4.5 Sonnet (55%) and likely below Claude 4.1/4                              (easy to hard) based on human first-solve time. Bars show panel
+Opus (38%), but clearly stronger than o3-mini (22.5%), so                          means; error bars indicate 95% confidence intervals. All estimates
+                                                                                   after the final Delphi round.
+an intermediate value around 30% best fits the progression.”
+Both estimates are reasonable, but evidence enables domain-
+informed comparison rather than blind extrapolation.                               yield a mapping from benchmark performance to risk esti-
+                                                                                   mates. The study was released in March 2025, after both
+4.5. Expert Alignment                                                              models’ knowledge cutoffs, precluding contamination.
+The preceding experiments use benchmark success rates as                           We apply the full Delphi protocol: five LLM experts with
+ground truth. Here we compare directly to human expert                             distinct cybersecurity personas (Section B) provide inde-
+judgments from an independent elicitation study.                                   pendent estimates in round 1, and submit revised estimates
+                                                                                   after reviewing a moderator summary of peer rationales in
+Task. We replicate the elicitation protocol from Murray                            round 2. To match the human study conditions, each LLM
+et al. (2025), who asked cybersecurity experts to estimate                         expert maintains conversation history across tasks, allowing
+the probability of successful malware development given                            reference to previous estimates—just as human experts had
+access to an LLM of varying capability. Capability is op-                          context from earlier tasks in the sequence.
+erationalized through Cybench tasks: experts see a task
+description and estimate success probability, assuming that                        Results. Figure 3 compares LLM panel estimates to the
+task represents the hardest challenge the LLM can solve                            two human expert panels from Murray et al. (2025). Both
+(against a 25% baseline with no LLM assistance). Five                              humans and LLMs show appropriate sensitivity to task
+tasks of increasing difficulty (by human first-solve time)                         difficulty: estimates increase monotonically from approxi-
+                                                                                   mately 27–34% for the easiest task to 38–82% for the hard-
+
+                                                                               6
+                          Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+est. The two human panels show substantial disagreement,            beyond any model’s training distribution. Rather, LLMs
+with Panel B providing systematically lower estimates than          extend what structured risk assessment can accomplish.
+Panel A (mean absolute difference (MAD) 16.6 percentage
+                                                                    First, human and LLM elicitation can be combined. Human
+points (pp)). GPT-5.1 aligns closely with Human Panel A
+                                                                    experts provide estimates for core quantities in a risk model;
+(MAD 5.0 pp)—closer than the two human panels are to
+                                                                    LLMs extend coverage to less critical paths, enabling more
+each other. Opus-4.1 estimates systematically higher risk
+                                                                    comprehensive models without proportional increases in
+(MAD 12.8 pp vs Human A), but preserves the same rela-
+                                                                    cost. Alternatively, a single human expert study can serve
+tive ordering across tasks. The largest divergence occurs on
+                                                                    as a prior, with LLMs used to vary assumptions, update
+“Unbreakable,” where LLMs estimate 51–61% compared to
+                                                                    evidence as conditions change, and transform static risk
+30–39% for humans; notably, human experts in the original
+                                                                    snapshots into dynamic, continuously updated assessments.
+study flagged this task as having inflated first-solve time
+relative to its technical difficulty, which may explain both        Second, the economics of LLM elicitation create opportuni-
+the high human variance and the models’ higher estimates.           ties to democratize structured risk modeling. At three orders
+                                                                    of magnitude lower cost, risk models become practical in
+5. Discussion and Limitations                                       medium- and low-stakes domains—supply chain resilience,
+                                                                    organizational security posture, infrastructure planning—
+Our goal is to evaluate whether LLMs can serve as scalable          where structured assessment would be beneficial but has
+proxies for structured expert elicitation. While ground-truth       historically been too expensive to justify.
+validation is impossible by construction—the quantities of
+interest cannot be directly observed—we can test whether            Limitations. The fundamental challenge in evaluating
+LLM-based estimates exhibit properties that any reliable es-        LLM-based elicitation is that ground truth is unavailable
+timator must satisfy. The results are encouraging: estimates        by construction—we cannot directly observe the quantities
+are well-calibrated on verifiable benchmark quantities, re-         we most want to estimate. Our evaluation addresses this
+spond appropriately to available information, and align with        through multiple lines of evidence: calibration on verifi-
+independent human expert panels.                                    able proxies, sensitivity to information, and alignment with
+                                                                    human experts. Each provides partial validation, but none
+Interpretation. Strong calibration on benchmark predic-             constitutes definitive proof. The gap between benchmark
+tion suggests that LLMs encode task difficulty and model            performance and real-world outcomes—shaped by defender
+capabilities in ways that support well-calibrated probability       responses, operational factors, and context that benchmarks
+estimates. This is not simple imputation: LLM estimates             cannot capture—remains structural. Red-team exercises
+substantially outperform baseline heuristics like row and           with controlled outcomes or longitudinal studies correlating
+column means, indicating genuine reasoning about task and           estimates with observed incidents could narrow this gap,
+model properties. The evidence sensitivity results strengthen       though both present practical and ethical challenges.
+this interpretation: when information is removed, perfor-
+                                                                    We evaluate two frontier model families on cybersecurity
+mance degrades toward chance, demonstrating that esti-
+                                                                    risk estimation, using benchmarks and a human Delphi study
+mates reflect reasoning about provided evidence rather than
+                                                                    as testbeds. Whether results transfer to other risk domains
+memorization or pattern matching.
+                                                                    should be validated before broader deployment.
+LLM estimates align with human expert panels, falling
+within the range of human judgments across tasks. This              Future Work. Three directions seem most promising:
+alignment is notable given that human panels themselves             cross-domain validation, e.g., in biosecurity, financial risk,
+show substantial disagreement—no two expert groups con-             and supply chain security; hybrid protocols that integrate
+verge on identical estimates, and inter-panel variance is a         LLM and human estimates; and investigation into domain-
+well-documented feature of elicitation studies. LLM esti-           specific fine-tuning or specialized elicitation training to fur-
+mates exhibiting similar variance to human panels, rather           ther improve calibration and uncertainty quantification.
+than exact agreement, suggests they are capturing genuine
+uncertainty in the domain rather than overfitting to a single       6. Related Work
+reference point.
+                                                                    Scalable Delphi is related to work on structured expert elic-
+Implications. The unique properties of LLM-based                    itation, LLM-based deliberation, AI-enabled cyber threat
+elicitation—scalable, orders of magnitude cheaper, con-             assessment, and LLM forecasting.
+sistent across thousands of estimates, reproducible, and
+auditable—open operational patterns previously infeasible.          Structured Expert Elicitation. The Delphi method
+This does not mean replacing human experts, particularly in         (Dalkey & Helmer, 1963; Rowe & Wright, 1999), devel-
+high-stakes domains where novel threats require judgment            oped at RAND in the 1950s, established the core princi-
+
+
+                                                                7
+                           Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+ples of structured elicitation: iterative rounds, anonymized          stakeholder dynamics (Abdelnabi et al., 2024).
+feedback, and controlled interaction among experts. Sub-
+                                                                      Several studies have begun to explore LLMs in Delphi-style
+sequent work formalized these practices into operational
+                                                                      settings. Nóbrega et al. (2023) prompt ChatGPT to im-
+protocols—SHELF for uncertainty quantification (Gosling,
+                                                                      personate renowned experts for future-of-work forecasting,
+2017), Cooke’s classical model for performance-based ex-
+                                                                      evaluating only through qualitative alignment with prior
+pert weighting (Cooke, 1991), and IDEA for structured ag-
+                                                                      studies. Mueller et al. (2024) compare AI and human expert
+gregation (Hanea et al., 2017)—standard in high-stakes do-
+                                                                      panels on scenario ratings, finding a moderate correlation
+mains such as nuclear safety, climate assessment, aerospace,
+                                                                      (r = 0.64) but noting that AI tends toward more extreme,
+and pandemic forecasting (U.S. Nuclear Regulatory Com-
+                                                                      positively biased ratings; attempts to create “digital twins”
+mission, 1990; Bamber & Aspinall, 2013; McAndrew et al.,
+                                                                      of specific experts were unsuccessful. Papakonstantinou
+2021). We adapt this structure for LLM-based elicitation,
+                                                                      et al. (2025) apply document-grounded LLM prompts to nu-
+maintaining the key properties that make Delphi effective:
+                                                                      clear reactor risk identification, concluding that AI outputs
+diverse perspectives through distinct expert personas, itera-
+                                                                      served as “talking points” for human experts. Barrett et al.
+tive refinement through multi-round protocols, and explicit
+                                                                      (2025) develop quantitative cyber risk models using both hu-
+rationale sharing to surface disagreements.
+                                                                      man and LLM-simulated Delphi panels. We share their goal
+AI Risk Modeling. Quantitative risk modeling for AI sys-              of systematic LLM-based elicitation, but focus on develop-
+tems is an emerging discipline (Touzet et al., 2025; Campos           ing a rigorous evaluation framework—calibration against
+et al., 2025), with AI-enabled cyber offense among the most           ground truth, evidence sensitivity, and human alignment—
+developed domains. Capability benchmarks—Cybench                      rather than direct application to risk models.
+(Zhang et al., 2025b), BountyBench (Zhang et al., 2025a),
+CyberGym (Wang et al., 2025)—provide standardized mea-                7. Conclusion
+surements of LLM performance on security-relevant tasks,
+while expert elicitation studies have sought to translate these       Structured risk models require probability estimates for
+into real-world risk estimates (Murray et al., 2025; Barrett          quantities that cannot be directly observed. Traditional
+et al., 2025). This combination of verifiable benchmarks              expert elicitation provides these estimates, but is too ex-
+and existing human expert baselines makes cyber risk an               pensive to scale. We propose Scalable Delphi, replacing
+ideal testbed for evaluating LLM-based elicitation methods.           human expert panels with LLM agents while preserving
+                                                                      the core structure of independent estimation, mediated feed-
+LLM Forecasting. LLMs have shown improving results                    back, and iterative refinement. Across three cybersecurity
+on forecasting tasks. Early work introduced benchmarks                benchmarks, LLM estimates achieve strong calibration with
+revealing poor performance relative to human experts (Zou             ground truth, respond appropriately to available information,
+et al., 2022), but recent retrieval-augmented systems ap-             and align with independent human expert panels. These re-
+proach the accuracy of human crowd forecasts (Halawi                  sults suggest LLMs are viable proxies for expert elicitation
+et al., 2024), and LLM ensembles achieve performance                  at substantially lower cost. We view Scalable Delphi not as
+statistically indistinguishable from human forecaster aggre-          a replacement for human judgment on high-stakes quanti-
+gates (Schoenegger et al., 2024). Work on calibration has             ties, but a complement that makes structured risk modeling
+characterized when LLM probability estimates are reliable             practical where it was previously prohibitive—and enables
+(Kadavath et al., 2022; Tian et al., 2023). While these re-           frequent updates as conditions change.
+sults give hope for LLM-based expert elicitation, our setting
+differs in a fundamental way: forecasting concerns concrete,          Impact Statement
+measurable future events that eventually resolve, enabling
+direct evaluation against ground truth. We estimate latent            This paper develops methods for LLM-based structured ex-
+quantities—current but unobservable—often complex prop-               pert elicitation. We evaluate on cybersecurity benchmarks,
+erties, such as the probability that an attacker with given           but the method is domain-general. We see two primary im-
+capabilities succeeds against a given target. These quanti-           plications. On the positive side, scalable elicitation could
+ties rarely resolve, requiring a different evaluation strategy        democratize access to structured forecasting, enabling or-
+based on necessary conditions and corroborating evidence              ganizations without resources for traditional expert panels
+rather than wait-and-score accuracy.                                  to conduct rigorous risk assessments. On the negative side,
+                                                                      when applied to adversarial domains, such methods could
+LLM-based Deliberation. Recent work has explored multi-               theoretically help malicious actors identify high-value at-
+agent LLM systems for improved reasoning. Debate and                  tack strategies. We believe this risk is minimal: our method
+discussion among LLM agents can enhance accuracy on                   estimates probabilities, it does not generate capabilities, and
+reasoning tasks (Du et al., 2023; Liang et al., 2024), while          the benchmarks we study are already public. Furthermore,
+role-based simulations enable modeling of negotiation and             better risk estimation benefits defenders more than attack-
+
+                                                                  8
+                          Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+ers, as defenders must prioritize across many threats, while          expert judgement. International journal of forecasting,
+attackers need to find only a few.                                    33(1):267–279, 2017.
+                                                                    Kadavath, S., Conerly, T., Askell, A., Henighan, T., Drain,
+References                                                            D., Perez, E., Schiefer, N., Hatfield-Dodds, Z., DasSarma,
+Abdelnabi, S., Gomaa, A., Sivaprasad, S., Schönherr, L.,             N., Tran-Johnson, E., et al. Language models (mostly)
+  and Fritz, M. Cooperation, competition, and malicious-              know what they know. arXiv preprint arXiv:2207.05221,
+  ness: Llm-stakeholders interactive negotiation. Advances            2022.
+  in Neural Information Processing Systems, 37:83548–               Liang, T., He, Z., Jiao, W., Wang, X., Wang, Y., Wang, R.,
+  83599, 2024.                                                        Yang, Y., Shi, S., and Tu, Z. Encouraging divergent think-
+Bamber, J. L. and Aspinall, W. An expert judgement assess-            ing in large language models through multi-agent debate.
+  ment of future sea level rise from the ice sheets. Nature           In Proceedings of the 2024 conference on empirical meth-
+  Climate Change, 3(4):424–427, 2013.                                 ods in natural language processing, pp. 17889–17904,
+                                                                      2024.
+Barrett, S., Murray, M., Quarks, O., Smith, M., Kryś,
+  J., Campos, S., Boria, A. T., Touzet, C., Hayrapet, S.,           McAndrew, T., Wattanachit, N., Gibson, G. C., and Reich,
+  Heiding, F., et al. Toward quantitative modeling of                N. G. Aggregating predictions from experts: A review of
+  cybersecurity risks due to ai misuse. arXiv preprint               statistical methods, experiments, and applications. Wiley
+  arXiv:2512.08864, 2025.                                            Interdisciplinary Reviews: Computational Statistics, 13
+                                                                     (2):e1514, 2021.
+Bedford, T. and Cooke, R. Probabilistic risk analysis: foun-
+  dations and methods. Cambridge University Press, 2001.            Mueller, R. M., Thoring, K., Klöckner, H. W., and Larsen, K.
+                                                                     Crafting future scenarios with the help of AI: Potentials of
+Campos, S., Papadatos, H., Roger, F., Touzet, C., Quarks,            a hybrid Delphi expert panel. In Proceedings of the 57th
+  O., and Murray, M. A frontier ai risk management                   Hawaii International Conference on System Sciences, pp.
+  framework: Bridging the gap between current ai prac-               6458–6467, 2024.
+  tices and established risk management. arXiv preprint
+                                                                    Murray, M., Papadatos, H., Quarks, O., Gimenez, P.-F., and
+  arXiv:2502.06656, 2025.
+                                                                     Campos, S. Mapping ai benchmark data to quantitative
+Cooke, R. Experts in uncertainty: opinion and subjective             risk estimates through expert elicitation. arXiv preprint
+  probability in science. Oxford university press, 1991.             arXiv:2503.04299, 2025.
+
+Dalkey, N. and Helmer, O. An experimental application               Nóbrega, L., Marschhausen, L., Martinez, L. F., Lima, Y.,
+  of the delphi method to the use of experts. Management              Almeida, M., Lyra, A., Barbosa, C. E., and Moreira de
+  science, 9(3):458–467, 1963.                                        Souza, J. AI Delphi: Machine-machine collaboration for
+                                                                      exploring the future of work. SSRN Preprint, 2023.
+Du, Y., Li, S., Torralba, A., Tenenbaum, J. B., and Mordatch,
+  I. Improving factuality and reasoning in language models          Papakonstantinou, N., Van Bossuyt, D., Bell, R., Longshore,
+  through multiagent debate. In Forty-first International             R., and Heikkilä, M. Privateaidelphi: Adopting and adapt-
+  Conference on Machine Learning, 2023.                               ing private ai for risk assessment of safety critical systems.
+                                                                      In 2025 Annual Reliability and Maintainability Sympo-
+Gordon, T. J. The real-time delphi method. In Glenn, J. C.            sium (RAMS), pp. 1–7, 2025.
+  and Gordon, T. J. (eds.), Futures Research Methodology—
+ Version 3.0, chapter 5. The Millennium Project, 2009.              Rowe, G. and Wright, G. The delphi technique as a fore-
+                                                                      casting tool: issues and analysis. International journal of
+Gosling, J. P. Shelf: the sheffield elicitation framework. In         forecasting, 15(4):353–375, 1999.
+ Elicitation: The science and art of structuring judgement,
+  pp. 61–93. Springer, 2017.                                        Schoenegger, P., Tuminauskaite, I., Park, P. S., Bastos, R.
+                                                                      V. S., and Tetlock, P. E. Wisdom of the silicon crowd:
+Halawi, D., Zhang, F., Yueh-Han, C., and Steinhardt, J. Ap-           Llm ensemble prediction capabilities rival human crowd
+  proaching human-level forecasting with language models.             accuracy. Science Advances, 10(45):eadp1528, 2024.
+  Advances in Neural Information Processing Systems, 37:
+  50426–50468, 2024.                                                Tian, K., Mitchell, E., Zhou, A., Sharma, A., Rafailov,
+                                                                      R., Yao, H., Finn, C., and Manning, C. D. Just ask
+Hanea, A., McBride, M., Burgman, M., Wintle, B., Fidler,              for calibration: Strategies for eliciting calibrated confi-
+  F., Flander, L., Twardy, C., Manning, B., and Mascaro,              dence scores from language models fine-tuned with hu-
+  S. Investigate discuss estimate aggregate for structured            man feedback. In Proceedings of the 2023 Conference
+
+                                                                9
+                           Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+  on Empirical Methods in Natural Language Processing,
+  pp. 5433–5442, 2023.
+Touzet, C., Papadatos, H., Murray, M., Quarks, O., Barrett,
+  S., Boria, A. T., Perrier, E., Smith, M., and Campos, S.
+  The role of risk modeling in advanced ai risk management.
+  arXiv preprint arXiv:2512.08723, 2025.
+
+U.S. Nuclear Regulatory Commission. Severe accident
+  risks: An assessment for five U.S. nuclear power plants.
+  Technical Report NUREG-1150, U.S. Nuclear Regulatory
+  Commission, 1990.
+Wang, Z., Shi, T., He, J., Cai, M., Zhang, J., and Song, D.
+ Cybergym: Evaluating ai agents’ real-world cybersecu-
+ rity capabilities at scale, 2025.
+Zhang, A. K., Ji, J., Menders, C., Dulepet, R., Qin, T., Wang,
+  R. Y., Wu, J., Liao, K., Li, J., Hu, J., Hong, S., Demilew,
+  N., Murgai, S., Tran, J., Kacheria, N., Ho, E., Liu, D.,
+  McLane, L., Bruvik, O., Han, D.-R., Kim, S., Vyas, A.,
+  Chen, C., Li, R., Xu, W., Ye, J. Z., Choudhary, P., Bhatia,
+  S. M., Sivashankar, V., Bao, Y., Song, D., Boneh, D., Ho,
+  D. E., and Liang, P. Bountybench: Dollar impact of ai
+  agent attackers and defenders on real-world cybersecurity
+  systems, 2025a.
+
+Zhang, A. K., Perry, N., Dulepet, R., Ji, J., Menders, C., Lin,
+  J. W., Jones, E., Hussein, G., Liu, S., Jasper, D. J., Pee-
+  tathawatchai, P., Glenn, A., Sivashankar, V., Zamoshchin,
+  D., Glikbarg, L., Askaryar, D., Yang, H., Zhang, A., Al-
+  luri, R., Tran, N., Sangpisit, R., Oseleononmen, K. O.,
+  Boneh, D., Ho, D. E., and Liang, P. Cybench: A frame-
+  work for evaluating cybersecurity capabilities and risks
+  of language models. In The Thirteenth International Con-
+  ference on Learning Representations, 2025b.
+Zou, A., Xiao, T., Jia, R., Kwon, J., Mazeika, M., Li, R.,
+  Song, D., Steinhardt, J., Evans, O., and Hendrycks, D.
+  Forecasting future world events with neural networks.
+  Advances in Neural Information Processing Systems, 35:
+  27293–27305, 2022.
+
+
+
+
+                                                                  10
+                           Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+Appendix
+A. Prompt Structures
+Expert System Prompt. Establishes the Delphi/IDEA protocol context, describes the cyber risk scenario (malware
+development given LLM access), specifies the conditioning (estimate P (success | access to capabilities) only, with 25%
+baseline), and defines JSON output format (point estimate and rationale).
+
+Round 1 User Prompt. Provides the Cybench task README and asks for initial probability estimate under the assumption
+that the shown task is the hardest the LLM can reliably solve.
+
+Mediator. Receives anonymized R1 estimates and rationales; produces neutral summary of spread, agreement, and
+disagreement without recommending any value.
+
+Round 2 User Prompt. Shows the mediator summary and asks experts to revise or confirm their estimate with brief
+justification.
+
+B. Personas
+We run experiments with two different sets of expert personas: (1) diverse security experts adapted from Barrett et al. (2025),
+which we use throughout Section 4, and uniform “superforecasters” for the ablation below.
+
+                                       Table 1. Summary of expert personas for Delphi panels.
+
+ ID    Role                            Background                                     Analytical Approach
+ A     Defensive Security Specialist   10 years SOC experience, APT detection         Defender’s perspective, detection points
+ B     Malware Reverse Engineer        Anti-virus research lab                        Bottom-up from technical implementation
+ C     AI/ML Security Researcher       PhD in CS, AI security                         Systematic analysis of LLM assistance
+ D     Threat Intelligence Analyst     Former intelligence community                  Observed attacker behavior patterns
+ E     Security Compliance Officer     CISSP, CISM certified                          Framework-based, control effectiveness
+
+
+For the persona ablation, we replaced all five with a uniform superforecaster persona emphasizing calibrated probabilistic
+reasoning over domain-specific expertise.
+
+B.1. Persona Ablation
+We compare the two persona configurations on the human comparison task (Section 4.5). Aggregate estimates differ by
+3.0 pp MAD for GPT-5.1 and 1.9 pp MAD for Opus-4.1—both small relative to human inter-panel disagreement (16.6 pp).
+The direction of difference varies by model, suggesting persona configuration introduces noise rather than systematic bias.
+This indicates the Delphi structure, not persona-specific knowledge, primarily drives calibration.
+
+C. Benchmark Data
+Tables 2–4 show the ground-truth success rates and agent descriptions used in the leave-one-out calibration experiments
+(Section 4.2).
+
+
+
+
+                                                                11
+                            Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+
+
+
+                                  Table 2. BountyBench agent descriptions and success rates (%).
+
+Agent                          Description                                                                    Detect   Exploit   Patch
+Claude Code                    Anthropic’s terminal-based agentic coding tool (Claude 3.7 Sonnet) with         5.0      57.5     87.5
+                               built-in code navigation and editing tools; optimized for software engineer-
+                               ing and defensive tasks such as patching vulnerabilities.
+OpenAI Codex CLI: o3-high      OpenAI’s Codex command-line coding agent using the o3-high reasoning           12.5      47.5     90.0
+                               model; can read, modify, and execute code with strong tool support, em-
+                               phasizing reliable code understanding and patch generation.
+OpenAI Codex CLI: o4-mini      Lightweight OpenAI Codex CLI variant using the o4-mini model; lower-            5.0      32.5     90.0
+                               cost, faster reasoning with the same coding-agent tool interface, optimized
+                               for efficient patching.
+C-Agent: o3-high               Custom research agent based on the Cybench framework, running raw bash          0.0      37.5     35.0
+                               commands in Kali Linux with iterative memory and reasoning, powered by
+                               OpenAI’s o3-high model.
+C-Agent: GPT-4.1               Custom Cybench-style agent using OpenAI GPT-4.1, operating purely               0.0      55.0     50.0
+                               through terminal commands without specialized coding tools; balanced
+                               offensive and defensive behavior.
+C-Agent: Gemini 2.5            Custom Cybench-style agent powered by Google Gemini 2.5 Pro Preview,            2.5      40.0     45.0
+                               interacting via shell commands in Kali Linux for vulnerability exploitation
+                               and patching.
+C-Agent: Claude 3.7            Custom Cybench-style agent using Claude 3.7 Sonnet Thinking, emphasiz-          5.0      67.5     60.0
+                               ing long-horizon reasoning for exploit development while retaining general
+                               patching capability.
+C-Agent: Qwen2 35B A22B        Custom Cybench-style agent using Alibaba’s Qwen 35B A22B model, a               0.0      17.5     25.0
+                               large open-weight reasoning model executed via terminal-only interactions.
+C-Agent: Llama 4 Maverick      Custom Cybench-style agent powered by Meta’s Llama 4 Maverick model,            0.0      42.5     42.5
+                               an open-weight multimodal-capable LLM used here in text-only terminal
+                               interactions.
+C-Agent: DeepSeek-R1           Custom Cybench-style agent using DeepSeek-R1, a reinforcement-                  2.5      37.5     50.0
+                               learning–trained reasoning model designed for strong step-by-step problem
+                               solving in terminal environments.
+
+
+
+
+                                                                 12
+                           Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+
+
+
+                                    Table 3. Cybench agent descriptions and success rates (%).
+
+Agent                     Description                                                                                           Success
+Claude 3 Opus             Large-scale Anthropic frontier model evaluated within the Cybench structured bash agent. Operates      10.0
+                          via iterative terminal commands in a Kali Linux environment to solve professional-level CTF
+                          challenges, measuring autonomous end-to-end exploitation without subtask guidance.
+Claude 3.5 Sonnet         Anthropic’s high-performing general-purpose model used as the core reasoning engine in the             17.5
+                          Cybench agent. Demonstrates strong unguided capability on CTF tasks solvable by expert humans
+                          within 11 minutes, indicating practical autonomous offensive skill.
+Claude 3.7 Sonnet         Updated Anthropic model variant evaluated in unguided Cybench mode. Represents incremental             20.0
+                          improvements in reasoning and tool use over prior Claude 3.x models, though only unguided
+                          success is reported here.
+Claude 4 Opus             Next-generation Anthropic flagship model evaluated on Cybench-style unguided CTF tasks.                38.0
+                          Higher success rate suggests substantially improved autonomous cybersecurity reasoning and
+                          execution compared to earlier Claude generations.
+Claude 4 Sonnet           Anthropic mid-tier Claude 4 model evaluated in unguided Cybench tasks. Trades some raw                 35.0
+                          capability for efficiency, but still demonstrates strong autonomous problem-solving on professional
+                          CTF challenges.
+Claude 4.1 Opus           Refined Claude 4 Opus variant with improved reasoning robustness. Unguided Cybench perfor-             38.0
+                          mance reflects continued gains in autonomous exploitation capability.
+Claude 4.5 Sonnet         Advanced Claude 4.5 Sonnet model achieving the highest reported unguided Cybench success.              55.0
+                          Indicates near-saturation performance on tasks solvable by expert human teams within short time
+                          horizons.
+Gemini 1.5 Pro            Google DeepMind’s Gemini 1.5 Pro evaluated in Cybench’s unguided mode. Uses terminal-only               7.5
+                          interactions to solve CTF challenges; lower success reflects weaker autonomous exploitation
+                          relative to top Anthropic and OpenAI models.
+GPT-4.5-preview           Preview OpenAI model evaluated in unguided Cybench setting. Represents an intermediate step            17.5
+                          toward stronger reasoning models, with limited reported metrics beyond overall unguided success.
+GPT-4o                    OpenAI’s multimodal GPT-4o used as the reasoning core of the Cybench agent. Demonstrates               12.5
+                          solid unguided success and is notable for solving tasks with higher human first-solve times when
+                          additional guidance is allowed.
+Llama 3 70B Chat          Meta’s open-weight Llama 3 70B chat model evaluated in Cybench. Operates without specialized            5.0
+                          cybersecurity tooling; unguided results indicate limited autonomous exploitation capability.
+Llama 3.1 405B Instruct   Large open-weight Meta model evaluated in Cybench unguided mode. Scale improves performance             7.5
+                          over smaller open models but remains behind leading closed models in autonomous CTF solving.
+Mixtral 8x22B Instruct    Sparse Mixture-of-Experts model from Mistral evaluated in Cybench. Terminal-based agent                 7.5
+                          shows modest unguided success, reflecting partial reasoning competence but weaker end-to-end
+                          execution.
+OpenAI o1-mini            Small OpenAI reasoning-focused model evaluated in unguided Cybench mode. Designed for                  10.0
+                          efficiency rather than maximal capability, yielding limited autonomous task completion.
+OpenAI o1-preview         OpenAI reasoning-centric model evaluated in Cybench. While unguided success is modest, the             10.0
+                          model excels when subtask guidance is provided, indicating strong step-level reasoning.
+OpenAI o3-mini            Compact OpenAI reasoning model evaluated in unguided Cybench tasks. Despite small size,                22.5
+                          shows improved autonomous problem solving over earlier compact models.
+
+
+
+
+                                                                 13
+                        Scalable Delphi: Large Language Models for Structured Risk Estimation
+
+
+
+
+                                  Table 4. CyberGym agent descriptions and success rates (%).
+
+Agent               Description                                                                                           Success
+Claude-Sonnet-4     Frontier closed-source general-purpose LLM from Anthropic with strong reasoning and tool-use           17.9
+                    abilities; best non-thinking performance on CyberGym, showing strong repository-scale vulnerability
+                    reproduction capability.
+Claude-3.7-Sonnet   Earlier Anthropic general-purpose LLM optimized for coding and reasoning; strong but clearly           11.9
+                    behind Sonnet-4 on complex security tasks.
+GPT-4.1             OpenAI general-purpose LLM with solid coding and reasoning skills; good balance of cost and             9.4
+                    capability but weaker than top Anthropic models on CyberGym.
+Gemini-2.5-Flash    Google general-purpose LLM optimized for speed and efficiency rather than deep reasoning; lower         4.8
+                    performance on challenging security reproduction tasks.
+Devstral            Open-weight developer-focused LLM aimed at practical coding tasks; limited generalization to deep       4.4
+                    cybersecurity reasoning.
+DeepSeek-V3         Large open-weight general-purpose LLM emphasizing efficient reasoning at scale; moderate perfor-        3.6
+                    mance but struggles with security-specific tasks.
+04-mini             Small, cost-efficient OpenAI model with strong safety alignment and conservative agent behavior;        2.5
+                    reduced effectiveness in autonomous vulnerability reproduction.
+R2E-Gum-32B         Specialized open-weight model fine-tuned for SWE-bench-style software engineering tasks; poor           2.0
+                    transfer to cybersecurity benchmarks.
+Qwen3-235B-A22B     Very large open-weight Qwen model with strong general reasoning capacity; scale alone does not          1.9
+                    translate to strong security task performance.
+OpenHands-LM-32B    Open-weight model designed for the OpenHands agent and SWE-bench tasks; limited success on              1.7
+                    security-focused CyberGym tasks.
+Qwen3-32B           Smaller open-weight Qwen3 variant optimized for efficiency; insufficient capacity for large-scale       0.9
+                    security reasoning.
+SWE-Gym-32B         Open-weight model trained specifically for SWE-Gym and SWE-bench software engineering tasks;            0.1
+                    near-zero performance on cybersecurity reproduction.
+
+
+
+
+                                                              14
+
