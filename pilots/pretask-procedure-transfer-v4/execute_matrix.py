@@ -63,7 +63,7 @@ def verify_hash_manifest(manifest_path: Path, origin: str) -> list[dict[str, Any
     for row in manifest["components"]:
         path = ROOT / row["path"]
         actual = sha(path)
-        if actual != row["sha256"] or path.stat().st_size != row["bytes"]:
+        if actual != row["sha256"] or ("bytes" in row and path.stat().st_size != row["bytes"]):
             raise RuntimeError(f"manifest component drift: {row['path']}")
         if hashlib.sha256(git_bytes(origin, path)).hexdigest() != actual:
             raise RuntimeError(f"component not frozen on {origin}: {row['path']}")
