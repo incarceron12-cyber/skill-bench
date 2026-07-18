@@ -69,6 +69,7 @@ Most relevant sources:
 | [ReasFlow](../papers/agent-benchmarks/2026-07-17-reasflow-procedural-heuristic-research-validity.md) | A | Supplies a strong conditional-operation card format and stage-artifact architecture while showing why paper-derived, model-inferred, model-optimized heuristics plus natural-language self-verification do not establish tacit expertise, theorem correctness, transfer, autonomous discovery, or reduced expert burden |
 | [BrainPilot](../papers/agent-benchmarks/2026-07-18-brainpilot-domain-skill-scientific-trace-validity.md) | A | Separates domain-material presence, retrieval/load, source-faithful authority, adoption, artifact change, and independent consequence; its current release makes workflow roles and benchmark machinery inspectable while absent verified Skills/raw runs, mutable inferred traces, Auditor evidence-view limits, adverse knowledge ablations, and task-version drift block expertise, scientific-validity, trace-integrity, cost, and readiness claims |
 | [LQCDMaster](../papers/agent-benchmarks/2026-07-18-lqcdmaster-expert-skill-executable-science-validity.md) | A | Preserves unusually rich plan/code, Slurm/GPU, repair, log, and numerical-artifact evidence while showing that submission, exit, artifact presence, format, numerical agreement, declared solution equivalence, independent scientific correctness, and professional consequence require separate observers and warrants |
+| [FORMA](../papers/agent-benchmarks/2026-07-18-forma-executable-expert-verification-validity.md) | A | Makes evidence extraction, constrained alternatives, deterministic checks, audit, disagreement, and deferral inspectable, while its 316/331 agreement among only 331/1,149 selected cases, same-cohort threshold, shared Redrock proposal channel, and incomplete result release separate protocol conformance from calibrated or independent scientific verification |
 | [SkillGenBench](../papers/agent-benchmarks/2026-07-18-skillgenbench-corpus-to-skill-distillation-validity.md) | A | Makes the corpus-to-procedure generator a distinct component and introduces a valuable pre-task reuse regime, while its task-selected source views, unequal no-Skill runtime, execution-time documentation, broken/incomplete release, source-to-evaluator drift, and unreconciled denominators prevent isolated or reproducible reusable-distillation claims |
 | [c-CRAB](../papers/agent-benchmarks/2026-07-17-c-crab-review-test-projection-validity.md) | A | Makes a real human-feedback→fail/pass-test→repair-agent consequence chain unusually inspectable while showing that outcome-informed projection, selection on the evaluation mediator, missing finding-to-action attribution, and unscored false positives bound the result to a configured selected chain rather than review quality generally |
 
@@ -187,6 +188,32 @@ physical correctness, reliability, labor advantage, professional equivalence, or
 readiness. Existing configured-system, procedural-skill, trace, artifact,
 execution-validity, metric, task-health, result-reconstruction, and validity contracts
 suffice; lattice QCD remains a bounded mechanism case.
+
+Executable expert-style review adds a distinct **audit-to-decision boundary**:
+`procedure provenance → protocol conformance → challengeable evidence and alternatives
+→ selection-conditioned reference agreement → independently supported correctness →
+calibrated accept/defer/reject decision → downstream consequence`. No edge inherits
+the next. Observer independence must record shared model, prompt/knowledge base,
+preprocessing, proposal generator, tools, upstream records, authorship, and data—not
+only whether one stage sees another stage's reasoning. A credibility gate changes the
+eligible population, so selected risk and full-population coverage, class/critical-
+slice deferral, false acceptance, unnecessary deferral, completed handoff, burden,
+and threshold stability belong beside any agreement rate.
+
+[FORMA](../papers/agent-benchmarks/2026-07-18-forma-executable-expert-verification-validity.md)
+makes the positive machinery unusually inspectable, but its medium-or-higher result is
+316/331 binary DESI-label agreements over only 331/1,149 cases (28.8% coverage), with
+the threshold chosen on the same cohort. Both FORMA and DESI visual inspection receive
+Redrock candidate solutions, so agreement is not an independent truth loop. The pinned
+paper-time release exposes prompts, knowledge, deterministic tools, examples, and two
+one-spectrum counterfactual packages, but omits the main cohort/results/table builder;
+the released counterfactual runners also fail unchanged at an obsolete import. The
+warranted ceiling is a challengeable configured audit trail plus bounded auditor
+sensitivity—not source-faithful expert transfer, calibrated credibility, improvement
+over Redrock, independent scientific correctness, downstream utility, reliability,
+cost-effectiveness, or readiness. Existing authority, observer, trace, abstention,
+metric, task-health, executable-consequence, and validity machinery suffices; astronomy
+is a mechanism case, not a benchmark scope.
 
 Objective-grounded elicitation adds a narrower **question-to-consequence chain**:
 `question opportunity/form → caused respondent observation or refusal → supported

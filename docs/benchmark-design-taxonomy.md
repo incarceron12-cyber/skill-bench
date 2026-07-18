@@ -548,7 +548,56 @@ apparent one-shot cells, and unavailable release support only a synthetic stress
 test pattern—not professional or deployment safety [US]. Existing authority,
 action-safety, trace, evaluator-observation, metric, and validity records suffice.
 
-### 2.2c Framing ambiguity is a public-set intervention, not a hidden-answer test
+### 2.2c An executable audit trail is challengeable evidence, not verified truth
+
+Turning expert-style review into an executable sequence is valuable when it preserves
+observations, uncertainty, alternatives, deterministic checks, disagreements, and a
+defer/review disposition. It does not make the conclusion self-validating. Preserve
+the non-inheriting ladder:
+
+```text
+procedure source and transformation authority → protocol conformance
+  → challengeable evidence/alternative/audit trail
+    → reference agreement conditional on the selection policy
+      → correctness supported by evidence independent of proposal and reference
+        → calibrated accept/defer/reject decision under declared loss
+          → downstream consequence, burden, and readiness
+```
+
+Observer separation must be typed by more than hidden chain of thought. Record model,
+prompt and knowledge base, preprocessing, candidate generator, tools, upstream
+records, authorship, data overlap, and evidence entitlements for every review stage.
+Stages sharing a proposal engine or evidence pipeline can agree through common-mode
+error. Protocol conformance and a coherent trace should therefore remain scoreable
+even when the conclusion is wrong, while an independently correct conclusion reached
+through an inadmissible shortcut should not receive process credit.
+
+Any credibility or deferral gate changes the estimand. Report full eligible count,
+selected count, selected risk/reference agreement, class and critical-slice coverage,
+false acceptance, unnecessary deferral, invalid execution, completed handoff,
+threshold sensitivity, repeated threshold crossings, burden, and clustered
+uncertainty. Freeze development chronology and threshold/loss policy before the
+confirmation cohort; same-cohort threshold choice licenses only descriptive
+risk–coverage evidence.
+
+FORMA makes this boundary concrete [FORMA]. Its configured spectroscopy workflow
+retains numerical evidence, candidate hypotheses, alternative tests, two audit stages,
+and reports. But the medium-or-higher headline is 316 reference agreements among 331
+selected cases from 1,149 (28.8% coverage), with the threshold chosen on that cohort.
+FORMA and the DESI reference process both receive Redrock candidates, weakening
+independence; the paper-time release omits the main cohort/result ledger and supports
+only bounded replay inspection of two one-spectrum counterfactual defect families.
+This supports challengeable configured-workflow evidence—not source-faithful expert
+transfer, calibrated verification, independent scientific correctness, downstream
+utility, or readiness. **Validation experiment:** on two unlike existing task shapes,
+freeze proposal-only, evidence-extraction, alternatives, full-audit, and sham-audit
+conditions plus untouched/sham/decisive-evidence counterfactuals; score conformance,
+selected risk and coverage, independent endpoint correctness, reviewer burden, and
+downstream consequence separately. Existing expertise-transfer, observer, trace,
+metric, task-health, abstention, and validity records are the durable homes; no
+scientific-verification subsystem follows.
+
+### 2.2d Framing ambiguity is a public-set intervention, not a hidden-answer test
 
 An executable package can still leave several consequential interpretations
 compatible with the public evidence. Do not let one private reference framing
@@ -5829,3 +5878,12 @@ them:
   realization/adoption lineage, recipient/dyad dependence, valid censoring evidence,
   and mediator validity block mediation, utility, capability, professional validity,
   production fitness, or readiness.
+- **[FORMA]**
+  `papers/agent-benchmarks/2026-07-18-forma-executable-expert-verification-validity.md`;
+  reviewed immutable v1 PDF/text/source plus the complete pinned paper-time official
+  release, prompts, knowledge base, tools, retained examples, counterfactual summaries,
+  denominator reconstruction, and import check are recorded there. The release makes
+  the configured workflow inspectable but omits the 1,149-case cohort, 331-case result
+  ledger, aggregate builder, original-knowledge-base summaries, and runnable unchanged
+  counterfactual entry point. Selective agreement with a shared Redrock proposal
+  channel does not establish calibrated or independent scientific verification.
