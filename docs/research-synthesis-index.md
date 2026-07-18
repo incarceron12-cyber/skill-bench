@@ -68,6 +68,7 @@ Most relevant sources:
 | [SOP-Bench](../papers/agent-benchmarks/2026-07-14-sop-bench-procedure-task-validity.md) | A | Makes the procedure→schema→row→tool→oracle→parser chain executable, while showing that asserted expert validation and endpoint agreement do not establish procedure fidelity without item-level lineage, conformance contracts, leakage controls, typed comparators, and independent oracle derivation |
 | [ReasFlow](../papers/agent-benchmarks/2026-07-17-reasflow-procedural-heuristic-research-validity.md) | A | Supplies a strong conditional-operation card format and stage-artifact architecture while showing why paper-derived, model-inferred, model-optimized heuristics plus natural-language self-verification do not establish tacit expertise, theorem correctness, transfer, autonomous discovery, or reduced expert burden |
 | [BrainPilot](../papers/agent-benchmarks/2026-07-18-brainpilot-domain-skill-scientific-trace-validity.md) | A | Separates domain-material presence, retrieval/load, source-faithful authority, adoption, artifact change, and independent consequence; its current release makes workflow roles and benchmark machinery inspectable while absent verified Skills/raw runs, mutable inferred traces, Auditor evidence-view limits, adverse knowledge ablations, and task-version drift block expertise, scientific-validity, trace-integrity, cost, and readiness claims |
+| [LQCDMaster](../papers/agent-benchmarks/2026-07-18-lqcdmaster-expert-skill-executable-science-validity.md) | A | Preserves unusually rich plan/code, Slurm/GPU, repair, log, and numerical-artifact evidence while showing that submission, exit, artifact presence, format, numerical agreement, declared solution equivalence, independent scientific correctness, and professional consequence require separate observers and warrants |
 | [c-CRAB](../papers/agent-benchmarks/2026-07-17-c-crab-review-test-projection-validity.md) | A | Makes a real human-feedback→fail/pass-test→repair-agent consequence chain unusually inspectable while showing that outcome-informed projection, selection on the evaluation mediator, missing finding-to-action attribution, and unscored false positives bound the result to a configured selected chain rather than review quality generally |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
@@ -123,6 +124,41 @@ bundles, and receipts are absent. The warranted ceiling is later instrument and
 configured-workflow inspectability—not verified expertise transfer, trace integrity,
 scientific correctness, reliability, cost-effectiveness, professional validity, or
 readiness. Existing contracts suffice; neuroscience remains a bounded mechanism case.
+
+Executable science adds a distinct **execution-to-consequence chain**:
+`authorized request → plan/code → submission → monitored execution → artifact →
+frozen comparator → declared solution-equivalence class → item adjudication →
+independently checked correctness → scientific/professional consequence`.
+Submission acceptance, exit zero, artifact presence, format conformance, numerical
+agreement, equivalence, expert acceptance, and consequence are separate evidence
+states. Every score row must bind the exact task, configured system, generated code,
+selected retry/revision, environment, output, reference, comparator, equivalence
+policy, adjudication, and table builder. The equivalence policy must predeclare
+artifact mapping, shapes/order, norms and tolerances, zero/near-zero and complex-value
+handling, accepted transformations, and disqualifying failures. Alternative valid
+solutions need affirmative admissibility evidence rather than accidental rejection by
+one reference representation.
+
+[LQCDMaster](../papers/agent-benchmarks/2026-07-18-lqcdmaster-expert-skill-executable-science-validity.md)
+provides unusually strong execution evidence: a pinned 70-task release retains
+planner/critic revisions, generated PyQUDA programs, Slurm submissions and monitors,
+logs, retries, numerical outputs, and harder case-study artifacts. It does not retain
+a scorer, item score rows, adjudication, table builder, exact environment/model
+manifests, or a stable convention policy, so its published tables cannot be rebuilt.
+The paper reports DeepSeek `56 exact / 3 convention / 11 failure`, while the release
+reports `56 / 2 / 12`; a direct audit also found representative baryon-three-point
+generator output that does not compile and would encode a tuple rather than a summed
+tensor after quote repair. Generator-original bytes, model edits, diffs, tests, and
+review disposition must therefore remain separate; a deterministic origin watermark
+is not validation. One shared implementation or convention can fail in correlation,
+so numerical agreement licenses only bounded conformance until independent
+implementations, analytical or metamorphic invariants, and qualified adjudication
+support scientific correctness. The release supports configured scientific-workflow
+inspectability—not exact result reconstruction, validated expertise transfer,
+physical correctness, reliability, labor advantage, professional equivalence, or
+readiness. Existing configured-system, procedural-skill, trace, artifact,
+execution-validity, metric, task-health, result-reconstruction, and validity contracts
+suffice; lattice QCD remains a bounded mechanism case.
 
 Objective-grounded elicitation adds a narrower **question-to-consequence chain**:
 `question opportunity/form → caused respondent observation or refusal → supported
