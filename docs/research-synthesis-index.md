@@ -1883,6 +1883,7 @@ revision before adding another lifecycle schema.
 |---|---:|---|
 | [STRACE](../papers/agent-benchmarks/2026-07-09-strace.md) | B | Introduces dependency-aware causal slicing and the distinction between surface failure and upstream root cause |
 | [DRIFT / TELBench](../papers/agent-benchmarks/2026-07-18-drift-span-error-localization-validity.md) | B | Makes 1,000 positive-case harmful-span labels inspectable and adds claim/support/commitment structure, while showing that lossy semantic projection, outcome-aware agreement, causal roots, repair utility, and monitoring are different claims |
+| [Causal Agent Replay](../papers/agent-benchmarks/2026-07-18-causal-agent-replay-intervention-validity.md) | B | Makes stochastic suffix interventions and interaction allocation executable and exactly reproduces two mocked SCM results, while showing that shared world state, off-support action forcing, evaluator drift, invalid small-sample intervals, natural roots, minimal repairs, and operational utility remain separate claims |
 | [ProcGrep](../papers/agent-benchmarks/2026-07-16-procgrep-procedural-fingerprint-validity.md) | B | Makes multi-resolution action-sequence regularities inspectable and searchable while showing that configured-system discrimination, repeated stability, matched intervention, skill transfer, monitoring utility, and readiness require separate evidence; its paper-time release omits headline row inputs and exact split lineage |
 | [Plans Don't Persist](../papers/agent-benchmarks/2026-07-16-plans-dont-persist-context-eviction-validity.md) | B | Adds forced-prefix replay and a derived-trace contamination warning while showing that broad plan-exchange removal, last-token cosine distance, free behavioral adoption, and broad-history endpoint loss are separate experiments |
 | [Who&When Pro](../papers/agent-benchmarks/2026-07-15-whowhen-pro-failure-attribution-validity.md) | B | Makes the injected actor/action/step known under attempted exact-prefix replay, while showing that intervention identity, first divergence, propagated symptom, but-for effect, earliest sufficient cause, natural multi-cause root, and repair utility are distinct claims; its unreleased corpus/code prevents construction and result audit |
@@ -1924,6 +1925,23 @@ unsafe-evidence cases, exact-first versus full-chain scores, no-error and stage-
 controls, fail-closed observability/provider states, blinded plural annotation, and
 intervention/repair tests. Existing machinery suffices; no DRIFT-specific subsystem or
 deep-research scope commitment follows.
+
+Stochastic replay adds a subsequent **actor–world–observer validity boundary**:
+`recorded state → admissible intervention → preserved actor mechanism → isolated
+world transition → frozen observer → repeated configured effect → pivotal/interaction
+rule → natural/minimal repair → collateral and recurrence evidence → operational
+utility`. CAR directly implements the configured-effect middle and exactly reproduces
+its two mocked SCM examples, but the pinned post-v1 release shares one mutable
+environment across branches, forces factual actions under divergent contexts, does
+not gate attribution on replay fidelity, and uses a bootstrap interval that can call
+one rescued rollout certain. Local adversarial execution also showed environment and
+evaluator drift manufacturing branch effects and a late locus. Preserve branch-level
+state/receipts, support and preconditions, exogenous/seed coupling, sham controls,
+valid simultaneous uncertainty, outcome vectors, invalidity, and alternative repairs.
+Earliest cause, latest commitment, interaction credit, cheapest mitigation, minimal
+repair, and human debugging value are different estimands. Existing intervention,
+execution-isolation, trace, artifact/state, metric, task-health, recovery, and validity
+machinery suffices; no CAR-specific subsystem follows.
 
 Descriptive procedural fingerprints add a separate **configured-observation claim ladder**:
 `raw event and state → adapter/canonicalizer observation → repeated subsequence → configured-system discrimination → time/task/interface stability → matched procedural intervention → endpoint/artifact consequence → skill transfer → calibrated monitoring decision → production fitness/readiness`. A fingerprint belongs to a task distribution, model, scaffold, interface, observation policy, and time window—not automatically to a base model or skill. Vocabulary induction and tuning must be nested inside training task groups; harness/interface and outcome controls must be crossed; raw, native, canonical, artifact, and state views must remain linked. ProcGrep's inspectable library and bounded post-v1 matched-task comparison support diagnostic use, while missing paper-time row inputs, unclear released task-held-out execution, label-informed vocabulary-size selection, and absent repeated/intervention/decision evidence prohibit stronger promotion.
