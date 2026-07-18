@@ -54,19 +54,22 @@ def as_json(materials: dict[str, bytes], path: str, errors: list[str]) -> dict[s
 
 def validate(protocol: dict[str, Any], audit: dict[str, Any], materials: dict[str, bytes], *, check_paths: bool = True) -> list[str]:
     errors: list[str] = []
-    if protocol.get("status") != "input_prerequisites_frozen_no_packages_no_calls":
+    if protocol.get("status") != "precall_failed_generated_package_identity":
         errors.append("protocol status drift")
     for label, claims in (("protocol", protocol.get("claim_boundaries", {})), ("audit", audit.get("claim_boundaries", {}))):
         if set(claims) != CLAIMS or any(value is not False for value in claims.values()):
             errors.append(f"{label} claim ceiling drift")
     attempts = protocol.get("attempt_ledger", {})
-    required_zero = ["package_generation_attempts", "model_attempts", "provider_attempts", "executor_attempts"]
-    if any(attempts.get(key) != 0 for key in required_zero):
-        errors.append("protocol attempt ledger must remain zero")
-    if audit.get("model_calls") != 0 or audit.get("provider_attempts") != 0 or audit.get("package_generation_attempts") != 0:
-        errors.append("audit must preserve zero calls and package attempts")
-    if protocol.get("chronology", {}).get("package_generation_started_at") is not None:
-        errors.append("package generation timestamp must remain absent")
+    expected_attempts = {"package_generation_attempts": 2, "model_attempts": 2, "provider_attempts": 2, "executor_attempts": 0}
+    if any(attempts.get(key) != value for key, value in expected_attempts.items()):
+        errors.append("protocol attempt ledger drift")
+    if audit.get("model_calls") != 2 or audit.get("provider_attempts") != 2 or audit.get("package_generation_attempts") != 2 or audit.get("executor_attempts") != 0:
+        errors.append("audit attempt ledger drift")
+    try:
+        if parse_time(protocol["chronology"]["package_generation_started_at"]) <= parse_time(protocol["chronology"]["task_authoring_started_at"]):
+            errors.append("package generation did not follow task/source freeze")
+    except (KeyError, TypeError, ValueError):
+        errors.append("invalid package generation timestamp")
 
     components = audit.get("component_hashes", [])
     component_paths = [item.get("path") for item in components]
@@ -202,12 +205,39 @@ def validate(protocol: dict[str, Any], audit: dict[str, Any], materials: dict[st
     audit_gates = {row.get("gate"): row.get("status") for row in audit.get("input_gate_results", [])}
     if set(audit_gates) != REQUIRED_INPUT_GATES or any(status != "pass" for status in audit_gates.values()):
         errors.append("input gate inventory/status drift")
-    if any(row.get("status") == "pass" for row in audit.get("execution_gates", [])):
-        errors.append("execution gate prematurely passed")
-    if audit.get("status") != "input_prerequisites_pass_execution_not_authorized":
-        errors.append("audit must not authorize execution")
-    if (HERE / "packages").exists():
-        errors.append("procedure/control package directory exists before authorized continuation")
+    execution = {row.get("gate"): row for row in audit.get("execution_gates", [])}
+    generation_gate = execution.get("generated_and_control_packages_authored_and_frozen", {})
+    if generation_gate.get("status") != "fail":
+        errors.append("generation identity failure must remain fail-closed")
+    if any(execution.get(gate, {}).get("status") != "not_run_due_to_prior_failure" for gate in (
+        "package_fidelity_and_defect_mutations", "equal_envelope_and_isolation_canaries",
+        "checker_implementation_frozen_and_mutated",
+    )):
+        errors.append("downstream gates must remain unrun after generation failure")
+    if audit.get("status") != "failed_closed_generation_identity_execution_not_authorized":
+        errors.append("audit must preserve failed-closed status")
+    if (HERE / "packages").exists() or (HERE / "checkers").exists():
+        errors.append("controls/checkers must not exist after failed generation gate")
+
+    invalid_paths = [item.get("path") for item in components if item.get("role") == "invalid_generated_package"]
+    if len(invalid_paths) != 2:
+        errors.append("exactly two invalid one-shot generated packages must be retained")
+    for path in invalid_paths:
+        package = as_json(materials, path, errors)
+        if package.get("package_id") is not None:
+            errors.append(f"invalid generated output was repaired or replaced: {path}")
+        if package.get("generator_kind") != "model_corpus_only_once":
+            errors.append(f"generated package kind drift: {path}")
+        text = materials.get(path, b"").decode("utf-8", errors="replace").casefold()
+        for token in forbidden_tokens:
+            if token.casefold() in text:
+                errors.append(f"task/private token leaked into generated package: {token}")
+    for item in (x for x in components if x.get("role") == "generator_usage"):
+        usage = as_json(materials, item.get("path", ""), errors)
+        if usage.get("completed") is not True or usage.get("failed") is not False:
+            errors.append(f"generation provider capture incomplete: {item.get('path')}")
+        if usage.get("cost_status") != "included" or usage.get("estimated_cost_usd") != 0.0:
+            errors.append(f"generation cost gate drift: {item.get('path')}")
     return errors
 
 
@@ -227,6 +257,10 @@ def mutation_self_test(protocol: dict[str, Any], audit: dict[str, Any], material
     cases.append(("private-check-inferred proposition", protocol, audit, m))
     p = copy.deepcopy(protocol); p["source_task_split"]["generator_instruction"] += " q7m2"
     cases.append(("task id in generator input", p, audit, materials))
+    m = dict(materials); path = "pilots/pretask-procedure-transfer-v2/generation/family-alpha/outputs/package.json"; data = json.loads(m[path]); data["package_id"] = "repaired-alpha"; m[path] = json.dumps(data).encode()
+    cases.append(("post-freeze package repair", protocol, audit, m))
+    a = copy.deepcopy(audit); next(x for x in a["execution_gates"] if x["gate"] == "checker_implementation_frozen_and_mutated")["status"] = "pass"
+    cases.append(("attempt laundering after failed gate", protocol, a, materials))
     for name, p, a, m in cases:
         if not validate(p, a, m, check_paths=True):
             failures.append(name)
@@ -251,9 +285,11 @@ def main() -> int:
         "errors": errors,
         "input_prerequisites": "frozen",
         "execution_authorized": False,
-        "package_generation_attempts": 0,
-        "model_calls": 0,
-        "provider_attempts": 0,
+        "blocking_gate": "generated_and_control_packages_authored_and_frozen",
+        "package_generation_attempts": 2,
+        "model_calls": 2,
+        "provider_attempts": 2,
+        "executor_attempts": 0,
     }, indent=2))
     return 1 if errors else 0
 

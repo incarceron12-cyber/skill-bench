@@ -26,10 +26,12 @@ class PretaskProcedureTransferV2Tests(unittest.TestCase):
             check_paths=True,
         )
 
-    def test_frozen_input_prerequisites_pass_without_authorizing_execution(self):
+    def test_failed_generation_is_preserved_without_authorizing_execution(self):
         self.assertEqual([], self.validate())
         self.assertFalse(self.protocol["claim_boundaries"]["readiness"])
-        self.assertTrue(all(row["status"] != "pass" for row in self.audit["execution_gates"]))
+        gates = {row["gate"]: row["status"] for row in self.audit["execution_gates"]}
+        self.assertEqual("fail", gates["generated_and_control_packages_authored_and_frozen"])
+        self.assertEqual(0, self.audit["executor_attempts"])
 
     def test_corpus_hash_drift_is_rejected(self):
         changed = copy.deepcopy(self.audit)
@@ -80,6 +82,20 @@ class PretaskProcedureTransferV2Tests(unittest.TestCase):
         task["model_attempts"] = 1
         changed[path] = json.dumps(task).encode()
         self.assertTrue(any("no longer untouched" in error for error in self.validate(materials=changed)))
+
+    def test_post_freeze_package_repair_is_rejected(self):
+        changed = dict(self.materials)
+        path = "pilots/pretask-procedure-transfer-v2/generation/family-alpha/outputs/package.json"
+        package = json.loads(changed[path])
+        package["package_id"] = "repaired-alpha"
+        changed[path] = json.dumps(package).encode()
+        self.assertTrue(any("repaired or replaced" in error for error in self.validate(materials=changed)))
+
+    def test_downstream_gate_cannot_pass_after_generation_failure(self):
+        changed = copy.deepcopy(self.audit)
+        gate = next(row for row in changed["execution_gates"] if row["gate"] == "checker_implementation_frozen_and_mutated")
+        gate["status"] = "pass"
+        self.assertTrue(any("downstream gates" in error for error in self.validate(audit=changed)))
 
     def test_mutation_self_test(self):
         self.assertEqual([], validator.mutation_self_test(self.protocol, self.audit, self.materials))
