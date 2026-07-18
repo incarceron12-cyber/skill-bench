@@ -1539,6 +1539,7 @@ specific schema or pilot follows.
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
 | [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
 | [Auto Benchmark Audit](../papers/agent-benchmarks/2026-07-14-auto-benchmark-audit-task-defect-validity.md) | B | Makes path-grounded inspection of instruction, environment, reference, and grader scalable while separating configured-auditor labels and selected-finding precision from confirmed-defect prevalence, repaired-instrument validity, and corrected capability |
+| [Auditing the Audit](../papers/agent-benchmarks/2026-07-19-auditing-the-audit-validity-evidence.md) | B | Treats a validity audit as a second-order configured measurement instrument and separates scorer-path reachability, extraction, benchmark convention, paired uncertainty, construct archetype, and repair regression; its withheld code/data/preregistration/full chronology, unvalidated perturbation semantics, proposed gates, and single exploratory panel support a withholding vocabulary rather than reproduced assurance, benchmark-validity, governance, production, or readiness evidence |
 | [JADE](../papers/agent-benchmarks/2026-07-11-jade-dynamic-professional-grading.md) | B | Separates invariant requirements from response-created claims/consequences, while exposing variable denominators, shared-cue judging, verifier fail-open behavior, and unvalidated score fusion |
 | [Adversarial verifier hardening](../papers/agent-benchmarks/2026-07-14-adversarial-verifier-hardening-validity.md) | A/B | Makes iterative false-accept search, patch provenance, and fixed held-out attack replay inspectable, while directly showing that a narrow solver witness can yield 0% attack success together with near-total legitimate-solution rejection |
 | [AsymmetryZero](../papers/agent-benchmarks/2026-07-14-asymmetryzero-semantic-eval-contracts.md) | B | Makes criterion, grader mode, panel vote, weight, threshold, cost, and adapter realization inspectable; its private available-case study shows why cross-model dissent, repeated-call instability, criterion correctness, task-decision agreement, and use/decision loss must remain separate |
@@ -1578,6 +1579,29 @@ same selected calibration rows cannot both choose judges and establish transport
 Existing participation, provenance, criterion, evidence-view, configured-grader,
 task-health, metric, response-matrix, longitudinal, and validity records suffice; no
 contextual-evaluation-specific schema follows.
+
+Validity audits add a reflexive **audit-of-audit assurance boundary**:
+`bounded audit claim → immutable target/reference and implementation/observation
+identities → independently admissible perturbation/contrast → attempted/observed/
+parsed/paired/eligible denominators → oriented dependence-aware estimand → defect and
+repair chronology → clean/adversarial regression evidence → complete predicate vector
+→ typed disposition → bounded use`. Path reachability, semantic admissibility,
+target-system eligibility, construct interpretation, and decision permission are
+different predicates. Preserve all co-failures before applying a primary remediation
+precedence; do not use above-baseline performance or a nonzero nuisance denominator as
+aliases for pipeline integrity. A repaired audit is a new instrument version.
+
+The full [Auditing the Audit review](../papers/agent-benchmarks/2026-07-19-auditing-the-audit-validity-evidence.md)
+supports this boundary as an exploratory method case, not as reproduced assurance.
+Its v1 release withholds code, per-item outputs, verdict CSV, preregistration, full
+chronology, and tests; its human perturbation audit was de-scoped; ToxiGen/XSTest
+scorers remain unvalidated; F4 lacks a matched in-panel comparison; and zero
+confirmatory cells follows because G5/G6 are proposed. Box 1 calls entries without
+visible wrong results and before/after deltas unauditable, while the public appendix
+condenses those fields into the absent bundle. Future internal reports should remain
+exploratory or withheld under the same rule. Existing provenance, configured-system,
+evidence-view, metric, task-health, adversarial-verifier, release-reconstruction, and
+validity machinery suffices; no second-order-audit schema follows.
 
 Consequential lifecycle control adds a four-predicate boundary inside this stack:
 `observation authenticity × current-state applicability × semantic sufficiency ×
