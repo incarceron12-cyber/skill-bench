@@ -2163,6 +2163,7 @@ receipts, utility, burden, and clustered uncertainty.
 | [SimInstruct](../papers/agent-benchmarks/2026-07-11-siminstruct-simulated-novice-elicitation.md) | B | Demonstrates paid asynchronous role-play feasibility in one network while leaving recruitment denominators, actual burden, privacy/consent lineage, tacit-knowledge yield, and downstream utility unmeasured |
 | [HAS-Bench](../papers/agent-benchmarks/2026-07-13-hasbench-configurable-human-participation-validity.md) | B | Makes participant roles, authority, channels, and event-conditioned process measures explicit while showing that model-simulated assistance is not evidence about real-human participation or burden |
 | [CentaurEval](../papers/agent-benchmarks/2026-07-17-centaureval-human-ai-collaboration-validity.md) | A | Adds real-participant human-only versus Copilot-assisted hidden-test endpoints and partial direct cost, while unmatched task forms/resource envelopes and absent contribution lineage separate team-package uplift from division of labor, complementarity, necessity, professional value, and readiness |
+| [AHCE](../papers/agent-benchmarks/2026-07-18-ahce-expert-intervention-policy-validity.md) | A | Separates real-human access, authoritative contribution, faithful acquisition, local consequence, and reuse while showing that a compound query/synthesis/planning/control package gain and low active-time ratio do not establish learned expert reasoning, validated timing, minimal burden, or transfer |
 | [KINA](../papers/agent-benchmarks/2026-07-16-kina-incentive-representativeness-validity.md) | B | Supplies an explicit bonus-on-bar tournament and payoff assumptions while its bundled pay-plus-audit phase comparison and absent assignments, scores, payments, audits, appeals, attrition, and welfare block incentive-effect, contributor-benefit, affordability, and item-validity claims |
 
 **Repository consequence:** Expert-participation contracts, contributor provenance/authority, measured recruitment and review burden, reciprocal outputs, and continued research into near-zero-cost incentives. Benchmark participants must additionally be typed by realization (`real_human`, model simulator, scripted policy, hybrid, or replay), independently of their assigned social role. Participation is a configured treatment vector—prompt, visible participants, channels/tools, information access, action authority, initiative, control threshold, budget, and observer—not an ordinal “agency level.” Preserve the chain `availability → exercise → uptake → effect`; a graph edge, trace event, apparent adoption, and matched outcome effect license different claims. Simulator steps/tokens do not estimate human active time, waiting, interruption, cognitive demand, correction work, privacy exposure, or accountability. HAS-Bench's 397 reported adaptations and scenario-review study support this vocabulary, but its model-backed users, bundled A1/A3/A4 treatments, single rollout per task, unreported process-judge audit, and unverifiable release block human-participation, simulator-parity, professional-collaboration, burden, and readiness claims.
@@ -2184,6 +2185,22 @@ necessity as a versioned task-health role. Validation should cross human-only,
 agent-only, team, and selected frozen-state both/neither/component replays over
 unlike work shapes while measuring active/wait/review/correction burden, cost,
 invalidity, and clustered endpoints.
+
+Live consultation needs a stricter episode boundary than “human available.” Preserve
+`eligible impasse and frozen state → trigger → exact query and evidence view → scoped
+participant authority and raw response → transformation fidelity → adopted plan/control
+delta → authoritative local and terminal consequence → related-impasse reuse → complete
+burden`. Trigger, inquiry, response transformation, and execution are four separately
+versioned policies; a learned mediator does not make a hand-set timeout a learned timing
+policy. AHCE's real participants are valuable mechanism evidence, but its main contrast
+bundles human access, generated inquiry/synthesis, planner context, and author-coded
+control maneuvers, with no transcripts, matched response replay, participant assignment,
+or complete cost. Report access, contribution, acquisition, consequence, and reuse on
+their own denominators. “Minimal” requires request opportunity/count, active and elapsed
+human time, availability/refusal, interruption, correction/rework, quality and severe
+misses, and system cost—not a ratio diluted by long agent runtime. Existing
+participation, intervention, trace, resource, metric, task-health, and validity records
+suffice; Minecraft is a mechanism case, not a domain commitment.
 
 Formal incentive claims add a separate treatment chain: `mechanism assumptions →
 implementation witness → realized assignment/pay/audit/appeal events → effort and

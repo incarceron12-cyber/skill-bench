@@ -336,6 +336,46 @@ readiness [BP]. Existing expertise-transfer, participation/authority, evidence-s
 context-treatment, persistent-workspace, trace, artifact, metric, and validity records
 are the implementation homes; no domain- or Skill-specific schema follows.
 
+### 2.1f Model panels are configured proxy estimators, not synthetic experts
+
+An LLM panel may cheaply generate candidate estimates, rival rationales, assumptions,
+and sensitivity analyses. Persona biographies do not instantiate professional
+experience, accountable authority, independent observers, or human participation.
+Treat every persona as a prompt-conditioned realization and preserve a non-inheriting
+validation ladder [SD]:
+
+```text
+configured panel and mediator → repeated behavior and error covariance
+  → error on a frozen verifiable proxy
+    → response to independently authored, non-answer-bearing evidence
+      → agreement with qualified humans under a matched information view
+        → proxy-to-target construct transport or direct target calibration
+          → improved decision under declared loss
+            → equivalent validity at lower total cost → bounded complement/substitution
+```
+
+The proxy and target require separate construct records. Declare their shared and
+missing causal variables, populations, information and authority requirements, what a
+proxy failure falsifies, and what proxy success cannot license. Freeze descriptions
+before target outcomes are inspected, retain source locators and transformation
+authorship, and use irrelevant, contradictory, label-swapped, fictional-entity, and
+answer-bearing controls. Responsiveness to outcome-derived prose is answer-cue uptake,
+not domain-grounded evidence use. Record model/provider snapshot, persona and mediator
+prompts, order/context persistence, retries and invalid outputs, raw initial and revised
+estimates, aggregation, uncertainty target, repeated-panel covariance, human-panel
+authority/disagreement, target-level denominators, and complete validation cost.
+
+Scalable Delphi usefully proposes verifiable proxies and evidence perturbations, but
+its reported `n=12–30` summary-target correlations and MAEs are not probabilistic
+calibration; several descriptions encode target-relative outcomes; five personas share
+one model family; no repeated panels or empirical release are available; and the five-
+prompt human comparison reuses two discussion subgroups from one small workshop [SD].
+The evidence supports configured table-prediction and assumption-stress testing—not
+latent-risk truth, expert authority, human equivalence, decision benefit, cost
+equivalence, or replacement. Existing configured-system, source-pack, participation,
+metric, benchmark-to-consequence, and validity records suffice; do not create a
+synthetic-expert schema or populate contributor/approval fields with model personas.
+
 ### 2.2 A legitimate trap is a decision-boundary critical incident
 
 Do not equate realistic messiness with arbitrary obscurity. For each trap,
@@ -3502,6 +3542,31 @@ state, endpoint effect, burden, cost, invalidity, and task/participant-clustered
 uncertainty separately. Human-versus-simulator parity requires its own evidence;
 neither a social-role label nor a natural-language message supplies it.
 
+For expert-guidance claims, separate **access**, **contribution**, and **acquisition**.
+Access means a scoped person could be contacted; contribution means an authoritative,
+relevant response was received; acquisition means the response was transformed and
+adopted faithfully, caused the intended local consequence, and was reused appropriately
+at a related impasse. Version trigger, inquiry, response-transformation, and execution
+policies independently. Preserve the frozen pre-trigger state, eligible opportunity and
+irreversibility boundary, exact query/evidence view, participant authority and raw
+response, uncertainty, synthesis entailment/contradiction, adopted planner/control
+delta, authoritative transition, endpoint and recurrence, and active plus elapsed
+burden [AHCE]. Endpoint success cannot fill missing joins.
+
+AHCE makes a real-human consultation path and deterministic timeout trigger concrete,
+but its unreleased comparison changes human access, query/synthesis model, planner
+context, and predefined execution maneuvers together; participant authority is only
+prior game experience; raw transcripts, exact denominators, uncertainty, and complete
+burden are absent [AHCE]. Its reported gains therefore support a configured package
+contrast, not learned expert reasoning or validated timing. A low human-time/total-time
+ratio is not minimality: report eligible impasses, requests and turns, unavailable or
+refused episodes, active response and elapsed wait, interruption, preparation,
+correction/rework, system cost, quality, and severe misses. Use equal-view/equal-
+execution no-help, fixed-information, raw-response, base-mediator, trained-mediator,
+and authorized same-response replay arms where causally valid. Existing participation,
+intervention, trace, resource, task-health, metric, and validity records host this
+episode; no human-guidance-specific subsystem follows.
+
 Mixed-initiative controls sharpen the same episode into a realized-intervention
 ladder rather than a feature inventory:
 
@@ -5887,3 +5952,19 @@ them:
   ledger, aggregate builder, original-knowledge-base summaries, and runnable unchanged
   counterfactual entry point. Selective agreement with a shared Redrock proposal
   channel does not establish calibrated or independent scientific verification.
+- **[SD]**
+  `papers/agent-benchmarks/2026-07-18-scalable-delphi-proxy-elicitation-validity.md`;
+  reviewed immutable v1 PDF/text/source plus preserved official project-page evidence
+  are recorded there. Small dependent table-summary targets, answer-bearing
+  descriptions, same-model personas, absent repeated/raw panels, and a five-prompt
+  comparison with two subgroups from one workshop block probabilistic calibration,
+  expert authority, target transport, decision utility, cost equivalence, and
+  substitution claims.
+- **[AHCE]**
+  `papers/agent-benchmarks/2026-07-18-ahce-expert-intervention-policy-validity.md`;
+  reviewed immutable v1 PDF/text/source and bounded no-release search are recorded
+  there. Real participants and a timeout-triggered consultation path support a
+  configured human-coupled package observation; compound query, synthesis, planning,
+  and predefined-control treatments plus absent transcripts, assignment, burden, and
+  training evidence block learned expert-reasoning, timing, transfer, minimality,
+  professional-validity, and readiness claims.
