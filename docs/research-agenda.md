@@ -52,28 +52,24 @@ withdrawal/reconsent, and claim-blocking behavior before asserting that this
 model is feasible for free or near-zero cost. See
 `papers/agent-benchmarks/2026-07-10-domain-expert-participation-ethnography.md`.
 
-## Active gate: independently validate the repaired pre-task endpoint instrument
+## Active gate: independently interpret the executed v7 pre-task endpoint matrix
 
-The v1–v3 prospective procedure-transfer slices located successive source/task,
-launcher, and model-facing interface failures. V4 then crossed the generation and
-execution gates under two new synthetic families: it froze source-only candidates
-and controls, materialized all 32 assigned rows, passed zero-call isolation and
-checker canaries, and completed exactly one no-feedback/no-retry attempt per row.
-The frozen checker scored 0/32 despite 31/32 parseable artifacts. That is **not**
-interpretable as a transfer null: the retained non-rescoring audit found one
-factually contradictory private endpoint plus undisclosed exact identifier,
-wording, type, and representation obligations. V4 scores remain immutable, but
-its transfer estimand is invalid.
+The v1–v6 prospective procedure-transfer slices located successive source/task,
+launcher, model-facing, endpoint, authority, and canary failures without rewriting
+earlier evidence. V7 prospectively repaired the last mechanical edge, bound the
+retained v6 failure, passed an independent commit-bound freeze review, and then ran
+its frozen 32-row matrix exactly once with no feedback, repair, or retry. All 32
+rows were service- and environment-valid and scored; 30 artifacts were valid and
+24 passed the frozen endpoint checker. The execution retained prompts, redacted
+traces, usage, strict denominators, hashes, family summaries, and an all-false
+claim ledger in `pilots/pretask-procedure-transfer-v7-execution/`.
 
-V5 repairs only that endpoint layer while preserving the v4 source families,
-treatments, assignments, candidates, and controls by hash. Its public tasks now
-disclose required identifiers and JSON types; expected consequences are derived
-from public inputs and frozen source rules; reasons are paraphrase-tolerant; and a
-fair-basis crosswalk and planted mutations pass the builder preflight. V5 remains
-at zero attempts and does not authorize execution. The current gate is an
-independent, commit-bound audit of hashes, derivation/checker common-mode risk,
-fair public basis, condition blindness, assignment parity, valid alternatives,
-and adversarial mutations. Only a passing review may authorize the frozen 32-row
-one-attempt execution task. Preserve v1–v5 bytes and denominators; do not rescore
-v4 or edit frozen v5 instrument bytes. Expert provenance, transfer, capability,
-utility, professional validity, production fitness, and readiness remain false.
+Those counts are bounded synthetic configured-agent observations, not an authorized
+package-effect or transfer conclusion. The current gate is independent
+interpretation of assignment closure, artifact-invalid rows, condition/family
+contrasts, endpoint dependencies, clustering, resources, and alternative
+explanations against the frozen v7 instrument and execution audit. Do not rerun,
+repair, rescore, or edit v1–v7 bytes; do not pool invalid artifacts into a transfer
+estimand; and do not infer expert provenance, general procedure transfer,
+capability, utility, professional validity, production fitness, or readiness unless
+a separate validity argument licenses it.

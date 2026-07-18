@@ -2179,6 +2179,70 @@ construct claim requiring a warrant and tests of alternatives. Validity
 arguments supplement rather than replace raw scores, expert dispositions, and
 trace evidence.
 
+### 3.1a Consequential lifecycle state is evidence-authorized, not actor-declared
+
+An agent, reviewer, tool, or grader saying `reviewed`, `tested`, `safe`, or `done`
+creates a **typed actor claim**; it does not itself change task, artifact, grader,
+lesson, release, or readiness state. A consequential transition should preserve
+the following non-inheriting chain [POS]:
+
+```text
+actor claim → required evidence specification → version-bound observation
+  → gate decision → authorized advance, stop/escalation, or repair request
+    → downstream consequence → bounded validity claim
+```
+
+Evaluate four predicates independently:
+
+1. **observation authenticity:** did the declared producer generate an intact
+   record under the bound identity and trust model?;
+2. **current-state applicability:** does the record bind the exact current task,
+   source, artifact, environment, grader, policy, and valid time?;
+3. **semantic sufficiency:** does the observation actually support the claim,
+   with adequate coverage and legitimate alternatives?; and
+4. **transition authorization:** does the declared policy permit this consequence
+   on those observations, given threshold, severity, exception, and assurance
+   rules?
+
+Authenticity does not imply applicability; both can hold for an incomplete test.
+Semantic support does not make a policy useful; a gate can correctly enforce a
+flawed obligation. Conversely, a policy-authorized `done` state means only that
+the declared gate admitted the disposition—not semantic correctness, zero known
+defects, professional acceptance, or readiness.
+
+Keep actor claims, evidence/observer records, gate decisions, authorized
+transitions or typed stops, repair attempts, consequences, and validity claims as
+separate immutable records. Reuse the existing provenance/evidence-chain,
+configured-system, grader observation, metric/monitoring, task-health,
+candidate-defect/repair, benchmark-change, and validity-argument objects; this is
+a joined lifecycle view, not a new schema or subsystem.
+
+Report a transition confusion matrix rather than a catch rate or one lossy
+`not promoted` complement:
+
+| Realized gate outcome | Required interpretation |
+|---|---|
+| correct advance | admissible evidence led to a warranted transition |
+| incorrect advance | unsupported or unsafe promotion |
+| correct stop/escalation | a warranted non-advance with the prescribed disposition |
+| incorrect stop | unjustified refusal, including rejection of legitimate alternative evidence |
+| repaired then correct advance | repair succeeded and the resulting state independently passed |
+| repair-induced collateral failure | the target may improve while another required invariant regresses |
+| invalid or unobservable decision | missing, malformed, stale, or insufficient evidence; not success or substantive failure |
+
+Cross the same observation under ignored, advisory, transition-enforced,
+repair-triggering, and human-escalation policies where feasible. Include a
+block-all control to expose vacuous zero-promotion behavior and valid-alternative
+controls to estimate false refusal. Preserve assignment, opportunity, decision,
+repair, and consequence denominators; natural trap prevalence, asymmetric loss,
+latency, review burden, and cost determine utility. Proof-or-Stop motivates these
+cross-domain controls, but its advertised release was unavailable; its powered
+coding study did not instantiate receipt gating, was not equal-spend, concentrated
+almost all of its primary separation in one task, and observed no stops in the
+main gated arm. It therefore supplies formal semantics and paper-reported bounded
+control-policy evidence—not stop precision, professional validity, production
+fitness, or readiness [POS].
+
 ### 3.2 A grader observation is not a population metric
 
 Keep four records separate:
@@ -4620,6 +4684,11 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     exposed tool interface before a trial; missing service, trace, artifact,
     security, or attribution evidence blocks the corresponding capability or
     contrast claim rather than defaulting to success.
+15a. **Consequential transitions are evidence-authorized:** actor claims,
+    authentic observations, current applicability, semantic sufficiency, gate
+    decisions, authorized advance/stop/repair, downstream consequence, and
+    validity claims remain distinct. Evaluate both incorrect advance and
+    incorrect stop; block-all success is not gate validity.
 16. **Criterion provenance does not imply atomicity:** type authority,
     applicability, evidence access, gate/scored semantics, and dependencies; an
     expert-written or high-weight criterion is not automatically fair, independent,
@@ -5094,6 +5163,15 @@ them:
 
 ## Provenance keys
 
+- **[POS]**
+  `papers/agent-benchmarks/2026-07-18-proof-or-stop-evidence-gated-lifecycle-validity.md`;
+  reviewed immutable arXiv v1 PDF/text/TeX and acquisition-time release provenance
+  are recorded there. The advertised GitHub organization exposed no public
+  repository, so the claimed implementation, preregistration, fixtures, raw cells,
+  and self-application records were not independently auditable. The paper supports
+  a four-predicate lifecycle semantics and a narrow paper-reported advisory-versus-
+  enforced control-policy contrast—not receipt-gate reproduction, stop precision,
+  broad gate completeness, professional validity, production fitness, or readiness.
 - **[CC]**
   `papers/agent-benchmarks/2026-07-17-complexconstraints-expert-rubric-reward-validity.md`;
   reviewed immutable arXiv v3 PDF/text and complete official Hugging Face benchmark

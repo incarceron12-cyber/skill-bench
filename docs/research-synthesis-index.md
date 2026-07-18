@@ -1534,6 +1534,7 @@ specific schema or pilot follows.
 | [AdaRubric](../papers/agent-benchmarks/2026-07-15-adarubric-adaptive-trajectory-instrument-validity.md) | B | Separates task-conditioned criterion generation, step/dimension observation, and filtering, while its absent empirical release and paper/code contradictions show that fixed-rubric score correlation, repeat agreement, and training gains do not validate adaptive criteria, decisions, rewards, or deployment |
 | [GrowLoop](../papers/agent-benchmarks/2026-07-17-growloop-human-seeded-rubric-case-coevolution-validity.md) | A | Couples versioned rubrics and case sets and distinguishes anchor refinement from additive/restructuring updates, while showing why unanimity-selected supervision, model-order-conditioned case admission, and one unexecuted outer transition cannot establish tacit-criterion authority, legitimate-disagreement coverage, construct continuity, or living-benchmark validity |
 | [Who Grades the Grader?](../papers/agent-benchmarks/2026-07-18-coevolving-grader-skill-validity.md) | A | Directly shows that a vacuous almost-always-pass evolving grader can coexist with competitive endpoint gains, while exposing that repeated rollback, peak selection, and repair against a nominally locked panel demote it to development evidence; motivates typed grader roles, information-flow-based split status, cross-grading, and an untouched transport audit. The claimed release was unavailable or unlinked, and the reported 88–110% lift-retention result is not clean held-out evidence. |
+| [Proof-or-Stop](../papers/agent-benchmarks/2026-07-18-proof-or-stop-evidence-gated-lifecycle-validity.md) | A | Separates actor claims, authentic/current observations, semantic support, and transition authorization; motivates advisory-versus-enforced contrasts, block-all/valid-alternative controls, and a transition confusion matrix. Its unavailable advertised release, non-receipt powered study, unequal spend, one-task effect concentration, and zero powered stops bound the evidence to formal semantics and a narrow reported coding-policy contrast—not gate completeness, stop precision, professional validity, production fitness, or readiness. |
 | [BigFinanceBench](../papers/agent-benchmarks/2026-07-14-bigfinancebench-workflow-derivation-validity.md) | A/B | Makes source-to-calculation checkpoints and repeated visible trajectories inspectable on the public subset, while showing that narrated exact values, lossy judge views, dependent criteria, and held-back headline evidence do not establish an audited workflow |
 | [GroundEval](../papers/agent-benchmarks/2026-07-14-groundeval-evidence-path-validity.md) | B | Makes actor/time gates, configured evidence paths, and bounded negative-search obligations deterministic, while showing that repeatable code does not establish contract authority/completeness, causal effects, global absence, or observer superiority |
 | [Auto Benchmark Audit](../papers/agent-benchmarks/2026-07-14-auto-benchmark-audit-task-defect-validity.md) | B | Makes path-grounded inspection of instruction, environment, reference, and grader scalable while separating configured-auditor labels and selected-finding precision from confirmed-defect prevalence, repaired-instrument validity, and corrected capability |
@@ -1558,6 +1559,33 @@ specific schema or pilot follows.
 | [BrowserGym](../papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md) | B | Separates useful runner/interface interoperability from unsupported evaluator, score, reset, or construct equivalence across adapted benchmark families |
 
 **Repository consequence:** Criterion/check contracts, metric-monitoring contracts, validity arguments, response matrices, and separate ranking versus absolute-capability claims. Grader identity includes rubric/examples, evidence view, criterion execution topology, score transformation, aggregation/tie policy, and configured rater. Agreement, panel-relative severity, fit, repeated-call stability, construct preservation, decision loss, cost, and audit burden remain separate outcomes; adjusted scores never overwrite raw observations or become adjudicated truth. Reliability is a conditional profile—not a system trait—indexed by configured system, task/form population, environment, time, intervention/exposure distribution, and consequence model. Accuracy, repeatability (including consistently wrong behavior), resource variation, perturbation effects, confidence quality, violation frequency, severity, remediation, and loss remain separate. Every perturbation needs independently supported preservation and exposure claims; wrapper recovery cannot count as agent recovery; confidence is licensed only for the decision time and evidence view at which it was elicited. Plural judgments remain immutable observations; aggregation is a versioned stakeholder/error-loss policy rather than discovered ground truth. Specification error, evidence gaps, rater instability, framework-conditioned disagreement, policy selection with dissent, and unresolved value conflict require distinct dispositions. Derivation criteria must also be proof-carrying: source identity and passage, extracted claim, typed operation, dependencies, conclusion, exact observer view, and licensed claim remain distinct. Mentioning an expected value cannot inherit provenance or causal-use credit; one upstream defect and its descendants must not be counted as independent failures. The completed synthetic plural-judgment conformance slice exercises this boundary but supplies no prevalence, professional-consensus, or readiness evidence. Before the second pilot is interpreted, its adversarial audit should plant a pre-satisfied requirement, an unrelated record sharing the expected scalar, a title-only empty artifact, and one upstream defect with several descendant checks; readiness or duplicated consequences must not inflate progress.
+
+Consequential lifecycle control adds a four-predicate boundary inside this stack:
+`observation authenticity × current-state applicability × semantic sufficiency ×
+transition authorization`. Preserve actor claim → evidence specification →
+version-bound observation → gate decision → authorized advance, stop/escalation,
+or repair → downstream consequence → bounded validity claim. No link inherits the
+next. A fresh receipt may attest an incomplete command set; a semantically relevant
+observation may remain advisory; and a correctly enforced flawed policy may stop
+valid work. Report correct/incorrect advance, correct/incorrect stop, repaired
+advance, collateral repair failure, and invalid/unobservable decisions separately.
+Compare the same observation under advisory and enforced policies, and pair catch
+tests with block-all and valid-alternative controls so zero false promotion cannot
+hide universal refusal.
+
+The full [Proof-or-Stop review](../papers/agent-benchmarks/2026-07-18-proof-or-stop-evidence-gated-lifecycle-validity.md)
+supports this semantics but not a general gate effect. Its advertised GitHub
+organization exposed no public repository, so the claimed implementation,
+preregistration, fixtures, 9,240 rows, and self-application corpus were unavailable.
+The powered coding study did not instantiate receipt gating; its primary comparison
+was not equal-spend; 29 of 31 comparator errors and both gated errors came from one
+task; and the main gated arm made no stops, leaving stop precision unidentified.
+Treat the reported near-compute advisory-versus-enforced contrast as a bounded,
+task-interactive control-policy observation—not professional validity, production
+fitness, readiness, or proof that authentic evidence is semantically sufficient.
+Existing provenance, evidence-view, configured-system, metric, task-health,
+candidate-defect/repair, change-log, and validity records are the durable homes;
+no lifecycle-specific schema follows.
 
 Criterion-to-outcome validation adds a separate ladder: `criterion authority →
 configured observer validity → score frozen at a declared decision time → eligible
