@@ -241,6 +241,7 @@ and validity records suffice, and the real consented-session gate remains blocke
 | [UI-CUBE](../papers/agent-benchmarks/2026-07-18-ui-cube-operational-reliability-validity.md) | B | Crosses deterministic application-state predicates with viewport variants and short versus composed interactions, while exposing why a 136/90 declared suite, an unexplained roughly 67-result complex denominator, family-macro human aggregation, manifest/source drift, and post-paper task repairs cannot support operational-reliability, expert-parity, or enterprise-readiness claims |
 | [$OneMillion-Bench](../papers/agent-benchmarks/2026-07-14-onemillion-professional-value-validity.md) | A | Adds an auditable equal-cell five-domain portfolio with localized positive/negative criteria, but its purposive outcome-conditioned assembly supports neither professional-work prevalence nor dollar value delivered |
 | [Chiron field study](../papers/agent-benchmarks/2026-07-17-human-ai-software-delivery-field-validity.md) | B | Separates recorded delivery measures from scenario-derived labor and exposes why field-cell identity, stable bridge units, actual resource exposure, external consequences, and a credible comparator are prerequisites for workflow-value claims |
+| [Professional-email recipient consequence](../papers/agent-benchmarks/2026-07-18-professional-email-recipient-consequence-validity.md) | A | Randomizes a real artifact intervention and observes recipient events, while showing that an intervention-caused proxy shift plus proxy–outcome association cannot establish mediation when the intervention has no detected endpoint effect and mediator, observer, cluster, period, and adoption validity remain unresolved |
 | [HCAST](../papers/agent-benchmarks/2026-07-17-hcast-human-time-calibrated-autonomy-validity.md) | A | Makes screened human-attempt effort a version- and condition-specific task covariate while showing why successful-only duration, forecasts, configured-agent success, reliability, autonomy, trust, substitution, value, and impact are non-inheriting claims |
 | [Workspace-Bench](../papers/agent-benchmarks/2026-07-10-workspace-bench-file-dependency-validity.md) | A | Supplies realistic persona workspaces and file dependencies, while showing that availability, relevance, provenance, observed use, and causal use are distinct |
 | [Bridge Evidence](../papers/agent-benchmarks/2026-07-17-bridge-evidence-causal-use-validity.md) | B | Uses matched document omission to falsify static relevance as a sufficient proxy for one search agent's trajectory dependence, while separating source-at-state transition effects from semantic uptake, necessity, portable utility, and professional consequence |
@@ -421,6 +422,23 @@ artifact/state, metric, cost, task-health, production-validation, and validity r
 are the durable homes; no software-specific schema or orchestration, defect,
 productivity, value, professional-validity, production-fitness, or readiness claim
 follows.
+
+The professional-email field experiment adds a sharper randomized boundary:
+`assignment → invocation/candidate → user adoption/edit → final artifact delta →
+recipient exposure observation → behavior → objective attainment → value`. Across
+121 completing volunteers and 16,880 emails, the active conditions reportedly move
+one final-message sentiment score but have no detected intent-to-treat effect on
+open, reply, or response-time outcomes. The strong score–behavior association does
+not identify mediation: positivity is not randomized or recipient-validated;
+message, dyad, and period confounding remain; sender centering does not remove them;
+recipient/dyad clusters are absent; and a simple LMM×GLMM Sobel product does not
+define a probability-scale causal indirect effect. The public code also omits
+period/sequence/carryover despite the crossover, and its fixed censoring constants
+are not bound to actual observation-end times. Preserve randomization and analysis
+units, treatment realization, observer validity/windows, cluster graph, mediator
+assumptions, and adverse/burden outcomes. Do not rescue a null endpoint by promoting
+a proxy association into mechanism, communication utility, productivity, configured
+agent capability, or readiness.
 
 Executable composition is therefore a construction mechanism, not a construct
 argument. A composite task needs a typed obligation DAG with prerequisites,
