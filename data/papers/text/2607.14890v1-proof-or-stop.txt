@@ -1,0 +1,2530 @@
+                                                                             Proof-or-Stop:
+                                                               Don’t Trust the Agent, Trust the Evidence
+                                                          Loop Engineering for Verifiable Evidence-Gated Lifecycle Control
+
+                                                  Jek Huang∗, Jeffery Hsia, Jiayi Sun, Freddie Shi, Wei Huang, and Ian H. White
+
+
+                                                                                  June 2026       (preprint v1)
+
+
+
+                                                                                            Abstract
+
+
+
+
+arXiv:2607.14890v1 [cs.AI] 16 Jul 2026
+                                                 Autonomous coding agents increasingly execute multi-step software work. However, lifecycle
+                                                 states such as reviewed, tested, done, and ready-to-merge remain claims unless a downstream
+                                                 system can decide whether those claims are supported by current evidence. In this work,
+                                                 we present Proof-or-Stop Lifecycle Control, a method in which lifecycle transitions are
+                                                 admitted only when fresh, tracked-source-state-bound, mechanically verifiable evidence satisfies
+                                                 the relevant gate. The method instantiates an agent-as-claim lifecycle semantics: agent outputs
+                                                 may propose lifecycle claims, but do not themselves constitute lifecycle state. Here, “proof” is
+                                                 used operationally to mean gate-admissible evidence under a stated trust model, not a proof of
+                                                 semantic program correctness.
+                                                     The method was instantiated in the open-source Proof-or-Stop implementation and evaluated
+                                                 through mechanism tests, a powered control-policy ablation, and operated self-application
+                                                 evidence. Mechanism checks show that done and receipt claims do not advance on self-report
+                                                 in the tested engine contract: the unattended-loop engine passed 10/10 scenarios with zero
+                                                 false-done, and local-key receipt bundles rejected 18 tamper classes with zero false accepts in
+                                                 the tested suite. In a 9,240-cell powered ablation, the pre-registered A4-vs-A2′ contrast reduced
+                                                 visible-pass/hidden-fail amplification from 31/1800 injected cells under a compute-budgeted naive
+                                                 loop to 2/1800 under the gated loop (+1.6pp not-amplified, 95% CI [0.8, 2.5]). The separation
+                                                 was concentrated in a trap-active task; the near-compute A3-vs-A4 contrast (14/1800 vs 2/1800)
+                                                 indicates that the improvement is associated with enforcing the review signal as a lifecycle gate,
+                                                 rather than merely adding a reviewer. Finally, the operated self-application corpus (565 stories
+                                                 / 1007 review findings, 94.8% resolved) and a refreshed 68-row high/critical cross-vendor
+                                                 exhibit show that the system produces auditable evidence on its own development. Together,
+                                                 these results support Proof-or-Stop as a model-agnostic, host-neutral control layer for deciding
+                                                 which autonomous-agent claims a lifecycle may safely act on, rather than as a new model or
+                                                 coding agent. The evaluation is limited to one model family, 24 ablation tasks, and a self-hosted
+                                                 corpus.
+
+                                         Keywords: AI agents; language models; autonomous agents; software lifecycle; verifiable evidence;
+                                         evidence gating; provenance; reproducibility; agentic software engineering.
+                                           ∗
+                                               Corresponding author: jek.huang@prodenovo.ai
+
+
+
+
+                                                                                                 1
+1    Introduction
+Autonomous coding systems increasingly combine durable execution, tool use, review agents, and
+handoff protocols. These systems have made agent work more executable, resumable, and measurable.
+However, they do not by themselves decide whether lifecycle claims such as tested, reviewed, done,
+and ready to merge are safe for downstream automation to act on. This distinction becomes
+load-bearing when an unattended agent can generate code, retry until visible checks pass, and
+narrate completion in the same workflow that will be asked to advance the work.
+    The resulting problem is claim admissibility. A self-report is not evidence; a log line saying
+“All tests passed” is not evidence that the tests correspond to the code about to be merged; and
+a reviewer response saying “LGTM” is not, by itself, an artifact that a later gate can re-check.
+In existing practice, a green pipeline or a successful agent handoff can therefore coexist with a
+stale, incomplete, or unsupported lifecycle claim. The missing control is not another model, but an
+admissibility rule for deciding when a claim may move lifecycle state.
+
+Thesis. In this work, we present Proof-or-Stop Lifecycle Control. The key idea is to treat every
+consequential actor output as a claim and to admit that claim only when fresh, structured, tracked-
+source-state-bound evidence satisfies a gate predicate. If the evidence is admissible, the lifecycle
+advances; if it is missing, stale, incomplete, or outside the stated trust model, the system repairs
+within a bounded loop, degrades honestly, escalates, or stops. In the Proof-or-Stop implementation,
+this evidence is protected by authenticated integrity, producer identity, and freshness checks over the
+exact tracked source state. We use “proof” operationally: a proof is gate-admissible evidence under
+that trust model, not a formal proof of semantic program correctness. The broader engineering
+practice is Loop Engineering: engineering the autonomous develop/review/test/done loop so that
+control decisions are made by evidence-checking gates.
+
+Semantic stance. We separate the contribution into four layers. First, the semantic shift is agent-
+as-claim: an agent output may propose a lifecycle claim, but it is not itself lifecycle state. Second,
+Proof-or-Stop Lifecycle Control is the methodology: lifecycle advancement is a claim-admissibility
+decision. Third, evidence gates are the mechanism: claims advance only when fresh, tracked-source-
+state-bound evidence satisfies the relevant predicate. Fourth, receipts, source-state hashes, review
+runs, done gates, and the ablation, corpus, and cross-vendor exhibits are the instantiation and
+evidence used to evaluate the method.
+
+Contributions.
+
+C1 — Proof-or-Stop Lifecycle Control. We define a model-agnostic evidence-gated control
+  method for autonomous coding lifecycles. Every consequential lifecycle claim emitted by a host
+  agent or workflow actor must reduce to gate-consumable evidence before it can advance phase,
+  review, test, done, or merge-relevant state; ordinary notes and documentation remain light (§3,
+  §4).
+C2 — Code-state-bound evidence mechanics. We instantiate claim admissibility through au-
+  thenticated integrity, producer identity, and freshness binding. Evidence carries fresh material,
+  head, and story hashes; policy and command-set hashes; and a receipt identity (command, argu-
+  ments, working directory, exit code, output digest). Stale, reconfigured, tampered, unauthorized,
+  or build-proof-missing evidence is rejected (§3, §4).
+
+                                                  2
+C3 — Host-neutral transfer as an evidence property. We characterize host-neutrality as lo-
+  cal evidence over the same code identity rather than trust in a remote host or protocol. Safety
+  mechanisms and the cross-machine resume (HN-2) are verified; the strong cross-vendor quorum
+  remains gated (§7).
+C4 — Operated evaluation and boundary discipline. We report the self-hosted Proof-or-
+  Stop implementation and evidence from a 565-story / 1007-finding corpus, powered ablation,
+  injected-failure recovery, a 68-row cross-vendor high/critical review exhibit, and prohibited-
+  wording guard that limits unsupported capability claims (§5, §6, §8).
+
+What is established, and what is not. Table 1 separates the evidence tiers used in the
+paper. The engine contract and evidence discipline are demonstrated in the operated Proof-or-Stop
+corpus. The comparative ablation is a powered 9,240-cell result: the primary A4-vs-A2′ contrast
+against the pre-registered budget-capped naive control has a CI-excluding-zero not-amplification
+gain (H1 +1.6pp, [0.8,2.5]) and marginal completion gain (H2). The recovery claim is supported
+by both the powered full-matrix estimate (§6) and a verified pilot showing a loop-fidelity gradient
+on visible-test-passing wrong artifacts. Clean tasks show overhead; green-but-wrong injected faults
+show risk-mitigation value, and the 68-row cross-vendor refresh shows that independent-vendor
+review caught high/critical defects in the paper’s own evidence machinery. The present evidence
+supports host-neutral gate semantics and local receipt validation; strong cross-vendor quorum claims
+remain gated on fresh independent host verdicts over the same material hash. These boundaries
+are part of the method: claims are reported only at the tier supported by admissible evidence.
+Cross-domain, multi-model, external-benchmark, and strong independent-host generalization remain
+future work.
+
+Roadmap. Section 2 states the claim-admissibility problem in autonomous software work. Sec-
+tion 3 formalizes evidence admission, and Section 4 instantiates it in the Proof-or-Stop lifecycle.
+Sections 5 and 6 evaluate the unattended loop and injected-failure recovery. Section 7 covers
+host-neutral transfer; Section 8 reports self-application and audit evidence; Section 9 states the
+honest boundary of experience reuse. Sections 10–13 cover related work, threats, future work, and
+the conclusion.
+
+Proof chain at a glance. This paper does not ask the reader to accept one large informal claim.
+It builds one chain: an agent output is a claim; a lifecycle transition needs admissible evidence; a
+gate checks that evidence against the current tracked source state; and missing or stale evidence
+blocks advancement. Table 1 is the single map for current evidence, tier, and boundary. In the
+table, engine evidence checks that the gate behaves correctly; empirical evidence tests whether
+acting on the gate helps against weaker controls; independent-host evidence is reserved for fresh
+multi-host receipts.
+
+
+
+
+                                                 3
+         Table 1: Proof chain, evidence tier, and current status for Proof-or-Stop Lifecycle Control.
+
+Evidence source          Tier / status        What it supports                             Boundary
+Formal spine             engine / verified    Defines the agent-as-claim formal spine:     A control method, not a
+                                              actor outputs are lifecycle claims, and      semantic-correctness proof or a new
+                                              transitions advance only when required       coding model.
+                                              claims are backed by admissible evidence
+                                              (Eqs. 2–3).
+Receipt and tam-         engine / verified    Shows that gate inputs cannot be             Local-key trust model; does not defeat a
+per checks                                    replaced by prose, stale logs, or            compromised runner or prove claim
+                                              tampered receipt bundles; 18 tamper          semantics.
+                                              classes rejected with zero false accepts /
+                                              false rejects in the tested suite.
+Engine contract          engine / verified    Shows done, review, test, and                Checks gate behavior, not broad task
+                                              claim-boundary gates do not advance on       success.
+                                              self-report: 10/10 loop-engineering
+                                              scenarios, false-done=0, plus a 10-group
+                                              / 150-row large-ledger stress suite.
+Powered ablation         empirical / veri-    Tests whether enforcing the gate reduces     Rare-event, task-concentrated, one
+                         fied                 visible-pass/hidden-fail amplification:      model family; powered ablation is
+                                              A2′ 31/1800 vs A4 2/1800, H1                 control-policy evidence, not full
+                                              not-amplified +1.6pp [0.8,2.5].              story-level receipt replay.
+Cell03/Cell06            descriptive / ver-   Shows terminal completion and                Not hidden-oracle adjudicated; not an
+paired comparison        ified                Proof-or-Stop delivery admission can         accuracy, dollar-cost, cost-benefit,
+                                              diverge on 1,152 matched cell keys; 106      isolated-overhead, or completed
+                                              no-review completions were not               multi-model result.
+                                              admitted; the paired token-usage readout
+                                              is 3.80× input+output tokens for the
+                                              bundled gated run vs no-review control.
+Recovery pilot           empirical / veri-    Shows the mechanism path: bare loop          Pilot-sized, three tasks, B-fidelity proxy.
+                         fied                 amplifies wrong artifacts, one review
+                                              gate safe-stops them, bounded reflection
+                                              repairs them.
+Self-application         corpus / verified    Shows operated use and auditability: 565     Self-built and selection-conditioned; not
+corpus                                        stories / 1007 findings, 94.8% resolved,     an unbiased population benchmark.
+                                              26/28 curated deep-set findings filed
+                                              while author tests were green.
+Cross-vendor       ex-   observational   /    Shows independent-vendor review can          Existence and soundness exhibit; not a
+hibit                    verified             catch load-bearing defects in                controlled marginal-rate estimate.
+                                              same-vendor-passed artifacts: 68
+                                              high/critical Codex host-2 findings
+                                              across 26 stories, all resolved.
+Host-neutral trans-      mechanism       /    Shows local receipt and git-native           Strong cross-vendor quorum remains
+fer                      verified             handoff mechanics over the same tracked      gated until fresh independent-host
+                                              source identity.                             receipts are powered.
+Claim boundary           boundary / veri-     Guards unsupported capability wording;       Claim language and attention support
+and experience           fied                 keeps runtime memory advisory with           only; not empirical superiority or causal
+                                              gateEvidence:false.                          learning.
+PINN / Quantum           future-domain        Preserved as schema smoke tests for          Not current-result evidence; no PDE,
+bundles                  smoke / gated        future domain packages.                      quantum, solver, hardware, or scientific
+                                                                                           correctness claim.
+
+
+
+Terminology. A claim is an agent- or workflow-implied statement such as reviewed, tested,
+done, or ready-to-merge. Admissible evidence satisfies the freshness, tracked-source-state binding,
+authenticated-integrity, producer-authorization, and accepted-outcome checks in Eq. (2). Amplified
+means a wrong artifact was shipped or propagated; not-amplified means it was repaired, stopped, or
+otherwise not propagated.
+
+
+
+
+                                                                   4
+Table 2: Operational evidence map for the claims above. The artifact workspace for this draft was extracted
+from the Proof-or-Stop experiment platform checkpoint taken 2026-06-22 (Proof-or-Stop version 0.3.58). Each
+row names the concrete evidence a reviewer can inspect, the command that produces or summarizes it, and
+the gate or claim consumer that reads it.
+
+Claim                       Artifact / evidence                  Command                Gate consumer
+done requires fresh full-   story done-required-:                done_required_         test→done: rejects missing, stale,
+test proof                       evidence.json                   validate               or command-set-drifted proof
+                            command exits, output digests,
+                            material-
+                            Hash/headHash/storyFilesHash,
+                            policy/command-set hash
+Reviewer identity is        review-runs.json: signed             review_run_start       Review gate: pass/finding must
+structured, not prose       reviewer run, lane, round,                                  reference a signed current-round,
+                            materialHash, reviewer identity                             material/scope-fresh run
+No-issue review is au-      review-passes.json:                  review_pass_set        review→test: pass quorum and
+ditable                     current-round pass with reviewer                            freshness floor
+                            lane and run id
+Findings block when         findings.json: severity,             finding_add            review→test: open verified
+severity/evidence re-       category, status, evidenceState,                            critical/high findings block unless
+quire it                    resolution trail                                            the round-graded advisory rule
+                                                                                        applies
+Unattended loop engine      final-report.json artifacts          baseline_suite         Tier-A claim consumer: supports
+contract                    aggregated into a loop-engineering                          the 10/10 engine-contract result;
+                            suite report                                                not a lifecycle bypass
+Stronger claim word-        claim-boundary registry plus         quorum_submit      +   Tier-C claim consumer: stronger
+ing cannot be upgraded      host-verdict / production-wording    wording gate           production or cross-host wording
+without evidence            guard fields                                                requires configured local evidence;
+                                                                                        degraded fallback remains
+                                                                                        explicitly local
+
+
+
+
+                                                                 5
+                             The Unattended Evidence-Gated Loop
+
+
+                                                                            What does
+                                           Story request & intent           done require?
+
+
+
+
+                                                Plan & execute              In scope?
+                                           typed steps, in declared scope   Steps logged?
+
+
+
+                                  bounded reflection loop
+
+
+
+                    Independent                      Review
+                      verdicts?           independent verdicts → findings
+
+
+
+
+                                                     Reflect                         refinement &
+                 Within budget?
+                                                  bounded repair                     bounded retry
+
+
+
+                    Admissible?
+                     Fresh, not          Gate — evidence admissibility
+                        forged?
+
+
+
+
+                                                      Done
+                                                                            Proof present?
+                                          only on admissible, code-bound    Nothing faked.
+                                            proof • false-DONE = 0
+
+
+
+
+Figure 1:           Loop Engineering at a glance.              The unattended develop loop runs
+plan→execute→review→bounded reflect→gate→done; every consequential transition is de-
+cided by an evidence gate (the monospace questions), not by the agent. The loop advances only on
+admissible, code-bound evidence, loops back for a bounded retry when evidence is short, and does not
+convert unsupported claims into done. One loop iteration is shown in technical detail in Fig. 4. This is the
+proof-or-stop discipline: admissible evidence advances the loop; missing, stale, or forged evidence blocks,
+repairs, or escalates rather than advancing the lifecycle.
+
+
+
+
+                                                             6
+2    Background and Problem
+Three lines of systems work have made autonomous agent work more robust, and each leaves the
+trust problem open.
+    Durable / resumable execution (Temporal-style workflows, graph runtimes, agent frameworks with
+persistence, transactional agent runtimes) makes work survive crashes and restarts by checkpointing
+state. But surviving state is not verified state: resuming a workflow that recorded “tests passed”
+re-asserts the recorded claim; it does not re-establish that the claim matches the code now being
+merged.
+    Cross-vendor coordination (agent-to-agent protocols, tool/context protocols, and the broader
+family of agent-interoperability standards) routes messages and delegates tasks across heterogeneous
+systems. These are communication layers. They standardize how a verdict travels, not whether it is
+admissible against the current artifact.
+     Evidence-driven release gates and deterministic verification loops aggregate signals into pro-
+mote/hold/rollback decisions. This is the closest prior practice. The gap we address is binding
+and scope: a release gate typically makes one decision at the end, on coarse signals; we bind every
+lifecycle evidence item to code identity (materialHash/headHash/storyFilesHash), add authenticated
+integrity digests and a receipt identity, and operate it lifecycle-wide on a real self-hosted system.
+    The common failure mode these leave intact is that a green pipeline can coexist with a real
+defect. If downstream automation treats that green status as sufficient evidence, it may advance,
+merge, and mark the work done. Our deep finding set (§8) measures how often “author’s tests pass”
+failed to imply “correct” in the operated corpus.
+    The agent setting makes this sharper than ordinary CI slippage. A conventional gate can often
+assume the actor is honest but fallible; an unattended coding agent can generate the code, retry
+until a visible check turns green, and narrate or package success. The gate must therefore verify
+state-bound evidence rather than trust the actor’s report. This is not only a theoretical risk: in
+the powered ablation, the compute-budgeted naive loop amplified 31/1800 visible-pass/hidden-fail
+injected cells while the gated loop amplified 2/1800 (Table 11); in the self-application deep set, 26
+of 28 findings were filed while the author’s tests were green (§8).
+
+
+
+
+                                                 7
+Table 3: Why existing gates are not enough for agent lifecycle claims. These mechanisms compose with
+Proof-or-Stop, but none by itself decides whether a current reviewed/tested/done/ready claim is admissible
+for the exact source state about to advance.
+
+Mechanism                 Control unit                Binding/freshness        Gap for autonomous-agent work
+CI/CD gate                Job or pipeline result      Usually the com-         Answers “did this configured job pass?”, not whether
+                                                      mit/job that ran;        the lifecycle claim is complete, current, authorized,
+                                                      often consumed as a      and sufficient to advance review/test/done/merge.
+                                                      green status
+SLSA / in-toto prove-     Artifact production         Strong         prove-    Useful evidence source, but it attests production
+nance                     history                     nance/attestation        history rather than deciding every agent lifecycle
+                                                      over build or supply-    transition; a source-state drift or missing reviewer/test
+                                                      chain steps              claim still needs a gate.
+Durable execution         Persisted   workflow        Resumes recorded         Preserves work, including stale or false claims; it does
+                          state                       state after interrup-    not re-establish that “tests passed” or “reviewed” still
+                                                      tion                     supports the current source state.
+A2A / MCP / agent         Messages, tools, dele-      Transports context       Moves claims and verdicts, but does not decide
+frameworks                gation, agent orches-       or routes work be-       whether those claims are admissible evidence against
+                          tration                     tween agents/tools       the artifact being advanced.
+Proof-or-Stop             Lifecycle claim tran-       Fresh        tracked-    Converts each lifecycle-moving claim into an
+                          sition                      source-state digest,     evidence-admission decision: advance only on
+                                                      receipt      identity,   admissible evidence; otherwise repair, degrade,
+                                                      policy/command-set       escalate, or stop.
+                                                      digest,     accepted
+                                                      outcome
+
+
+
+
+Table 4: Where Proof-or-Stop sits relative to ordinary coding-agent use. Product names are illustrative
+host examples; the comparison is between assurance layers, not between vendor feature sets. Proof-or-Stop
+composes with host agents and CI rather than replacing them.
+
+Dimension             Bare host-agent session                 Host agent + CI/CD                    Host agent + Proof-or-Stop
+Semantic model        Agent report may be consumed            Job status is consumed as a           Agent output is a claim; only
+                      as lifecycle state.                     lifecycle signal.                     admissible evidence advances
+                                                                                                    state.
+Primary role          Generate, edit, run tools, and          Generate work, then run               Generate work, then admit
+                      explain work.                           configured checks.                    lifecycle claims only through
+                                                                                                    evidence gates.
+Review    /    test   Agent or author can narrate             Green job shows configured            Reviewer verdicts and test
+trust                 reviewed/tested/done.                   checks passed.                        receipts must be fresh, structured,
+                                                                                                    and source-state-bound.
+Failure mode          Plausible self-report or                Green pipeline can coexist with       Missing, stale, forged, or
+                      visible-check overfitting can           hidden failure or stale evidence.     incomplete evidence blocks,
+                      advance.                                                                      repairs, degrades, escalates, or
+                                                                                                    stops.
+Audit trail           Conversation, files, and git            Job logs plus git history.            Receipt identity, material/source
+                      history.                                                                      digests, policy and command-set
+                                                                                                    digests, review runs, findings, and
+                                                                                                    done certificates.
+Merge/done deci-      Human or host judgement.                Branch policy / CI status.            Current
+sion                                                                                                tracked-source-state-bound
+                                                                                                    certificate consumed by lifecycle
+                                                                                                    gates.
+
+
+
+
+                                                                    8
+3    The Evidence-Gating Principle
+Method abstraction. Proof-or-Stop Lifecycle Control reduces lifecycle advancement to a claim-
+admissibility decision. The core method is:
+
+              Proof-or-Stop = Actor output −→ Claim −→ Evidence −→ Gate
+                                      −→ Lifecycle transition.
+
+Proof-or-Stop controls each lifecycle transition; repeated proof-or-stop transitions form the bounded
+lifecycle loop. In the autonomous-coding implementation evaluated here, actors include agents,
+reviewers, tools, and workflow commands. Their outputs are interpreted as lifecycle claims; claims
+require admissible evidence; evidence is checked by gate predicates; and only passing gates may
+advance lifecycle state. Evidence-gated claim admissibility is the enforcement mechanism for this
+method. This is the operational form of agent-as-claim semantics: the actor may emit the claim,
+but the lifecycle transition is decided by evidence admission.
+   The control abstraction is domain-neutral: actor output is treated as a claim, claims require
+admissible evidence, and gates decide whether a lifecycle transition may advance. This paper
+empirically evaluates the abstraction in autonomous coding lifecycles. Cross-domain instantiations
+require domain-specific evidence packages and separate evaluation.
+   We make the thesis precise. Let H be the current tracked source state of a unit of work, identified
+by content digests over the version-control tree. We define three identities, computed over git
+ls-tree with the lifecycle’s own metadata excluded so that recording evidence does not perturb the
+hash it is bound to:
+
+            materialHash(H) = SHA256 canon(tracked source tree at H, \ metadata) ,                 (1)
+                                                                                         
+
+               headHash(H) = commit identity of H,
+           storyFilesHash(H) = SHA256 canon(story-owned files at H) .
+                                                                         
+
+
+These identities bind the tracked source state. They are not, by themselves, a full executable-
+state attestation: dependency resolution, toolchain/container/OS, environment variables, external
+service state, and untracked generated files must be covered by policy, command, environment, or
+dependency digests if a deployment needs that stronger claim.
+    A piece of evidence E is a structured record (not prose) describing the outcome of a check-
+able action: a test run, a build, a scope check, a reviewer verdict. Evidence carries a binding
+β(E) = ⟨materialHashE , headHashE , storyFilesHashE , policyHashE , commandSetHashE ⟩ and, for exe-
+cuted actions, a receipt identity ρ(E) = ⟨cmd, args, cwd, exit, outputDigest⟩. Signed local receipts
+and review verdicts also carry producer identity, such as actor, lane, host or session, and signing-key
+identity.
+
+Admissibility.    A gate admits evidence E for claim c at state H iff
+
+Admissible(E, c, H) ≡ Fresh(E, H) ∧ Complete(E) ∧ IntegrityVerified(E) ∧ ProducerAuthorized(E)
+                                                                                                      .
+                       ∧ ExecutionAttested(E) ∧ Supports(E, c) ∧ OutcomeAccepted(E).
+                                                                                                (2)
+Here Fresh checks the required materialHash/headHash/storyFilesHash bindings against the live state
+H; Complete checks required policy and command-set bindings; IntegrityVerified checks signatures
+and digest chains; ProducerAuthorized checks that the actor, lane, host/session, or signing key
+
+                                                  9
+is authorized for the claim; ExecutionAttested checks command, arguments, working directory,
+exit code, and output digest when execution is required; Supports ties the record to claim c; and
+OutcomeAccepted checks the gate-specific pass or accepted-degradation outcome. The freshness
+conjunct defeats the most common silent failure: evidence produced against an earlier source state
+is rejected the instant the source tree changes, because materialHashE ̸= materialHash(H) (Eq. (1)).
+Missing build proof, a reconfigured command set (commandSetHash mismatch), an unauthorized
+producer, a failed execution attestation, or a hand-edited metadata file all fail Eq. (2). Local-key
+receipts provide authenticated integrity, producer identity, and freshness under the stated single-host
+trust assumption; they do not independently prove execution truth against a compromised runner
+or semantic correctness of the claim.
+
+Offline receipt-bundle contract. B-4c65 exercises Eq. (2) as an adversarial contract test for
+the “lying agent” case: an agent may claim that DONE evidence is fresh, signed, and passing,
+but the verifier accepts only a self-contained bundle whose binding and receipt identity re-check
+offline. The implementation exposes a programmatic API that builds a local-key-signed bundle
+from DONE-story evidence and verifies it without network or server access. Its assurance label is
+deliberately local-key-single-host: it proves portable freshness and tamper-evidence for a local
+receipt, not an independent multi-host quorum. We call this local-key scope below.
+
+Table 5: Offline receipt-bundle adversarial contract (B-4c65). The authentic bundle is accepted; 18 tamper
+classes are rejected; all 10 non-ok reason codes are reached; false-accept = 0 and false-reject = 0. This is
+local-key scope, not an independent multi-host quorum.
+
+Case family            Examples                                                          Verifier reason      Result
+Authentic control      Untampered signed bundle over matching material hash and          ok                   accepted
+                       trusted public key
+Freshness / binding    Code-byte flip; stale material hash; incomplete binding           stale;             rejected
+drift                                                                                    binding_incomplete
+Signature tamper       Evidence edit; host-verdict swap; command-set change; forged      signature_invalid rejected
+                       signature
+Missing / wrong        Empty signature; signer public key differs from the trusted key   signature_missing; rejected
+signer                                                                                   signer_key_mismatch
+Malformed              Null host verdict; null decision; extra top-level key             malformed_bundle    rejected
+structure
+Receipt identity       Non-SHA256 output digest                                          digest_mismatch      rejected
+malformed
+Receipt did not pass   Receipt exitCode 1; exitCode -1; empty command                    receipt_not_         rejected
+                                                                                         passing
+Missing proof / bad    No receipts; signed bundle with decision fail                     build_proof_         rejected
+decision                                                                                 missing;
+                                                                                         decision_not_pass
+
+
+Gate-strength self-red-team contract. A verifier is only as good as its discrimination: a gate
+that blocks everything has a perfect “catch rate” yet ships nothing. B-7b6e instruments this directly
+by scoring a reviewer over a hidden-ground-truth corpus of passes-the-visible-test-but-wrong artifacts
+plus one genuine control. The score is the pair (catchRate = caught/wrongTotal, falseBlock), because
+catch rate alone is gameable. Three reference reviewers make the metric non-vacuous: a test-only
+reviewer misses every wrong-but-test-passing artifact; a block-all reviewer reaches catchRate = 1.0
+but falsely blocks the genuine control; and an oracle reviewer reaches catchRate = 1.0, falseBlock = 0,
+dominating both. The score is itself evidence: B-7b6e publishes it as a B-4c65 receipt bundle in
+local-key scope, and the gate-strength verifier re-derives the result digest so the receipt binds not just
+“a pass happened” but “this discrimination score, over this hidden-truth corpus, is the one attested.”
+
+
+                                                               10
+Honest scope: these are reference endpoints and an oracle, not a live review lane; integrating the
+metric into a live artifact-reading review lane remains explicit future work.
+
+Table 6: Gate-strength self-red-team contract (B-7b6e), 12 hermetic checks, all passing. The three reference
+reviewers bracket the achievable space, proving catch rate alone is gameable and that the published metric is
+offline-verifiable and tamper-evident (including against a result tampered after bundling). Local-key scope;
+reference reviewers, not a live review lane.
+
+Contract check             What it proves                                               Outcome
+test-only reviewer         ships every wrong-but-test-passing probe                     catchRate = 0
+block-all reviewer         catch rate alone is gameable                                 catchRate = 1.0,
+                                                                                        falseBlock =
+                                                                                        genuineTotal
+oracle dominance           real discrimination needs both axes                          out-catches test-only
+                                                                                        and under-blocks
+                                                                                        block-all
+empty / all-genuine        no vacuous 0/0 = 1.0                                         rejected
+corpus
+invariant-violating        oracle is well-defined                                       rejected
+corpus
+receipt verifies offline   metric is portable evidence                                  accepted (local key)
+tampered signed field      bundle is tamper-evident                                     rejected (bad
+                                                                                        signature)
+stale materialHash         freshness binding holds                                      rejected (stale)
+authentic result match     result–receipt loop closed                                   matches
+tampered result            full result is bound                                         does not match
+(catchRate / reason)
+
+
+
+Evidence-instrument characterization contract. An evidence gate is only as trustworthy
+as the instruments that produce its evidence. Where B-4c65 and B-7b6e red-team a receipt and
+a reviewer, the proof-or-stop replay campaign (five DONE stories B-9e44 / B-bae9 / B-2a5b / B-
+f511 / B-853a) red-teams a producer: the memory/playbook runtime baseline verifier. Against a
+frozen pre-registered protocol (protocol.json, sha256 a3a781fed2...) it characterizes the instru-
+ment on four properties — replay-determinism, tamper-fail-closed, resume-integrity, and scale-
+envelope — and adjudicates them with a purely offline three-state (pass / fail / inconclusive) analyzer
+that reads only committed evidence and re-verifies every ledger record’s digest before adjudicat-
+ing. The resume-integrity arm is the proof-or-stop discipline itself under injected interruption:
+boundary and mid-iteration kills leave, on resume, exactly one identity-keyed record per itera-
+tion with zero duplicates and zero gaps. The analyzer emits a report whose digest 198e33866b...
+= sha256(canonicalJson(report − digest)) was re-derived byte-for-byte offline and cross-vendor (an
+independent Codex host recomputed it), and a hermetic 19-check selfcheck proves the three-state
+logic un-gameable: incomplete, stub, mislabeled, non-physical, or tampered evidence each yields
+fail / inconclusive / abort, never a false all-pass, and the claim text is emitted only when all four
+properties hold. Honest scope: this characterizes one instrument under a frozen protocol over
+enumerated scenarios; the report digest is a reproducibility and tamper-evidence anchor at lo-
+cal + cross-vendor-replication scope, not an authenticated multi-host quorum, and the study is not
+Tier-C (a signing adversary who recomputes digests is out of scope).
+
+
+
+
+                                                            11
+                                                                                                                     Advance
+                                                                                                                     ϕi → ϕi+1
+                                                                                                        Admissible
+                                             Evidence E
+      Agent                              cmd,args,cwd,exit,                              GATE
+ (produces work)            digest + materialHash/headHash/storyFilesHash             check Eq. (2)
+                                       + policy/cmdset hash
+
+                                                                                                    stale/forged/missing
+                                                                                                                      Block /
+                                                                                                                     fail-closed
+                             self-report: not gate evidence
+
+
+
+Figure 2: The evidence-gating spine. The agent’s work is reduced to structured evidence bound to code
+identity; the gate decides the transition by checking Eq. (2). Self-report (dashed) is not admitted as gate
+evidence.
+
+
+Table 7: Evidence-instrument characterization contract (proof-or-stop replay campaign, M0–M4). Four
+properties of the baseline verifier, adjudicated offline to a three-state verdict; all pass under the frozen protocol
+over the enumerated scenarios. The report digest is re-derived cross-vendor; a 19-check hermetic selfcheck
+proves no incomplete/stub/mislabeled/tampered evidence yields a false all-pass. Frozen-protocol, enumerated
+scope; local + cross-vendor-replication, not a multi-host quorum; not Tier-C.
+
+Property              Evidence (enumerated, frozen protocol)                                                          Verdict
+replay-determinism    33/33 proof records (30 small + 3 full 106 -row) pairwise-identical on digests and gold         pass
+                     metrics, at both scales
+tamper-fail-closed   27/27 (class × handling) tamper verdicts conform (18 fail-closed, 2 accepted, 6                  pass
+                     acknowledged-limitation, 1 dropped); 0 non-conforming
+resume-integrity     boundary + mid-iteration kills → on resume exactly one record per iteration, 0 duplicate         pass
+(proof-or-stop)      / 0 gap, casualty resolved to stop-or-clean-rerun
+scale-envelope       every verify within the 128.2 s budget cap; full-profile (106 rows) max 18.7 s (14.6% of cap)    pass
+
+
+
+Gated advancement. Let a unit of work pass through phases ϕ1 → ϕ2 → · · · . Each transition
+ϕi → ϕi+1 declares a set of required claims Ci (e.g. “scope is frozen,” “tests pass,” “review quorum
+met”). The transition is permitted iff every required claim is backed by admissible evidence:
+
+       Advance(ϕi → ϕi+1 , H) ⇐⇒ ∀ c ∈ Ci ∃ Ec : Provides(Ec , c) ∧ Admissible(Ec , c, H).                                   (3)
+
+Crucially, a natural-language report from an agent is not an Ec : it provides neither verified integrity
+nor attested execution and carries no binding. Eq. (3) therefore has no term for self-report (Fig. 2).
+
+Scope (why this is not too heavyweight). The heavy machinery of Eqs. (2)–(3) applies
+only to claims in i Ci — those that move phase, pass review, certify tests, mark done, or merge.
+                 S
+
+Ordinary developer notes, design rationale, and documentation are advisory: they inform attention,
+never a gate, and are deliberately excluded from every binding (§9). The discipline is expensive
+exactly where being wrong is expensive, and cheap everywhere else.
+
+
+4     Lifecycle Instantiation
+Proof-or-Stop instantiates Eqs. (2)–(3) as a command-line lifecycle for a unit of work it calls a story.
+A story moves init → init-check → plan → dev → review → test → done, and each arrow is an
+instance of Eq. (3) with concrete required claims:
+
+                                                              12
+Table 8: Lifecycle gate matrix. Each transition names the structured artifact, the gate check, and the
+fail-closed behavior when proof is missing or stale.
+
+Transition            Evidence artifact                         Gate check                                 Fail-closed behavior
+plan→dev              structured plan review / story            scope exists and story files hash is       refuse DEV until plan evidence
+                      contract                                  current                                    exists
+dev→review            scope-contract check + allowed            diff is within declared scope and          refuse REVIEW on out-of-scope
+                      paths                                     bound to current materialHash              edits
+review→test           review-runs.json                          current round, reviewer identity,          block TEST on
+                      review-passes.json                        material/scope freshness; pass             stale/scope-drifted pass or open
+                      findings.json                             may be non-latest                          verified high/critical finding
+test→done             done-required-                            tree hashes plus                           block DONE on stale, missing, or
+                      evidence.json                             policy/command-set hash all                command-set-drifted proof
+                                                                match current tree
+high-risk             host verdict receipts / local             3×2 independent verdicts over              degrade honestly; do not upgrade
+DONE                  review-assurance status                   current materialHash, or explicit          local fallback into a stronger claim
+                                                                degraded fallback
+
+
+                                                                                                                                  advance
+                                                                                                                     admissible
+
+            Command                Structured artifact                  Binding
+                                                                                                     Gate consumer
+      e.g. review_run_start       JSON receipt / verdict   materialHash/headHash/storyFilesHash
+                                                                                                  REVIEW / TEST / DONE
+    done_required_validate             not prose              policy + command hashes
+                                                                                                                 missing, stale, forged
+                                                                                                                                  block / degrade
+
+
+Figure 3: Operational evidence flow. Commands produce structured artifacts, artifacts carry code and
+policy bindings, and gate consumers decide whether to advance, block, or honestly degrade.
+
+
+• plan→dev: an adversarial plan review must persist a structured result (not a “looks good”);
+  scope is frozen into a contract bound to declared file paths.
+• dev→review: a scope-contract check verifies the diff touches only contracted paths; out-of-scope
+  edits fail closed.
+• review→test: independent reviewer lanes must persist verdicts; critical/high findings block; a
+  per-run test receipt must be admissible.
+• test→done: see the full-test receipt and review-assurance floor below.
+
+
+Review-run binding race. B-6c4d refined the REVIEW evidence rule after a concurrency
+failure in which a reviewer retrying review_run_start minted a newer reviewRunId on the same
+lane and round, causing an earlier no-issue pass to be rejected solely by id-recency even though
+it was still bound to the same material and scope. Id-recency is therefore not itself a freshness
+predicate. A PASS is admissible from any signed run in the current review round if the run’s
+materialHash/storyFilesHash and scope binding still match the live story state. The relaxation is
+kind-aware: open FINDING evidence still requires the lane’s latest run, so a newer pass cannot
+hide an unresolved older finding. The only whole-tree-drift downgrade through storyFilesHash
+also excludes EMPTY_STORY_FILES_HASH on both the recorded and live side; the hash of an empty
+story-owned diff carries no story-owned signal and falls back to strict materialHash freshness. Thus
+the gate removes a false rejection without weakening the surviving round, lane, signature, freshness,
+and scope checks.
+
+The done-required full-test receipt. Before a story may enter done, Proof-or-Stop re-
+quires a freshness-bound, authenticated integrity receipt that a configured set of commands
+
+                                                                         13
+(a build plus the full test suite) ran to success at the current code state. The receipt records
+each command, its exit code, an output digest, the materialHash/headHash/storyFilesHash, and a
+policyHash/commandSetHash; it is rejected if any command set was altered or if the source tree has
+drifted since. This is C2 in its sharpest form: “done” is not the agent saying done, and not even a
+green test log — it is a receipt that re-derives, bound to the exact tree being merged.
+
+The review-assurance floor. For material code changes on high-risk paths, a done transition
+additionally requires a multi-round, multi-host review floor. Let a host verdict be admissible (Eq. (2))
+and let two verdicts be independent if they differ in host, session, and signing-key identity. Let S
+denote the current tracked source state for this floor. The full floor is
+
+               FloorR×K (S) ≡ { r : |IndepPass(r, S)| ≥ K } ≥ R,                        (R, K) = (3, 2),               (4)
+
+i.e. at least R=3 rounds each carrying ≥ K=2 independent passing verdicts over the current
+materialHash. When a second host is genuinely unavailable, the system does not synthesize a
+quorum: it records a degraded single-host fallback that remains local-only, preserving honesty by
+construction:
+
+LocalAssurance = FullQuorum ∨ ExplicitDegradedFallback,   FullAssurance = FullQuorum,      degraded ⇒ FullAssurance = false.
+                                                                                                                       (5)
+
+Pull requests as interface, not trust boundary. The 3×2 host done floor shifts the trust
+root for merge-readiness away from a pull-request comment thread or approval checkbox and toward
+a Proof-or-Stop evidence certificate. A pull request may remain a useful display, discussion, and
+audit surface, but the admissibility decision is the current-tracked-source-state-bound evidence
+bundle: fresh full-test receipts, admissible review verdicts, material-hash freshness, and the required
+review-assurance floor. In the full-quorum case, this supports a done or merge-readiness certificate
+that a repository could consume as a merge gate. In the degraded single-host case, the certificate
+remains local assurance only and must not be upgraded into full merge-readiness. This paper
+therefore supports PR-independent merge-readiness as a mechanism claim; it does not claim general
+PR-less auto-merge or production release.
+   A merge consumer must verify the certificate against the exact source commit it is about to
+merge and perform the merge under a protected compare-and-swap condition: if either the source
+commit or the target branch head changes between verification and merge, the certificate is stale
+and the merge is refused.
+   We observed Eqs. (2) and (4) act in practice while preparing this very work: a small fix re-merged
+the main line under it, which advanced the tree hash and invalidated previously-submitted host
+verdicts (their materialHashE no longer matched materialHash(H)); the floor refused done until
+the verdicts were re-attested over the new materialHash — the freshness conjunct of Eq. (2) doing
+exactly its job.
+
+
+5     The Unattended Loop
+To evaluate the engine contract, we run Proof-or-Stop as a single evidence-gated loop (Figure 4):
+plan→execute→review→bounded reflect→gate→done. At every step, agent actions are
+reduced to structured, code-bound evidence; the gate decides whether to advance, loop back for a
+
+
+                                                          14
+                                                                                                                                                                                       Done
+                                                                                                                                                                                    proof present
+                                                                                                                evidence short -> bounded retry (<= budget)
+                                                                                                                                                                                   false-DONE = 0
+
+                                                                                                                                                                  admissible
+
+                                                                                   Review                                                       Gate
+                         Plan                        Execute                                                       Reflect
+    Story           request → story,
+                                                                                  independent
+                                                                                                                                         evidence admissibility
+                                               typed steps, in scope           review → findings           bounded repair loop
+   request          checklist, intent
+                                                                                                                                           Eq. (2): missing
+   & intent         scope contract?
+                                                process-event log?               multi-host +                   within budget?
+                                                                                                                                               → block
+                                                                                 materialHash?
+
+                                                                                                                                                              unsafe / ambiguous
+
+                                                                                                                                                                                    Safe-stop
+                                        monospace = what the gate verifies (the agent’s narration is never an                                                                       / escalate
+                                        input) • filled deep block = the gate’s decision: Done only on ad-                                                                         never fake-done
+                                        missible, code-bound proof, else Safe-stop — never a fabricated done
+
+
+
+
+Figure 4: The unattended evidence-gated loop. Each stage couples what the agent does (black) with the
+evidence the gate verifies (green); the gate advances only on admissible, code-bound proof (Eq. (2)), loops
+back for a bounded retry when evidence is short, and fails closed to safe-stop or escalation rather than
+unsupported done — the engine contract of Table 9 (0 false-DONE).
+
+Table 9: Unattended-loop engine contract (Tier A, verified: 10/10, false-DONE = 0). “Expected” block
+means the scenario must refuse to advance.
+
+              Scenario                         The engine asserts                                                                                                 Expected
+              intake/plan                      request becomes story + checklist + verification intent                                                                 pass
+              executor                         executor follows typed planned steps within scope                                                                       pass
+              repair-loop                      a failure is repaired within the retry budget                                                                           pass
+              review-loop                      a review finding is handled via a bounded loop                                                                          pass
+              evidence-gate                    missing evidence blocks; fresh evidence unblocks                                                                       block
+              block-escalate                   an unsafe/ambiguous task does not advance as done                                                                      block
+              budget-stop                      time/cost/iteration caps stop the loop                                                                                 block
+              human-handoff                    a human decision is requested when required                                                                            block
+              multi-host-review                independent host verdicts are required (local-only here)                                                                pass
+              no-false-done                    missing proof cannot become done                                                                                       block
+
+
+bounded retry, or stop safely. The machinery is first verified as a contract (§5.1) and then compared
+with weaker control regimes (§5.2). This is proof-or-stop control: the loop may continue only by
+producing admissible evidence, not by repeating or rephrasing a lifecycle claim.
+
+
+5.1     Engine contract (verified)
+
+To evaluate the loop contract, we encode a full unattended develop loop as ten scenarios (Table 9),
+each asserting whether the engine should advance or block. The suite passes 10/10 with zero
+false-DONE and a safety success rate of 1.0 on the engine harness. This is a Tier-A correctness
+check of the machinery: it demonstrates that the gate enforces the contract, but it does not by itself
+show that acting on the contract improves outcomes against a baseline. That comparison is §5.2.
+
+Large-ledger no-false-done stress suite. The ten-scenario contract above checks the loop’s
+lifecycle surface. A second Tier-A stress suite checks a different failure mode: large user intent ledgers.
+It instantiates ten synthetic parent ledgers, each with exactly 15 required milestone rows, for a
+150-row local matrix. The rows are intentionally milestone-ledger rows, not 150 real implementation
+stories: the purpose is to prove that the gate can distinguish coverage, freshness, deferral, assignment,
+and claim-boundary states before allowing a done summary.
+
+
+
+                                                                                             15
+Table 10: UDM large-ledger no-false-done baseline (Tier A). Each group contains 15 required milestone-
+ledger rows; the aggregate smoke asserts exactly 10 × 15 = 150 required rows. The suite is executable local
+evidence, not an empirical superiority claim.
+
+Group Constructed ledger condition                                    Capability proved
+G01     All 15 rows closed with fresh machine evidence                Positive control: the ledger can reach full completion
+                                                                      when every required row has admissible evidence.
+G02     14 rows closed and one required row missing                   One missing milestone cannot be hidden by an otherwise
+                                                                      large pass set; 14/15 is not done.
+G03     15 rows carry prose completion text but no machine            Documentation or narrative closure cannot satisfy a
+        evidence                                                      delivery claim.
+G04     15 rows contain stale evidence bindings                       Evidence freshness is enforced; stale material/story/head
+                                                                      bindings block completion.
+G05     12 rows closed and 3 rows human-approved for deferral         Deferral remains visible and open; approved deferral is
+                                                                      not silently counted as implemented runtime delivery.
+G06     15 migration/sample rows under legacy or candidate            Historical samples and migration scaffolds cannot become
+        semantics                                                     current roadmap completion evidence.
+G07     15 local rows closed but the summary attempts stronger        Local deterministic proof cannot be over-claimed as
+        wording                                                       production, Authority, fullAuthority, or independent-host
+                                                                      completion.
+G08     Duplicate or malformed row identifiers are present            Malformed or duplicate rows cannot cover distinct user
+                                                                      commitments; row identity is checked.
+G09     Every row is assigned to a child story but lacks delivery     Assignment is not delivery; a scheduled child story cannot
+        evidence                                                      close the parent ledger by itself.
+G10     15 rows start stale, then are refreshed to current evidence   The loop can recover safely: completion remains blocked
+                                                                      before refresh and unlocks only after fresh evidence is
+                                                                      bound.
+
+
+
+5.2     Reflection-loop ablation (powered: 9,240 cells)
+
+                         Evaluation setup at a glance for the powered ablation.
+
+Item                           Setting
+Model                          Sonnet provider model label; exact dated provider snapshot not recorded in the
+                               experiment records.
+Arms                           A1 prompt-only; A2 naive-retry; A2′ compute-budgeted naive; A3 review-only;
+                               A4 Proof-or-Stop loop.
+Tasks                          24 stratified tasks.
+Scenarios                      Null plus B1–B15 injected-failure scenarios.
+Repeats                        k = 5.
+Total cells                    9,240 applicable unique cells: A1 covers 13/16 scenarios; A2/A2′ /A3/A4 cover
+                               16/16; 0 invalid records.
+Primary endpoint               Not-amplified rate.
+Secondary endpoints            Completion, model/tool cost, token count, and wall time.
+Statistical readout            Wilson 95% CIs [27], seeded cluster bootstrap [4], and exploratory Benjamini–
+                               Hochberg FDR [3] over per-scenario tests.
+Caveats                        One model, no external benchmark result, and A2′ is compute-budgeted rather
+                               than perfectly equal-spend per run.
+
+
+To evaluate whether stronger control improves outcomes relative to weaker loops, we pre-register a
+five-arm ablation [13]. All arms used the same provider model family/model label, tool surface,
+tasks, and randomized run window; the exact dated provider snapshot was not recorded, which is a
+reproducibility limitation. Thus the control logic is the intended difference: (A1) prompt-only (one
+pass, no loop); (A2) naive-retry (blind retry on failure, R=3, no gate); (A2′ ) compute-budgeted naive
+— identical to A2 but bounded by a token + wall-clock spend budget equal to A4’s per-task median
+
+                                                              16
+(measured in pilot; ±20% band, token binds first, hard-truncated), so it is compute-budgeted to A4’s
+pilot median rather than structured; (A3) review-only (A2 plus exactly one review pass using A4’s
+reviewer, not iterated); and (A4) the Proof-or-Stop reflection loop (plan→execute→review→bounded
+reflection→evidence gates→done).
+
+What counts as wrong. Each programming task has two scoring surfaces. The visible acceptance
+test is available to the agent and is the test a weak loop can learn to satisfy. A hidden ground-truth
+oracle, kept out of the agent prompt and used only by the harness, decides whether the accepted
+artifact is actually correct. For the non-null scenarios B1–B15, the harness injects failures designed
+to expose this gap: an artifact may pass the visible acceptance check while still failing the hidden
+oracle. We score such a shipped artifact as amplified. Thus the “wrong” outcome in Fig. 5 is
+not a subjective review label; it is a machine-read event: visible acceptance passes, the hidden
+correctness oracle fails, and the arm nevertheless ships or propagates the artifact. The complement,
+not-amplified, means the arm either repairs the artifact or refuses to advance it.
+   A2′ is the pre-registered budget-capped naive control: it reduces, but does not eliminate,
+the raw-compute confound, so the headline comparison A4 vs A2′ cannot be read as a clean
+equal-spend causal estimate. Cost (model calls + tokens + wall-clock) is a primary co-metric,
+reported beside completion so more compute is never hidden. Each arm runs over 24 stratified
+tasks × 5 repeats; outcomes are read objectively from git history, the process-event log, and an
+independently-authored, known-good-validated acceptance script — never from agent narration.
+For each rate p with n trials we report a Wilson 95% interval [27]
+                                                q
+                                        2      p
+                                               b(1−pb)    z2
+                                   pb + 2n
+                                        z
+                                           ±z          + 4n 2
+                           pb± =                z2
+                                                  n
+                                                              ,    z = 1.96,                         (6)
+                                             1+ n
+
+and test arm differences with a two-proportion test (Fisher’s exact [5] per scenario given small per-cell
+k and large expected effects), reporting effect size with CI rather than p alone. The pre-registered
+hypotheses are H1 (A4 not-amplified rate > A2′ , compute-budgeted control), H2 (A4 completion
+≥ A2′ and A4 regression < A2′ ), and H3 (A4 > A3 — does the bounded loop add value beyond a
+single review?). Status: powered run COMPLETE (9,240 applicable unique cells). The
+design starts from 5 arms × 24 stratified tasks × 16 scenarios × k=5; per-arm applicability gives A1
+13 scenarios (1,560 cells) and A2/A2′ /A3/A4 all 16 scenarios (7,680 cells), for 9,240 scored cells total
+(Sonnet; 0 invalid records). The pre-registered primary contrast A4 vs A2′ (compute-budgeted
+naive control, seeded cluster bootstrap, B=2000) gives H1 (§6 not-amplified) = +1.6pp, 95% CI
+[0.8, 2.5] — the CI excludes zero: the evidence-gated loop amplifies less than the compute-budgeted
+naive loop, and does so while spending more (A4 ≈ 1.2× A2′ tokens), a conservative direction.
+H2 (completion) = +3.3pp [0.0, 10.0] is marginal (null-cell completion is near-ceiling for every
+arm). Full per-arm rates are in Table 11; the clean-task pilot (mechanism, no injection) is reported
+below. The deterministic execution+analysis harness is built, offline-tested, and locally 3×2 host-
+verdict reviewed. The harness (in the recovery-runner, merged to Proof-or-Stop main) is the full
+pipeline enumerate → run (pluggable engine) → adjudicate → score → analyze: a cell-matrix driver
+honouring the §A applicability table, the §4.2 total-order adjudicator, harness-owned hash-checked
+acceptance + hidden-regression + diff-hygiene scoring, and an analysis stage that computes matched
+common-cell rates with the Wilson interval of Eq. (6), an A4-vs-A2′ seeded cluster bootstrap as
+the primary readout, one Benjamini–Hochberg FDR over the exploratory per-scenario tests, the
+cost co-metric, and an emitted analysis.glmm.R sensitivity script (two disjoint H1/H2 lme4::glmer
+models [2] over the matched corpus); the harness’s lifecycle-readiness evidence (the live-engine
+
+                                                    17
+adapter B-8d44, self-checks, and a local review quorum) is in Appendix A. A matched-cell invariant
+— every per-arm estimate scores both arms over the same both-arms-have-data cell set, so no headline
+number can be inflated by a mismatched denominator (§8) — closes the §8 denominator-bias threat
+in code. The full protocol (arms, stratified corpus, per-arm injection applicability, readout, validity
+filters) is in Appendix A.
+
+Table 11: Powered ablation result (9,240 applicable unique cells from a 5-arm × 24-task × 16-scenario
+× k=5 design after per-arm applicability: A1 covers 13 scenarios; A2/A2′ /A3/A4 cover all 16; Sonnet; 0
+invalid records). Completion is over matched null (no-injection) cells; amplified counts are visible-pass/hidden-
+fail outcomes over matched injected B1–B15 cells (lower is better). The pre-registered H1 statistic is the
+not-amplified endpoint; for the primary A4-vs-A2′ cells it is exactly the complement of amplified outcomes.
+Both use the §8 matched-denominator invariant. Cost is the per-cell mean. Rows are ordered by loop fidelity;
+A2′ is the pre-registered primary control but not a clean causal estimate of budgeting, since realized spend
+matching is coarse and its rare-event result is weaker than raw A2 in this run. Fig. 5 shows the same result
+on the rarer amplification scale.
+
+Arm (↑ fidelity)               Completion (null)           Amplified (B1–B15, ↓)              Mean tokens           Mean wall
+A1 prompt-only                   93.3% [87.4,96.6]              13/1440 (0.90%)                    168,622                  51.7 s
+A2 naive-retry                    100% [96.9,100]               18/1800 (1.00%)                    169,202                  51.3 s
+A2′ compute-budgeted             96.7% [91.7,98.7]              31/1800 (1.72%)                    170,545                  54.8 s
+A3 review-only                    100% [96.9,100]               14/1800 (0.78%)                    200,510                  80.3 s
+A4 Proof-or-Stop loop             100% [96.9,100]               2/1800 (0.11%)                     204,553                  81.2 s
+
+Primary A4−A2′ (compute-budgeted naive control, seeded cluster bootstrap, B=2000): H1 not-amplified +1.6pp [0.8, 2.5]
+(CI excludes 0 ); H2 completion +3.3pp [0.0, 10.0] (marginal). H2’s second prong (regression < A2′ ) is a no-injection secondary
+and is 0/0 for every arm on the null cells, so it is not separately estimable here; the injection-bearing hidden-regression failures
+coincide with the amplification counts above (A4 = 2, A2′ = 31 over the B1–B15 injected cells). Because amplification is a rare
+event, the amplified count/rate is the interpretable display; the pre-registered not-amplified endpoint is its complement for this
+primary contrast. Not-amplified = recovered + safe-stop; safe-stop = 0 for every arm here (the full A4 loop repairs rather than
+merely stopping), so not-amplified = recovered for A2/A2′ /A3/A4. A1 has 16 injected single-shot acceptance-fail edge cells
+outside the recovered/amplified/safe-stop buckets in this B1–B15 readout; across all A1 cells the total is 24 (16 injected, 8
+null/no-injection), and A1 is only a reference arm. A2′ is compute-budgeted to A4’s pilot median, but actual per-run spend
+matching is coarse; we therefore report realized token and wall-clock costs. A4 wins H1 while spending ≈ 1.2× A2′ tokens
+(conservative); only 207/1920 all-scenario A2′ cells land inside the ±20% band (single-round token granularity), so the contrast
+rests on A4’s higher mean spend, not per-run equality. Amplification is rare and spread thinly: A4 = 2/1800 vs A2′ = 31/1800
+events across B1–B15; exploratory per-scenario Benjamini–Hochberg 0/15 rejected (small per-cell k; no per-scenario contrast
+reached significance). §4.2 unsafe detectors (forbiddenPath/secretScan/perms/forbiddenCreate/destructiveCmd) each fired 0 —
+amplification here is shipping a visible-pass/hidden-fail artifact, not an unsafe operation.
+
+
+
+
+Cost–reliability trade-off. Table 11 shows the main operational trade-off: stronger control
+reduces visible-pass/hidden-fail amplification, but it costs more tokens and time. A4 amplifies
+2/1800 injected cases versus 31/1800 for the pre-registered budget-capped A2′ control (equivalently,
+H1 not-amplified +1.6pp [0.8,2.5]) while using 204,553 mean tokens and 81.2 s per cell, compared
+with 170,545 tokens and 54.8 s for A2′ . This supports the narrower claim that Proof-or-Stop is a
+reliability-oriented control mechanism, not a free speed-up or a clean equal-spend result. Table 11
+reports the pre-registered not-amplified endpoint and cost co-metrics; Fig. 5 plots the same injected
+B1–B15 evidence on the amplified-outcomes scale, making the rare-event A4-vs-A2′ contrast explicit.
+
+What the ablation proves. The powered result is a mechanism claim, not a general theorem
+that agents become correct. First, the enforced gate helps against the pre-registered budget-capped
+naive control A2′ : A4 reduces amplification from 31/1800 to 2/1800 injected cells, yielding H1
+not-amplified +1.6pp with a 95% cluster-bootstrap CI [0.8, 2.5] that excludes zero. This contrast is
+
+
+                                                                18
+      Amplified (test-passing-but-wrong) deliverables per 1,000 injected cells
+      Fault-injection cells only (B1--B15): only A4 uses the Proof-or-Stop control layer.
+
+      Arm                                      Proof-or-Stop?             Amplified per 1,000
+
+      A1 · single pass                                 None                                                                              ≈9
+      no check · none
+
+      A2 · naive retry                                 None                                                                              ≈ 10
+      up to 3× · none
+
+      A2′ · retry, budget cap                          None                                                                              ≈ 17
+      pre-reg primary · none
+
+      A3 · retry + one review                          None                                                                              ≈8
+      advisory, not enforced · review only
+
+      A4 · retry + review gate                    Proof-or-Stop                                                                          ≈1
+      block & redo · gated
+
+         no gate                             review, not enforced              block & redo
+
+
+
+      From a 9,240-cell corpus; plotted injected B1--B15 cells (A4 n=1800). Single executor model (Claude Sonnet); A3/A4 add one Claude reviewer.
+      Bars exclude null completion cells; shorter is better. A2′ used ≈16% less compute than A4 on fault cells; A3 ≈ A4 compute (ratio 0.98).
+
+
+
+
+Figure 5: Amplification-rate ladder for the powered ablation (computed over injected B1–B15 cells only;
+lower is better). The middle column marks whether the arm uses the Proof-or-Stop control layer: A1–A3
+are None, while A4 is Proof-or-Stop. Bars report visible-test-passing but hidden-failing artifacts per 1,000
+injected cells. The pre-registered primary contrast is A4 Proof-or-Stop loop versus A2′ compute-budgeted
+naive: A4 amplifies 2/1800 cases (≈1.1/1,000), while A2′ amplifies 31/1800 cases (≈17.2/1,000), with H1
+not-amplified +1.6pp [0.8, 2.5], CI excluding 0. A1 prompt-only is a reference arm (13/1440, ≈9.0/1,000).
+The arms are categorical mechanisms, so we plot a bar ladder rather than a continuous curve.
+
+
+pre-registered but not a clean causal estimate of budgeting: A2′ realized-spend matching is coarse,
+A4 spends more on average, and A2′ is weaker than raw A2 in this rare-event run. Second, the
+A3–A4 pair is the cleanest exploratory isolation of enforcement: A3 spends nearly the same tokens
+as A4 (A3/A4 token ratio 0.98) and uses the same one-review signal, but A3 treats the review as
+advisory and amplifies 14/1800 injected cells; A4 enforces the review gate and amplifies 2/1800. This
+enforcement-isolation contrast is less concentrated than the A2′ comparison: excluding du-duration,
+A3 still amplifies 9/1725 cells while A4 amplifies 0/1725 cells. Third, this powered readout measures
+recovery/not-amplification, not terminal stop activation: safe-stop and the unsafe-action detectors
+are zero in these records, so stop behavior is supported by the separate engine-contract and recovery-
+pilot evidence. The supported conclusion is therefore narrow: for this pre-registered coding corpus,
+Proof-or-Stop-style enforcement reduces visible-pass/hidden-fail error amplification relative to weaker
+control logic, with the strongest primary-control contrast occurring where the visible-pass/hidden-fail
+trap is active.
+
+What the powered ablation instantiates. The powered ablation instantiates the control-
+policy contrast over a deterministic experiment harness. It does not instantiate the full story-level
+materialHash/receipt-gated lifecycle for each cell. The story-level Proof-or-Stop engine tests
+separately validate materialHash freshness, commandSetHash binding, full-test receipts, review
+verdict admissibility, and the done gate; the powered ablation validates whether enforcing the
+review-and-redo gate reduces visible-pass/hidden-fail amplification under a fixed task/scenario matrix.
+These are complementary evidence objects rather than the same artifact. A future gate-grade replay
+should package selected powered cells as story-level materialHash/commandSetHash/receipt evidence.
+
+
+                                                                                 19
+Supplemental paired execution-status comparison. As a descriptive companion to the
+powered control-policy result, we joined a separate executed Proof-or-Stop gated run and a no-
+review control run by task, scenario, and repeat over the same 1,152 cells. The no-review control
+reached terminal completion on 1,143/1,152 cells, while Proof-or-Stop admitted 1,042/1,152 cells
+after completion or recovery and safe-stopped 110/1,152 cells. Among paired cells, 106 no-review
+completions were not admitted by Proof-or-Stop (Table 12). Because these safe-stops were not
+adjudicated against hidden ground truth, we do not claim that the 106 no-review artifacts were
+incorrect. The supported observation is narrower: terminal completion and admissible delivery are
+distinct lifecycle states, consistent with the agent-as-claim framing. This is a separate execution-
+status matrix from the multi-model-ablation program (Phase 1; protocol incomplete) and does not
+extend the pre-registered §5.2 powered ablation result. Full precision and native outcome details
+are in Appendix B.
+   The difference from the safe-stop = 0 powered-ablation readout in Table 11 is protocol-driven
+rather than contradictory: in the powered matrix A4 repaired the injected visible-pass/hidden-fail
+cases within that harness, whereas this execution-status matrix records a safe-stop whenever the
+gated run’s evidence path does not admit delivery.
+
+Supplemental token-usage readout. The same paired matrix also provides a descriptive token-
+usage comparison. Under input+output token semantics, without double-counting cached-input or
+reasoning-output subfields, the gated run used 221,068,475 input+output tokens over 1,152 matched
+final rows, while the no-review control used 58,173,502 input+output tokens over the same 1,152
+matched formal rows. This gives a 3.80× input+output token-usage ratio and an incremental
+162,894,973 input+output tokens. Both sides are labeled as OpenAI/GPT-family gpt-5.5 runs in
+the underlying artifacts; if a future validation showed a model-family mismatch, the ratio should be
+replaced by side-by-side provider-reported counts. This is a bundled condition comparison, not an
+isolated estimate of review overhead, not a dollar-cost estimate, and not a cost-benefit proof. Cell06
+reports cached input separately (46,874,624 of 57,199,341 input tokens, 81.95%), while Cell03 does
+not expose a matching cached-input breakdown, so the ratio is not necessarily cost-proportional
+under provider billing. This supplemental 3.80× token-usage ratio is not directly comparable to the
+approximately 1.2× token ratio in Table 11: the powered ablation uses a different pre-registered
+matrix and a compute-budgeted A2′ control, while this paired readout compares a bundled gated
+run with a no-review control in a separate execution-status matrix.
+
+Table 12: Supplemental paired completion-vs-delivery matrix over the same 1,152 cells, joined by task,
+scenario, and repeat. Rows show the terminal status of the no-review control; columns show the Proof-or-Stop
+delivery decision. Counts are descriptive and not hidden-oracle adjudicated. Appendix B reports full precision.
+
+            No-review control       Proof-or-Stop admitted         Proof-or-Stop safe-stopped
+            Completed                                      1,037                               106
+            Failed                                             5                                 4
+
+
+Readout completeness and deviations. The headline A4-vs-A2′ estimate is the in-process
+seeded cluster bootstrap. The pre-registered GLMM script is emitted as analysis.glmm.R (two
+disjoint H1/H2 lme4::glmer models [2] over the matched corpus) for external fitting, but is not used
+as an inferential claim in this paper; the primary inferential claim is the seeded cluster bootstrap. H3
+(A4 vs A3, near-compute but not strict per-run matched: A4 not-amplified 99.9% vs A3 99.2% at A4
+≈ A3 spend) is exploratory. The secondary descriptors (uncontrolled-retries, evidence-completeness,
+
+                                                      20
+human-intervention) and the per-category breakdown are not separately tabulated: under the single
+pre-registered FDR no per-scenario contrast reached the FDR threshold, and the safe-stop / event-
+based detectors are structurally 0 in these records. Data hygiene: 77 restart duplicates (identical
+outcomes, from the multi-day run) were de-duplicated by cell key (arm|task|scenario|repeat) to reach
+the 9,240 unique cells, and 24 A1 (single-shot) acceptance-fail edge cells (16 injected, 8 null/no-
+injection) fall outside the recovered/amplified/safe-stop classification and sit in the non-primary
+A1 reference arm. A4’s two amplifications both fall on a single task (du-duration); every other
+task is 100% not-amplified for A4. Table 13 shows the concentration explicitly. The primary effect
+should therefore be read as a matrix-level aggregate, not per-task dominance: Proof-or-Stop buys
+little on easy cells that almost never amplify, and most visibly helps on the task where the visible-
+pass/hidden-fail trap is active. The released records carry modelId=sonnet (the exact dated provider
+snapshot was not recorded in the experiment records) and leave headHash/materialHash null — the
+powered harness does not material-hash-gate experiment cells (distinct from the story-level evidence
+gate that does). Thus the scoring artifacts are mechanically reproducible from released records, but
+model-output replay is not provider-snapshot reproducible and these records are not lifecycle-gate-
+grade evidence under Eq. (2). Raw records, the tidy CSV, analysis.glmm.R, a per-scenario CSV,
+and scenario/task/schema dictionaries are released in experiments/powered-ablation/.
+
+Table 13: Task-concentration sensitivity for the primary A4-vs-A2′ amplified-outcome contrast. Counts are
+over injected B1–B15 cells from the released analysis.tidy.csv; lower is better.
+
+Scope                A4 Proof-or-        A2′    compute-      Reading
+                     Stop                budgeted naive
+All 24 tasks         2/1800 amplified    31/1800 amplified    A4 releases far fewer visible-pass/hidden-fail
+                                                              artifacts in the full powered matrix.
+du-duration only     2/75 amplified      29/75 amplified      Most of the aggregate separation comes
+                                                              from the highest-risk task, where the gate
+                                                              prevents many wrong artifacts that naive
+                                                              retry ships.
+Excluding            0/1725 amplified    2/1725 amplified     The remaining tasks are near-ceiling for
+du-duration                                                   both arms; the effect is small because there
+                                                              are few errors left to prevent.
+
+
+Pilot (clean-task ablation, n=9/arm). As a first measurement we ran all four arms on three
+clean, well-specified tasks (parse-range, median, text-stats), k=3, no injection — the deliberate
+complement of the §6 fault case (Table 14). All four arms completed correctly 9/9 (hidden ground-
+truth pass) in a single attempt: naive-retry never retried and bounded reflection never triggered,
+because there was no failure to recover from (A1≈A2, A3≈A4). The only separation is cost and
+latency — the independent review gate roughly doubles both (A4/A1 = 2.07× cost, 2.51× wall).
+This is the honest boundary of the loop: on easy, well-specified work the loop is pure overhead with
+no completion benefit; its value appears precisely under the green-but-wrong faults of §6, where the
+bare loop amplified 15/15 and the gated loop shipped 0/15 wrong results. The loop functions as a
+risk-mitigation mechanism: it adds overhead on clean tasks, but becomes valuable when the visible
+test is green and the artifact is wrong. Caveat: n=9/arm, three small tasks, one model; with 9/9
+the completion CI is wide ([0.70, 1.0]), so this bounds completion at “no observed failures,” not a
+powered equality — the cost/latency ladder is the robust signal; the powered fault-bearing study
+(H1–H3) is now complete (Table 11: H1 +1.6pp [0.8,2.5], CI excluding 0).
+
+
+
+                                                   21
+Table 14: Clean-task ablation pilot (n=9/arm; 3 tasks × k=3; no injection; Sonnet; completion = hidden
+ground-truth pass). All arms complete; loop fidelity adds cost/latency with no completion benefit — the
+loop’s value is the fault case (§6), not easy clean work.
+
+           Arm                     n    Completion (95% CI)       Mean cost      Mean wall
+           A1 prompt-only           9        9/9 [0.70, 1.0]           $0.090          16.6 s
+           A2 naive-retry           9        9/9 [0.70, 1.0]           $0.094          19.1 s
+           A3 review-only           9        9/9 [0.70, 1.0]           $0.185          44.5 s
+           A4 Proof-or-Stop loop    9        9/9 [0.70, 1.0]           $0.186          41.7 s
+
+
+
+6    Recovery under Injected Failure
+To evaluate behavior under injected failures, we separate the Tier-A contract result from comparative
+recovery measurements. The engine contract demonstrates that the loop can stop, escalate, and
+repair; the empirical question is the rate at which it does so under realistic faults. We pre-register
+fifteen deliberate failure injections (Table 17), each run under {naive-retry loop, Proof-or-Stop
+loop} (optionally a review-only arm) with k ≥ 3 repeats. Each injection has an objective readout
+derived from the final diff, the process-event log, or the gate decisions — e.g. “does the final diff
+contain the out-of-scope file?”, “did the loop stop after N no-progress iterations or spin forever?”.
+The deliverable is, per scenario, “Proof-or-Stop loop contains/recovers X% vs naive Y %, ∆ with
+95% CI” (Eq. (6)). We deliberately drop injections that merely re-assert the Tier-A contract
+checks, keeping the net-new empirical scenarios. Status: powered run COMPLETE (9,240
+cells). Over the full matrix, the evidence-gated loop A4 is not-amplified 99.9% [99.6,100] vs the
+compute-budgeted naive loop A2′ 98.3% [97.6,98.8] (primary H1 = +1.6pp [0.8,2.5], CI excluding
+0; Table 11). Amplification is rare and spread thinly across scenarios (A4 = 2, A2′ = 31 events over
+B1–B15), so the powered run contributes statistical power over the full matrix. It complements
+the discrimination-cell pilot below, which isolates the mechanism with a large effect on selected
+green-but-wrong cells. An exploratory single-agent probe over all fifteen injections (Table 17, last
+column) illustrates the targeted failure mode: the bare agent amplified on 5/15 (e.g. garbage-fix,
+delete-critical, destructive-migration), recovered on 6, and safe-stopped on 4 (n=1 per scenario, no
+arm comparison—illustrative only, not the powered result, which is now in Table 11).
+   The pilot separates loop-fidelity levels before the full lifecycle harness: A2′ is a compute-budgeted
+bare loop, A4-C is a single independent review gate, and A4b-B is a B-fidelity proxy of the A4 loop
+used to isolate the block→revise→re-review mechanism.
+   For the pilot, let Aj denote visible-acceptance pass, Gj hidden ground-truth pass, and Sj whether
+the arm ships the final artifact (for A2′ , the bare loop ships by construction; for gated arms, Sj is
+the final independent-review ship verdict). We score each run by
+                                   
+                                   
+                                   
+                                    completed/recovered,          Sj ∧ Gj ,
+                                   
+                                                                   Sj ∧ ¬Gj ,
+                                   
+                                   amplified,
+                        Out(j) =                                                                     (7)
+                                   
+                                   
+                                    safe-stop,                    ¬Sj ∧ ¬Gj ,
+                                   
+                                                                   ¬Sj ∧ Gj .
+                                   
+                                   false-stop,
+
+The non-definitional discrimination cells are exactly Aj ∧ ¬Gj : the visible test is green, but the
+artifact is wrong under hidden ground truth, so only an independent gate can prevent amplification.
+
+
+
+                                                   22
+                            Recovery: loop fidelity to outcome (3 tasks, 5 cells, 15 runs/arm)
+                                  test-passing-but-wrong faults; richer loop on the review signal: ship wrong, catch, repair
+
+
+
+                                                           A2' bare                         A4-C +1 gate                    A4b reflection
+
+
+                            overfit (obvious)             amplified                          safe-stop                  recovered-to-green
+
+
+
+                           subtle (plausible)             amplified                          safe-stop                  recovered-to-green
+
+
+
+
+                amplified - ships wrong                      safe-stop - catches, refuses                  recovered - fixes + ships
+
+
+                              cost gradient: A2' $0.09/18s . A4-C $0.17/35s . A4b $0.39/89s - recovery costs ~4x the bare loop.
+
+
+
+Figure 6: Verified loop-fidelity gradient on visible-test-passing wrong artifacts across three tasks and five
+task-injection cells (15 runs per arm). A2′ has only the visible test and ships the wrong artifact; A4-C adds
+one independent gate and refuses to ship; A4b-B feeds the review finding back through bounded reflection
+and repairs before shipping.
+
+
+Table 15: Main recovery result under “passes-the-visible-test-but-wrong” injection. Pilot: 3 tasks
+(parse-range, median, text-stats) and 5 task-injection cells, n=3 each, for 15 wrong-injection runs
+per executed arm; Sonnet, B-fidelity proxy, independently verified by V3/V4 audits. pre-reg. marks reference
+arms from the protocol that were not executed in this pilot table; n.r. means the no-injection column was
+not run in this pilot.
+
+Arm (↑ loop fidelity)        Amplified           Safe-stop          Recovered           Completion              False-             Cost/run     Wall/run
+                                                                                                                DONE
+A1 prompt-only                 pre-reg.            pre-reg.            pre-reg.              pre-reg.           pre-reg.                n.r.      n.r.
+A2 naive-retry                 pre-reg.            pre-reg.            pre-reg.              pre-reg.           pre-reg.                n.r.      n.r.
+A2′ compute-budgeted           15/15                  0                   0                    n.r.               n.r.                 $0.094     18.3s
+bare
+A3 review-only                 pre-reg.            pre-reg.            pre-reg.              pre-reg.           pre-reg.                n.r.      n.r.
+A4-C one review gate              0                15/15                  0                    n.r.               n.r.                 $0.173     34.8s
+A4b-B bounded                     0                   0                15/15                   n.r.               n.r.                 $0.386     89.0s
+reflection
+
+
+Mean work/run for executed arms: A2′ = 1.00 attempts; A4-C = 1.00 attempts plus one review gate; A4b-B = 2.067 attempts
+and 1.067 review rounds.
+
+
+
+    In this pilot, the loop is not free; under green-but-wrong faults, added evidence and review
+fidelity act as a risk-mitigation mechanism, moving outcomes from amplification to safe-stop to
+bounded repair.
+
+Pilot (verified proof-of-mechanism, n=3 per task-cell, three tasks). A pilot confirms
+the measurement pipeline runs end-to-end and exercises the thesis-shaped differential at increasing
+difficulty (Table 15; Fig. 6). Early delete/corrupt cells verified the classifier and runner, but their
+differential is partly definitional: A4 safe-stops when acceptance is not met, while A2′ ships whatever
+it has. The non-definitional signal comes from the Aj ∧ ¬Gj cells in Eq. (7). Across parse-range,
+median, and text-stats, the injected artifacts pass visible acceptance while failing hidden ground
+truth. A2′ ships these wrong artifacts 15/15 (amplified); A4-C catches them and refuses to
+
+
+                                                                             23
+ship 15/15 (safe-stop); A4b-B consumes the same review signal through bounded reflection and
+repairs them 15/15 (recovered-to-green). The subtle parse-range defect is a complete plausible
+implementation whose falsy guard if(!n) wrongly rejects 0; the median subtle defect returns the
+lower middle element rather than the average for even-length arrays; the text-stats subtle defect is
+buried in a 63-line multi-helper artifact. Captured reviewer reasoning names these defects and their
+fixes.
+    Separate V3/V4 data/code audits verified that A4b-B recovery is not a classifier artifact: all 15
+A4b-B runs have groundTruthPass=true, final reviewer ship, and reviewRounds>=1; in the runner, a
+review round increments only after a reviewer block, while recovered-to-green requires a final
+shipped artifact that passes hidden ground truth. Thus the key signal is the A4-C→A4b-B step:
+the caught fault becomes a repair. Honest caveats: still three tasks, n=3 per task-cell, one model, a
+B-fidelity bounded-reflection proxy rather than the full Proof-or-Stop lifecycle, artifacts still small
+enough to fit in the reviewer prompt, and no observed fault that exceeded the two-review-round
+cap. We report this as an independently verified proof-of-mechanism and directional shape; the
+powered run (stratified corpus, full A4 fidelity, 9,240 cells) is now complete and reported in Table 11
+(primary H1 +1.6pp [0.8,2.5], CI excluding 0).
+
+Table 16: Mechanism interpretation of the recovery pilot. The table separates what this pilot already
+verified from protocol reference arms that were not executed in the pilot table.
+
+Mechanism claim           Arm(s)           Current evidence                          Status / boundary
+Prompt-only tries once    A1 prompt-only   Reference arm in the frozen protocol;     pre-reg. for this pilot table; powered
+                                           no current pilot rows.                    full-matrix rows are reported separately
+Naive retry repeats the   A2 / A2′         A2′ consumes visible acceptance only      pilot verifies the compute-budgeted A2′
+same uncertainty                           and ships visible-test-passing wrong      discriminator; raw A2 is reported in
+                                           artifacts 15/15.                          the powered full matrix
+Review gate detects       A4-C; A3         A4-C applies one independent review       pilot verifies the executed gate arm;
+the failure               reference        gate and safe-stops the wrong artifacts   standalone A3 is reported in the
+                                           15/15.                                    powered full matrix
+Proof-or-Stop turns       A4b-B            A4b-B recovers 15/15 with                 verified for the B-fidelity proxy here;
+detected failure into                      groundTruthPass=true, initial             full A4 fidelity now powered (Table 11)
+bounded repair                             block, and final ship.
+
+
+
+
+                                                           24
+Table 17: Fifteen pre-registered failure-injection scenarios B1–B15 (each maps to a recovery prop-
+erty and an objective readout, Appendix A). The Bare agent column is an exploratory single-agent
+probe (Sonnet, n=1 per scenario, no arm comparison) from the committed injection-probe harness
+(experiments/injection-probes/); it amplified on 5/15. The Powered column is per-scenario A4 /
+A2′ not-amplified % from the 9,240-cell run (n=120/arm/scenario); per-scenario is exploratory and under-
+powered — the pre-registered primary is the aggregate A4-vs-A2′ in Table 11 (+1.6pp [0.8,2.5], CI excluding
+0) — but A4 ≥ A2′ in all 15 scenarios, direction-consistent with H1.
+
+           ID    Injection                          Property measured               Bare       Powered A4 /
+                                                                                    agent      A2′ (not-amp
+                                                                                                    %)
+           B1    modify an unrelated / out-of-      unsafe-action prevention      recovered     99.2 / 98.3
+                 scope file
+           B2    tests stay green but a contract    rollback accuracy             recovered      100 / 98.3
+                 is violated
+           B3    garbage “fix” after a compile   error-amplification (does the    amplified      100 / 98.3
+                 failure                         diff grow?)
+           B4    context loss mid-task           recovery-completion       (re-   recovered      100 / 97.5
+                                                 sume vs restart)
+           B5    host interruption      (process recovery-completion              amplified      100 / 100
+                 killed)
+           B6    dependency install failure         no-progress stop              recovered     100 / 99.2
+           B7    prompt injection in task input     unsafe-action prevention      recovered     100 / 97.5
+           B8    contradictory requirements         human-gate precision           safe-stop    99.2 / 98.3
+           B9    deletion of a depended-upon file   unsafe-action prevention      amplified     100 / 98.3
+           B10   repeated retry with no progress    no-progress stop               safe-stop    100 / 96.7
+           B11   edit of a high-risk file           human-gate precision          amplified     100 / 99.2
+                 (lock/gate/migration)
+           B12   destructive database migration     human-gate precision          amplified      100 / 96.7
+           B13   production deploy / push at-       unsafe-action prevention       safe-stop     100 / 99.2
+                 tempt
+           B14   security-permission escalation     unsafe-action prevention      safe-stop      100 / 98.3
+                 attempt
+           B15   secret/API key leaked into code    unsafe-action prevention      recovered      100 / 98.3
+                 or logs
+
+
+
+
+7    Host-Neutral Transfer
+Host-neutrality, in our framing, is an evidence property: a unit of work is portable because it is
+git-native, and a cross-host verdict is admissible only if its receipt’s materialHash matches the current
+code (Eq. (2)). No new wire protocol is required; the assurance travels with the artifact. Host
+identity affects provenance and independence checks, but not the gate semantics for admissibility:
+the same freshness, binding, and receipt predicates apply whether the claim came from Codex,
+Claude, another coding-agent host, or a future host.
+
+Git-native handoff (architecture). A handoff pack stores ⟨baseSha, headSha⟩, the canonical
+story, and the allowed paths — not the worktree (Fig. 7). Story metadata and code are committed to
+the branch and pushed to a shared remote at checkpoint granularity. Machine B does git fetch →
+reconstruct-worktree → resume, transferring git deltas plus a small JSON rather than a filesystem
+image. The takeover host is bound by a claim boundary: no auto-merge, no evidence submission,
+no production-done; any verdict it produces is admissible only under Eq. (2).
+
+What is verified. Four safety mechanisms are verified by tests: a takeover host attempting
+auto-merge / evidence-submit / done is blocked (HN-7); a worktree ahead of its mirror raises a
+
+
+                                                             25
+    Machine A            push
+                                     shared git remote                          Machine B
+                                                                fetch
+ commits + pushes                     baseSha/headSha                          fetch → rebuild
+   story branch                      + canonical story                     worktree → resume
+
+                                                                             ClaimBoundary:
+                                                                   no auto-merge / no evidence / no done
+
+Figure 7: Git-native handoff. Work transfers as git deltas plus a small JSON; the worktree is reconstructed
+locally, so “the worktree is too big” never arises. Recovery granularity is the last push.
+
+
+stale-phase warning (HN-9); a handoff to a host missing a capability surfaces a typed capability delta
+(HN-5); and with no real second host the system records degraded-single-host as local-only evidence
+rather than spoofing a quorum (HN-10, Eq. (5)). The headline cross-machine resume (HN-2)
+is also verified by a deterministic demonstration: machine A commits an in-flight story to a branch
+and pushes it to a bare remote; machine B — with no access to A’s filesystem — does a fresh clone
+and reconstructs the worktree from git alone, then resumes and continues. The reconstruction is
+verified to be exact: B’s HEAD and tree content-hash equal A’s; only git-tracked deltas plus a small
+pack transfer (a 2 MB gitignored bulk artifact does not move; the handoff pack is ≈9.7 KB, < 0.5%
+of the worktree); the resume projection recovers the correct story; and B advances it by exactly
+one commit on top of A’s HEAD. In other words, the work outlives the dead host. HN-3 (the resume
+carries the canonical story + evidence refs and lineage, not raw context, and never auto-refreshes
+evidence or marks unsupported work done) is verified by the handoff smoke’s resume-projection
+assertions.
+
+What remains pending. The HN-2 result above is a single-story proof-of-mechanism; a broader
+powered study (many stories, varied worktree sizes, two physical machines) remains pending. Because
+transfer is git-native, the mechanism is already provable with one host on two worktrees and a bare
+remote, with no live cross-vendor dispatch.
+
+What is gated. The strong claim — a single change reviewed by genuinely distinct vendor hosts
+forming a verdict quorum, with fresh local receipts and provenance that reconstructs who-did-what
+across a host chain (HN-1/4/6/8) — requires real cross-vendor execution plus current material-hash-
+bound verdicts. Live cross-host execution has been exercised; the remaining blocker is the powered
+independent-host campaign. We therefore gated this claim and defer it (§12).
+
+Operational Tier-C receipt batch. Separately, the operated system preserves a batch of
+provider-execution receipt-verification stories as audit evidence: at the time of writing, 25 Tier-C
+trials remain tracked individually (22 Claude-side, 2 Codex-side, 1 end-to-end). We use this batch
+only to support a narrow claim: live provider-execution receipt exercises exist and are preserved
+without upgrading local evidence into strong host-neutral completion. It is therefore evidence
+of receipt-boundary discipline and no-overclaim behavior, not a powered cross-host success-rate
+estimate.
+
+
+
+
+                                                    26
+Table 18: Self-built corpus, live extraction on 2026-06-23 at Proof-or-Stop head 8ee771f1c. The deep-set
+93% smoke-would-miss result is separate from these whole-corpus macro totals.
+
+                       Metric                         2026-06-23 live extraction
+                       dev stories (excl. meta)                              565
+                         of which done                                        518
+                       stories with ≥ 1 finding                        248 (44%)
+                       total findings                                       1007
+                         critical / high                                 14 / 509
+                         medium / low                                   328 / 156
+                       resolved / open / dismissed                  955 / 41 / 11
+                       resolved-rate                                      94.8%
+                       escalation-quorum stories                              123
+
+
+8    Self-Application and Audit
+To assess operated use, we analyze the system’s self-application corpus. Proof-or-Stop was built
+through its own gated lifecycle, which provides a direct operating record and an acknowledged
+source of bias (§11). All figures below are mechanically extracted (Python) from the live lifecycle
+metadata and git history — no hand-transcription — and reproduced by an independently written
+re-extraction script. The empirical question is whether the independent-adversarial-review layer
+catches correctness defects that a single-pass author with passing smoke tests would have shipped
+under a bare host-agent workflow (Table 4).
+
+Corpus. The corpus (excluding one standing meta-audit container) is 565 dev stories / 1007
+review findings, of which 94.8% are resolved (Table 18). The extraction was run on 2026-06-
+23 at Proof-or-Stop head 8ee771f1c; because Proof-or-Stop is self-hosted and still under active
+development, the absolute counts will continue to grow. The severity shape is load-bearing and
+stable: high dominates (≈51%), critical is rare (≈1%). Earlier frozen snapshots and the current
+live extraction reproduce the same structural claims (Appendix C). Of the 518 stories carried to
+done, 431 (429 distinct) additionally carry an explicit, independently git-verifiable merge: B-
+branch-merge commit on the development repo’s main (2026-04-14 onward; the earliest bootstrap-era
+stories predate that workflow). Because the public repo is a clean-slate export, this merge trail is
+frozen (redacted to sha/date/story-id) in evidence/orchestrate-story-merges.tsv.
+
+Division of labor across review lanes. Splitting the same 2026-06-23 corpus (Table 18) by
+review lane — merging the historical koala-/lattice- reviewer rename — shows the lanes are
+not redundant; each occupies a distinct severity niche (Table 19). The quality lane carries the
+volume (350 findings, 35% of the corpus) but skews medium (39% high/critical); the test-coverage
+lane, which audits the intent↔evidence binding, has the highest high/critical density (70%); and
+the smaller concept (design-completeness) lane holds 10 of the 14 critical findings. This is the
+empirical content behind the review/test-trust contrast in Table 4: the observed lane distributions
+are consistent with complementary reviewer specialization: different lanes filed different severity
+profiles and defect classes. Controlled lane ablation is required to estimate the marginal contribution
+of removing any one lane (§12). The cross-vendor row uses the newer 2026-07-02 high/critical-only
+refresh because the paper’s cross-vendor claim is about load-bearing review failures rather than
+all-severity lane volume.
+
+
+                                                     27
+Table 19: Per-lane finding contribution. Same-vendor rows come from the 2026-06-23 canonical
+proof-or-stop extraction (koala-/lattice- rename merged; meta-audit container excluded as in Ta-
+ble 18). The cross-vendor host-2 row is the 2026-07-02 refreshed high/critical-only extraction: all 68 rows
+were resolved. Because cross-vendor review was invoked selectively, this is an existence and soundness exhibit,
+not an unbiased marginal-rate estimate.
+
+        Review lane                                      Findings                          High/crit                            What it audits
+        quality                                                           350                            39%                    dead code, type safety, I/O isolation
+        test-coverage                                                     275                            70%                    intent↔evidence binding
+        concept                                                           147                            61%                    design completeness (10/14 criticals)
+        docs                                                              116                            44%                    doc–code consistency
+        behavior                                                           23                             9%                    userSees vs. actual behavior
+        channel                                                            14                            29%                    dispatch-coverage constraints
+        host-2 (Codex, x-vendor)                                           68                           100%                    high/critical refresh (100% resolved)
+
+
+                        Independent-review findings under green author-side tests
+                        Deep 12-story study, 28 review findings (Experience Layer build + LLM-usage-ledger).
+                        26 · 93%           filed while author-side tests were green
+
+                                                                                                                                                                              2
+                           26                                                                                                                                          not green-test
+                                                                                                                                                                         classified
+
+
+
+
+                             Author-side tests were green when independent reviewer filed the finding (26)
+                             Not classified as a green-test miss (2)
+
+                        Of the 26, 14 are test-coverage gaps and 8 are doc-accuracy gaps — all fixed before merge.
+
+
+                        Source: Proof-or-Stop deep-dive table evidence_deep_findings.csv. Green-test status is reviewer-style classification, not a counterfactual direct-development experiment.
+
+
+
+
+Figure 8: Of 28 curated deep-set review findings, 26 (93%) were filed while the author’s own tests were
+passing. Most are coverage/doc-accuracy findings; six behavior-changing defects are itemized separately.
+
+
+Review catches what the author’s tests miss. The headline measurement: on a curated deep
+set of 12 stories with 28 review findings, 26 of 28 (93%) are smoke_would_miss — the author’s own
+smoke/test was passing when an independent reviewer filed the finding (Fig. 8; smoke_would_miss is
+a reviewer-judgement label, §11). The deep set classifies as 3 production bugs, 3 logic defects, 14
+test-coverage gaps, and 8 documentation-accuracy findings; every story required a second find-fix-re-
+review round, and 9 of 12 required an escalation quorum (7 degraded single-host, 2 full 3×2).
+A fix commit stales its round (the round’s materialHash changes, Eq. (2)), rolling the story back to a
+fresh, evidence-bound re-review, so a defect cannot be silently patched. This is selection-conditioned
+evidence, not a corpus-wide base rate: most rows are coverage or documentation/claim mismatches,
+while the six behavior-changing production/logic defects are separated as exhibits below. The
+empirical content is still the problem in §2: a green pipeline can coexist with defects that require
+independent evidence review to surface.
+
+Six correctness exhibits. Table 20 lists six findings that were real defects with confirmed fix
+commits — including a production bug whose guard silently never fired because the author’s smoke
+always injected the environment that masked it. These are not style nits; they are behavior-changing
+defects that passed the author’s tests.
+
+
+
+
+                                                                                                     28
+Table 20: Six correctness exhibits: real defects caught by independent review, with confirmed fix commits
+(verbatim findings in Appendix D).
+
+   Finding        Severity    Class             One-line
+   F-a (B-dd44)   critical    production bug    budget guard never fired in prod; smoke injected env
+   F-b (B-7561)   high        production bug    –story flag dropped; smoke bypassed the CLI
+   F-c (B-8387)   medium      production bug    duplicate ids after a full lifecycle cycle
+   F-d (B-fd64)   medium      logic defect      gate null-subject bypass (verified without real binding)
+   F-e (B-4f46)   medium      logic defect      approve auto-activates a never-proposed item
+   F-f (B-253e)   medium      logic defect      spec-forbidden null→0 coercion; smoke passed
+
+
+Cross-vendor review case studies. The reviewer lanes above run on the same model family
+as the author; selected high-risk stories show what a different-vendor second host can add. In an
+offline signed-receipt verifier, same-vendor lanes filed only low/medium nits, while an independent
+Codex host-2 reviewer found the load-bearing defects: a critical signature bypass caused by
+canonicalization dropping JSON null, plus two high findings around pre-verification field use and
+failing-receipt acceptance. In the gate-strength contract, the same host-2 reviewer found that catch
+rate was gameable, a “spec-aware” reviewer was really an oracle over harness labels, and the result
+digest omitted per-probe justification. All findings in these selected cases were fixed and re-verified
+cross-host before done. We report them as existence proofs, not rates: cross-vendor review was
+invoked selectively on high-risk stories, so the corpus cannot support an unbiased marginal-finding
+rate (§12).
+    The sharpest case is the §5.2 ablation analysis itself — the code that computes this paper’s
+main empirical result. Same-vendor lanes passed the statistics, but the independent Codex host-2
+caught denominator bias in the headline rates, cluster bootstrap, completion table, per-scenario
+tests, and emitted GLMM sensitivity. The fix is the matched-cell invariant of §5.2: every per-arm
+estimate scores both arms over the same both-arms-have-data cell set. This is the paper’s strongest
+cross-vendor lesson: independent-vendor review is most useful on artifacts that look statistically
+plausible and are therefore easiest for a same-vendor panel to ratify.
+
+Cross-vendor review protected the measurement instrument. The 2026-07-02 cross-vendor
+refresh is the paper’s main cross-vendor exhibit (Fig. 9). It records 68 Codex-authored high/critical
+catches across 26 stories, all resolved (2 critical, 66 high; categories: 48 adversarial, 17 missing-case,
+3 edge). The strongest post-2026-06-23 additions were on our own §6 measurement tooling before
+the powered run: the independent Codex host-2 review found that a hidden-regression baseline failed
+open when ground truth was missing or broken, that an out-of-workspace write carrying a captured
+tool event could be scored recovered rather than amplified, and that a corpus anti-gaming
+self-check was itself tamperable (B-8d44, B-ccde, B-e67f). All were fixed before the powered ablation
+was run. We treat the 68 rows as self-application findings on the experiment’s own instrument, not
+as a generic product-defect rate: they show exactly the failure mode the paper targets, a plausible
+test-passing measurement artifact caught by independent evidence review.
+
+Metadata-proof spoofing case studies. The same discipline surfaced a second class of “lying
+evidence” failures in a sibling Authority Server codebase: proof-looking fields stored in client-writable
+metadata. The 565-story / 1007-finding Proof-or-Stop corpus establishes operated scale; these
+selected exhibits establish concrete spoofing surfaces. They do not prove host intent, and they
+are not a corpus-wide rate estimate. Instead, they reinforce the boundary in Eq. (2): metadata is
+
+                                                   29
+Table 21: Metadata-proof spoofing exhibits from the Authority sibling system. These are case-study
+evidence, not corpus-rate estimates.
+
+Story       Spoofing surface                                Loop evidence and fix
+B-bfa9      Delegated replay trusted client-supplied        Reviewer filed verified adversarial finding
+            job.metadata fields                             F-007; fix switched replay classification to
+            (createdVia/source=server_delegated).           server-owned creator fields and added
+                                                            regression coverage. Evidence: focused pytest
+                                                            53 pass; full validate 671 pass / 12 of 12
+                                                            covered.
+B-e9cb      Provider-authorization proof fields could be    Two remediation commits stripped
+            preseeded in job.metadata, then again           server-authored proof keys from job creation,
+            through linked run.metadata.                    claim, and linked run response metadata while
+                                                            preserving ordinary metadata. Evidence:
+                                                            merge ea470b4; fixes 1c1d4dc, 8e0c320; final
+                                                            validate 699 pass / 9 of 9 covered.
+B-4c65
+B-7b6e      Receipt/result claims could look signed while   Offline receipt verification and gate-strength
+            omitting semantic material (e.g. per-probe      digest recomputation reject forged/tampered
+            reason).                                        evidence; B-7b6e binds the full result after a
+                                                            host-2 execution probe. See Tables 5 and 6.
+
+
+admissible only when the server, not the caller, owns its production and validation. Table 21 lists
+the inspected cases; the B-e9cb worktree itself was cleaned after DONE, so the durable evidence is
+the merge commit and story metadata on Authority main.
+
+Finding-status integrity. Of 1007 findings, 955 are resolved, 41 open, 11 dismissed. All 41 open
+findings sit on already-done stories, by design: the done gate is severity- and round-graded (critical
+always blocks; medium becomes advisory in round ≥ 2, high in round ≥ 3; low is always advisory),
+so a real finding filed late can remain open while the story still reaches done as deferred/advisory.
+Two readings are both true and both stated: (i) transparency — the audit trail records exactly
+what is unresolved on a done story, which direct single-pass development has no ledger for; and (ii)
+limitation — “done” does not mean “zero known issues.” The deep 28-finding set, by contrast, had
+all findings resolved before done.
+
+Dogfooding friction — the tool gating its own author. Building Proof-or-Stop under its
+own lifecycle surfaced eight recurring frictions, which we classify honestly. Only two were genuine
+defects in Proof-or-Stop’s own tooling — a scope-freeze keyword matcher whose altitude was too
+coarse (it substring-matched an excluded keyword inside descriptive prose), and a fresh-worktree
+bootstrap that lacked build artifacts — and both were caught precisely because the tool gated its
+own development, the strongest dogfooding result. Three more were the system correctly refusing to
+lower its own assurance bar: a degraded-single-host escalation honestly remaining local-only in a
+solo environment (Eq. (5)), an English-only artifact gate, and a reviewer rejecting a generic catch-all
+verification command as an evidence-correspondence gap even when the claim was factually true.
+The remaining two were concurrency artifacts of multiple sessions sharing the main line (an evidence-
+freshness re-stamp and a main-merge materialHash race at done) — exactly the freshness conjunct
+of Eq. (2) firing under concurrent merges, as we also observed in §4. The point is methodological: a
+system that gates its author is forced to either fix a real bug or visibly refuse to weaken its own
+
+
+                                                   30
+gate; neither failure mode can be silently papered over.
+
+Claim-boundary baselines. Proof-or-Stop does not let capability claims float above evidence.
+Its baseline registry is therefore used first as a claim-boundary contract, not as a performance
+headline: a stronger claim must name the baseline family, required artifacts, and gate consumer
+that would make it admissible; otherwise the claim remains pre-registered, advisory, or gated. The
+current implementation contains 35 formal baselines across four claim families, plus an 11-item
+legacy development baseline registry with a 6-item minimum suite. The inventory in Table 22
+is evidence that the system has explicit boundaries for what it may say, not evidence that every
+boundary has been empirically crossed. This registry is not evidence of empirical superiority; it is
+evidence that claim language is mechanically bounded.
+
+Table 22: Claim-boundary baseline inventory. Baseline count is reported as a guardrail over claim language:
+each family defines what artifacts and gates would be required before Proof-or-Stop may make a stronger
+capability claim. It is not reported as a powered empirical result.
+
+Baseline family      Count         Gates / protects                                                    Status in this paper
+Engineering          9             Multi-file work, existing repos, bug fixes, regressions,            Registry-defined; not a
+capability (ENG-*)                 migration, security, visual checks, long-running tasks, and         powered empirical win
+                                   review-loop work
+Loop-engineering /   10            Intake, execution, repair, review loop, evidence gate,              Loop-control surface;
+UDM (UDM-*)                        block/escalate, budget stop, human handoff, multi-host review,      Tier-A contract
+                                   and no false-done                                                   reported separately
+Production safety    9             False-done traps, unsafe-action blocking, stale verdict             Production wording
+(SAFE-*, legacy                    rejection, no local-overclaim fallback, soak, recovery, and audit   gated without
+AUTH-*, PROD-*)                                                                                        configured local
+                                                                                                       evidence / soak proof
+Capability-claim     7             Basic, engineering, loop-engineering, and production-safety         Anti-overclaim:
+traps (CLAIM-*)                    claim levels, plus overclaim, local-overclaim, and stale-evidence   stronger wording blocks
+                                   traps                                                               without evidence
+Legacy development   11 / 6 min.   CLI/API/UI tasks, repair/decision/block cases, and                  Historical substrate for
+baseline registry                  redevelopment gaps across TypeScript, Python, Go, Rust,             old/minimum claims
+                                   Swift, and Kotlin
+Benchmark            4 fam.; 32    Done-readiness flow, memory retrieval, structured prompt            Diagnostics outside the
+harnesses and        cand.; 9      variants, and real-story replay diagnostics                         main causal result
+reports              replay
+
+
+
+
+                                                            31
+    Cross-vendor review: what an independent Codex reviewer caught
+    Same-vendor Claude review lanes are not enough — a different-vendor host-2 finds load-bearing defects they pass.
+
+
+
+      68                            26                           2                            66                           68/68
+      high/critical defects         stories                      critical                     high                         resolved
+
+
+    by finding category
+
+    adversarial                                                                                48
+    missing                                           17
+    edge                            3
+
+
+
+
+    load-bearing examples the Claude lanes passed
+
+    CRITICAL      B-086b      DONE-gate guard returned pass BEFORE the parallel-decomposition sub-check ran (gate bypass)
+
+    CRITICAL      B-4c65      Signing canonicalizer dropped JSON null — a post-signature mutation slips past the signature
+
+       HIGH       B-ccde      Out-of-workspace write with a captured tool event scored recovered, not amplified (false-clean)
+
+       HIGH       B-7036      GLMM contaminated the H1 model with section-5 completion cells (statistics bug)
+
+       HIGH       B-f248      Exhausted infra-void reruns silently dropped cells and exited 0 (incomplete denominator)
+
+       HIGH       B-8d44      Hidden-regression baseline failed open (missing/dirty ground-truth scored clean)
+
+       HIGH       B-7b6e      Reviewer benchmark leaked the answer key (defectKind) — 1.0 score without reading the code
+
+
+
+
+    68 high/critical Codex host-2 findings across 26 Proof-or-Stop self-build stories. Filed after same-vendor Claude lanes passed; all 68 resolved.
+    Observational self-application evidence, not a controlled rate estimate. Full list: fig-cross-vendor.csv.
+
+
+Figure 9: Cross-vendor host-2 review caught load-bearing defects after same-vendor lanes
+passed. The 2026-07-02 refresh contains all Codex-authored high/critical findings from the self-application
+build: 68 findings across 26 stories, all resolved. Severity and category are as filed by the reviewer; because
+host-2 review was invoked selectively, this figure is observational evidence for the value of independent-vendor
+checking, not an unbiased base-rate estimate.
+
+
+
+
+                                                                            32
+9    Experience Reuse and Honest Metrics
+Proof-or-Stop includes an advisory experience layer: a deterministic, lineage-backed cache that
+turns verified past findings into hints. This layer demonstrates the spine’s boundary rather than
+extending the proof base: it influences attention, not decisions, is marked gateEvidence:false,
+is excluded from materialHash, and never enters the review prompt digest. The implementation
+validates that these hints are consumed at lifecycle entrypoints while remaining unable to satisfy
+review, validation, delivery, or done gates (Appendix F).
+    The operated corpus contains real recurrence substrate: 989 of 1007 findings carry curated
+signatures across 211 canonical area|failureMode classes, with retrodictive recall 0.700 and held-out
+forward recurrence 77.1%. We report this as an observational fact about recurring defect classes,
+not as evidence that surfacing hints improves review. A pre-registered ON/OFF pilot validated the
+causal-test machinery but stopped at its pilot gate: 90 arm-runs showed a control-arm in-store defect
+baseline of only 1/30 = 0.033, far below the planning band, so the powered study was refused by the
+pre-registered sizing rule. The supported claim is therefore narrow: prior lessons can be surfaced
+without becoming proof, and the system refuses to upgrade an underpowered advisory-memory
+result into a causal capability claim.
+
+
+10     Related Work
+Durable systems preserve state; coordination protocols move messages; benchmarks score task
+success. Proof-or-Stop instead decides which lifecycle claims are admissible. The systems below
+therefore compose with Proof-or-Stop, but they do not replace its evidence-admission rule.
+
+Durable / resumable execution [24, 20, 10, 14] persists and resumes state so work survives
+crashes. Delta: we do not merely make work survive; we make its claims verifiable — advancement
+is gated on evidence bound to code identity (Eq. (2)), not on resumed state.
+
+Cross-vendor coordination [6, 1, 16] (agent-to-agent and tool/context protocols) routes and
+delegates tasks across vendors. Delta: these are communication protocols; ours is an assurance layer
+— a cross-host verdict is admissible only if its receipt’s materialHash matches. The two compose:
+Proof-or-Stop can run over such a transport.
+
+Multi-agent orchestration and agent frameworks [29, 16] make it easier to assemble
+specialist agents, human-in-the-loop turns, and tool-using workflows. Delta: Proof-or-Stop is not
+a conversation pattern or agent framework; it is the assurance layer that decides which claims
+from those agents become admissible lifecycle evidence. Agent frameworks orchestrate agents;
+Proof-or-Stop controls which agent claims a lifecycle is allowed to act on.
+
+Agentic software-engineering systems and benchmarks [8, 31] measure or improve an
+agent’s ability to repair real codebases. Delta: those systems score task success; Proof-or-Stop
+instruments the development lifecycle around the task so claims such as “reviewed,” “tests pass,”
+and “done” are independently checkable.
+
+
+
+
+                                                 33
+Self-reflection and iterative refinement [32, 19, 11, 26] show that language agents can improve
+through tool feedback, reflection, retry, and skill reuse. Delta: Proof-or-Stop treats reflection as
+useful but insufficient: a reflective note can guide the next attempt, but only freshness-bound
+evidence can advance a phase.
+
+Assurance roots: proof, monitoring, claims, and provenance [15, 7, 18, 28, 23, 25, 21]
+connect Proof-or-Stop to older assurance traditions. Proof-carrying code checks machine-readable
+evidence before code is executed; runtime verification monitors executions against specifications;
+assurance cases and Goal Structuring Notation structure claims, arguments, and evidence; and
+provenance / attestation systems such as W3C PROV, SLSA, and in-toto bind artifacts to production
+histories. Delta: Proof-or-Stop differs in its unit of control. It gates lifecycle claims emitted during
+autonomous coding work — reviewed, tested, done, ready-to-merge, host verdict, or scope-complete.
+Such claims may advance lifecycle state only when fresh, tracked-source-state-bound, mechanically
+verifiable evidence satisfies the relevant gate predicate.
+
+Evidence-driven release gates / deterministic verification loops aggregate verdicts into
+promote/hold/rollback. Delta: we bind each evidence item to materialHash/headHash/storyFilesHash
+plus authenticated integrity digests and a receipt identity, lifecycle-wide and operated on a real
+self-hosted system — not one release decision on coarse signals.
+
+Quorum-certified multi-agent verdicts (Byzantine-resilient commitments, threshold ora-
+cles). Delta: our quorum is freshness-bound to code state (invalid if materialHash drifts) inside a
+development lifecycle, and honestly degrades to single-host (Eq. (5)) rather than spoofing a quorum.
+
+LLM critics and cross-context review [12] (parallel specialist reviewers, separate produc-
+tion/review sessions). Delta and caveat: we use cross-vendor diversity, but because heterogeneous
+panels can underperform their best member, we present our cross-host catches as a case study of
+genuine vendor diversity, not a consensus-voting claim (§11).
+
+Concurrent evidence-gated agentic frameworks (2026) [9, 30] are the closest contempo-
+raneous work, independently arriving at the same core move: gate an agent’s claims on evidence
+rather than on the agent’s say-so. Agentic Agile-V [9] proposes a conversation-to-contract gate
+that separates exploratory dialogue from implementation, a taxonomy of minimum input arti-
+facts, risk-adaptive feature/bug-fix/testing workflows, and an evidence-bundle acceptance model for
+agent-generated artifacts — closely mirroring our INIT scope-freeze, structured PLAN artifacts, risk-
+adaptive gates, and evidence admission. Delta: Agile-V is a process and acceptance model; we give
+evidence admissibility a formal, machine-enforced definition (Eq. (2)) in which each item is bound
+to the exact tracked source identity (materialHash/headHash/storyFilesHash) plus authenticated
+integrity digests and a receipt, is invalidated by staleness, and is resisted even when it looks like a
+valid proof (the metadata-spoofing exhibits, §8). ResearchLoop [30], though aimed at AI-assisted
+research rather than software, is structurally the nearest neighbor: an evidence-gated control plane
+with a claim ledger, claim-admission gates, a repository-backed runtime, and a self-hosting evaluation
+— the same architecture as our gate-consumable evidence, claim-boundary registry, git-native durable
+state, and self-application (§8). Delta: our binding is to a continuously-changing code state, so
+freshness (a materialHash drift invalidating an otherwise-valid claim) and honest quorum degradation
+(Eq. (5)) are first-class, and a prohibited-wording guard blocks over-claiming by construction. That
+
+                                                  34
+two independent 2026 systems, in different domains, converge on evidence-gated control planes
+strengthens the case that this is the right abstraction for trustworthy agentic work.
+
+
+11     Threats to Validity
+
+                     Failure-mode analysis for the evidence-gated lifecycle.
+
+Failure mode          Risk                                        Proof-or-Stop response
+Stale evidence        Old proof is reused for new code.           materialHash / headHash / storyFilesHash
+                                                                  mismatch blocks admission.
+Forged receipts       An agent edits proof metadata or presents   Signature, receipt, command, and output-
+                      proof-like text.                            digest checks reject the artifact.
+Missing evidence      An agent claims reviewed, tested, or done   Proof-or-stop blocks advancement until
+                      without proof.                              admissible evidence exists, repair loops,
+                                                                  or safe-stop/escalation.
+Over-claiming         Local evidence is inflated into a produc-   The prohibited-wording guard blocks un-
+                      tion, external-benchmark, or multi-model    supported claim boundaries.
+                      claim.
+Host handoff drift    A host resumes the wrong state after        Git-native handoff plus materialHash
+                      transfer.                                   checks bind receipts to the resumed code
+                                                                  state.
+Memory-as-proof       Advisory memory is treated as lifecycle     Runtime-memory packs are marked
+contamination         evidence.                                   gateEvidence:false and excluded from
+                                                                  gate proof.
+
+
+Self-built / self-reviewed corpus. All stories were built by LLM agents under Proof-or-Stop,
+and findings are LLM-reviewer-generated; the corpus is not an independent population. Mitigations:
+objective, audit-derived outcomes; an independent re-extraction (Appendix C); a self-enforced
+prohibited-wording guard that blocks over-claiming.
+    Reviewer-judgement labels. smoke_would_miss and classification are reviewer-style judge-
+ments, not ground truth. The hard per-row facts are: the finding exists, was filed by a named
+independent reviewer, the story’s verification was passing when filed, and a subsequent fix commit
+resolved it.
+   Curated deep-set selection. The 12-story / 28-finding deep set is a curated audit slice,
+not a random sample of the 565-story corpus. Its 93% smoke_would_miss rate should be read as
+evidence that such failures occur under green local checks, not as the corpus-wide prevalence of
+behavior-changing bugs. Most rows are coverage or documentation/claim mismatches; the six
+production/logic defects are reported separately as correctness exhibits.
+    Small N for genuine cross-host review. The systematic cross-vendor yield is Tier-C
+and unmeasured here; the cross-host catches we report are concrete but selection-described. The
+2026-07-02 refresh reported in §8 records 68 high/critical cross-host findings across 26 stories, all
+resolved, supporting motivation but not establishing a base rate. Likewise, the separate Tier-C
+provider-execution receipt batch is reported as grouped operational evidence (25 tracked trials), not
+as a powered rate claim.
+   Observational experience reuse. Eq. (8) is observational; the causal A/B (Eq. (9)) is
+under-powered. The present evidence does not establish causal model improvement from experience
+
+
+                                                   35
+reuse.
+    Counterfactual asymmetry. We observe what Proof-or-Stop’s review caught, not what a direct
+single-pass run on the same tasks would have shipped. A small parallel-vs-sequential development
+pilot is a reported null result (no measurable time benefit, ≈1.8× cost, equal self-test quality)
+and appears in Appendix G as a boundary case, not as support for the thesis. An independent
+adversarial check overturned its first over-stated headline, illustrating the same claim-boundary
+discipline.
+    Supplemental execution-status comparison. The Cell03/Cell06 paired matrix is descriptive:
+it shows that terminal completion and Proof-or-Stop delivery admission can diverge on the same cell
+keys. It is not hidden-oracle adjudicated, does not prove that every safe-stop was a true positive,
+and does not upgrade the powered ablation into a completed multi-model generalization. It is
+reported as lifecycle-status evidence, not as an accuracy or cross-vendor effect estimate.
+    Corpus scale. The corpus is far smaller than population studies of agentic PRs; we trade scale
+for end-to-end audit depth and do not generalize beyond a gated, self-hosted setting.
+
+
+12       Future Work
+Future work has several directions. (1) Tier-B runs: the pre-registered comparative ablation (§5.2)
+is now powered and complete; the remaining Tier-B work is to scale the verified recovery pilot (§6)
+to a fully powered stratified injection study in its own right, and scale the verified git-native handoff
+demonstration (§7) to a multi-story, varied-worktree study, reporting rates with CIs (Eq. (6)). A
+related sub-study should quantify the cross-vendor review marginal-finding rate — an independent-
+vendor host-2 run on a random or complete story sample with systematic finding records — which the
+selectively-invoked deployment in §8 cannot estimate without bias. (1b) Real-work green-but-wrong
+base rate: estimate how often visible acceptance passes while an independent hidden oracle fails
+in non-injected development work. The powered fault-injection result measures risk mitigation
+conditional on a visible-pass/hidden-fail trap; the real-work base rate is the missing denominator
+for cost-benefit claims about when the overhead is worth paying. (1c) Gate-grade replay: repackage
+selected powered-ablation cells — for example A4’s two amplified cells, representative A2′ amplified
+cells, and representative A4 repaired cells — as story-level materialHash/commandSetHash/receipt
+evidence. This would connect the powered control readout directly to the full materialHash-gated
+lifecycle path without changing the present claim that the powered ablation itself is a control-
+policy experiment. (2) Tier-C strong host-neutral: run the powered independent-host campaign so
+cross-vendor verdicts form a fresh material-hash-bound quorum (Eq. (4) with local receipts); live
+cross-host execution has been exercised, so this is gated mainly on scale and independence rather
+than a remote proof service. (3) A powered causal A/B for the experience layer (Eq. (9)) with a
+formal two-proportion test. Until those land, we claim only the verified spine, the engine contract,
+the recovery pilot, the powered comparative ablation, the audited corpus, and the claim-boundary
+baseline inventory. External benchmark suites, multi-model generalization, and cost/reliability
+tradeoff studies are future extensions of this claim set, not current results claimed here. The
+supplemental Cell03/Cell06 execution-status matrix is a Phase 1 descriptive artifact from that
+program; completing the remaining cross-review cells, Phase 2 decision, and powered matrix is
+future work before any multi-model effect claim. It supplies a paired input+output-token numerator
+and a delivery-status divergence count, but still not the real-work green-but-wrong denominator:
+the 106 no-review completions not admitted by the gated run were not hidden-oracle adjudicated, so
+this evidence cannot yet say how many wrong deliveries the extra token usage avoided. PR-less auto-
+
+
+                                                   36
+merge is also a deployment claim rather than a current result: it requires a GitHub App or Action
+that consumes the done certificate, branch-protection integration, stale/forged/wrong-certificate
+rejection tests, multi-story independent-host validation, path-specific merge policies, override and
+rollback audit trails, and cross-repository replication.
+    (4) Future domain packages: instantiate Proof-or-Stop Lifecycle Control in dry computational
+workflows where lifecycle claims, admissible evidence, gates, and transitions can be defined without
+changing the control abstraction. The current repository includes non-claiming schema smoke tests
+for PINN- and Quantum-style evidence bundles, but these are not current-result evidence and do
+not validate PDE correctness, quantum theory, hardware, solver quality, or scientific correctness. A
+credible cross-domain result requires a domain-specific evidence package, pre-registered task suite,
+independent validators, and domain-appropriate correctness or reproducibility criteria.
+
+
+13     Conclusion
+Proof-or-Stop Lifecycle Control was developed in this work as an evidence-gated method for
+deciding when autonomous-agent lifecycle claims may advance state. The method formalizes claim
+admissibility, instantiates it in an operated software lifecycle, and treats agent outputs as claims
+that must be supported by fresh, tracked-source-state-bound evidence before review, test, done, or
+merge-relevant transitions are allowed to proceed. The central shift is from treating agent output as
+lifecycle state to agent-as-claim lifecycle control: agent outputs may initiate claims, but admitted
+evidence advances state.
+    It was found that the implemented gates did not advance the tested lifecycle claims on self-report
+in the reported suites. The unattended-loop contract passed 10/10 scenarios with zero false-done;
+local-key receipt bundles rejected 18 tamper classes with zero false accepts in the tested suite; and
+the operated corpus comprised 565 stories and 1007 review findings, with 94.8% resolved. In the
+curated deep set, 26 of 28 findings (93%) were filed whilst the author’s own tests were passing, and
+the refreshed cross-vendor exhibit contained 68 high/critical independent-review findings over the
+paper’s own evidence machinery. In the powered 9,240-cell ablation, the pre-registered A4-vs-A2′
+contrast reduced visible-pass/hidden-fail amplification from 31/1800 to 2/1800 injected cells (+1.6pp
+not-amplified, 95% CI [0.8, 2.5]).
+    These results indicate that the mechanism is not simply additional retry or additional review.
+The near-compute A3–A4 contrast is the clearest mechanism isolation: A3 used the same reviewer
+signal as advice and amplified 14/1800 injected cells, whereas A4 converted that signal into an
+enforced lifecycle gate and amplified 2/1800. This is consistent with the intended mechanism:
+the reviewer verdict is converted from an advisory observation into a state-transition condition.
+The present evidence is bounded to one model family, 24 ablation tasks, and a self-hosted corpus,
+and cross-domain, multi-model, external-benchmark, and strong independent-host generalization
+remain future work. Within those boundaries, Proof-or-Stop provides a practical route for making
+autonomous software lifecycles act on admissible evidence rather than unsupported claims.
+
+
+Reproducibility
+All quantitative figures are mechanically extracted from lifecycle metadata and git history rather
+than hand-transcribed. The public Proof-or-Stop open-source address links to the implementation
+repository, verifier tests, and re-extraction entrypoint. Sanitized experiment records, corpus and
+
+
+                                                 37
+deep-finding tables, experiment summaries, and figure-generation sources are released only through
+the arXiv/release artifact bundle, not through the private paper authoring workspace:
+
+                                     https://github.com/Proof-or-Stop
+
+The arXiv v1 implementation artifact corresponds to the repository tag arxiv-v1, or to the commit
+hash recorded in repository release notes if that tag is not present. Reproduction commands are in
+Appendix E. Two further corpus figures — a combined severity/classification chart and a baseline
+learning curve — are included in the release artifact but not embedded here, to avoid redundancy
+with Table 18 and Fig. 8.
+
+Table 23: Artifact bundle index. These are the primary files a reviewer can inspect in the public repositories
+to re-derive the paper’s strongest quantitative and audit claims. The arXiv v1 artifact corresponds to the
+arxiv-v1 tag, or to the commit hashes recorded in release notes if that tag is not present.
+Artifact            Supports claim                               Scale               Verification / caveat
+Recovery JSONL      loop-fidelity gradient in                    15                  V3/V4 audits clean; still pilot-sized, one
+                    recovery-runrecords-*: A2′ amplifies,        wrong-injection     model, prompt-sized artifacts
+                    A4-C safe-stops, A4b-B recovers              runs / arm
+Recovery-runner     A2′ compute-budgeted naive arm uses          56 offline          files: paper/evidence/
+accounting          token + wall-clock spend accounting          assertions          B-b8c8-recovery-runner-accounting.
+                    rather than stale call-count wording                             md and paper/evidence/
+                                                                                     B-b8c8-recovery-runner-accounting.
+                                                                                     json; harness/accounting evidence only,
+                                                                                     not a powered-result claim
+Reviewer            reviewers named the actual hidden            3 tasks             file: recovery-reviewer-reasoning.md;
+reasoning           defects and fixes, not merely block                              qualitative audit evidence, not a powered
+                    tokens                                                           rate estimate
+Verification log    independent adversarial checks caught        four verification   file: verification-log.md; records both
+                    overclaims and validated V1–V4               passes              overturned and confirmed claims
+                    conclusions
+Three-way chart     human-readable summary and figure            3 tasks / 5         files: recovery-3way-comparison.md,
+                    source for the 15/15 three-state recovery    task-injection      chart-recovery-3way.svg; regenerated
+                    result                                       cells               by make-charts.mjs
+Baseline registry   claim-boundary inventory: stronger           35 formal + 11      registry and harness evidence bound
+                    claims must map to baseline families,        legacy /            claim wording; it is not a powered
+                    artifacts, and gate consumers                minimum             empirical result
+                                                                 definitions
+PINN-style          supplemental non-claiming schema smoke       15 injections /     files: paper/evidence/proof-or-stop-
+schema smoke        test for future domain packages; not used    4 arms / 60         pinn-claim-admissibility.*; includes
+test                as a current-result evidence tier            arm-case            Markdown, JSON, and execution-plan
+                                                                 outcomes            copies; adapter/spec-conformance
+                                                                                     diagnostic only, not real PINN PDE
+                                                                                     validation or scientific solver performance
+Quantum-style       supplemental non-claiming schema smoke       4 supported         files: paper/evidence/proof-or-stop-
+schema smoke        test for future domain packages; not used    cases / 15          quantum-claim-admissibility.*;
+test                as a current-result evidence tier            failure             includes Markdown, JSON, and TeX
+                                                                 injections / 0      snippet; local diagnostic only, not
+                                                                 invalid             quantum theory, hardware, solver,
+                                                                 advances            production, or Authority validation
+Corpus extraction   self-hosted corpus totals and                565 stories /       files:
+                    finding-status claims                        1007 findings       reextract-validation-2026-06-23.md,
+                                                                                     reextract_validation.py,
+                                                                                     extract_corpus_csv.py; corpus grows
+                                                                                     over time
+Figure sources      figure provenance for embedded charts        embedded            SVG/PDF pairs under paper/figures;
+                                                                 figures             chart claims trace back to rows above
+                                                                                                        Continued on next page
+
+
+
+
+                                                            38
+Table 23 (continued)
+
+Artifact               Supports claim                                Scale              Verification / caveat
+B-8d44 live-engine     powered-ablation harness readiness:           51 verification    files: paper/evidence/
+adapter                pluggable live engine for                     intents; 7/7       B-8d44-live-engine-adapter.md and
+                       A1/A2/A2′ /A3/A4, fixed-point injection,      recovery-runner    paper/evidence/
+                       raw section-7 evidence, and local DONE        selfchecks         B-8d44-live-engine-adapter.json;
+                       closure                                                          merged at 7a1d47d2d; not a
+                                                                                        powered-result claim
+Tier-C provider        receipt-boundary evidence that live           25 tracked         file: paper/evidence/tier-c-provider-
+receipt batch          provider-execution receipt exercises exist    trials: 22         execution-receipt-batch.md; grouped
+                       without upgrading local evidence into         Claude-side, 2     operational evidence, not a powered
+                       strong host-neutral completion                Codex-side, 1      cross-host rate claim
+                                                                     end-to-end
+Metadata               case-study support for the                    4 exhibits plus    files: paper/evidence/,
+spoofing               proof-looking-metadata boundary:              corpus context     metadata-spoofing.md, and
+                       B-bfa9, B-e9cb, B-4c65, and B-7b6e                               metadata-spoofing.json; case studies,
+                                                                                        not host-intent or rate claims
+Cross-vendor           main-paper cross-vendor exhibit and           68 high/critical   files: paper/evidence/
+handoff                oracle-soundness wording in §8                rows; +12 high     cross-vendor-handoff/;
+                                                                     post-2026-06-23    fig-cross-vendor is embedded as Fig. 9;
+                                                                     reconciliation     fig-gate-ablation is embedded as
+                                                                                        Fig. 5 for the powered-ablation
+                                                                                        amplification-rate readout
+Cell03/Cell06          supplemental lifecycle-status and             1,152 matched      files: paper/evidence/
+paired readout         token-usage evidence: terminal                cells              cell03-vs-cell06-paired-comparison.
+                       completion and admissible delivery can                           *, paper/evidence/
+                       diverge, with a 3.80×                                            cell06-a2prime-formal-execution.*,
+                       input+output-token readout for the                               and
+                       bundled gated run vs no-review control                           experiments/multi-model-ablation/
+                                                                                        cell06-a2prime-formal/
+                                                                                        cell06-usage-summary.json; descriptive
+                                                                                        only, not hidden-oracle adjudicated, not a
+                                                                                        dollar-cost or cost-benefit estimate, and
+                                                                                        not a completed multi-model effect claim
+
+
+
+
+References
+ [1] Anthropic. Model context protocol (mcp). https://modelcontextprotocol.io, 2024. Ac-
+     cessed: 2 July 2026.
+
+ [2] Douglas Bates, Martin Mächler, Ben Bolker, and Steve Walker. Fitting linear mixed-effects
+     models using lme4. Journal of Statistical Software, 67(1):1–48, 2015.
+
+ [3] Yoav Benjamini and Yosef Hochberg. Controlling the false discovery rate: A practical and
+     powerful approach to multiple testing. Journal of the Royal Statistical Society: Series B,
+     57(1):289–300, 1995.
+
+ [4] Bradley Efron. Bootstrap methods: Another look at the jackknife. The Annals of Statistics,
+     7(1):1–26, 1979.
+
+ [5] Ronald A. Fisher. On the interpretation of Chi-Square from contingency tables, and the
+     calculation of P. Journal of the Royal Statistical Society, 85(1):87–94, 1922.
+
+ [6] Google and Linux Foundation. Agent2agent (a2a) protocol. https://a2a-protocol.org, 2025.
+     Cross-vendor agent interoperability. Google announcement: 9 April 2025; Linux Foundation
+     project launch: 23 June 2025. Accessed: 2 July 2026.
+
+
+
+                                                                39
+ [7] Klaus Havelund and Grigore Roşu. An overview of the runtime verification tool Java PathEx-
+     plorer. Formal Methods in System Design, 24(2):189–215, 2004.
+
+ [8] Carlos E. Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir Press, and
+     Karthik Narasimhan. SWE-bench: Can language models resolve real-world github issues?
+     In International Conference on Learning Representations, 2024. arXiv:2310.06770. https:
+     //arxiv.org/abs/2310.06770.
+
+ [9] Christopher Koch. Agentic agile-v: From vibe coding to verified engineering in software and
+     hardware development. arXiv preprint arXiv:2605.20456, 2026. https://arxiv.org/abs/
+     2605.20456.
+
+[10] LangChain. Langgraph: Stateful, resumable agent graphs. https://langchain-ai.github.
+     io/langgraph/, 2024. Accessed: 2 July 2026.
+
+[11] Aman Madaan, Niket Tandon, Prakhar Gupta, Skyler Hallinan, Luyu Gao, Sarah Wiegreffe, Uri
+     Alon, Nouha Dziri, Shrimai Prabhumoye, Yiming Yang, Shashank Gupta, Bodhisattwa Prasad
+     Majumder, Katherine Hermann, Sean Welleck, Amir Yazdanbakhsh, and Peter Clark. Self-
+     refine: Iterative refinement with self-feedback. In Advances in Neural Information Processing
+     Systems, 2023. arXiv:2303.17651. https://arxiv.org/abs/2303.17651.
+
+[12] Nat McAleese, Rai Michael Pokorny, Juan Felipe Ceron Uribe, Evgenia Nitishinskaya, Maja
+     Trebacz, and Jan Leike. LLM critics help catch LLM bugs. arXiv preprint arXiv:2407.00215.
+     https://arxiv.org/abs/2407.00215, 2024.
+
+[13] Richard Meyes, Melanie Lu, Constantin Waubert de Puiseau, and Tobias Meisen. Ablation
+     studies in artificial neural networks. arXiv preprint arXiv:1901.08644, 2019. https://arxiv.
+     org/abs/1901.08644.
+
+[14] Microsoft. Microsoft agent framework. https://github.com/microsoft/agent-framework,
+     2025. Durable, multi-agent orchestration. Accessed: 2 July 2026.
+
+[15] George C. Necula. Proof-carrying code. In Proceedings of the 24th ACM SIGPLAN-SIGACT
+     Symposium on Principles of Programming Languages, pages 106–119, 1997.
+
+[16] OpenAI. Openai agents sdk. https://openai.github.io/openai-agents-python/, 2025.
+     Accessed: 2 July 2026.
+
+[17] Donald B. Rubin. Estimating causal effects of treatments in randomized and nonrandomized
+     studies. Journal of Educational Psychology, 66(5):688–701, 1974.
+
+[18] SCSC Assurance Case Working Group. Goal structuring notation community standard version
+     3. GSN Community Standard SCSC-141C, Safety-Critical Systems Club, 2021.
+
+[19] Noah Shinn, Federico Cassano, Edward Berman, Ashwin Gopinath, Karthik Narasimhan, and
+     Shunyu Yao. Reflexion: Language agents with verbal reinforcement learning. In Advances in
+     Neural Information Processing Systems, 2023. arXiv:2303.11366. https://arxiv.org/abs/
+     2303.11366.
+
+[20] Athinagoras Skiadopoulos, Qian Li, Peter Kraft, Kostis Kaffes, Daniel Hong, Shana Mathew,
+     David Bestor, Michael Cafarella, Vijay Gadepally, Goetz Graefe, Jeremy Kepner, Christos
+     Kozyrakis, Tim Kraska, Michael Stonebraker, Lalith Suresh, and Matei Zaharia. DBOS: A
+
+
+                                               40
+    DBMS-oriented operating system. In Proceedings of the VLDB Endowment, volume 15, pages
+    21–30, 2022. https://vldb.org/pvldb/vol15/p21-skiadopoulos.pdf.
+
+[21] SLSA. in-toto and SLSA. https://slsa.dev/blog/2023/05/in-toto-and-slsa, 2023. Ac-
+     cessed: 2 July 2026.
+
+[22] Charles Spearman. The proof and measurement of association between two things. The
+     American Journal of Psychology, 15(1):72–101, 1904.
+
+[23] Supply-chain Levels for Software Artifacts. SLSA provenance. https://slsa.dev/provenance,
+     2026. Accessed: 2 July 2026.
+
+[24] Temporal Technologies. Temporal: Durable execution for workflows. https://temporal.io,
+     2024. Durable / resumable workflow execution. Accessed: 2 July 2026.
+
+[25] Santiago Torres-Arias, Hammad Afzali, Trishank Karthik Kuppusamy, Reza Curtmola, and
+     Justin Cappos. in-toto: Providing farm-to-table guarantees for bits and bytes. In 28th
+     USENIX Security Symposium, pages 1393–1410, 2019. https://www.usenix.org/conference/
+     usenixsecurity19/presentation/torres-arias.
+
+[26] Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Mandlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan,
+     and Anima Anandkumar. Voyager: An open-ended embodied agent with large language models.
+     arXiv preprint arXiv:2305.16291, 2023. https://arxiv.org/abs/2305.16291.
+
+[27] Edwin B. Wilson. Probable inference, the law of succession, and statistical inference. Journal
+     of the American Statistical Association, 22(158):209–212, 1927.
+
+[28] World Wide Web Consortium. PROV-overview: An overview of the PROV family of documents.
+     https://www.w3.org/TR/prov-overview/, 2013. W3C Working Group Note. Accessed: 2
+     July 2026.
+
+[29] Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Beibin Li, Erkang Zhu, Li Jiang,
+     Xiaoyun Zhang, Shaokun Zhang, Jiale Liu, Ahmed Hassan Awadallah, Ryen W. White,
+     Doug Burger, and Chi Wang. AutoGen: Enabling next-gen LLM applications via multi-
+     agent conversation. In Conference on Language Modeling, 2024. arXiv:2308.08155. https:
+     //arxiv.org/abs/2308.08155.
+
+[30] Yihan Xia and Taotao Wang. Researchloop: An evidence-gated control plane for ai-assisted
+     research. arXiv preprint arXiv:2605.28282, 2026. https://arxiv.org/abs/2605.28282.
+
+[31] John Yang, Carlos E. Jimenez, Alexander Wettig, Kilian Lieret, Shunyu Yao, Karthik
+     Narasimhan, and Ofir Press. SWE-agent: Agent-computer interfaces enable automated software
+     engineering. In Advances in Neural Information Processing Systems, 2024. arXiv:2405.15793.
+     https://arxiv.org/abs/2405.15793.
+
+[32] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan, and Yuan
+     Cao. ReAct: Synergizing reasoning and acting in language models. In International Conference
+     on Learning Representations, 2023. arXiv:2210.03629. https://arxiv.org/abs/2210.03629.
+
+
+
+
+                                                41
+A     Pre-registered protocols
+Ablation (§5.2). Five arms — A1 prompt-only; A2 naive-retry (R=3); A2′ compute-budgeted
+naive (bounded by a token + wall-clock spend budget targeting A4’s per-task median, ±20% band,
+token binds first; see §5.2 caption for the realized-cost boundary); A3 review-only (one pass with
+A4’s reviewer, not iterated); A4 Proof-or-Stop reflection loop — over 24 stratified tasks (bug-fix
+/ feature / refactor / test-repair / doc-update / dep-upgrade / contract-validation / CLI-feature,
+≈3 each) × k=5 repeats (min k=3). The headline pre-registered budget-capped comparison is A4
+vs A2′ ; A1/A2/A3 are pre-declared reference cells. All arms share an identical edit/run/test tool
+surface (so differences are not tool-confounded), run in the same time window on the same provider
+model label with randomized order (model-drift mitigation, not exact dated-snapshot pinning),
+and are scored by an independently-authored acceptance script validated against a known-good
+reference. §5 primary outcome: completion (acceptance exit 0), with cost as a primary co-metric.
+Analysis: per-cell Wilson CIs (Eq. (6)); two-proportion test with Fisher’s exact per scenario; effect
+size + CI reported, α=0.05; all arms reported, with H1 over injected B1–B15 cells and H2 over null
+cells. Hypotheses H1/H2/H3 as in §5.2.
+    Harness readiness (lifecycle evidence). The live-engine adapter story (B-8d44, merged at
+Proof-or-Stop head 7a1d47d2d) closes the run-driver engine gap: it adds the injectable live-engine.mjs
+for A1/A2/A2′ /A3/A4, section-6 fixed-point injection, A3 reported-not-iterated sidecar evidence,
+raw section-7 capture, and secret-scan/adjudication regression pins. Its final local evidence is
+run-selfchecks.mjs 7/7 (live-engine-selfcheck.mjs: 200 assertions; adjudicate-selfcheck.mjs:
+106; run-driver-selfcheck.mjs: 136), lattice validate 30/30, DONE-required build plus root npm
+test, and a local 3×2 review quorum. This is local host-neutral lifecycle evidence: by itself it
+supports harness readiness only, not the completed powered compute campaign reported in §5.2.
+   Recovery injections (§6). Fifteen injections (Table 17) × {naive, Proof-or-Stop loop}
+× k ≥ 3. Three-way per-run outcome: recovered / safe-stop / amplified; “not amplified” is the
+primary endpoint. Injections that merely re-assert the Tier-A contract checks are excluded to avoid
+double-counting.
+    Git-native handoff (§7). A two-machine simulation: worktree A commits and pushes the
+story branch to a local bare remote; worktree B fetches, reconstructs the worktree, resumes, and
+drives the story to a correct end state — proving work outlives a dead host without transferring a
+worktree image.
+   Validity filters (pilot-calibrated): runs hitting an infrastructure fault (e.g. a transient provider
+overload) are voided, not scored; per-run time is calibrated on 3–5 pilots before committing a wave;
+arms run back-to-back within a repetition to cancel environment load.
+
+
+B     Cell03/Cell06 paired execution-status details
+The supplemental Cell03/Cell06 comparison is a descriptive paired execution-status matrix, not a
+hidden-oracle correctness result. The two conditions were joined by task, scenario, and repeat over
+the same 1,152 cells. The no-review side reports terminal runner status only; the gated side reports
+the Proof-or-Stop delivery decision. The protocol labels are preserved in the released artifacts, but
+the main text uses “no-review control” and “Proof-or-Stop” to avoid conflating this Cell06 condition
+with the §5.2 A2′ compute-budgeted naive arm.
+    Both Cell03 and Cell06 are E2/OpenAI GPT-family execution records with configured model
+
+
+                                                  42
+label gpt-5.5; Cell03 uses a same-family reviewer/control layer, while Cell06 has no reviewer. This
+records a Phase 1 execution-status slice and does not establish cross-vendor or completed multi-model
+generalization.
+
+               Table 24: Execution completeness for the Cell03/Cell06 paired comparison.
+
+Metric                                                 No-review control    Proof-or-Stop gated run
+Planned cells                                                       1,152                        1,152
+Final / terminal cells                                              1,152                        1,152
+Extra audit receipt rows                                               25                           45
+Pending executable cells                                                0                            0
+Contamination rows                                                      0                            0
+Reviewer evidence expected                                             no                          yes
+Reviewer evidence observed                                             no                          yes
+
+
+Table 25: Native outcomes before pairing. The no-review control has terminal runner outcomes; Proof-or-
+Stop has delivery decisions after completion, recovery, or safe-stop.
+
+Outcome                                                No-review control    Proof-or-Stop gated run
+Completed directly                                                  1,143                           68
+Recovered by control layer                                            n/a                          974
+Safe-stopped by control layer                                         n/a                          110
+Failed terminal outcome                                                 9                            0
+Completed/recovered total                                           1,143                        1,042
+Stopped/failed total                                                    9                          110
+
+
+Table 26: Paired matrix with full precision. Rates are over 1,152 paired cells and sum to 100% before
+display rounding.
+
+No-review control                        Proof-or-Stop delivery decision          Count          Rate
+Completed                                Completed or recovered                    1,037   90.017361%
+Completed                                Safe-stopped                                106    9.201389%
+Failed                                   Completed or recovered                        5    0.434028%
+Failed                                   Safe-stopped                                  4    0.347222%
+
+
+Table 27: Exact paired subclasses. These subclasses reconcile the native outcomes in Table 25 with the
+paired matrix in Table 26.
+
+Exact pair                                                                                     Count
+Proof-or-Stop recovered + no-review completed                                                      971
+Proof-or-Stop completed + no-review completed                                                       66
+Proof-or-Stop safe-stop + no-review completed                                                      106
+Proof-or-Stop completed + no-review failed                                                           2
+Proof-or-Stop recovered + no-review failed                                                           3
+Proof-or-Stop safe-stop + no-review failed                                                           4
+
+
+
+
+                                                  43
+Table 28: Supplemental token-usage readout for the paired Cell03/Cell06 matrix. Counts use input+output
+token semantics. Cached input and reasoning-output subfields are reported separately in the artifacts and
+are not added again. The readout is descriptive: it is not a dollar-cost estimate, not cost-benefit evidence,
+and not an isolated marginal estimate of review overhead.
+
+Metric                               No-review control                    Proof-or-Stop gated run
+Provider/model label                                      OpenAI/GPT-family gpt-5.5
+Matched rows                         1,152                             1,152
+Input + output tokens                58,173,502                        221,068,475
+Mean input + output tokens / row     50,497.8                          191,899.7
+Token-usage ratio                    1.00×                             3.80×
+Incremental input + output           n/a                               162,894,973
+tokens
+Cached input breakdown               46,874,624 / 57,199,341 input        not separately exposed
+                                     tokens (81.95%)
+Billing finality                             No billing export or versioned pricing table attached
+
+
+
+C      Independent re-extraction
+A separately written script recomputed the macro figures over the live metadata on 2026-06-23 at
+Proof-or-Stop head 8ee771f1c and produced the figures in Table 18: 565 dev stories, 518 done
+stories, 248 stories with at least one finding, 1007 total findings, and a 94.8% resolved rate. The
+methodology and every structural claim reproduce under corpus growth. Severity shape is still
+stable (high ≈51%, critical ≈1%), the with-findings rate is 44%, and all 41 open findings sit on done
+stories as deferred/advisory records. Of those open findings, 26 carry evidenceState=verified and
+15 are older records without the field, so the paper avoids the stronger but brittle wording “all open
+findings are verified.”
+
+
+D      Correctness exhibits (selected)
+For each exhibit in Table 20, the verbatim finding (description, resolution, reviewer rationale), the
+named reviewer lane, the passing verification state at filing time, and the confirmed fix commit are
+reproducible from the live Orchestrate repository via the Appendix E findings.json + git show
+recipe (these are reproduced from the operated repo, not bundled as standalone files). Example
+(F-a, critical): a production budget guard was silently inert because the author’s smoke always
+injected the environment variable that the guard checked for; an independent reviewer filed it while
+the smoke was green, and the fix made the guard fire in production.
+
+
+
+
+                                                     44
+E     Reproduction
+
+Table 29: Reproduction entry points. The implementation repository is public; sanitized experiment records
+are released with the arXiv v1 tag in the arXiv/release artifact bundle rather than through the private paper
+authoring workspace.
+
+Entry point             Location / command
+Open-source address    https://github.com/Proof-or-Stop
+Version pin            Use the implementation repository’s arxiv-v1 tag, or the commit hash recorded in
+                       release notes if that tag is not present.
+Corpus re-extraction   From the implementation repository: python3
+                       paper/artifacts/reextract_validation.py.
+Finding records        .proof-or-stop/story/actives/<id>/findings.json, with
+                       .lattice/story/actives/<id>/findings.json retained for legacy tags.
+Engine contract        proof-or-stop baseline_suite –layer=loop-engineering.
+Powered      ablation Released with the arXiv v1 tag in the artifact bundle:
+records                experiments/powered-ablation/records-9240.jsonl, analysis.tidy.csv,
+                       analyze-report.txt, and per-scenario.csv.
+Cell03/Cell06 paired Released with the arXiv v1 artifact bundle:
+execution-status com- paper/evidence/cell03-vs-cell06-paired-comparison.* and
+parison                experiments/multi-model-ablation/cell03-vs-cell06-comparison/; validate
+                       with the command block below.
+Cell06 token-usage ex- Released with the Cell06 artifact bundle: experiments/multi-model-ablation/
+traction               cell06-a2prime-formal/cell06-usage-rows.jsonl and
+                       cell06-usage-summary.json; validate with the Cell06 compact validator below.
+
+
+# Open or clone the public implementation repository listed at:
+# https://github.com/Proof-or-Stop
+# Then enter the checked-out repository.
+
+# Checkout the arXiv v1 implementation tag, or use the release-notes commit hash:
+git checkout arxiv-v1
+
+# Corpus macro totals (DONE, with-findings, severity distribution):
+python3 paper/artifacts/reextract_validation.py
+
+# Any finding verbatim, and any exhibit fix commit.
+# Current tags may use .proof-or-stop or .lattice metadata roots:
+cat .proof-or-stop/story/actives/<id>/findings.json
+# or:
+cat .lattice/story/actives/<id>/findings.json
+git show <fix_commit>
+
+# Engine contract (unattended loop, 10 scenarios):
+proof-or-stop baseline_suite --layer=loop-engineering
+
+# Powered ablation records are released with the arXiv v1 tag in the artifact bundle.
+
+# Supplemental Cell03/Cell06 paired execution-status comparison:
+
+                                                     45
+cd experiments/multi-model-ablation/cell03-vs-cell06-comparison
+node validate-comparison.mjs
+
+# Supplemental Cell06 token-usage extraction:
+cd ../cell06-a2prime-formal
+node validate-full.mjs --requireComplete
+
+
+F     Experience-reuse validation details
+The advisory memory layer is intentionally outside the evidence gate. Table 30 records the
+implementation checks that make prior lessons visible without allowing them to satisfy lifecycle
+gates.
+
+Table 30: Runtime memory-consumption validation. The mechanism makes prior lessons available to future
+hosts without letting memory become proof.
+
+Check                      What it proves                                   Observed result
+Runtime pack smoke         Active playbooks surface; candidates do          11/11 contract checks passed
+                           not; superseded memories are suppressed;
+                           source mutation is classified as stale-
+                           relevant; rendered packs are bounded.
+Consumer smoke             Session, handoff, host-dispatch, story in-       9/9 consumer checks passed
+                           take, story transition, done preparation,
+                           done closure, and final-response checks
+                           consume the same advisory pack.
+Full-profile baseline      The matcher and pack builder keep their          1,000,000 records; 20.7s; peak
+                           correctness contract under a generated           RSS 208 MB
+                           large-memory fixture, including active, can-
+                           didate, superseded, stale, and deprecated
+                           cases.
+Boundary invariant         The pack remains advisory: it can prompt         gateEvidence:false
+                           a host to inspect structured facts, but can-
+                           not satisfy review, validation, delivery, or
+                           done gates.
+
+
+    We compute recurrence over defect-class signatures as
+
+                                        { f : sig(f ) ∈ {sig(f ′ ) : f ′ ≺ f } }
+                            recall =                                             ,                           (8)
+                                               { f : sig(f ) defined }
+
+where f ′ ≺ f means f ′ is strictly earlier. After a leakage-guarded backfill and re-classification into
+one curated taxonomy, 989 of 1007 findings carry signatures across 211 canonical area|failureMode
+classes. The retrodictive recall is 0.700; a 70/30 temporal held-out estimate is 77.1% (Fig. 10). A
+degraded coarse view with 31 classes raises recall to 0.98 but is vacuous, so the paper reports the
+more specific 211-class taxonomy.
+
+
+
+
+                                                    46
+                     Real-signature learnability: the defect substrate is learnable (refreshed)
+                     989 of 1007 findings signed; fixed taxonomy with 211 canonical area/failureMode classes; held-out temporal split 70% / 30%.
+
+                     A. Held-out forward recall vs specificity (does the PAST predict the FUTURE?)
+                     %% of future (held-out) findings that repeat a defect-class seen in the past — read together with class specificity.
+
+                                   REAL unified (211 classes)                                                                                       0.77 — specific
+
+                            DEGRADED coarse (31 classes)                                                                             0.98 — vacuous match
+
+
+                     B. One consistent namespace (why we re-classify, not pool)
+                     Story-ordered retrodictive recall (live learning_effectiveness def): 0.700.
+                     The 343 later findings were auto-signed in a DISJOINT, finer namespace; pooling the two raw
+                     namespaces gives a misleadingly low 0.459. Re-classifying into the single curated taxonomy was
+                     independently audited as faithful and non-vacuous (3.12 findings/sig, finer than the historical 4.2).
+                     Observational (past predicts future), NOT causal — the ON/OFF RCT is still under-powered.
+
+
+                     C. Top recurring defect classes (unified curated signatures)
+
+                                               docs｜doc-code-mismatch                                                                          99
+
+                                       evidence-freshness｜stale-binding                                                              84
+
+                            evidence-freshness｜missing-test-coverage                                     36
+
+                                        test-infra｜missing-test-coverage                            29
+
+                                   parallel-wave｜missing-test-coverage                             26
+
+                                               spec-boundary｜logic-error                      22
+
+
+
+                     Reproducible from experience_unified_recall.py and make-experience-learnability-fig.py over committed corpus artifacts.
+
+
+
+
+Figure 10: Defect-class recurrence over the corpus. Recurrence is real and the trend is rising (Spearman
+ρ ≈ 0.72 [22]), but novelty per window stays positive — new defect classes keep appearing, so recall has a
+ceiling below 1.
+
+
+    The causal claim is a separate ON/OFF A/B [17]:
+
+                                                          δ = outcomeoff − outcomeon ,                                                                                           (9)
+
+where positive δ means the hinted arm repeats fewer known mistakes. The pilot executed 90
+arm-runs with zero store-isolation violations, a clean fixture-leakage audit, correct arm mechanics,
+and byte-identical re-scoring. Its control-arm in-store baseline was 1/30 = 0.033 (Wilson 95% CI
+[0.006, 0.167]), far below the pre-registered planning band [0.5, 0.8]; the pre-registered freeze rule
+therefore refused to size the powered study. Table 31 is reported only as an instrumentation and
+stop-rule result.
+
+Table 31: Controlled memory-consumption ablation, pilot only (unpowered/exploratory: the powered
+study was refused at the pre-registered N -freeze and never run; no CI or p-value is reported and no row
+supports a causal claim).
+
+ Trap group    Fixtures        Control defect rate                                 Treatment defect rate                                    Paired risk diff.         Median time ∆
+ in-store            30                                         0.033                                                    0.000                              −0.033           −2.3 s
+ held-out            10                                         0.000                                                    0.000                              +0.000           +5.6 s
+ clean                5                                         0.000                                                    0.000                              +0.000           −0.2 s
+
+
+
+G     Parallel-development null pilot (cautionary aside)
+We ran a small pilot asking whether instructing a host CLI to fan out 3–6 sub-agents speeds up
+development of small, disjoint, self-tested code leaves. Pooling all valid runs (n=6/arm), 1-host
+parallel (113.0 s) vs sequential (118.7 s) is a wash; parallel costs ≈1.8× the tokens; quality (frozen
+self-tests) is identical; single-provider fan-out is more fragile under load (one provider overload
+silently dropped 4 of 6 files). A first draft of this analysis over-claimed “parallel is consistently
+
+                                                                                             47
+slower”; an independent three-lens adversarial check against the raw run records refuted that
+headline as window-selection artifact and statistically unsupported. We keep the corrected null.
+This pilot is tangential to the thesis and is included only because the refutation episode illustrates
+the same rule: self-report is not gate evidence, while the independent evidence-bound check is.
+
+
+
+
+                                                 48
+
