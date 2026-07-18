@@ -69,6 +69,7 @@ Most relevant sources:
 | [ReasFlow](../papers/agent-benchmarks/2026-07-17-reasflow-procedural-heuristic-research-validity.md) | A | Supplies a strong conditional-operation card format and stage-artifact architecture while showing why paper-derived, model-inferred, model-optimized heuristics plus natural-language self-verification do not establish tacit expertise, theorem correctness, transfer, autonomous discovery, or reduced expert burden |
 | [BrainPilot](../papers/agent-benchmarks/2026-07-18-brainpilot-domain-skill-scientific-trace-validity.md) | A | Separates domain-material presence, retrieval/load, source-faithful authority, adoption, artifact change, and independent consequence; its current release makes workflow roles and benchmark machinery inspectable while absent verified Skills/raw runs, mutable inferred traces, Auditor evidence-view limits, adverse knowledge ablations, and task-version drift block expertise, scientific-validity, trace-integrity, cost, and readiness claims |
 | [LQCDMaster](../papers/agent-benchmarks/2026-07-18-lqcdmaster-expert-skill-executable-science-validity.md) | A | Preserves unusually rich plan/code, Slurm/GPU, repair, log, and numerical-artifact evidence while showing that submission, exit, artifact presence, format, numerical agreement, declared solution equivalence, independent scientific correctness, and professional consequence require separate observers and warrants |
+| [SkillGenBench](../papers/agent-benchmarks/2026-07-18-skillgenbench-corpus-to-skill-distillation-validity.md) | A | Makes the corpus-to-procedure generator a distinct component and introduces a valuable pre-task reuse regime, while its task-selected source views, unequal no-Skill runtime, execution-time documentation, broken/incomplete release, source-to-evaluator drift, and unreconciled denominators prevent isolated or reproducible reusable-distillation claims |
 | [c-CRAB](../papers/agent-benchmarks/2026-07-17-c-crab-review-test-projection-validity.md) | A | Makes a real human-feedback→fail/pass-test→repair-agent consequence chain unusually inspectable while showing that outcome-informed projection, selection on the evaluation mediator, missing finding-to-action attribution, and unscored false positives bound the result to a configured selected chain rather than review quality generally |
 
 **Repository consequence:** [`schemas/expertise-transfer.schema.json`](../schemas/expertise-transfer.schema.json), [`schemas/EXPERTISE_TRANSFER.md`](../schemas/EXPERTISE_TRANSFER.md), validity arguments, participation contracts, and the authoring lifecycle in the canonical taxonomy. Mixed-initiative or simulated-interlocutor elicitation must preserve an unprompted-before-probed boundary and event lineage for offered, displayed, answered, rejected, revised, withdrawn, skipped, and stopped interactions; requested versus realized resistance and the triggering utterance must remain visible. Dialogue/word volume and conversational fluency are not expertise yield: measure grounded thresholds, contradictions, failure signatures, correction burden, contributor value/privacy, and downstream task/check utility separately. Machine responsiveness checks do not confer epistemic or expert authority. Source-derived tasks are versioned projections: observed demand and resolution, omitted context, transformations, hindsight sources, target counterfactual, equivalence disposition, and licensed use remain distinct. Real provenance can support demand-inspired coverage while replay fidelity remains unsupported.
@@ -124,6 +125,33 @@ bundles, and receipts are absent. The warranted ceiling is later instrument and
 configured-workflow inspectability—not verified expertise transfer, trace integrity,
 scientific correctness, reliability, cost-effectiveness, professional validity, or
 readiness. Existing contracts suffice; neuroscience remains a bounded mechanism case.
+
+Corpus-to-procedure generation adds a prior **distillation-treatment chain**:
+`versioned/authorized source view → generation regime and resource envelope → exact
+procedure package → source-fidelity/deployability observations → eligible downstream
+opportunity → load/retrieval → adoption or rejection → artifact/state effect →
+independent consequence`. Task-conditioned generation is an explicit hindsight
+treatment; task-agnostic reuse requires pre-task package identity and untouched
+within- or cross-family tasks. Compare no context, equal-budget raw context, generated
+package, package plus raw context, approved reference procedure, and irrelevant or
+defective package controls under one executor/runtime. Package presence and forced
+invocation are not adoption, and a package effect is not source-faithful expertise.
+
+[SkillGenBench](../papers/agent-benchmarks/2026-07-18-skillgenbench-corpus-to-skill-distillation-validity.md)
+makes this experimental object explicit, but v1 cannot identify it cleanly. Its pinned
+paper-time candidate release has 187 inspectable evaluation bundles, yet all 187
+generation manifests fail strict JSON parsing, the documented generator fails on an
+incorrect import path, four compared generators and all generated packages/raw results/
+static rows are absent, 67 source/evaluation output filenames differ, Skill and no-Skill
+runners are unequal, and task documentation remains available at execution. The Kimi
+Naive source cells imply 12.33% overall while one appendix table reports 17.1%, and the
+static inventory counts do not match one package × 187 tasks × six backbones. The claim
+ceiling is therefore a useful benchmark design plus manuscript-reported configured
+package effects—not isolated reusable distillation, stable method ranking, reliability,
+expertise transfer, professional validity, cost-effectiveness, or readiness. Existing
+procedure-package, instrument-layer, ablation, configured-system, task-health, resource,
+metric, trace, release, and validity machinery suffices; no Skill-specific subsystem or
+scope commitment follows.
 
 Executable science adds a distinct **execution-to-consequence chain**:
 `authorized request → plan/code → submission → monitored execution → artifact →
