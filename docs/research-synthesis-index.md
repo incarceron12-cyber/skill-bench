@@ -198,16 +198,27 @@ representation obligations. V4 therefore supplies execution-lifecycle and instru
 failure evidence, not an interpretable package effect.
 
 V5 repairs only that endpoint layer while binding the v4 treatments, candidates,
-controls, source rules, and assignments by hash. Public inputs now disclose required
-identifiers and types; expected consequences are derived from the public/source basis;
-reasons admit paraphrases; and the builder-authored fair-basis, derivation, condition-
-blindness, parity, and planted-mutation preflight passes with zero attempts. Execution
-remains prohibited until a separate commit-bound review independently recomputes those
-properties and tests derivation/checker common-mode defects and valid alternatives. See
-[`v4`](../pilots/pretask-procedure-transfer-v4) and
-[`v5`](../pilots/pretask-procedure-transfer-v5). Preserve immutable v4 scores and do not
-edit frozen v5 bytes. Expert provenance, professional validity, transfer, capability,
-utility, production fitness, and readiness remain false.
+controls, source rules, and assignments by hash. Public inputs disclose required
+identifiers and types; expected consequences are derived from the public/source
+basis; reasons admit paraphrases; and the builder-authored fair-basis, derivation,
+condition-blindness, parity, and planted-mutation preflight passes with zero
+attempts. A separate commit-bound audit independently recomputed all hashes,
+assignment parity, zero attempts, claim ceilings, and the four current endpoint
+semantics, but **blocked execution** on four deterministic gates: the bound source
+corpora explicitly limit authority and every proposition to v4; the checker accepts
+unknown and condition-bearing fields; Python equality accepts JSON `true` for
+expected numeric `1` inside `final_state`; and the builder deriver plus preflight
+share a Z-P3 defect that rejects source-authorized ancestor rollback. This yields a
+reusable release chain: `byte identity → source applicability → independent
+semantic derivation → checker-language closure`; no stage inherits the next.
+Preserve immutable v4 scores and frozen v5 bytes. A new prospectively frozen
+version needs explicit source applicability, closed object contracts, strict
+recursive JSON types, an independent oracle, source-targeted mutations, and
+another independent review before any calls. See [`v4`](../pilots/pretask-procedure-transfer-v4),
+[`v5`](../pilots/pretask-procedure-transfer-v5), and the
+[independent freeze review](concepts/pretask-procedure-transfer-v5-independent-freeze-review.md).
+Expert provenance, professional validity, transfer, capability, utility, production
+fitness, and readiness remain false.
 
 Executable science adds a distinct **execution-to-consequence chain**:
 `authorized request → plan/code → submission → monitored execution → artifact →
