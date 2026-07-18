@@ -3170,6 +3170,48 @@ supported divergence. A known injected step is a construction label; it is not
 automatically a unique causal root or evidence that the same diagnosis applies to
 natural failures [WWP].
 
+Natural-trajectory span localization starts with two independent projections before
+that attribution ladder [DRIFT]:
+
+```text
+execution projection
+raw events/state → normalized events → semantic spans
+
+causal-semantic projection
+semantic spans → claim state → support/contradiction → consequential reuse
+  → surfaced failure
+```
+
+Preserve raw-event IDs, actors, wall and dataflow order, omitted channels, adapter and
+normalizer hashes, boundary proposals and overrides, and reciprocal raw↔span links.
+Then type factual status, entailment, authority, scope/freshness, observability,
+tentative/committed/finalized state, recovery, consequence, and surface/root status
+separately. A missing support span can reflect unsafe adoption, an omitted event, or an
+incomplete observer view; a failed search, retry, tentative hypothesis, or recovered
+mistake is a required benign negative rather than an error by definition.
+
+The corresponding non-inheriting claim ladder is **adjudicated span agreement →
+commitment-policy agreement → evidence-view sufficiency → supported dependency →
+earliest supported cause → diagnosis-guided repair utility → professional validity →
+operational monitoring readiness**. Localization among known failures is not
+monitoring under unknown prevalence: a monitor additionally needs probability-sampled
+healthy and invalid traces, correct finalizations and stage-matched negatives,
+abstention, prevalence-aware precision, false-alarm/review cost, drift, and stakeholder
+loss. Outcome- or proposal-visible annotation is a distinct observer treatment and
+must retain initial labels, confidence, disagreement, revisions, rejected proposals,
+adjudication, and annotator authority.
+
+TELBench makes 1,000 checksum-verified positive-case trajectories and 11,934 semantic
+spans inspectable, and its harmful-commitment policy usefully separates exploration
+from consequential adoption. It directly validates span-set agreement with one
+outcome-aware, LLM-prefilled annotation instrument; it does not validate raw-to-span
+completeness, causal roots, repair utility, specificity, prevalence, or monitoring.
+The acquisition-time post-v2 runner also differs materially from the paper's four-stage
+method, so code, prompts, data, predictions, invalid/provider rows, scorer, and table
+builder require an explicit result-correspondence bridge [DRIFT]. Existing trace,
+evidence-view, observer/adjudication, root/surface, recovery, task-health, metric, and
+validity records host these requirements; no span-localization schema follows.
+
 Open-vocabulary diagnosis adds a prior, non-causal transformation ladder:
 
 ```text
@@ -4464,7 +4506,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Skill-grounded long-horizon evaluation (LH-Bench) | expert procedure → observable boundary → artifact/check crosswalk | intervention/instrument contamination; agreement mistaken for validity | full immutable v2 PDF/text and deep review [LH] |
 | Budget-constrained online Skill/memory packages | configured-package frontier, exact allocation episode, module-flow mediation, and amortized portfolio ledger | approximate budgets and compound controls promoted to allocation effects; presentation promoted to adoption; three-run unions/intersections promoted to capability bounds; retries and order-dependent shared state omitted | full immutable v1 paper/project-page review with no study release [OSM]; internal 14-row parity audit admits zero exact contrasts [SAPA], and the zero-call prospective capture envelope remains blocked on per-call telemetry [PAT] |
 | Human-rated configured Skill package (medical Skill study) | mounted/surfaced/opened/invoked/adopted/artifact-change chain; model/task/rater estimand and criterion-specific reliability | available package mistaken for exposure; platform/package bundle called a Skill effect; shared structure and noisy Likert ratings promoted to expertise, correctness, or transfer | full immutable v1 paper/supplement plus timing-bounded 1,715-file package audit; one selected 21-output task, unequal arm/model mixture, absent run/exposure records, and negative expert ICC support a claim ceiling rather than efficacy [MSK] |
-| Trace diagnosis and recovery (STRACE, LH-Bench recovery analysis) | dependency-aware causal slice; error→feedback→repair→verification chain | inferred root cause may be wrong; post-test optimization can leak | extracted-paper deep review [ST] plus LH-Bench full review |
+| Trace diagnosis and recovery (STRACE, DRIFT/TELBench, LH-Bench recovery analysis) | linked raw-event/semantic-span and claim/support projections; dependency-aware causal slice; error→feedback→repair→verification chain | lossy projection or outcome-aware span agreement promoted to causal root; all-positive localization promoted to monitoring; inferred dependencies may be wrong; post-test optimization can leak | STRACE and LH-Bench full reviews [ST, LH]; immutable DRIFT v2 plus pinned post-v2 code/dataset audit [DRIFT] |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
 | Procedural-memory transfer (AFTER) | typed source-context, equivalent-form, changed-context, and cross-model transfer edges with paired outcomes and harm gates | shared authoring/verifier lineage, feedback leakage, complete-case selection, diversity/volume confounding, missing configured-system identity, and macro gains hiding negative transfer | full immutable v1 paper plus pinned post-v1 release audit; 129 released test packages are inspectable, but the 382-task instrument, evolution machinery, traces, configurations, evolved procedures, and result rows are unavailable [AFTER] |
@@ -4533,8 +4575,10 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 4. **Separate score families:** process, checkpoint, artifact, preference,
    readiness, safety, efficiency, and diagnosis remain distinct until a declared
    aggregation policy is validated.
-5. **Separate root from surface:** every failure attribution retains raw event
-   evidence and uncertainty.
+5. **Separate root from surface and projection from cause:** every failure
+   attribution retains raw events and states, normalization/span lineage, typed
+   commitment/support evidence, observer view, alternatives, and uncertainty; span
+   agreement or a graph edge is not automatically a causal root.
 6. **Separate invalid trials from capability failures:** environment, task, and
    grader defects remain visible rather than being silently excluded.
 7. **Preserve lineage:** consolidation links or supersedes claims; it does not
@@ -5090,6 +5134,17 @@ them:
   tests, and intervention evidence. The source supports exploratory issue discovery
   and bounded category association—not stable taxonomy, root cause, prevalence,
   actionability, professional validity, production fitness, or readiness.
+- **[DRIFT]**
+  `papers/agent-benchmarks/2026-07-18-drift-span-error-localization-validity.md`;
+  reviewed immutable arXiv v2 PDF/text plus acquisition-time official code commit
+  `1280b373b5af1954bf0577bf6d58b38e1bce341e` and TELBench dataset revision
+  `307d870d7424be265653bb7a566793cc217105be`, with provenance at
+  `data/sources/releases/2606.02060v2-drift/provenance.json`. The checksum-verified
+  1,000-row all-positive dataset supports inspectable outcome-aware harmful-span
+  agreement and a useful commitment-state policy. Missing raw projection/annotation
+  lineage, no healthy trajectories or intervention/repair study, and material
+  paper-versus-runner differences block causal-root, professional-validity,
+  monitoring, production-fitness, or readiness claims.
 - **[HIL]**
   `papers/agent-benchmarks/2026-07-17-hilsva-mixed-initiative-validity.md`;
   reviewed immutable v1 PDF/text, full paper-linked study instrument, and complete

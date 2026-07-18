@@ -1882,6 +1882,7 @@ revision before adding another lifecycle schema.
 | Source | Tier | Main contribution to skill-bench |
 |---|---:|---|
 | [STRACE](../papers/agent-benchmarks/2026-07-09-strace.md) | B | Introduces dependency-aware causal slicing and the distinction between surface failure and upstream root cause |
+| [DRIFT / TELBench](../papers/agent-benchmarks/2026-07-18-drift-span-error-localization-validity.md) | B | Makes 1,000 positive-case harmful-span labels inspectable and adds claim/support/commitment structure, while showing that lossy semantic projection, outcome-aware agreement, causal roots, repair utility, and monitoring are different claims |
 | [ProcGrep](../papers/agent-benchmarks/2026-07-16-procgrep-procedural-fingerprint-validity.md) | B | Makes multi-resolution action-sequence regularities inspectable and searchable while showing that configured-system discrimination, repeated stability, matched intervention, skill transfer, monitoring utility, and readiness require separate evidence; its paper-time release omits headline row inputs and exact split lineage |
 | [Plans Don't Persist](../papers/agent-benchmarks/2026-07-16-plans-dont-persist-context-eviction-validity.md) | B | Adds forced-prefix replay and a derived-trace contamination warning while showing that broad plan-exchange removal, last-token cosine distance, free behavioral adoption, and broad-history endpoint loss are separate experiments |
 | [Who&When Pro](../papers/agent-benchmarks/2026-07-15-whowhen-pro-failure-attribution-validity.md) | B | Makes the injected actor/action/step known under attempted exact-prefix replay, while showing that intervention identity, first divergence, propagated symptom, but-for effect, earliest sufficient cause, natural multi-cause root, and repair utility are distinct claims; its unreleased corpus/code prevents construction and result audit |
@@ -1899,6 +1900,30 @@ revision before adding another lifecycle schema.
 **Repository consequence:** Root/surface attribution, causal trace slices, recovery records, invalid-trial handling, and task-health lifecycle records. Apparent requests should also admit a counterfactual action contract: observable disqualifying evidence, authority and threshold, legitimate alternatives, required state and communication consequences, abstention/escalation, and collateral harm. Decision, rationale, artifact preservation, communication, cost, and harm remain separate observations. Matched persist/stop and comply/dissent forms are required to distinguish calibrated judgment from generic quitting or contrarianism; substantive action must be tested independently of lexical realization, with paraphrase contrasts and retained semantic adjudication. AARRI's inspectable authored suite motivates this design but its missing sampling frame, contributor accounting, human baseline/agreement, repeats/uncertainty, verifier-wide audit, complete configuration, contamination-safe split, environment evidence, and paper-pinned release prevent researcher-quality or cross-domain capability claims.
 
 Controlled injection adds an **attribution claim ladder**: `declared injected delta → first observed divergence → propagated surface failure → but-for effect under paired replay → earliest sufficient cause → natural multi-cause root → diagnosis-guided repair utility`. No rung inherits the next. A successful seed plus a failed newly sampled continuation identifies the construction treatment, but without repeated paired suffixes, sham/alternative corrections, full state attestation, all-attempt denominators, and recovery tests it does not prove that correcting the injected action would rescue that branch or that the same label transfers to natural failures. Who&When Pro's reported 12,326 retained traces, 100-row label-visible human check, and protocol comparisons make this boundary concrete; success-conditioned seeds, endpoint-failure selection, incomplete replay equivalence, single-mode labels, absent clustered uncertainty, and unreleased data/code restrict it to synthetic intervention-recognition evidence. Existing trace, root/surface, recovery, invalid-trial, task-health, evidence-view, metric, and validity records already host the repair; no injection-specific schema follows.
+
+Natural-trajectory localization adds a complementary **two-projection model**:
+`raw events/state → normalized events → semantic spans`, then `spans → claims →
+support/contradiction → consequential commitment/reuse → surfaced failure`. Neither
+projection licenses the next claim automatically. Preserve raw↔span lineage and type
+factual status, entailment, authority, scope/freshness, observability, commitment,
+recovery, consequence, and surface/root separately. The claim ladder is `span
+agreement → commitment-policy agreement → evidence-view sufficiency → supported
+dependency → earliest supported cause → repair utility → professional validity →
+monitoring readiness`.
+
+[DRIFT/TELBench](../papers/agent-benchmarks/2026-07-18-drift-span-error-localization-validity.md)
+supports the first rung and is intentionally designed around the second. Its complete
+checksum-verified 1,000-row release is a strong positive-case diagnostic artifact, but
+all rows contain errors; experts saw answers and LLM proposals; raw projection and
+annotation lineage are absent; and 79.8% of final spans are positive. It therefore
+cannot establish healthy-trace specificity, prevalence, causal roots, or repair value.
+The acquisition-time post-v2 runner also omits the paper's Specialist Auditor stage
+and adds lexical retrieval/late-endpoint behavior, so release inspectability is not
+paper-result correspondence. Retain benign exploration negatives, correct-output/
+unsafe-evidence cases, exact-first versus full-chain scores, no-error and stage-matched
+controls, fail-closed observability/provider states, blinded plural annotation, and
+intervention/repair tests. Existing machinery suffices; no DRIFT-specific subsystem or
+deep-research scope commitment follows.
 
 Descriptive procedural fingerprints add a separate **configured-observation claim ladder**:
 `raw event and state → adapter/canonicalizer observation → repeated subsequence → configured-system discrimination → time/task/interface stability → matched procedural intervention → endpoint/artifact consequence → skill transfer → calibrated monitoring decision → production fitness/readiness`. A fingerprint belongs to a task distribution, model, scaffold, interface, observation policy, and time window—not automatically to a base model or skill. Vocabulary induction and tuning must be nested inside training task groups; harness/interface and outcome controls must be crossed; raw, native, canonical, artifact, and state views must remain linked. ProcGrep's inspectable library and bounded post-v1 matched-task comparison support diagnostic use, while missing paper-time row inputs, unclear released task-held-out execution, label-informed vocabulary-size selection, and absent repeated/intervention/decision evidence prohibit stronger promotion.
