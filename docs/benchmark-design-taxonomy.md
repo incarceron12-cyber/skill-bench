@@ -1352,6 +1352,68 @@ argument, metric-monitoring, expert-participation, and future elicitation-sessio
 records; do not create a parallel schema or implement the blocked session contract
 without a real consented session.
 
+#### Artifact intervention and recipient consequence require separate realization ledgers
+
+For communicative and other recipient-facing work, connect artifact instrumentation
+to consequence without collapsing either side:
+
+```text
+authorized/frozen source
+  → declared intervention assignment
+    → opportunity → invocation → candidate → adoption/rejection → edit → send/use
+      → versioned normalization/transformation → final artifact identity
+        → admissible native/render/proxy view → realized observer and criterion
+          → diagnostic progress → mandatory acceptance gates
+            → delivery → valid exposure → typed behavior → objective attainment
+              → affected-party burden/value → bounded capability/readiness claim
+```
+
+The assignment unit, exposure unit, artifact unit, recipient/dyad, event row, and
+analysis unit are not interchangeable. Preserve period, sequence, carryover,
+organization/task/sender/recipient clusters, opportunity and exposure windows,
+missingness, and every treatment-realization event. Random assignment identifies an
+intent-to-treat contrast for the assigned package under its realized conditions; it
+does not randomize invocation, adoption, edits, an observed mediator, recipient
+attention, or downstream use.
+
+Every normalization and observation must bind source/candidate bytes, before/after
+hashes, transformation implementation or service/build, fonts/locale/time when
+relevant, requested and realized renderer/observer, evidence view, fallback, and
+typed failure. Criterion programs are versioned measurement software: retain public
+basis, proposition, applicability, tolerance/equivalence, dependencies, polarity,
+gate/compensation semantics, fixtures, exception policy, and claim ceiling. Report
+compensatory progress separately from mandatory artifact validity, preservation,
+safety, delivery, and acceptance. Correlated leaves and exact-one aggregation cannot
+silently become independent evidence or stakeholder approval [PPTE].
+
+Recipient observations require an observer contract: event source; actor/dyad
+identity policy; false-positive/negative risks; exposure and administrative-censoring
+clocks; proxy, prefetch, forwarding, automation, and thread handling; repeated-event
+policy; affected-party authority; and admissible interpretation. `delivered`,
+`opened`, `replied`, `understood`, `accepted`, `acted`, and `benefited` are different
+events. Objective attainment, delay, burden, trust, collateral effects, and value
+remain plural outcomes rather than one engagement scalar.
+
+A mediation claim additionally needs a predeclared causal graph, mediator and outcome
+timing, mediator-observer validity, treatment/mediator randomization status,
+time-varying confounders and interference, estimator scale, covariance and clustered
+uncertainty, sensitivity analysis, and a valid total-effect interpretation. An
+intervention-caused artifact-proxy shift plus a within-unit proxy–outcome association
+does not establish an indirect effect, particularly when the assigned intervention
+has no detected endpoint effect [PEC].
+
+PPT-Eval's eight-day-post-v1 release makes 120 tasks, 704 rubric nodes, and 481
+executable leaves statically inspectable, but omits frozen normalized decks, attempts,
+human labels, criterion outputs, and result tables; its paper-time empirical results
+are not reconstructible. The professional-email study reports sender-week randomized
+assignment and a final-message sentiment-proxy shift across 16,880 email rows, but no
+detected assigned-condition effect on opens, replies, or response times. Missing
+adoption lineage, recipient/dyad dependence, valid censoring reconstruction, mediator
+validation, and released data block mediation, utility, capability, professional-
+validity, and readiness claims. Existing artifact, observer, criterion, trace,
+participation, metric, task-health, configured-system, and validity objects are the
+durable homes; no presentation/email schema or pilot follows.
+
 #### Field workflow value requires stable bridge units and typed transformations
 
 A complete field table can still mix non-equivalent evidence. Preserve the chain:
@@ -5752,3 +5814,18 @@ them:
   reuse license. Evidence supports configured scientific-workflow inspectability—not
   published-table reconstruction, validated expertise transfer, scientific
   correctness, reliability, professional equivalence, or readiness.
+- **[PPTE]**
+  `papers/agent-benchmarks/2026-07-18-ppt-eval-native-presentation-artifact-validity.md`;
+  reviewed immutable v1 PDF/text plus the pinned eight-day-post-v1 official release,
+  full 120-task/120-rubric static census, hydration/render path, and criterion-program
+  audit are recorded there. Missing normalized substrates, empirical attempts,
+  criterion outputs, human labels, and tables block v1 reconstruction, professional
+  acceptance, human equivalence, capability, production fitness, or readiness.
+- **[PEC]**
+  `papers/agent-benchmarks/2026-07-18-professional-email-recipient-consequence-validity.md`;
+  reviewed immutable v1 PDF/text plus the complete pinned four-file analysis release
+  are recorded there. The manuscript reports sender-week randomization, an artifact-
+  proxy shift, and null assigned-condition recipient-event effects; absent data,
+  realization/adoption lineage, recipient/dyad dependence, valid censoring evidence,
+  and mediator validity block mediation, utility, capability, professional validity,
+  production fitness, or readiness.

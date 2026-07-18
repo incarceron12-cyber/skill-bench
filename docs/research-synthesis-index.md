@@ -1240,8 +1240,53 @@ cover the boundary; no feedback-specific schema follows.
 | [Claw-Eval](../papers/agent-benchmarks/2026-07-15-claw-eval-multichannel-trajectory-validity.md) | A | Reframes final response, action trace, and environment state as criterion-specific evidence routes rather than interchangeable raters; its selected hybrid-only audit, manifest/grader drift, manual reruns, absent fault injector, and incomplete attempt ledger do not calibrate observer accuracy or operational reliability |
 | [CutVerse](../papers/agent-benchmarks/2026-07-15-cutverse-temporal-creative-artifact-validity.md) | A | Makes expert-demonstrated temporal work visible while showing that milestone screenshots do not establish native-project integrity, time-indexed rendered behavior, export validity, creative quality, or recipient acceptance; the post-v1 release lacks the paper tasks, evaluator, and results |
 | [AgenticVBench](../papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md) | A | Repairs CutVerse's task/grader inspectability gap with a full later four-family release and criterion-specific manifest, frame, audio, metadata, and model views; its 13 brief/rubric resolution conflicts, five reversed good-state penalties, absent human/calibration/results records, rights gaps, and unreconciled rollout denominator show that observer richness cannot rescue an incoherent criterion contract |
+| [PPT-Eval](../papers/agent-benchmarks/2026-07-18-ppt-eval-native-presentation-artifact-validity.md) | A | Makes 120 task-specific mixed native/render/model rubric programs statically inspectable and preserves requested-delta plus collateral-change checks, while showing that an unfrozen normalization/render substrate, observer fallback, dependent leaves, compensatory “critical” semantics, and absent empirical artifacts cap the result at configured edit conformance rather than professional acceptance or readiness |
 
 **Repository consequence:** Score families remain separate, artifact views have admissibility contracts, and task/trial records preserve both produced artifacts and consequential workspace state. Editable artifacts need native, executable/recalculated, rendered, exported, and trace evidence plus authoritative mutation tests; inherited size and one reference witness do not establish work performed or maintainability. Each criterion routes to the authoritative object and temporal scope it actually requires: final prose, a tool request, committed service state, native structure, a rendered interval, exported bytes, or calibrated human judgment. More channels are not automatically redundant truth, and missing or stale decisive views produce `insufficient_evidence` or instrument invalidity rather than a substantive failure. Scored state checks must also distinguish environment readiness from trial-created deltas and identify shared-cause or descendant dependencies. The internal initial-state replay rejects pre-satisfied, stale, copied-witness, and omitted-transition cases, accepts a declared alternative, and abstains on invalid initialization; its seven synthetic matches validate only fixture/scorer behavior ([replay](../pilots/task-initial-state-conformance/replay-report.json)).
+
+PPT-Eval and the professional-email field experiment jointly expose an
+**artifact-transformation-to-recipient chain**:
+
+```text
+authorized and frozen source
+  → declared intervention and realized opportunity/invocation/adoption/edit/send
+    → versioned normalization/transformation and candidate artifact
+      → admissible native/render/proxy view and realized observer/program
+        → typed criterion evidence → diagnostic progress versus mandatory acceptance
+          → delivery and valid recipient exposure → typed recipient behavior
+            → objective attainment → affected-party burden/value
+              → bounded capability or readiness claim
+```
+
+No arrow inherits the next. Bind assignment unit separately from analysis unit and
+retain treatment opportunity, invocation, generated candidate, adoption/rejection,
+post-generation edit, final artifact hash, and send/use event. A requested renderer
+and its realized fallback are different observers; every leaf must distinguish
+substantive failure, invalid artifact, unavailable view, observer/infrastructure
+failure, and insufficient evidence. Criterion dependencies, hard gates, and
+compensatory progress must remain explicit so correlated leaves and exact-score
+success do not silently define professional acceptance.
+
+Recipient evidence needs actor/dyad identity policy, event source, exposure window,
+censoring clock, proxy/automation handling, repeated-event and clustering policy,
+and affected-party authority. `delivered`, `opened`, `replied`, `understood`,
+`accepted`, `acted`, and `benefited` are distinct events. A mediation claim must add
+a predeclared causal graph, mediator timing and validity, confounders/interference,
+randomization status, estimator scale, covariance/cluster treatment, and sensitivity
+analysis; an intervention-caused proxy shift plus proxy–outcome association is not an
+indirect effect when the randomized endpoint contrast is null.
+
+The PPT-Eval post-v1 release supports a static census of 120 tasks, 704 rubric nodes,
+and 481 executable leaves, but its normalized source decks, paper attempts, human
+labels, criterion outputs, and result tables are absent, so v1 is not empirically
+reconstructible. The email paper reports sender-week randomized assignment and a
+final-message sentiment-proxy shift over 16,880 email rows, but no detected assigned-
+condition effect on opens, replies, or response times; absent adoption lineage,
+recipient/dyad structure, valid censoring reconstruction, mediator validation, and
+released data block mediation, utility, capability, and readiness claims. These are
+cross-domain contract lessons, not presentation or email scope commitments; existing
+artifact-view, criterion, trace, participation, metric, task-health, configured-
+system, and validity records remain the implementation homes.
 
 Mutable cross-resource work requires a **parent/overlay/observer/commit envelope**.
 Pin the parent state root, schema/application version, start boundary, and concurrent-
