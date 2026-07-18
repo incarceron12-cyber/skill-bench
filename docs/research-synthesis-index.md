@@ -1381,6 +1381,7 @@ cover the boundary; no feedback-specific schema follows.
 | [PaperBench](../papers/agent-benchmarks/2026-07-15-paperbench-replication-rubric-validity.md) | A | Adds code, execution-log, and result evidence for long-horizon reconstruction while exposing the need for causal lineage, executable prerequisites, noncompensatory gates, and a separate partial-progress vector |
 | [ORAgentBench](../papers/agent-benchmarks/2026-07-17-oragentbench-decision-artifact-validity.md) | A | Moves evaluation to concrete feasible decision artifacts and staged replanning while exposing why authored obligations, reference strength, native objective loss, normalization, acceptance, and operational consequence are distinct |
 | [DORA](../papers/agent-benchmarks/2026-07-14-dora-disaster-response-consequence-validity.md) | A | Separates real-source and label truth, one executable analytical witness, endpoint agreement, professional acceptance, recipient uptake, action, and consequence; exposes uncalibrated geometry/numeric tolerances and absent operational evidence |
+| [LATTICE](../papers/agent-benchmarks/2026-07-19-lattice-decision-support-utility-validity.md) | A | Makes a large response-property panel and separate preference study inspectable while showing that affordance quality, epistemic adequacy, preference, exposure/uptake, decision quality, and consequence are non-inheriting claim rungs |
 | [Claw-Eval](../papers/agent-benchmarks/2026-07-15-claw-eval-multichannel-trajectory-validity.md) | A | Reframes final response, action trace, and environment state as criterion-specific evidence routes rather than interchangeable raters; its selected hybrid-only audit, manifest/grader drift, manual reruns, absent fault injector, and incomplete attempt ledger do not calibrate observer accuracy or operational reliability |
 | [CutVerse](../papers/agent-benchmarks/2026-07-15-cutverse-temporal-creative-artifact-validity.md) | A | Makes expert-demonstrated temporal work visible while showing that milestone screenshots do not establish native-project integrity, time-indexed rendered behavior, export validity, creative quality, or recipient acceptance; the post-v1 release lacks the paper tasks, evaluator, and results |
 | [AgenticVBench](../papers/agent-benchmarks/2026-07-16-agenticvbench-expert-temporal-artifact-validity.md) | A | Repairs CutVerse's task/grader inspectability gap with a full later four-family release and criterion-specific manifest, frame, audio, metadata, and model views; its 13 brief/rubric resolution conflicts, five reversed good-state penalties, absent human/calibration/results records, rights gaps, and unreconciled rollout denominator show that observer richness cannot rescue an incoherent criterion contract |
@@ -1539,6 +1540,41 @@ Existing authority, evidence-state, artifact, action-safety, trace, root/surface
 task-health, metric, and validity machinery already hosts the boundary; no disaster-
 specific schema or pilot follows.
 
+LATTICE adds a general **response-to-consequence claim ladder** for every memo,
+recommendation, plan, dashboard, or other recipient-facing artifact:
+
+```text
+response/artifact affordance quality
+  → epistemic adequacy (correctness, provenance, authority, freshness, calibration)
+    → sampled stakeholder perception or preference
+      → valid exposure, comprehension, and uptake
+        → changed belief or action under a declared decision problem
+          → decision quality under an explicit information and loss model
+            → benefit, burden, cost, loss, or harm
+```
+
+The highest observed rung must name the score. Structure, explicit uncertainty,
+actionability, or evidence-angle coverage can support a bounded response-affordance
+claim; they cannot inherit factual trustworthiness. Pairwise choice supports only
+relative preference for the sampled people, artifacts, and choice set. Neither can
+be promoted to use, improved decisions, economic value, safety, or readiness without
+new linked observations and warrants. Likewise, author-chosen dimension/category
+weights are a versioned aggregation policy, not stakeholder priorities or a loss
+function unless their authority, elicitation, population, and decision sensitivity
+are observed.
+
+The LATTICE release is unusually inspectable for its actual response-property claim:
+the pinned archive contains 1,200 unique queries, six complete 1,200-response sets,
+and 1,200 score records with six product judgments and zero recorded product errors;
+the published aggregate means recompute from those records [LAT]. But its separate
+80-query crowd panel is not released or joined item-wise, and the study observes no
+uptake, decision, outcome, benefit, burden, or harm. Its defensible ceiling is one
+configured text-rubric comparison plus non-linked crowd preference—not “decision
+support utility,” professional validity, production fitness, or readiness. Existing
+artifact/evidence-view, plural-judgment, metric, participation, configured-system,
+consequence, and validity records are the durable homes; no crypto-specific schema
+or task follows.
+
 ## 5. Graders and metrics are measured systems with their own failure modes
 
 **Central insight:** Grader outputs are evidence, not ground truth. Every criterion needs an observable predicate, applicable evidence view, provenance, visibility boundary, dependence structure, and uncertainty. Aggregate metrics need explicit eligible populations, missingness policy, clustering, and claim boundaries.
@@ -1573,6 +1609,7 @@ specific schema or pilot follows.
 | [Expert evaluation and limits of human feedback](../papers/agent-benchmarks/2026-07-11-expert-disagreement-human-feedback-validity.md) | A | Shows in one small clinical panel that shared rubrics can yield stable directional disagreement; motivates framework-indexed observations and policy-explicit aggregation without universalizing the domain result |
 | [Many-facet human/AI rater effects](../papers/agent-benchmarks/2026-07-11-many-facet-human-ai-rater-effects.md) | B | Separates agreement, panel-relative severity, model fit, repeat stability, and decision validity; shows why a linked calibration design does not make graders interchangeable |
 | [Rubric-modification interventions](../papers/agent-benchmarks/2026-07-11-rubric-modification-human-autorater-agreement.md) | B | Makes examples, context, criterion-call topology, score transformation, and aggregation part of instrument identity; agreement gains can coexist with shared cueing or construct change |
+| [LATTICE](../papers/agent-benchmarks/2026-07-19-lattice-decision-support-utility-validity.md) | A | Shows that an “absolute” score can still be contrast-conditioned when all candidate artifacts are co-visible in one call; makes batch grouping, order, and isolated-versus-joint sensitivity part of rater identity |
 | [AI Agent Reliability](../papers/agent-benchmarks/2026-07-11-agent-reliability-profile.md) | B | Separates accuracy from repeatability, perturbation sensitivity, confidence quality, and violation consequences while binding each estimate to a configured operational profile |
 | [Stochastic Agent Evaluations](../papers/agent-benchmarks/2026-07-14-stochastic-agent-evaluations-icc-validity.md) | B | Makes task-level repeats and released response matrices inspectable while showing that the published variance-of-task-means ratio is not ICC(1,1), omitted invalids change the estimand, and repeat budgets are decision- and population-specific |
 | [Performance-optimization benchmark reliability](../papers/agent-benchmarks/2026-07-15-performance-optimization-benchmark-reliability.md) | B | Separates executable artifacts from environment-sensitive criterion validity; four-profile/three-round replay and fixed-output rescoring expose reference-signal loss, near-zero margins, and score leverage, while the absent study release and bounded design do not establish machine-invariant transport, causal rank effects, portfolio capability, saturation, or professional validity |
@@ -1583,7 +1620,22 @@ specific schema or pilot follows.
 | [Reasoning/coding benchmark evolution](concepts/reasoning-coding-benchmark-evolution.md) | B | Compares MMLU→MMLU-Pro and HumanEval→LiveCodeBench from full papers and pinned current releases; separates common-interface adoption, demonstrated headroom/prompt stability, executable equivalence, and timestamped renewal from unsupported work-validity and contamination-free claims |
 | [BrowserGym](../papers/agent-benchmarks/2026-07-11-browsergym-ecosystem-measurement.md) | B | Separates useful runner/interface interoperability from unsupported evaluator, score, reset, or construct equivalence across adapted benchmark families |
 
-**Repository consequence:** Criterion/check contracts, metric-monitoring contracts, validity arguments, response matrices, and separate ranking versus absolute-capability claims. Grader identity includes rubric/examples, evidence view, criterion execution topology, score transformation, aggregation/tie policy, and configured rater. Agreement, panel-relative severity, fit, repeated-call stability, construct preservation, decision loss, cost, and audit burden remain separate outcomes; adjusted scores never overwrite raw observations or become adjudicated truth. Reliability is a conditional profile—not a system trait—indexed by configured system, task/form population, environment, time, intervention/exposure distribution, and consequence model. Accuracy, repeatability (including consistently wrong behavior), resource variation, perturbation effects, confidence quality, violation frequency, severity, remediation, and loss remain separate. Every perturbation needs independently supported preservation and exposure claims; wrapper recovery cannot count as agent recovery; confidence is licensed only for the decision time and evidence view at which it was elicited. Plural judgments remain immutable observations; aggregation is a versioned stakeholder/error-loss policy rather than discovered ground truth. Specification error, evidence gaps, rater instability, framework-conditioned disagreement, policy selection with dissent, and unresolved value conflict require distinct dispositions. Derivation criteria must also be proof-carrying: source identity and passage, extracted claim, typed operation, dependencies, conclusion, exact observer view, and licensed claim remain distinct. Mentioning an expected value cannot inherit provenance or causal-use credit; one upstream defect and its descendants must not be counted as independent failures. The completed synthetic plural-judgment conformance slice exercises this boundary but supplies no prevalence, professional-consensus, or readiness evidence. Before the second pilot is interpreted, its adversarial audit should plant a pre-satisfied requirement, an unrelated record sharing the expected scalar, a title-only empty artifact, and one upstream defect with several descendant checks; readiness or duplicated consequences must not inflate progress.
+**Repository consequence:** Criterion/check contracts, metric-monitoring contracts, validity arguments, response matrices, and separate ranking versus absolute-capability claims. Grader identity includes rubric/examples, evidence view, criterion execution topology, score transformation, aggregation/tie policy, and configured rater. Agreement, panel-relative severity, fit, repeated-call stability, construct preservation, decision loss, cost, and audit burden remain separate outcomes; adjusted scores never overwrite raw observations or become adjudicated truth. Reliability is a conditional profile—not a system trait—indexed by configured system, task/form population, environment, time, intervention/exposure distribution, and consequence model. Accuracy, repeatability (including consistently wrong behavior), resource variation, perturbation effects, confidence quality, violation frequency, severity, remediation, and loss remain separate. Every perturbation needs independently supported preservation and exposure claims; wrapper recovery cannot count as agent recovery; confidence is licensed only for the decision time and evidence view at which it was elicited. Plural judgments remain immutable observations; aggregation is a versioned stakeholder/error-loss policy rather than discovered ground truth. Specification error, evidence gaps, rater instability, framework-conditioned disagreement, policy selection with dissent, and unresolved value conflict require distinct dispositions. Derivation criteria must also be proof-carrying: source identity and passage, extracted claim, typed operation, dependencies, conclusion, exact observer view, and licensed claim remain distinct. Mentioning an expected value cannot inherit provenance or causal-use credit; one upstream defect and its descendants must not be counted as independent failures. The completed synthetic plural-judgment conformance slice exercises this boundary but supplies no prevalence, professional-consensus, or readiness evidence.
+
+Configured-rater identity must additionally freeze the **co-visibility topology**:
+candidate artifacts visible in the same context, batch/call grouping, candidate count,
+display order and randomization, labels/metadata exposed, shared-call failure policy,
+and whether the requested output is absolute, comparative, or jointly structured.
+“Score each independently” does not create evidence isolation. Before using a model
+judge for candidate comparison, run isolated-versus-joint, order-randomization, and
+leave-one-candidate-out canaries with repeated calls. Material score, profile, or rank
+movement is rater-instrument sensitivity and blocks an agent/product claim until the
+intended topology is justified and frozen [LAT].
+
+Before the second pilot is interpreted, its adversarial audit should plant a pre-
+satisfied requirement, an unrelated record sharing the expected scalar, a title-only
+empty artifact, and one upstream defect with several descendant checks; readiness or
+duplicated consequences must not inflate progress.
 
 Project Kaleidoscope adds a **dual-admission boundary** inside this stack: `context
 evidence → proposed persona/case → reviewed, versioned case admission` and, separately,

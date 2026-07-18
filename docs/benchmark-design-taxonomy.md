@@ -2164,9 +2164,11 @@ memory diagnosis nor longitudinal learning, professional competence, or readines
 | Workflow/process | ordered trace events and intermediate states | compliance with an observable professional invariant | latent expertise merely because a disclosed procedure was followed |
 | Checkpoint/state | verifiable partial state | meaningful progress and stage-specific capability | professional acceptability of the final artifact |
 | Artifact internals | formulas, citations, structure, file properties, maintainability | technical correctness and inspectable construction quality | stakeholder preference or release readiness |
-| Artifact presentation/judgment | clarity, usability, visual/professional conventions | judged quality on declared dimensions | objective correctness when no deterministic check supports it |
-| Human preference | blinded pairwise choice | relative preference in the sampled expert population | an absolute approval threshold |
+| Response/artifact affordance | clarity, structure, usability, explicit uncertainty, actionability, visual/professional conventions | judged response or artifact properties on declared applicable dimensions | epistemic adequacy, uptake, decision improvement, or consequence |
+| Epistemic adequacy | correctness, entailment, provenance, source authority/freshness, and calibrated uncertainty | trustworthiness under the observer's authoritative evidence view | preference, use, benefit, or safety beyond the observed predicates |
+| Human preference | blinded pairwise choice | relative preference in the sampled population, artifacts, and choice set | an absolute approval threshold, uptake, decision utility, or benefit |
 | Human readiness | independently calibrated accept/reject threshold | release/deployment acceptability under stated stakes | universal preference or fine-grained automated-score validity |
+| Human decision/consequence | valid exposure, comprehension, uptake, changed action, decision loss, and intended/collateral outcomes | the highest directly observed link under a declared information, counterfactual, stakeholder, and loss model | downstream utility, economic value, safety, or readiness from an upstream proxy |
 | Safety/compliance | authorization, prohibited action, policy consequence | compliance with declared constraints | task success as a reason to waive safety |
 | Efficiency | cost, latency, retries, human-review time | quality-resource tradeoff for a versioned system | capability independent of provider/harness configuration |
 | Diagnosis | failed check plus causal trace slice | plausible root and surface failure under an explicit attribution method | causal certainty from an unvalidated LLM diagnosis |
@@ -2210,7 +2212,48 @@ construct claim requiring a warrant and tests of alternatives. Validity
 arguments supplement rather than replace raw scores, expert dispositions, and
 trace evidence.
 
-### 3.1a Consequential lifecycle state is evidence-authorized, not actor-declared
+### 3.1a Response quality, preference, decision utility, and consequence are different rungs
+
+For recipient-facing knowledge work, preserve a non-inheriting chain [LAT]:
+
+```text
+response/artifact affordance quality
+  → epistemic adequacy
+    → sampled stakeholder perception or preference
+      → valid exposure, comprehension, and uptake
+        → changed belief or action under a declared decision problem
+          → decision quality under a frozen information and loss model
+            → benefit, burden, cost, loss, or harm
+```
+
+Name a metric after the highest rung it directly observes. A text-only rubric can
+legitimately score structure, explicit uncertainty, constraints, or actionable next
+steps, but cannot establish correctness or freshness when its observer lacks source
+and state evidence. A pairwise panel establishes relative preference only for its
+sampled people, candidates, presentation, and choice set. Exposure receipts,
+comprehension, uptake, changed action, decision quality, and consequences each need
+their own unit, clock, counterfactual, missingness policy, authority, uncertainty,
+and warrant. Do not promote either a high response score or a preferred artifact to
+trustworthiness, professional acceptance, decision improvement, benefit, safety,
+economic value, production fitness, or readiness.
+
+Weights and thresholds remain policy objects. Record whose priorities or losses they
+represent, how and when they were elicited, the eligible stakeholder population,
+applicability and `not_applicable` handling, veto/gate semantics, and decision/rank
+sensitivity. Balanced author-chosen task quotas or category weights do not become
+user priorities, outcome prevalence, or stakeholder loss merely because they are
+reproducible.
+
+LATTICE validates only the earliest parts of this ladder. Its pinned release contains
+1,200 unique authored queries, six complete 1,200-response corpora, and 1,200 shared-
+call score records with six product judgments and no recorded product errors; the
+published product means recompute [LAT]. This is strong paper–release correspondence
+for one configured response-property instrument. The separate crowd preference panel
+is not released or item-linked, and no exposure-to-action or consequence record exists.
+The evidence ceiling is therefore configured response-affordance scoring plus a
+non-linked preference observation—not decision utility or readiness.
+
+### 3.1b Consequential lifecycle state is evidence-authorized, not actor-declared
 
 An agent, reviewer, tool, or grader saying `reviewed`, `tested`, `safe`, or `done`
 creates a **typed actor claim**; it does not itself change task, artifact, grader,
@@ -2303,6 +2346,15 @@ and `invalid` or `insufficient_evidence` separately from a substantive negative.
 Artifact views, full trajectories, environment queries, agent reasoning, and
 private state are different observation treatments. Agreement between observers
 with unequal views does not isolate judgment ability [ARB].
+
+Evidence view also includes **co-visibility and call topology**: which other
+candidates were visible, batch size and grouping, display order/randomization,
+candidate labels and metadata, isolated versus joint calls, shared-call failure and
+retry policy, and absolute versus comparative or jointly structured output form.
+An instruction to score candidates independently does not make a joint prompt an
+isolated observation. Calibrate isolated-versus-joint, randomized-order, and
+leave-one-candidate-out canaries with repeated calls; material score or rank movement
+is rater-instrument sensitivity, not agent capability [LAT].
 
 Treat plural channels as **requirement routes**, not interchangeable votes. Bind
 each criterion to its authoritative evidence object and time: a final response may
@@ -4762,6 +4814,12 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     can establish a feasible route and one pairwise judgment can establish a
     preference observation; neither is an expert-population ceiling, an
     acceptance threshold, or an economic-value estimate.
+24a. **Response affordance is not decision utility:** preserve epistemic adequacy,
+    sampled preference, exposure/comprehension, uptake, changed action, decision
+    quality, and intended/collateral consequence as separate rungs. Author-chosen
+    weights are aggregation policy, and joint candidate visibility is a rater
+    treatment; neither can silently confer stakeholder loss, benefit, safety,
+    professional validity, production fitness, or readiness [LAT].
 25. **Final state does not prove the transition:** pin initial state and grade
     sparse consequential deltas with alternative paths and admissible views;
     inherited or pre-satisfied state, stage bypass, and environment ambiguity do
@@ -5194,6 +5252,16 @@ them:
 
 ## Provenance keys
 
+- **[LAT]**
+  `papers/agent-benchmarks/2026-07-19-lattice-decision-support-utility-validity.md`;
+  reviewed immutable arXiv v1 PDF/text/TeX and the complete timing-appropriate
+  official release at commit `d03cdcad44a38bf8c38006b83adc128756c1dffa` are
+  recorded there. Independent archive inspection confirms 1,200 unique queries,
+  six complete 1,200-response sets, 1,200 shared-call score rows, six product
+  judgments and zero recorded product errors per row, and the published aggregate
+  means. The separate crowd panel is unreleased and unlinked; no user exposure,
+  uptake, decision, benefit, burden, harm, professional-validity, production, or
+  readiness claim is supported.
 - **[POS]**
   `papers/agent-benchmarks/2026-07-18-proof-or-stop-evidence-gated-lifecycle-validity.md`;
   reviewed immutable arXiv v1 PDF/text/TeX and acquisition-time release provenance
