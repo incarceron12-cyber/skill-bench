@@ -169,7 +169,7 @@ procedure-package, instrument-layer, ablation, configured-system, task-health, r
 metric, trace, release, and validity machinery suffices; no Skill-specific subsystem or
 scope commitment follows.
 
-Three internal prospective slices now add direct instrument evidence to that external
+Five internal prospective slices now add direct instrument evidence to that external
 gap. The durable gate chain is `source/task identifiability → public contract
 completeness → model-facing representation/interface usability → independent
 structural/semantic adjudication → eligible execution → transfer/consequence`. V1
@@ -178,16 +178,35 @@ exactly two one-shot source-only generation attempts; both returned null package
 identity and exposed a launcher false acceptance. V3 passed a frozen reference/mutation
 preflight, then made exactly two one-shot source-only attempts; both independently used
 an object where `artifact_conventions[0].content` required a string and were correctly
-rejected. No executor attempt occurred in any version. The retained package hashes are
+rejected. The retained package hashes are
 V2 `0c98123d…56fa6`/`12aad628…9dbd` and V3 `8715df99…2183`/`f36fd4e9…de39`; exact
 reports, prompts, outputs, usage, adjudications, and full hashes remain under
 [`pilots/pretask-procedure-transfer-v1`](../pilots/pretask-procedure-transfer-v1),
 [`v2`](../pilots/pretask-procedure-transfer-v2), and
-[`v3`](../pilots/pretask-procedure-transfer-v3). A rejecting schema establishes
-fail-closed instrument behavior, not generator usability or transfer. Another retry is
-not implied: first prospectively validate a model-facing serialization/example
-strategy, or explicitly change the estimand to consumption of builder-authored
-source-only packages. Expert provenance, professional validity, transfer, capability,
+[`v3`](../pilots/pretask-procedure-transfer-v3). A rejecting schema established
+fail-closed instrument behavior, not generator usability or transfer.
+
+V4 prospectively froze a task-blind model-facing interface, two new synthetic source
+families, four untouched forms, source-faithful/irrelevant/single-defect controls, eight
+conditions, equal envelopes, and condition-blind private endpoints. It froze both
+generated candidates before use, passed zero-call execution canaries, and completed all
+32 assigned one-attempt rows without retry or repair; 31/32 artifacts parsed, but the
+frozen checker scored 0/32. The retained post-hoc audit does not rescore those rows and
+shows why the all-zero result is not a transfer null: one expected endpoint is factually
+contradictory and the checker imposes undisclosed exact identifier, wording, type, and
+representation obligations. V4 therefore supplies execution-lifecycle and instrument-
+failure evidence, not an interpretable package effect.
+
+V5 repairs only that endpoint layer while binding the v4 treatments, candidates,
+controls, source rules, and assignments by hash. Public inputs now disclose required
+identifiers and types; expected consequences are derived from the public/source basis;
+reasons admit paraphrases; and the builder-authored fair-basis, derivation, condition-
+blindness, parity, and planted-mutation preflight passes with zero attempts. Execution
+remains prohibited until a separate commit-bound review independently recomputes those
+properties and tests derivation/checker common-mode defects and valid alternatives. See
+[`v4`](../pilots/pretask-procedure-transfer-v4) and
+[`v5`](../pilots/pretask-procedure-transfer-v5). Preserve immutable v4 scores and do not
+edit frozen v5 bytes. Expert provenance, professional validity, transfer, capability,
 utility, production fitness, and readiness remain false.
 
 Executable science adds a distinct **execution-to-consequence chain**:

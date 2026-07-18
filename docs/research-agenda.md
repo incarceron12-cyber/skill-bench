@@ -52,22 +52,28 @@ withdrawal/reconsent, and claim-blocking behavior before asserting that this
 model is feasible for free or near-zero cost. See
 `papers/agent-benchmarks/2026-07-10-domain-expert-participation-ethnography.md`.
 
-## Active decision: how to cross the pre-task package-generation gate
+## Active gate: independently validate the repaired pre-task endpoint instrument
 
-The v1–v3 prospective procedure-transfer slices have not reached execution. V1
-made zero calls because source/task treatment was not identifiable; v2 made two
-one-shot source-only attempts and both lacked package identity despite launcher
-acceptance; v3 passed its frozen reference/mutation preflight, then made two
-one-shot source-only attempts and both failed independent validation on the same
-object-versus-string `artifact_conventions[0].content` mismatch. No version made
-an executor attempt, so there is no transfer, capability, utility, professional-
-validity, production-fitness, or readiness evidence.
+The v1–v3 prospective procedure-transfer slices located successive source/task,
+launcher, and model-facing interface failures. V4 then crossed the generation and
+execution gates under two new synthetic families: it froze source-only candidates
+and controls, materialized all 32 assigned rows, passed zero-call isolation and
+checker canaries, and completed exactly one no-feedback/no-retry attempt per row.
+The frozen checker scored 0/32 despite 31/32 parseable artifacts. That is **not**
+interpretable as a transfer null: the retained non-rescoring audit found one
+factually contradictory private endpoint plus undisclosed exact identifier,
+wording, type, and representation obligations. V4 scores remain immutable, but
+its transfer estimand is invalid.
 
-Do **not** infer a v4 or retry from the fact that the v3 schema rejected bad
-outputs. Before another generated-package study, prospectively test and freeze a
-model-facing serialization/example strategy that demonstrates independent
-package conformance without task hindsight. The competing path is to explicitly
-evaluate builder-authored source-only packages; that would estimate downstream
-package consumption, not corpus-to-procedure generation. Choosing between these
-estimands is the unresolved decision. Preserve all v1–v3 bytes and attempt
-denominators as immutable evidence whichever path is chosen.
+V5 repairs only that endpoint layer while preserving the v4 source families,
+treatments, assignments, candidates, and controls by hash. Its public tasks now
+disclose required identifiers and JSON types; expected consequences are derived
+from public inputs and frozen source rules; reasons are paraphrase-tolerant; and a
+fair-basis crosswalk and planted mutations pass the builder preflight. V5 remains
+at zero attempts and does not authorize execution. The current gate is an
+independent, commit-bound audit of hashes, derivation/checker common-mode risk,
+fair public basis, condition blindness, assignment parity, valid alternatives,
+and adversarial mutations. Only a passing review may authorize the frozen 32-row
+one-attempt execution task. Preserve v1–v5 bytes and denominators; do not rescore
+v4 or edit frozen v5 instrument bytes. Expert provenance, transfer, capability,
+utility, professional validity, production fitness, and readiness remain false.

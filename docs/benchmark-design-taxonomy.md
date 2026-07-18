@@ -358,7 +358,8 @@ candidate is positive fail-closed adjudication evidence, not a successful proced
 executor failure, or transfer observation. Preserve intended, attempted, valid,
 adjudicated, assigned, executed, and scored denominators separately.
 
-Three immutable internal prospective slices locate successive blockers. V1 made zero
+Five immutable internal prospective slices locate successive blockers and instrument
+failures. V1 made zero
 model/provider calls and stopped because its two families had no independent
 family-level source authority and all four public forms disclosed the complete
 procedure; its feasibility report has SHA-256
@@ -377,17 +378,32 @@ object at `artifact_conventions[0].content`, where the frozen contract requires 
 string, and failed adjudication; their hashes are
 `8715df9971f1cfec6d5dfddae597d3466a8c624aecd2f54b1d965130fdbc2183` and
 `f36fd4e9e44799bd22a7b06a316a7e5ebac355ac1840e48570098dac7b6cde39`.
-No executor attempt occurred in any version.
+The repeated v3 primitive mismatch is evidence about that configured generator-facing
+interface, not evidence that loosening the schema was correct.
 
-The repeated v3 primitive mismatch is evidence about this configured generator-facing
-interface, not evidence that loosening the schema is correct or that another retry will
-succeed. Any future generated-package study first needs a *prospectively tested*
-model-facing serialization/example strategy that can produce independently valid
-packages without task hindsight. The alternative is an explicit change of estimand to
-builder-authored source-only packages, which can test package consumption but not
-corpus-to-procedure generation. Until one route is chosen and frozen, another version
-or retry is not licensed. Expert provenance, professional validity, transfer, agent
-capability, utility, production fitness, and readiness remain false.
+V4 crossed the model-facing package and executor interfaces only after a task-blind
+conformance slice. It prospectively froze two new synthetic source families, four
+untouched forms, both generated candidates, source-faithful/irrelevant/single-defect
+controls, eight conditions, equal envelopes, a 32-row schedule, and condition-blind
+private checkers. Zero-call canaries passed and all 32 rows received exactly one
+no-feedback/no-retry executor attempt; 31 artifacts parsed. The exact checker returned
+0/32, but `posthoc-endpoint-audit.json` found a contradictory expected endpoint and
+undisclosed exact identifier, wording, type, and representation obligations. That audit
+is diagnostic only: it cannot rescore v4, and the frozen all-zero result cannot identify
+a transfer effect. Instrument execution is evidence about lifecycle conformance only
+when the endpoint itself remains fair and valid.
+
+V5 therefore changes only the endpoint instrument and preserves the v4 source rules,
+treatments, candidates, controls, and assignments by hash. Required identifiers and
+JSON types are public; expected consequences are independently derived from public
+inputs plus frozen source rules; non-empty reason paraphrases are accepted; and every
+checked field has a fair-basis crosswalk. Its builder preflight passes exact-byte,
+derivation, public-basis, condition-blindness, checker, assignment-parity, all-false-
+claim, zero-attempt, and planted-mutation gates. That is not independent validation:
+before any v5 execution, a separate reviewer must recompute hashes and expectations,
+test valid alternatives and adversarial defects, and rule out derivation/checker common-
+mode error without editing the frozen bytes. Expert provenance, professional validity,
+transfer, agent capability, utility, production fitness, and readiness remain false.
 
 ### 2.1f Model panels are configured proxy estimators, not synthetic experts
 
