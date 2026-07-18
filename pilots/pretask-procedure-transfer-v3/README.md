@@ -35,3 +35,17 @@ python -m unittest tests.test_pretask_procedure_transfer_v3 -v
 ```
 
 Passing this preflight licenses only the statement that the committed synthetic bytes satisfy the prospective freeze contract. Expert provenance, professional validity, transfer, agent capability, utility, production fitness, and readiness all remain false.
+
+## Source-only generation outcome (separate phase)
+
+After commit `ba1c397` was present on `origin/main`, the later generation phase verified the pushed protocol, manifest, and every frozen component hash, then made exactly one `gpt-5.6-sol` / `openai-codex` source-only attempt per family. The isolated launcher exposed only that family's `corpus.json`; it retained prompts, candidate bytes, usage, stdout/stderr, and adjudication records under `generation/`.
+
+Both provider calls completed, but both candidate packages failed the independently committed output validator. In each package, `artifact_conventions[0].content` was emitted as an object although the frozen schema requires a string. The near-identical failure across unlike families is useful contract-interface evidence, but it is not repaired or retried: candidate hashes are frozen in `generation-audit.json`, the generation gate is failed, and controls, checkers, treatment assignment, and execution remain unauthorized.
+
+```bash
+python pilots/pretask-procedure-transfer-v3/audit_generation.py \
+  --report pilots/pretask-procedure-transfer-v3/generation-audit.json
+python -m unittest tests.test_pretask_procedure_transfer_v3_generation -v
+```
+
+The audit passing means only that the two intended attempts were retained and adjudicated fail-closed with zero repairs and zero executor calls. All seven claims remain false.

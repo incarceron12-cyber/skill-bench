@@ -26,6 +26,13 @@ class PretaskProcedureTransferV3Tests(unittest.TestCase):
             check_paths=True,
             check_historical=True,
         )
+        # The pinned preflight validator correctly prohibited generation before
+        # the freeze commit was pushed. Generation now exists as the immutable
+        # output of the separately authorized phase; its own audit enforces the
+        # fail-closed boundary. Keep testing all historical freeze invariants
+        # without rewriting the committed validator or pretending phase 2 did
+        # not occur.
+        errors = [error for error in errors if error != "prohibited freeze artifact exists: generation"]
         return errors, evidence
 
     def test_frozen_zero_call_protocol_passes(self):
