@@ -1,0 +1,552 @@
+                                             Iterate Until Retrieved: Factual Nugget Optimization for Discoverable
+                                                             Continual Corrections in Agentic RAG
+
+                                                           Moshe Hazoom1 Gal Patel1 Alon Talmor1 Tom Hope1,2
+                                                               1
+                                                                 Mosaic AI 2 The Hebrew University of Jerusalem
+                                                                    {moshe, gal, alon, tom.h}@getmosaic.ai
+
+
+
+                                                               Abstract
+
+
+
+
+arXiv:2605.25641v1 [cs.CL] 25 May 2026
+                                             Agentic retrieval-augmented generation (RAG)
+                                             systems in complex B2B (business-to-business)
+                                             settings may often receive free-form response
+                                             feedback. Rather than generic feedback sig-
+                                             nals such as style, preference, or overall re-
+                                             sponse quality, we focus on actionable factual
+                                             corrections. We identify these instances and
+                                             convert them into compact knowledge-base en-
+                                             tries, which we call factual nuggets. We in-
+                                             troduce Iterative Nugget Optimization (INO),
+                                             an index-time optimization method that uses
+                                             the production agentic RAG as a test harness:
+                                             it creates an initial nugget, probes it with the
+                                             triggering query and paraphrases, reflects over
+                                             failed retrieval and answer traces, and revises
+                                             the nugget until it is discoverable. We evalu-         Figure 1: Overview of our method and setting. Factual
+                                             ate INO with two production B2B knowledge-             corrections from users are detected and transformed into
+                                             assistance agents across multiple companies            initial “nuggets.” We iteratively refine these nuggets
+                                             that use our system: a product support agent           using the agentic RAG system as a test harness, until
+                                             that answers questions over company-specific           they are discoverable and optimized for future queries.
+                                             knowledge bases, and a support ticket agent
+                                             that assists support engineers. INO consis-
+                                             tently improves results over baselines in terms        tance helps teams triage technical issues, resolve
+                                             of discoverability and usage of factual correc-        integration or configuration problems, and draft
+                                             tions, in automated and human evaluations.             concrete next steps for complex cases.
+                                                                                                       Once such systems are deployed, users often
+                                         1    Introduction                                          supply a continual stream of post-answer feedback:
+                                         B2B (business-to-business) enterprise knowledge-           thumbs-down events, comments on missing infor-
+                                         assistance AI agents increasingly answer com-              mation, and free-form corrections. This feedback
+                                         plex questions with retrieval-augmented gener-             is not homogeneous. Many negative signals may be
+                                         ation (RAG), in which the agent’s response is              vague (“not helpful”), subjective (tone or style), or
+                                         grounded by retrieved company knowledge or                 local to a single conversation. A smaller but opera-
+                                         domain-specific evidence (Yip et al., 2026; Chang          tionally important subset states a reusable factual
+                                         et al., 2026). For example, these agents sup-              correction: e.g., a product behavior, role restriction,
+                                         port product specialists, customer-success teams,          naming clarification, or policy detail that should be
+                                         and support engineers by grounding answers in              available to future users.
+                                         customer-specific documentation, prior tickets,               This paper focuses on that subset. We first de-
+                                         product behavior notes, and internal operational           tect feedback that contains an actionable factual
+                                         knowledge, including product documentation, sup-           correction. Given this feedback, the goal is to pro-
+                                         port knowledge bases, issue-tracking histories, and        duce a short, self-contained knowledge-base entry:
+                                         connected enterprise repositories (Packowski et al.,       a factual nugget, that future relevant queries can
+                                         2024; Xu et al., 2024; Baqar, 2025). This assis-           discover and use. The problem is not simply to
+
+                                                                                                1
+summarize the feedback. The nugget must encode                   all experiments, INO leads to large gains in
+the corrected fact conservatively (to avoid inserting            nugget discoverability and usage in generated
+wrong knowledge), include enough context to be                   answers. INO has been launched in produc-
+reusable and standalone, and match future phras-                 tion, generating hundreds of retrieved nuggets
+ings that may share little lexical overlap with the              across our customers weekly.
+original query. It should also avoid becoming so
+broad that it is retrieved for unrelated traffic. A
+                                                            2   Related Work
+straightforward approach that simply inherits the
+wording and context of the original interaction is
+                                                            Document expansion for retrieval. Document
+often too narrow. Future users ask from differ-
+                                                            expansion augments retrievable units with syn-
+ent roles, mention different product issues, or use
+                                                            thetic queries or related text (Nogueira et al., 2019;
+company-specific vocabulary.
+                                                            Nogueira and Lin, 2019). Weller et al. (2024) show
+   We introduce Iterative Nugget Optimization
+                                                            that expansion can fail or even hurt depending on
+(INO), illustrated in Figure 1. INO treats nugget
+                                                            method, retriever, and dataset. Our setting differs
+construction as a measurable index-time optimiza-
+                                                            because the unit being inserted is a short feedback-
+tion problem. Starting from a factual correction, it
+                                                            derived nugget, generated online for a specific cus-
+creates a candidate nugget and a small set of likely
+                                                            tomer corpus, and optimized on a per-nugget basis
+user queries. It then inserts the candidate into the
+                                                            by iteratively executing queries on the downstream
+relevant corpus and runs the same agentic RAG
+                                                            agentic RAG and reflecting on the results.
+system that will serve future users. If the nugget
+is not retrieved or used for the triggering query
+and probe paraphrased queries, an LLM reflector             LLM-augmented agent memory. Agent mem-
+inspects the failed queries, the retrieved compet-          ory methods rewrite past interactions into self-
+ing documents, and the generated answers, then              contained memories, often adding metadata such
+revises the nugget representation. Unlike recent            as keywords, tags, and contextual descriptions (Xu
+iterative prompt and context optimization meth-             et al., 2025). Our setting differs in both source
+ods (Agrawal et al., 2026; Zhang et al., 2026),             and target: we start from free-form feedback that
+INO does not optimize the system prompt/context.            must be filtered for actionable factual corrections,
+Prompt optimizers amortize changes across many              and we store company-owned factual nuggets in
+future tasks by changing instructions or context;           an enterprise KB rather than private episodic mem-
+INO amortizes work across future queries about              ories. INO also adds optimization downstream
+one factual correction by changing the retrievable          where each nugget is tested and revised against the
+artifact. This keeps the production agent configu-          unchanged production agentic RAG stack until it is
+ration fixed and makes the optimization local, au-          discoverable and usable for relevant future queries.
+ditable, and reversible at the nugget level.
+   In summary, our main contributions:                      Feedback-driven RAG updates. PatchRAG
+                                                            (Bang et al., 2026) studies synthetic feedback on
+  1. We formulate the task of converting feed-              academic benchmarks, assuming feedback is a full
+     back on the responses of B2B AI knowledge-             corrected answer stored in a parallel feedback mem-
+     assistance agents into discoverable factual            ory. It does not evaluate real company data with
+     nuggets, separating actionable factual correc-         user feedback, focus on factual corrections, or opti-
+     tion feedback from generic feedback.                   mize feedback representation. STACKFEED (Kir-
+  2. We propose INO (Iterative Nugget Optimiza-             tania et al., 2025) edits existing KB documents
+     tion), an agentic-RAG-in-the-loop method               using oracle or expert feedback on downstream
+     that reflects over retrieval and answer traces         failures, such as compiler errors or test failures,
+     to iteratively refine the indexable nugget.            in software-engineering and factual-QA bench-
+                                                            marks. In contrast, we use free-form end-user feed-
+  3. We evaluate nugget-construction strategies on          back from deployed B2B knowledge-assistance
+     real production data from two agents across            agents, create new atomic factual nuggets rather
+     multiple companies served by our system: one           than editing customer source knowledge, and opti-
+     where inputs are free-form questions, and the          mize those nuggets for discoverability and use by
+     other where inputs are support tickets. Across         an unchanged production agentic RAG stack.
+
+                                                        2
+Figure 2: Overview of INO. User feedback is first filtered for actionable factual corrections. A correction is
+converted into a structured factual nugget. The nugget is then optimized with the production agentic RAG stack in
+the loop: generated test queries are replayed, retrieved competitors and generated answers are inspected, and the
+nugget is revised until it becomes discoverable and usable for relevant future queries.
+
+
+3     Task and Production Setting                           3.2   Factual nuggets
+                                                            A factual nugget is a short, standalone KB docu-
+3.1    Factual correction feedback
+                                                            ment that encodes one corrected fact plus the mini-
+The deployment studied here contains two produc-            mal context needed for reuse. It typically contains
+tion RAG agents used by B2B SaaS customers.                 a title, a one-to-three sentence body, and optional
+One agent answers free-form support questions               retrieval anchors. For example, a correction about
+over each customer’s KB. The second agent reads             SSO reset behavior should not merely state that a
+support tickets and suggests responses. See Figure          previous answer was wrong; it should encode the
+2 (1). Each customer has an independent corpus              reusable fact, such as which portal version and user
+and agent configuration. Customer corpora have              role the reset procedure applies to (Figure 2 (3)).
+a median of approximately 450k documents and                   Importantly, we create new nuggets rather than
+range up to several million, so each newly inserted         editing customer documents. First, customer KB
+nugget must compete for retrieval against a large           documents are the customer-owned source of truth,
+pool of nearby, customer-owned content.                     often covering broad workflows; a feedback event
+   The feedback stream is noisy and covers many             usually concerns one narrow detail inside a broader
+potential types of feedback aside from reusable             topic. Second, local in-place edits are hard to vali-
+factual corrections. We therefore define an action-         date globally: changing one sentence can alter the
+able factual correction as feedback that provides           coherence of a multi-step procedure. A compact
+enough concrete information to write a reusable             auxiliary nugget keeps the correction atomic while
+factual statement. An LLM-based actionability ex-           leaving source documents unchanged.
+traction step filters the stream and outputs a nugget
+only when this criterion is met (Figure 2 (2)). On a        3.3   Agentic retrieval stack
+5,000-event production slice, the actionable rate is        All experiments use the production stack without
+42.3% for the chat agent and 21.5% for the ticket-          modification. The retrieval agent includes a query
+transcript agent. On a separate human-labeled cali-         generator and iterative retrieval based on interme-
+bration set, the classifier reaches 96.7% agreement         diate results. Retrieval is hybrid, combining dense
+with human labels; details are in Appendix D.               embeddings fine-tuned on proprietary in-domain
+
+                                                        3
+data with sparse representations (e.g., BM25), fol-         held-out paraphrases generated fresh for this evalu-
+lowed by a fine-tuned cross-encoder re-ranker. Re-          ation. These probe queries are deliberately disjoint
+ranked scores are calibrated by a small MLP into            from the usage examples bundled into the nugget
+[0, 1], and documents above a confidence threshold          (Variant D): the usage examples live inside the in-
+are passed to the generator. We use top-k = 60 be-          dexed document and act as retrieval anchors, while
+fore re-ranking. Across variants, the only changed          the probe queries stay outside and test whether
+artifact is the content of the newly inserted nugget.       retrieval generalizes to unseen but semantically re-
+                                                            lated phrasings, i.e., the condition the nugget will
+3.4    Evaluation                                           face in deployment. For each probe query, we
+We evaluate nugget construction at three levels.            record whether the nugget was retrieved and cited.
+                                                            When a check fails, an LLM reflector receives the
+• Retrieval: The nugget passes the re-ranker and            failed query, retrieved competitors, generated an-
+  is available to the generator.                            swer, and current nugget. It revises the indexable
+• Citation: The nugget is cited in the final an-            nugget representation: title, body wording, and
+  swer’s sources, indicating that it was used.              retrieval anchors, while preserving the factual cor-
+• Answer feedback compliance: an LLM judge                  rection. The revised candidate is re-indexed and
+  checks whether the answer addresses the correc-           retested, for at most T = 3 iterations.
+  tion in the original feedback. The judge is cali-
+  brated against human annotators (Section 6.3).            Algorithm 1 Iterative Nugget Optimization
+                                                            Input: nugget n, original query q0 , max iterations
+4     Methods                                                   T
+                                                            Output: indexable form n∗
+Let n be the initial factual nugget extracted from           1: n∗ ← I NITIAL E XPANSION(n, q0 )
+feedback on query q0 . Nugget construction pro-              2: for t = 1, . . . , T do
+duces an artifact n⋆ containing the nugget text and,         3:     I NDEX(n∗ )
+for some variants, additional retrieval anchors. We          4:     P ← PARAPHRASE(q0 )
+compare five strategies, including our method INO            5:     R ← {RAG(q) : q ∈ {q0 } ∪ P }
+(Figure 2 (4)). See examples in Appendix F.                  6:     if n∗ ∈ r for any r ∈ R then
+   A. Standard nugget. The baseline indexes the              7:         return n∗                 ▷ converged
+nugget as-is: n⋆ = n. This captures the common               8:     end if
+memory-generation pattern of turning a feedback              9:     n∗ ← R EWRITE(n∗ , R, q0 , P )
+event into a short standalone fact without retrieval        10: end for
+enhancement (Chhikara et al., 2025). Note that our          11: return n∗
+agentic RAG system includes query-time expan-
+sion as default, so this baseline naturally includes
+                                                               The reflector is instructed not to add new factual
+queries that are expanded by an LLM.
+                                                            claims beyond the correction and provided context.
+   B. Trigger-query anchor. Appends a para-
+                                                            Its role is to make the correction more discover-
+phrase of the original user query q0 to the nugget,
+                                                            able: e.g., add missing terminology, disambiguate
+produced by an LLM.
+                                                            roles or products, and distinguish the nugget from
+   C. Synthetic query anchors. An LLM gener-
+                                                            documents that incorrectly outranked it.
+ates five short future-user queries that the nugget
+should answer, which are appended to the nugget;            5     Experimental Setup
+a small sample was manually inspected to verify
+alignment with q0 .                                         5.1    Chat-agent correction set
+   D. Trigger plus synthetic anchors. Adding a              The main evaluation uses 100 factual nuggets sam-
+paraphrase of q0 and four other queries (combina-           pled from real negative-feedback events that passed
+tion of B + C).                                             the actionability filter. We sample roughly uni-
+   E. Iterative Nugget Optimization (INO).                  formly across seven customers. The nuggets span
+Starts from Variant D but closes the loop with the          products, user roles, and topics within each cus-
+full agentic RAG system. It indexes the candi-              tomer’s corpus. For each construction strategy, we
+date in a customer corpus and evaluates it against          generate n⋆ for all 100 nuggets, index them into
+a probe set of 4–6 queries: q0 together with 3–5            a frozen copy of the corresponding customer cor-
+
+                                                        4
+pus, replay queries through the same agent version             Because 300 held-out queries are synthetic, we
+(prompt, hyper-parameters, tools and configura-             also report the real-query and synthetic-query sub-
+tion), and then delete the inserted nuggets before          sets separately (Table 1). The same ordering holds
+the next variant. Each variant is run three times be-       on the 110 real production queries alone. Real
+cause LLM-generated anchors vary between runs.              queries are uniformly harder: performance is up
+   We note that for INO, 56% of nuggets pass after          to 25 points lower than on LLM-generated para-
+the first iteration, 32% after the second, and 12%          phrases depending on the metric and variant. This
+require the third; no evaluated nugget exhausts the         makes the historical subset the more conservative
+budget without passing the retrieval check.                 estimate of field performance. Taken together, INO
+                                                            is not merely memorizing the original query, but
+5.2    Held-out queries                                     generalizing across queries.
+We evaluate generalization on 410 held-out queries
+                                                            6.1   Transfer to support tickets
+constructed by two complementary pipelines. The
+first mines real production queries: for each cus-          Table 3 shows results on the support ticket agent.
+tomer, we build a per-customer FAISS index over             This setting is harder because the input is a multi-
+five months of production traffic, retrieve nearest         turn transcript rather than a clean question. The
+neighbors for each triggering query, and keep high-         baseline retrieves the relevant nugget only 35.1% of
+scoring candidates after cross-encoder re-ranking.          the time. The same ranking nevertheless holds, and
+This yields 110 real historical paraphrases. The            INO improves retrieval by 43.1 points and citation
+second pipeline generates three paraphrases per             by 40.7 points over the baseline.
+triggering query with a different LLM from the                  The larger gains on tickets are consistent with
+one used for nugget construction, grounded in do-           the harder input distribution: transcripts contain
+main vocabulary retrieved from the customer cor-            filler, multiple issues, and vocabulary that differs
+pus. This yields 300 synthetic paraphrases. See             from the original correction event. In this regime,
+Appendix B for implementation details.                      per-nugget optimization has more room to help.
+
+5.3    Support-Ticket agent transfer                        6.2   Negative-control traffic
+
+We extend our evaluation to a production agent that         Of 1,400 random queries, 20 (1.4%) retrieved a
+consumes full support ticket transcripts rather than        newly inserted nugget and 12 (0.8%) cited one.
+user questions, retrieves relevant documents, and           Manual inspection found no false positives. Each
+produces a summary plus suggested next steps. We            of the 20 retrievals was a semantically equivalent
+collect 160 ticket-level samples from real negative-        paraphrase of the original correction topic that hap-
+feedback events that passed the actionability filter        pened to appear in the random sample. The implica-
+and apply the same methods.                                 tion is that the 1.4% is not noise but generalization.
+
+                                                            6.3   Answer-level evaluation
+5.4    Negative control
+                                                            Retrieval and citation do not guarantee that the gen-
+We index optimized nuggets and test 200 randomly
+                                                            erated answer addresses the original correction. We
+sampled real queries per customer (1,400 total). We
+                                                            therefore run an LLM-as-judge evaluation (Zheng
+count how often nuggets are retrieved, and manu-
+                                                            et al., 2023) on held-out chat-agent answers for
+ally inspect each retrieval.
+                                                            the baseline and INO. The judge sees the original
+6     Results                                               question, original answer, user feedback, extracted
+                                                            nugget, retrieved context, and the answer. It la-
+Table 1 reports performance on held-out queries,            bels four axes: correction compliance (does the
+while Table 2 shows results on the original queries         answer materially reflect the correction), faithful-
+(in-sample). Every variant improves over the stan-          ness to the nugget (does the answer adhere to the
+dard nugget. The ordering is monotonic: trigger             facts in the nugget), non-regression (is the new an-
+anchors help, synthetic anchors help more, com-             swer at least as good as the original without the
+bining them helps further, and INO performs best.           nugget), and groundedness (does the answer make
+The ranking is preserved on both retrieval and cita-        use of retrieved documents). See full metric defi-
+tion. INO improves retrieval and citation by 25-29          nitions in Appendix C. The rubric is anchored to
+points over the standard nugget baseline.                   the user’s correction because no gold answer exists
+
+                                                        5
+                                                Historical queries (n=110)    LLM paraphrases (n=300)
+             Variant   Strategy                  Retrieval       Citation     Retrieval     Citation
+             A         Standard nugget          52.3 ± 0.5       41.3 ± 1.6   64.1 ± 1.2    57.3 ± 1.1
+             B         Trigger-query anchor     67.0 ± 2.0       50.7 ± 1.5   76.1 ± 0.6    68.5 ± 2.3
+             C         Synthetic anchors        67.8 ± 1.3       52.0 ± 1.4   86.4 ± 0.7    77.0 ± 0.9
+             D         Trigger + synthetic      72.9 ± 2.2       58.9 ± 2.2   89.4 ± 0.3    81.5 ± 0.9
+             E         INO                      77.3 ± 1.0       68.1 ± 1.8   93.7 ± 0.8    86.1 ± 1.1
+
+      Table 1: Held-out results split by query source. INO leads to large gains in both retrieval and citation.
+
+
+
+
+Figure 3: Answer-level judge results on held-out queries for the standard nugget baseline and INO. INO increases
+the share of answers that address the requested correction (73.4% vs. 52.2%; McNemar p ≈ 0.003), and improves
+nugget availability without increasing major regressions or hallucinations. If the nugget is absent, the label is N/A.
+
+
+   Variant                    Retrieval       Citation           fully. On correction compliance, INO addresses
+   A. Standard nugget        67.6 ± 1.2   60.2 ± 1.0             the correction in 73.4% of held-out cases versus
+   B. Trigger-query anchor   79.1 ± 1.9   71.8 ± 2.3             52.2% for the baseline, with the share of queries
+   C. Synthetic anchors      88.0 ± 1.2   79.5 ± 1.1
+   D. Trigger + synthetic    90.8 ± 1.1   81.9 ± 0.6
+                                                                 where the nugget was not retrieved ("misses") drop-
+   E. INO                    97.0 ± 1.0   89.1 ± 1.6             ping from 40% to 13%. Conditional on the nugget
+                                                                 being delivered, INO uses it faithfully in 81% of
+Table 2: In-sample evaluation on 100 triggering queries.         cases versus 54.1% for the baseline. Downstream,
+Mean ± standard deviation over three runs.                       major regression errors decrease from 15.6% to
+                                                                 11.6%, and hallucinated groundedness labels de-
+   Variant                    Retrieval       Citation           crease from 19.1% to 14.8%.
+   A. Standard nugget        35.1 ± 0.9   29.7 ± 1.5
+   B. Trigger-query anchor   42.0 ± 1.9   37.8 ± 0.9             7   Conclusion
+   C. Synthetic anchors      48.8 ± 2.0   44.2 ± 1.3
+   D. Trigger + synthetic    63.3 ± 2.0   58.5 ± 2.5             We studied how to convert actionable factual cor-
+   E. INO                    78.2 ± 1.8   70.4 ± 0.8
+                                                                 rection feedback into factual nuggets that are dis-
+                                                                 coverable and useful in production RAG systems.
+Table 3: Support ticket agent evaluation on 160 samples.
+Mean ± standard deviation over three runs.                       Our proposed Iterative Nugget Optimization (INO)
+                                                                 loop uses the agentic RAG stack itself to test and
+                                                                 refine each nugget before it is added to the retriev-
+for these production cases. We calibrate the judge               able corpus, while keeping the production agent
+against human annotators. A random sample of                     configuration fixed. Across seven B2B customer
+100 judge decisions was independently labeled by                 deployments of two different agents, INO substan-
+three in-house annotators. Fleiss’ κ among anno-                 tially improves discoverability and usage of factual
+tators exceeds 0.75 on every axis. Using majority                corrections compared to baselines. The optimiza-
+vote as the adjudicated label, Cohen’s κ between                 tion is offline, with a per-correction cost of about
+the judge and the adjudicated label exceeds 0.80                 $0.31 and under two minutes per nugget in our
+on every axis after a small prompt-calibration pass.             setup, and adds no query latency after indexing,
+   Figure 3 summarizes results. Two effects drive                making it practical to run continuously. Our ap-
+the gains: INO retrieves the nugget more often,                  proach is currently running in production, serving
+and when it does, the generator uses it more faith-              hundreds of nuggets every week.
+
+                                                             6
+Limitations                                                    Prateek Chhikara, Dev Khant, Saket Aryan, Taranjeet
+                                                                 Singh, and Deshraj Yadav. 2025. Mem0: Building
+One retrieval architecture. All main experi-                     production-ready ai agents with scalable long-term
+ments use our hybrid agentic RAG. Pure dense,                    memory. Preprint, arXiv:2504.19413.
+pure sparse, or late-interaction retrievers may re-
+                                                               Shashank Kirtania, Naman Gupta, Priyanshu Gupta,
+spond differently to retrieval anchors and iterative             Sumit Gulwani, Arun Iyer, Suresh Parthasarathy Iyen-
+nugget refinement.                                               gar, Arjun Radhakrishna, Sriram K. Rajamani, and
+                                                                 Gustavo Soares. 2025. STACKFEED: Structured tex-
+English-only evaluation. All evaluated corpora                   tual actor-critic knowledge base editing with FEED-
+and queries are in English. The method itself is                 back. In Proceedings of the 2025 Conference on
+language-agnostic given multilingual retrieval and               Empirical Methods in Natural Language Processing:
+                                                                 Industry Track, pages 2588–2606, Suzhou (China).
+generation components, but the empirical claims                  Association for Computational Linguistics.
+here are English-only.
+                                                               Chaofan Li, Zheng Liu, Shitao Xiao, and Yingxia Shao.
+LLM dependence. Nugget extraction, anchor                        2023. Making large language models a better founda-
+generation, reflection, and answer judging all use               tion for dense retrieval. Preprint, arXiv:2312.15503.
+frontier LLMs. Different models may produce dif-
+                                                               Rodrigo Nogueira and Jimmy Lin. 2019.            From
+ferent anchors or judge labels. We did not run a full            doc2query to doctttttquery.
+model ablation; we report the results of our actual
+deployed system.                                               Rodrigo Nogueira, Wei Yang, Jimmy Lin, and
+                                                                 Kyunghyun Cho. 2019. Document expansion by
+                                                                 query prediction. arXiv preprint arXiv:1904.08375.
+References                                                     Sarah Packowski, Inge Halilovic, Jenifer Schlotfeldt,
+Lakshya A Agrawal, Shangyin Tan, Dilara Soylu,                   and Trish Smith. 2024. Optimizing and evaluating en-
+  Noah Ziems, Rishi Khare, Krista Opsahl-Ong, Arnav              terprise retrieval-augmented generation (rag): A con-
+  Singhvi, Herumb Shandilya, Michael J Ryan, Meng                tent design perspective. Preprint, arXiv:2410.12812.
+  Jiang, Christopher Potts, Koushik Sen, Alexandros G.
+  Dimakis, Ion Stoica, Dan Klein, Matei Zaharia, and           Orion Weller, Kyle Lo, David Wadden, Dawn Lawrie,
+  Omar Khattab. 2026. Gepa: Reflective prompt evo-               Benjamin Van Durme, Arman Cohan, and Luca Sol-
+  lution can outperform reinforcement learning. In               daini. 2024. When do generative query and docu-
+  ICLR.                                                          ment expansions fail? a comprehensive study across
+                                                                 methods, retrievers, and datasets. In Findings of the
+Mohammad Kalim Akram, Saba Sturua, Nastia                        Association for Computational Linguistics: EACL
+ Havriushenko, Quentin Herreros, Michael Günther,                2024, pages 1987–2003, St. Julian’s, Malta. Associa-
+ Maximilian Werk, and Han Xiao. 2026. jina-                      tion for Computational Linguistics.
+ embeddings-v5-text: Task-targeted embedding distil-
+ lation. Preprint, arXiv:2602.15547.                           Wujiang Xu, Zujie Liang, Kai Mei, Hang Gao, Juntao
+                                                                Tan, and Yongfeng Zhang. 2025. A-mem: Agentic
+Jihwan Bang, Seunghan Yang, Kyuhong Shim, Simyung               memory for llm agents. Preprint, arXiv:2502.12110.
+   Chang, Juntae Lee, and Sungha Choi. 2026. Feed-
+   back adaptation for retrieval-augmented generation.         Zhentao Xu, Mark Jerome Cruz, Matthew Guevara,
+   Preprint, arXiv:2604.06647.                                   Tie Wang, Manasi Deshpande, Xiaofeng Wang, and
+                                                                 Zheng Li. 2024. Retrieval-augmented generation
+Mohammad Baqar. 2025. Rag4tickets: Ai-powered                    with knowledge graphs for customer service question
+ ticket resolution via retrieval-augmented genera-               answering. In Proceedings of the 47th International
+ tion on jira and github data.      arXiv preprint               ACM SIGIR Conference on Research and Develop-
+ arXiv:2510.08667.                                               ment in Information Retrieval, SIGIR 2024, page
+                                                                 2905–2909. ACM.
+Jonathan D Chang, Andrew Drozdov, Shubham Tosh-
+  niwal, Owen Oertell, Alexander Trott, Jacob Portes,          Jason Yip, Nikhil Gupta, and Marcin Wojtyczka. 2026.
+  Abhay Gupta, Pallavi Koppol, Ashutosh Baheti, Sean              Databricks as an agentic platform: Orchestration,
+  Kulinski, and 1 others. 2026. Karl: Knowledge                   context, and control. In Databricks Data Intelligence
+  agents via reinforcement learning. arXiv preprint               Platform: Powering the Agentic Era, pages 125–152.
+  arXiv:2603.05218.                                               Springer.
+
+Jianlv Chen, Shitao Xiao, Peitian Zhang, Kun Luo, Defu         Qizheng Zhang, Changran Hu, Shubhangi Upasani,
+   Lian, and Zheng Liu. 2024. Bge m3-embedding:                  Boyuan Ma, Fenglu Hong, Vamsidhar Kamanuru, Jay
+   Multi-lingual, multi-functionality, multi-granularity         Rainton, Chen Wu, Mengmeng Ji, Hanchen Li, and 1
+   text embeddings through self-knowledge distillation.          others. 2026. Agentic context engineering: Evolving
+   Preprint, arXiv:2402.03216.                                   contexts for self-improving language models. ICLR.
+
+
+                                                           7
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan
+  Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin,
+  Zhuohan Li, Dacheng Li, Eric P. Xing, Hao Zhang,
+  Joseph E. Gonzalez, and Ion Stoica. 2023. Judging
+  llm-as-a-judge with mt-bench and chatbot arena. In
+  Proceedings of the 37th International Conference on
+  Neural Information Processing Systems, NIPS ’23,
+  Red Hook, NY, USA. Curran Associates Inc.
+
+
+
+
+                                                        8
+A    Prompt and Model Details
+The production prompts include customer-specific examples and are not reproduced verbatim. This
+appendix describes the prompt structure used in the experiments.
+
+Actionability and nugget extraction. Input fields are conversation history (in case of a multi-turn), the
+final user question, the answer that received feedback, feedback type (either thumbs-up or thumbs-down),
+free-text feedback, and cited documents for the current turn. The model emits JSON with (i) a usefulness
+label, (ii) a boolean indicating whether the feedback can produce a factual nugget, (iii) a short reason, and
+(iv) when applicable, a title and body for the nugget. The prompt emphasizes that nuggets must contain
+reusable factual knowledge explicitly supported by the feedback, not a critique of the answer.
+
+Synthetic anchors. For Variant C, the model receives the nugget and writes five concise queries that
+future users might ask whose answer is the nugget. The prompt asks for diverse surface forms and
+discourages copying nugget wording.
+
+Trigger plus synthetic anchors. For Variant D, the model receives the nugget and triggering query q0 .
+It writes five anchors: the first is a non-verbatim paraphrase of q0 , and the other four cover alternative
+phrasings or nearby aspects of the same topic.
+
+INO reflection. For INO, the reflector receives the current nugget, triggering query, probe queries,
+top retrieved documents for failed checks, whether the nugget was retrieved and cited, and the generated
+answer. It returns a revised indexable nugget representation. The prompt requires factual preservation: it
+may add terminology, clarify scope, or rewrite anchors, but it may not add new facts beyond the correction
+and supplied context.
+
+B   Held-out Set Construction
+For real-query mining, we collected five months of production queries per customer and embedded them
+with a Jina-v5-small dense encoder (Akram et al., 2026). We built per-customer FAISS indexes and
+retrieved the top 50 nearest neighbors for each triggering query, keeping candidates with cosine similarity
+above 0.75. We then re-ranked with bge-reranker-v2-m3 (Li et al., 2023; Chen et al., 2024) and kept
+candidates above 0.85. This produced 110 historical paraphrases.
+   For synthetic paraphrases, we first ran an agentic RAG step against the customer corpus to collect
+domain vocabulary and relevant terminology. A second LLM, different from the one used for nugget
+construction, generated three realistic paraphrases per triggering query while using that vocabulary. We
+used OpenAI’s GPT-5.4 with high reasoning for this task. A random sample was manually spot-checked
+for topical consistency.
+
+C    Judge Rubric
+The judge receives the original user question, the original answer, user feedback, the extracted nugget,
+retrieved context, and the answer. It emits JSON for four independent axes.
+
+Correction compliance. Labels are: addresses (the answer materially reflects the correction), partial
+(mentions the corrective fact but incompletely), misses (does not address the correction), and contradicts
+(repeats or entails the corrected mistake). If the nugget is absent, the label is misses.
+
+Faithfulness to the nugget. If the nugget is in retrieved context, the judge labels the use as faithful,
+partial, or unfaithful. If the nugget is absent, the label is N/A.
+
+Non-regression. Labels are preserved, minor regression, or major regression, comparing correct content
+in the original answer against the answer.
+
+Groundedness. Labels are grounded, minor issues, or hallucinated, based only on the retrieved context
+shown to the judge.
+
+                                                     9
+D    Actionability Classifier
+The actionability filter is an LLM, specifically OpenAI’s GPT-5.2 with medium reasoning effort, used
+with a small set of in-context examples. It performs classification and extraction in one pass. The output
+JSON contains a feedback_usefulness field, a kb_candidate boolean, and an article object. We use
+a single pass to avoid disagreement between a classifier and a separate extractor and to reduce inference
+cost.
+   Human calibration used 200 production feedback events sampled across the seven customers. Two
+annotators labeled each event for whether it contained enough information to produce a reusable factual
+nugget; disagreements were adjudicated by a third annotator. The classifier agreed with the adjudicated
+label in 96.7% of cases.
+
+E    Costs
+In our implementation, Variants A–D cost about $0.012–$0.0124 per nugget and complete in 12.9 seconds
+on average, dominated by extraction. INO adds roughly $0.30 and 98.3 seconds per nugget, bringing total
+cost to about $0.31 and latency to 111.2 seconds. This cost is offline: it occurs once per factual correction
+and adds no per-query latency after indexing. When this budget is acceptable, INO is the best-performing
+configuration across both agents. When cost is constrained, Variant D is a strong alternative, reaching
+84.8% / 75.1% on held-out chat queries at a fraction of the cost.
+
+F    Example Nuggets Across the Five Variants
+To illustrate how the five construction strategies differ in practice, we show one factual correction realized
+as n⋆ under each variant. The example is sanitized and lightly paraphrased to avoid customer-identifying
+terminology; proportions and structure match real production cases.
+Source feedback event. Original user question q0 : “Why can’t my analyst reset another teammate’s
+password from the admin panel?” The agent answered that any user with admin-panel access can reset
+passwords. The user marked the answer wrong and commented that in portal v8.2 password reset is
+restricted to the Workspace Owner role; the Analyst role can view but not reset.
+Extracted nugget n. Title: Password reset role restriction in portal v8.2. Body: In portal v8.2, only
+users with the Workspace Owner role can reset another user’s password from the admin panel. Users with
+the Analyst role can view team members but cannot trigger a reset.
+Variant A. Standard nugget.       n⋆ = n. No anchors, no expansion.
+Variant B. Trigger-query anchor.       n⋆ = n with one appended anchor:
+
+    • Analyst role cannot reset another user’s password in the admin panel
+
+Variant C. Synthetic query anchors. n⋆ = n with five LLM-generated anchors covering plausible
+future phrasings (no constraint to match q0 ):
+
+    • How do I reset a user’s password in the admin panel?
+    • Which role is required to reset passwords?
+    • Can analysts manage other users’ credentials?
+    • Permissions for password reset in v8.2.
+    • Workspace Owner vs Analyst capabilities.
+
+Variant D. Trigger plus synthetic anchors. n⋆ = n with five anchors, the first constrained to be a
+paraphrase of q0 :
+
+    • Analyst role cannot reset another user’s password in the admin panel
+    • Which role is required to reset passwords in v8.2?
+
+                                                     10
+   • Can analysts manage other users’ credentials?
+   • Permissions needed to trigger a password reset.
+   • Workspace Owner vs Analyst capabilities.
+
+Variant E. INO. Starting from Variant D, the agent fails the probe queries “user reset isn’t working for
+my team lead” because a generic “Resetting your own password” article outranks the nugget on terms like
+reset and isn’t working. The reflector inspects the failed query and the competing document, then revises
+the indexable representation:
+Revised title: Admin-panel password reset for other users is restricted to Workspace Owner (portal v8.2).
+Revised body: In portal v8.2, resetting another user’s password from the admin panel requires the
+Workspace Owner role. Users with the Analyst role can view team members in the admin panel but the
+reset action is hidden. This restriction does not apply to a user resetting their own password from the login
+screen.
+Revised anchors:
+
+   • Why can’t an analyst reset a teammate’s password from the admin panel?
+   • Admin panel reset action greyed out for analyst role.
+   • Which role can reset passwords for other users in v8.2?
+   • Workspace Owner permissions for password reset.
+   • Reset other user’s password vs reset my own password.
+
+   The revision adds the disambiguating phrase another user’s (the wording that distinguished the nugget
+from the self-reset competitor), surfaces the UI symptom greyed out, and explicitly contrasts the two reset
+paths. The nugget passes all stress-test queries on the next iteration.
+
+
+
+
+                                                     11
+
