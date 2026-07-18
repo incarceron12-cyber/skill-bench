@@ -51,3 +51,23 @@ time, reciprocal value, comprehension, transformation fidelity, disagreement,
 withdrawal/reconsent, and claim-blocking behavior before asserting that this
 model is feasible for free or near-zero cost. See
 `papers/agent-benchmarks/2026-07-10-domain-expert-participation-ethnography.md`.
+
+## Active decision: how to cross the pre-task package-generation gate
+
+The v1–v3 prospective procedure-transfer slices have not reached execution. V1
+made zero calls because source/task treatment was not identifiable; v2 made two
+one-shot source-only attempts and both lacked package identity despite launcher
+acceptance; v3 passed its frozen reference/mutation preflight, then made two
+one-shot source-only attempts and both failed independent validation on the same
+object-versus-string `artifact_conventions[0].content` mismatch. No version made
+an executor attempt, so there is no transfer, capability, utility, professional-
+validity, production-fitness, or readiness evidence.
+
+Do **not** infer a v4 or retry from the fact that the v3 schema rejected bad
+outputs. Before another generated-package study, prospectively test and freeze a
+model-facing serialization/example strategy that demonstrates independent
+package conformance without task hindsight. The competing path is to explicitly
+evaluate builder-authored source-only packages; that would estimate downstream
+package consumption, not corpus-to-procedure generation. Choosing between these
+estimands is the unresolved decision. Preserve all v1–v3 bytes and attempt
+denominators as immutable evidence whichever path is chosen.

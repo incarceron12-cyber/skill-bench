@@ -168,6 +168,27 @@ procedure-package, instrument-layer, ablation, configured-system, task-health, r
 metric, trace, release, and validity machinery suffices; no Skill-specific subsystem or
 scope commitment follows.
 
+Three internal prospective slices now add direct instrument evidence to that external
+gap. The durable gate chain is `source/task identifiability → public contract
+completeness → model-facing representation/interface usability → independent
+structural/semantic adjudication → eligible execution → transfer/consequence`. V1
+stopped before all calls because source and task treatment were not separable. V2 made
+exactly two one-shot source-only generation attempts; both returned null package
+identity and exposed a launcher false acceptance. V3 passed a frozen reference/mutation
+preflight, then made exactly two one-shot source-only attempts; both independently used
+an object where `artifact_conventions[0].content` required a string and were correctly
+rejected. No executor attempt occurred in any version. The retained package hashes are
+V2 `0c98123d…56fa6`/`12aad628…9dbd` and V3 `8715df99…2183`/`f36fd4e9…de39`; exact
+reports, prompts, outputs, usage, adjudications, and full hashes remain under
+[`pilots/pretask-procedure-transfer-v1`](../pilots/pretask-procedure-transfer-v1),
+[`v2`](../pilots/pretask-procedure-transfer-v2), and
+[`v3`](../pilots/pretask-procedure-transfer-v3). A rejecting schema establishes
+fail-closed instrument behavior, not generator usability or transfer. Another retry is
+not implied: first prospectively validate a model-facing serialization/example
+strategy, or explicitly change the estimand to consumption of builder-authored
+source-only packages. Expert provenance, professional validity, transfer, capability,
+utility, production fitness, and readiness remain false.
+
 Executable science adds a distinct **execution-to-consequence chain**:
 `authorized request → plan/code → submission → monitored execution → artifact →
 frozen comparator → declared solution-equivalence class → item adjudication →

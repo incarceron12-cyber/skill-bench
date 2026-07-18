@@ -336,6 +336,59 @@ readiness [BP]. Existing expertise-transfer, participation/authority, evidence-s
 context-treatment, persistent-workspace, trace, artifact, metric, and validity records
 are the implementation homes; no domain- or Skill-specific schema follows.
 
+#### Pre-task procedure generation has non-inheriting gates before transfer
+
+A source-only package study must preserve a longer fail-closed chain than package
+presence suggests [PTP]:
+
+```text
+source/task identifiability → public task-contract completeness
+  → model-facing representation and interface usability
+    → independent structural and semantic adjudication
+      → eligible assignment/execution → adoption and artifact/state effect
+        → independent consequence and bounded transfer claim
+```
+
+These gates do not inherit. Independent source corpora and untouched tasks identify a
+possible pre-task treatment; they do not show that the generator can realize the
+package contract. A complete machine schema and passing reference/mutation preflight
+show instrument behavior; they do not show that the model-facing serialization,
+examples, primitive choices, or output interface are usable. Rejection of an invalid
+candidate is positive fail-closed adjudication evidence, not a successful procedure,
+executor failure, or transfer observation. Preserve intended, attempted, valid,
+adjudicated, assigned, executed, and scored denominators separately.
+
+Three immutable internal prospective slices locate successive blockers. V1 made zero
+model/provider calls and stopped because its two families had no independent
+family-level source authority and all four public forms disclosed the complete
+procedure; its feasibility report has SHA-256
+`fe70e66353f35f7152fd59e28e178ad2be5c55aef41788103a5e9e3242e6dcbe`.
+V2 froze separate source corpora, four untouched forms, public bases, chronology, and
+source-only generation, then made exactly two one-shot source-only attempts. Both
+outputs had `package_id: null`, while the launcher falsely recorded `valid=true`; the
+retained package hashes are
+`0c98123d32603a509765968089a4d31e6421fc5e2858f5873d5b3bc8ddc56fa6` and
+`12aad628ef43a12a41305cfd37dea538038070d1f72a4265790b52c6e4af9dbd`.
+V3 prospectively froze a schema, independent validator, valid references, mutation
+tests, source-only views, and four new opaque forms; its preflight passed at hash
+`a156ec026e84ef79783ba5ebb99fff33f5d751663e2f20ac041223abf3a87574`.
+It then made exactly two one-shot source-only attempts. Both independently emitted an
+object at `artifact_conventions[0].content`, where the frozen contract requires a
+string, and failed adjudication; their hashes are
+`8715df9971f1cfec6d5dfddae597d3466a8c624aecd2f54b1d965130fdbc2183` and
+`f36fd4e9e44799bd22a7b06a316a7e5ebac355ac1840e48570098dac7b6cde39`.
+No executor attempt occurred in any version.
+
+The repeated v3 primitive mismatch is evidence about this configured generator-facing
+interface, not evidence that loosening the schema is correct or that another retry will
+succeed. Any future generated-package study first needs a *prospectively tested*
+model-facing serialization/example strategy that can produce independently valid
+packages without task hindsight. The alternative is an explicit change of estimand to
+builder-authored source-only packages, which can test package consumption but not
+corpus-to-procedure generation. Until one route is chosen and frozen, another version
+or retry is not licensed. Expert provenance, professional validity, transfer, agent
+capability, utility, production fitness, and readiness remain false.
+
 ### 2.1f Model panels are configured proxy estimators, not synthetic experts
 
 An LLM panel may cheaply generate candidate estimates, rival rationales, assumptions,
@@ -5968,3 +6021,11 @@ them:
   and predefined-control treatments plus absent transcripts, assignment, burden, and
   training evidence block learned expert-reasoning, timing, transfer, minimality,
   professional-validity, and readiness claims.
+- **[PTP]** `pilots/pretask-procedure-transfer-v1/feasibility-report.json`,
+  `pilots/pretask-procedure-transfer-v2/readiness-audit.json`, and
+  `pilots/pretask-procedure-transfer-v3/generation-audit.json`, with immutable
+  protocols, source corpora, tasks, prompts, reference packages, candidate outputs,
+  usage, per-family reports, preflight, adjudication logs, validators, and hashes in
+  the corresponding pilot directories. These are builder-authored synthetic
+  instrument and configured-generation observations only; no executor attempt or
+  transfer outcome occurred.
