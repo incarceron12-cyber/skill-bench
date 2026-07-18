@@ -1,0 +1,733 @@
+                                                        AutoTrace: From Patches to Triggers via
+                                                          Agentic Interprocedural Exploration
+                                                        Arastoo Zibaeirad                                   Marco Vieira                         Thomas Zimmermann
+                                            University of North Carolina at Charlotte        University of North Carolina at Charlotte       University of California, Irvine
+                                                      Charlotte, NC, USA                               Charlotte, NC, USA                          Irvine, CA, USA
+                                                     azibaeir@charlotte.edu                        marco.vieira@charlotte.edu                      tzimmer@uci.edu
+
+
+
+                                            Abstract—Given a vulnerability-fixing commit, trigger localiza-     answers a weaker question: a function-level label only says a
+                                         tion asks which specific statement turns the vulnerable program        defect lies somewhere in a long body, a patch hunk often marks
+                                         state into a concrete unsafe operation. This question is harder        a guard inserted upstream rather than the unsafe operation, and
+                                         than binary vulnerability detection because the answer demands
+                                         interprocedural, causal reasoning: in a substantial fraction of        a S2S slice delimits a region without naming the operative
+                                         real-world CVEs the triggering statement lies several call layers      statement. Only the trigger statement pins the exact operation,
+                                         outside the patched function, beyond the reach of static rule          on a specific operand and under specific guards, which is
+                                         sets and pattern-matching language models alike. We present            what patch review, exploitability triage, test construction, and
+                                         AutoTrace, an agentic pipeline that localizes vulnerability triggers   causal labeling of training data actually consume. Getting
+
+
+
+
+arXiv:2607.12058v1 [cs.SE] 13 Jul 2026
+                                         by exploring a code property graph layer by layer, with LLM
+                                         agents deciding where to look next and deterministic admissi-          it wrong is costly: a false trigger sends a reviewer to the
+                                         bility gates deciding what evidence is required before a trigger       wrong site and leaves the real defect live, and a dataset built
+                                         can be reported. Agents never accept a trigger on their own            from syntactic triggers teaches models to imitate changed-
+                                         authority; every reported trigger is backed by explicit evidence       code patterns instead of causal structure. These failure modes
+                                         drawn from the graph, so the pipeline covers both intra- and           shape our design: AutoTrace reports a trigger only when non-
+                                         interprocedural vulnerabilities without relying on ungrounded
+                                         model judgment. On the full InterPVD benchmark, AutoTrace              bypassable evidence supports it, and SinkTrace-Bench labels
+                                         reaches 75.0% VulnHit and 80.8% FuncHit, surpassing the prior          causal structure rather than patch syntax.
+                                         state of the art on the same corpus. Building on the same                 Existing approaches struggle on this class of vulnerability:
+                                         machinery, we construct SinkTrace-Bench, a dataset that exposes        rule-based tools miss project-specific wrappers and macro-
+                                         each vulnerability as a source-to-sink (S2S) causal chain from         expanded helpers, single-function line rankers cannot follow
+                                         attacker-controlled input through propagation to the dangerous
+                                         operation, drawn from matched vulnerable and patched program           taint across a call boundary, and VulTrigger [1], the only prior
+                                         states. It comprises 1,542 verifier-confirmed, perfectly balanced      system targeting trigger localization from a fixing commit,
+                                         vulnerable/safe samples whose label fidelity we audit against          classifies interprocedural slices by syntactic rule matching that
+                                         expert annotations. Benchmarking frontier LLMs on it, we find          conflates co-occurrence with causal connection (§II). We are
+                                         that even the strongest struggle to separate the matched pairs, ex-    careful about what Figure 1 establishes: it shows that single-
+                                         posing the causal-reasoning gap that trigger localization targets.
+                                         Artifact available at https://github.com/Erroristotle/AutoTrace.       function analysis is insufficient, not that precise interprocedu-
+                                            Index Terms—vulnerability trigger localization, program slic-       ral analysis is impossible. In principle a sufficiently precise
+                                         ing, LLMs, code property graphs, software security                     analysis could resolve it; the practical difficulty, developed
+                                                                                                                in §III-B, is that the alias, field, dispatch, macro, and control-
+                                                                I. I NTRODUCTION                                dependence precision such an analysis needs is rarely available
+                                            Modern software-security work increasingly asks not only            on real C/C++, and that is where LLM-guided exploration
+                                         whether a function is vulnerable but where the vulnerability is        earns its place.
+                                         exercised. Given a vulnerability-fixing commit, trigger local-            We present AutoTrace, an agentic pipeline that separates
+                                         ization identifies the specific statement at which a vulnerable        two concerns. LLM agents act as semantic reasoners that
+                                         program state becomes a concrete unsafe operation such as a            interpret code, extract the variables a vulnerability centers
+                                         memory access, an allocation, or a dereference. Unlike binary          on, and decide where to look next, while deterministic ad-
+                                         detection, this demands causal reasoning across the call graph,        missibility gates over a code property graph [3], [4] fix the
+                                         because the triggering statement is frequently not the patched         hard conditions a trigger must satisfy before it is reported,
+                                         line and often lies in a different function from the patch.            so no trigger rests on unverified model judgment. On the
+                                         Prior empirical studies report that a substantial fraction of real-    full InterPVD benchmark, AutoTrace reaches 75.0% VulnHit
+                                         world C/C++ CVEs are interprocedural in exactly this sense,            and 80.8% FuncHit, outperforming VulTrigger’s 69.8% on
+                                         with patch and trigger separated by several call layers and            the same corpus under the same line-level inclusion metric.
+                                         sometimes several files [1], [2].                                      On the cohort it shares with a retrieval-augmented LLM
+                                            This precision is what makes the task worth solving, because        baseline, AutoTrace localizes the exact trigger nearly twice
+                                         the coarser artifacts a security engineer is usually handed each       as often (§IV-B); the baseline’s higher function-level reach is
+Fig. 1. Motivating example (CVE-2014-9659, CWE-125, FreeType). The patch adds a bounds guard in cf2_interpT2CharString, yet the trigger
+(the sink where the corrupted index is read, stack->buffer[idx]) lies three call layers away in another file. Patch-line and single-function methods
+point at the guard; only statement-level interprocedural localization reaches the sink.
+
+
+
+a by-product of never abstaining, whereas AutoTrace’s CPG-                       a) Localization and hybrid LLM/static analysis.: Slice-
+grounded gate reports only what it can certify.                            based detectors showed that structured program context beats
+   The same machinery yields SinkTrace-Bench, a dataset                    raw tokens for classification, and a line of work refines the
+whose samples expose each vulnerability as a S2S chain                     slice fed to the model [5]–[10], while intra-function line
+from an attacker-controlled source through propagation to the              rankers [11]–[13] score statements within a known-vulnerable
+dangerous sink, drawn from paired vulnerable and patched                   function. Neither family reaches interprocedural triggers: line
+program states. Prior vulnerability datasets label what is vul-            rankers are bounded by the function under analysis, and
+nerable but not why, so models trained on them learn surface               VulTrigger [1], the only prior system to target trigger local-
+patterns when the task demands causal reasoning; SinkTrace-                ization from a VFC, pairs critical-variable slices with CWE
+Bench instead annotates causal structure. Because its labels are           keyword matching, so it cannot enumerate project-specific
+produced by AutoTrace’s verifier rather than by independent                wrappers and collapses syntactic co-occurrence into causal
+experts, we describe them as verifier-confirmed rather than                connection. Hybrid LLM/static approaches such as IRIS [14]
+expert-validated, and we audit their agreement with expert                 and CPGHunter [15] use LLMs to augment static analysis
+ground truth in §IV-D. Every sample belongs to a matched                   but share the objective of classical taint analysis, whether any
+vulnerable/safe pair drawn from the same source-to-sink chain              S2S path exists, rather than identifying the statement where
+and differing only by the patch, so the release is a balanced              vulnerable state becomes an unsafe operation.
+set of 771 such pairs (1,542 samples) across 16 CWE classes.                     b) Why classical and dynamic analyses do not subsume
+Contributions.                                                             the task.: A fair positioning must reach past line rankers
+   • AutoTrace, an agentic pipeline whose defining property                to the interprocedural analyses that already track sources,
+      is acceptance discipline: LLM agents propose candidate               sinks, call chains, aliases, and guards. AutoTrace’s own non-
+      triggers and non-bypassable deterministic gates over a               agentic core, CPG slicing plus deterministic gates, is itself
+      code property graph decide, so no reported trigger rests             such an analysis, so the open question is what the agent
+      on unverified model judgment. Its measured advantage                 adds on top, which we isolate in §IV-C. Classical IFDS/IDE
+      over simple LLM and retrieval baselines is interprocedu-             dataflow answers “does any source reach any sink” against a
+      ral trigger localization (VulnHit).                                  fixed sink specification, whereas trigger localization supplies
+   • SinkTrace-Bench, 771 matched vulnerable/safe pairs                    a patch-derived source, needs an open project-specific sink
+      (1,542 balanced verifier-confirmed S2S samples) span-                vocabulary, and must return the single root-cause statement.
+      ning 16 CWE classes, with the causal chain as a first-               Demand-driven slicing and dependence graphs yield a slice,
+      class label, released together with an audit of label fidelity       not the operative statement, and cannot separate a causal
+      against expert annotations.                                          statement from one that merely co-occurs with the tracked
+   §II surveys related work, §III defines the task and the                 value. Query engines such as CodeQL require a hand-authored
+pipeline, §IV reports the experiments, and §V and §VI discuss              query per CWE and sink family; the 72-CVE CodeQL point
+limitations and conclude.                                                  in Table II (8.6%) reflects that brittleness. Dynamic techniques
+                                                                           (symbolic execution, taint, fuzzing) change the setting rather
+                     II. R ELATED W ORK                                    than strengthen the static baseline: they need a build, a harness,
+   Learning-based vulnerability analysis has moved along two               and concrete inputs, are not patch-conditioned, and report a
+axes: finer-grained outputs, from function classification to line          crash site, a consequence rather than the root-cause trigger.
+ranking to statement-level trigger identification, and richer              None is weak in general; each is mismatched to this task, and
+evidence, from token sequences to program slices to code                   the precision it would need on real C/C++ is exactly what
+property graphs (CPGs) [3], [4] and, recently, LLM agents                  degrades in practice (§III-B).
+that consult program-analysis tools on demand. AutoTrace sits                    c) Agentic code analysis.: The closest neighbor is Re-
+at the end of both: its output is a specific trigger statement             poAudit [16], an autonomous LLM agent for repository-
+backed by an interprocedural causal chain, and its evidence                level bug detection through demand-driven call-graph explo-
+comes from an agent whose every acceptance is gated by a                   ration. AutoTrace adopts the same agent-over-static-evidence
+deterministic CPG-based verifier.                                          paradigm but differs on three axes. It is VFC-conditioned,
+recovering the causal chain a patch neutralizes rather than                                        TABLE I
+performing open-world discovery. It separates agent proposals                    T RIGGER PREDICATE Sinkw (σ) PER CWE FAMILY.
+from deterministic acceptance through the CPG gates, so
+                                                                     CWE family                    Dangerous operation at σ
+no report rests on unverified judgment, whereas RepoAudit’s
+final filter is LLM-judged path feasibility. And it anchors its      Memory (CWE-119/120/125/787/788) Read/write at a computed offset
+                                                                     Integer/size (CWE-189/190/191)   Arithmetic bounding an access or alloc
+exploration budget to the first verified trigger rather than a       Null deref. (CWE-476)            Dereference of a possibly-null pointer
+fixed call-context cap, spending effort on deepening a chain.        Use-after-free (CWE-416/415)     Use or release of a freed object
+                                                                     Division (CWE-369)               Divide/modulo by a possibly-zero value
+                     III. M ETHODOLOGY                               Infinite loop (CWE-835)          Loop-bound or termination-condition use
+                                                                     Resource leak (CWE-401/772)      Last reference lost without release
+Overview
+   AutoTrace takes a vulnerability-fixing commit (VFC) with
+its pre- and post-fix repository states and returns the trigger      Equation (2) abstracts the program’s full semantics; our im-
+statements of §III-A, each a single statement σ certified by,        plementation realizes it via a code property graph (§III-E). A
+but distinct from, a witness path, including triggers several        critical value c ∈ C∆ causally influences statement σ, written
+call layers outside the patched function. Two principles govern      c ⇝ σ, when there exists a path over Edd ∪ Ecd ∪ Eal ∪ Ecall
+the design. First, LLM agents act as semantic reasoners that         from a use of c to σ that preserves the tracked value, guard,
+interpret code and decide where the search moves next, but           or condition at every step. This closure of typed dependences
+never bypass the hard admissibility checks: every candidate          is the only criterion for causal influence; patch-differential
+must survive deterministic gates that test it against explicit       reachability and guard absence are admissibility conditions,
+code-property-graph (CPG) evidence, which keeps the model’s          not part of the definition.
+flexibility with project-specific wrappers while the verifier              c) Trigger statement.: A statement σ ∈ S is a trigger if
+keeps outputs grounded. Second, interprocedural analysis pro-        and only if
+ceeds through repeated local slicing rather than one whole-                            Sinkw (σ) ∧ ∃ c ∈ C∆ : c ⇝ σ.                            (3)
+program slice, with each function sliced independently and
+evidence stitched across call edges, which bounds both anal-         Sinkw (σ) asserts that σ dispatches the dangerous-operation
+ysis and prompt context to a single function however deep            class associated with CWE w on an operand derived from C∆ ;
+the chain. Figure 2 summarizes the five stages, from critical-       Table I fixes Sinkw for each CWE family. Equation (3) admits
+variable extraction (Stage 1) through the patch-scoped CPG           only sink-typed statements with a confirmed causal path:
+and slicing (Stage 2), agentic best-first exploration (Stage 3),     propagation assignments and branch predicates may explain
+and verification gates with a synthesizing agent (Stage 4), to       reachability but are not triggers, and a downstream crash site
+SinkTrace-Bench construction (Stage 5).                              is a consequence rather than the root cause. Notably, the
+                                                                     realizing operation need not be the syntactic memory access;
+A. Problem Formulation                                               when a corrupted bound induces the vulnerability, the trigger
+   We formulate trigger localization as a solver-agnostic com-       is the size computation that establishes the unsafe extent, even
+putational problem. All five equations below are definitional;       though the fault materializes at a later write.
+how any system approximates them is its own concern.                       d) Witness path.: A trigger σ satisfying (3) is reportable
+      a) Vulnerability instance.: A vulnerability instance is the    only when accompanied by a concrete realization of c ⇝ σ.
+five-tuple                                                           A witness is the finite alternating sequence
+                V = P − , P + , ∆, C∆ , w ,
+                                              
+                                                              (1)                     π = ⟨ n0 , e1 , n1 , . . . , ek , nk ⟩,                   (4)
+where P − is the vulnerable program snapshot, P + is its fixed       where n0 uses some c ∈ C∆ , nk = σ, and each ei ∈ E is
+counterpart, ∆ is the vulnerability-fixing commit, w is the          a real dependence edge of D(P − ) that preserves the tracked
+CWE class, and C∆ is the set of patch-anchored critical values       value, guard, or condition. The localized object is always the
+— variables, fields, parameters, or expressions whose value,         single statement nk = σ; the path π in (4) is evidence, not the
+bounds, lifetime, or guard is constrained by ∆. We treat C∆          output. A witness is interprocedural when π contains at least
+as given with the instance; Stage 1 (§III-D) describes how the       one edge from Ecall .
+pipeline infers it autonomously from the diff.                            e) Localization problem.: Given V from (1) and D(P − )
+     b) Program dependence graph.: We model P − as the               from (2), the task is to output the set of admissible pairs
+directed multigraph
+                                                                             T ⋆ = (σ, π) : Sinkw (σ) ∧ ∃ c ∈ C∆ . c ⇝ σ
+                                                                                    
+
+         D(P − ) =      S, Edd ∪ Ecd ∪ Eal ∪ Ecall ,          (2)                                                                (5)
+                                                                                              ∧ π admissible for (σ, c) ,
+over a statement set S, each node annotated with its enclosing       each trigger σ paired with a certifying witness π. The projec-
+function fn(s) and source location loc(s). The four edge             tions fn(σ) (FuncHit) and loc(σ) (VulnHit, Within±5) yield
+types carry data dependence (Edd ), control dependence (Ecd ),       coarser evaluation views (§IV-A) but are not independent
+alias/field reachability (Eal ), and call/return binding (Ecall ).   outputs.
+       Fig. 2. AutoTrace pipeline: CPG construction, best-first frontier search, deterministic gate verification, and SinkTrace-Bench construction.
+
+
+
+      f) Admissibility.: A candidate (σ, π) as in (5) is admis-               could in principle resolve Fig. 1, but the required precision
+sible when its witness is justified by P − , P + , and ∆ alone.               is rarely available on real C/C++, where the critical value
+Five conditions must hold jointly:                                            must survive pointer aliasing, field-sensitive dataflow, indirect
+   (i) Patch anchoring. π originates at a value in C∆ or one                  dispatch, macro expansion, project-specific sink wrappers,
+       provably equivalent to it under ∆.                                     and guard-conditional reachability. Each is a point where a
+  (ii) Trigger typing. Sinkw (σ) holds per (3) and Table I.                   classical pipeline silently loses the chain, and our results show
+ (iii) Causal reachability. Every edge of π is a real depen-                  the cost: the verifier refuses candidates exactly when Joern
+       dence in D(P − ), so c ⇝ σ genuinely holds rather than                 cannot establish a path through aliasing, indirect dispatch, or
+       σ merely co-occurring with c.                                          incomplete edges (§IV-C). Claim 3, which we do not make:
+ (iv) Call-context realizability. Call/return edges in π form a               agentic exploration is not the only way to solve these cases,
+       matched, realizable sequence.                                          only an effective practical response to Claim 2, supplying the
+  (v) Patch relevance. Comparing P − with P + confirms that                   semantic judgment of which wrapper is a sink and which alias
+       ∆ alters the reaching value, its guard, or the operation               to follow where precise static analysis is unavailable, while
+       at σ to neutralize the unsafe relation.                                every accept or reject is delegated to the deterministic gates.
+                                                                              A more precise static analyzer that closed the Claim-2 gaps
+These conditions are intrinsic to V and solver-agnostic; how
+                                                                              would be an equally valid solver under our formulation.
+AutoTrace’s verifier enforces them is described in §III-H.
+      g) Evaluation metrics.: A solver’s output T̂ is compared                   A conceptual difficulty compounds these. The trigger is not
+to a ground-truth set G at three granularities. VulnHit: a                    always the syntactic dangerous operation: when a corrupted
+predicted σ matches σ ⋆ ∈ G when both denote the same                         bound induces the vulnerability, the root-cause trigger is the
+operation after macro canonicalization (statement level). Fun-                size computation, not the later write, so a localizer that targets
+cHit: fn(σ) = fn(σ ⋆ ) (function level). Within±5: |loc(σ) −                  the root cause and a benchmark that annotates the consequence
+loc(σ ⋆ )| ≤ 5 (line proximity). An admissible report with no                 disagree on a causally correct answer. We treat the resulting
+match in G is internally valid but incorrect; a report backed                 mismatch as a measured bias (§IV-E) rather than a system
+by an inadmissible witness is an unsupported guess.                           error.
+
+B. Sources of Difficulty                                                      C. Threat Model
+   The motivating example (Fig. 1) is easily misread as proof                    AutoTrace places LLM agents in a loop that reads untrusted
+that interprocedural triggers require an LLM. They do not, and                source code and invokes external tools, so its threat model
+we keep three claims distinct. Claim 1, established: single-                  covers both the vulnerability under analysis and the integrity
+function line ranking cannot reach interprocedural triggers,                  of the pipeline. The adversary is the author of the repository
+since a ranker bounded by one function body cannot follow                     content, and we assume control of all untrusted inputs: source
+a value across a call edge to where it is consumed. Claim 2,                  code, comments, identifiers, macros, headers, repository lay-
+the operative difficulty: a sound but imprecise interprocedural               out, and the commit diff, including content crafted to steer a
+analysis can fail in practice, and this rather than undecidability            language model such as identifiers that read like instructions
+is what makes the task hard. A sufficiently precise analysis                  or misleading wrapper names. The adversary cannot modify
+Joern, the deterministic gates, the harness, or the ground-           E. Stage 2: Patch-Scoped CPG and Local Slicing
+truth annotations. The protected asset is the integrity of the             a) Patch-scoped workspace.: Rather than building a
+trigger report, and transitively the SinkTrace-Bench labels           whole-repository CPG up front, AutoTrace assembles a patch-
+derived from it. The trusted computing base is the Joern CPG          scoped workspace: starting from the changed files, it grows
+engine, the Admissibility Gates, and the harness that invokes         on demand, adding callers, callees, and headers only when
+them; the LLM backbone sits outside it and is treated as an           interprocedural exploration reaches them. Joern builds a CPG
+untrusted reasoner. In scope is adversarial influence on the          over this workspace, which keeps the analysis context small
+LLM, including prompt injection through crafted comments or           and anchors every traversal to the patch.
+identifiers and over-eager localization; the structural defense            b) Repeated local slicing.: Within each function Auto-
+is acceptance discipline, since a candidate enters the output         Trace slices locally for the current work item, recovering the
+only when its causal connection to a critical variable is             statements that define, constrain, or alias the tracked value by
+backed by explicit CPG evidence, so a successful injection            backward slicing and exposing where it flows next by forward
+can at most yield a rejected or unexplored candidate, never an        reachability. When the search crosses a call edge it re-slices
+unsupported reported trigger. Out of scope are attacks on the         locally in the target function and stitches evidence across the
+analysis substrate, which we treat as integrity limitations rather    handoff rather than extending one interprocedural slice, which
+than defended threats, and a compromised Joern, harness, or           keeps each prompt focused on a single function instead of
+backbone.                                                             a whole-program excerpt. The slicing layer is state-aware:
+   We are precise about what trusting the CPG buys: Au-               it analyzes the vulnerable commit to recover candidates and
+toTrace’s guarantees are relative to the CPG, a sound but             reuses the fixed commit for differential verification and dataset
+incomplete approximation of program semantics rather than             generation.
+a claim about the program, so wherever we write “machine-
+checkable” we mean checkable against this substrate and               F. Agent/Verifier Interface
+a passed gate attests reachability in the graph, which may               AutoTrace uses prompt-defined agents, role-specific wrap-
+diverge from reachability in the program. AutoTrace bounds            pers around one configured backbone rather than separately
+this exposure through the differential check, the control-            trained models. The only state passed between agents is
+dependence fallback, and a conservatism that prefers absten-          typed JSON validated against the schemas below; free-form
+tion over an unsupported deep guess; §IV-E treats the residual        reasoning is logged for audit but never consumed as a decision.
+incompleteness as the principal integrity limit of a CPG-             The interface separates candidate generation from trigger
+grounded verifier.                                                    certification: Agent 2 may propose a sink, but only the verifier
+                                                                      can certify it, and the verifier is itself wrapped by non-
+D. Stage 1: Critical-Variable Extraction                              bypassable graph gates. LLM judgment is thus confined to
+                                                                      proposing candidate locations and ranking among already-
+   The first stage identifies the critical variables (CVs), the       admissible ones, plus the single leak-family exception; no
+named quantities whose misuse constitutes or propagates the           LLM verdict can place a gate-failing candidate into the output,
+vulnerability: an identifier (local, parameter, or field expres-      so every reported trigger is attributable to graph evidence first
+sion) that the patch introduces, removes, constrains, or newly        and model judgment only as a filter.
+protects, such as a length field the fix begins to bounds-                  a) Parsing and retry discipline.: All agents use
+check or a pointer whose lifetime it manages. An extraction           structured-output calls with conservative parsing: Markdown
+agent reads the VFC diff with surrounding context and returns         fences stripped, Pydantic validation, up to three retries with
+a structured list of CV candidates, each with the variable,           the schema and error appended. Hard gates remain the final
+its patch-facing location, a rationale, and a predicted CWE           authority: no retry or reflection loop can admit a candidate that
+family; the CWE is inferred by the agent rather than supplied,        fails L1/1b or L4. Agent 1 makes one broad-retry attempt on
+and is refined once a trigger’s sink category is verified, so         no usable variables; Agent 2 runs at most four turns of four
+the pipeline never leans on a ground-truth label. Because             tool calls with one reflection retry only when the slice exceeds
+downstream stages analyze CVs independently, one commit               five nodes and no sink has been found; Agent 3 makes at most
+can yield multiple verified traces.                                   three turns of two tool calls on ambiguous packets only, and
+   A patch-facing identifier is not always the carrier the verifier   cannot extend the loop to manufacture acceptance. All agents
+ultimately tracks, since the patch may name a struct field            decode with the Gemini-3-Flash backbone at temperature 1.0,
+while the vulnerability flows through a local alias several           top-p 0.95, and a 4,096-token cap (hop selection at 0.2); RQ3
+statements later. AutoTrace therefore binds critical variables        (§IV-D) decodes every model greedily at temperature 0.0.
+in a graduated fashion: it first attempts the exact field or
+parameter named in the patch and falls back to related carriers,      G. Stage 3: Agentic Interprocedural Exploration
+such as the enclosing object or a local alias, only when the                a) Verifier-gated best-first exploration.: AutoTrace is in-
+direct binding yields an empty slice, which keeps the search          terprocedural in reach but intraprocedural in each step: every
+robust to aliasing without letting the agent invent unrelated         turn is confined to one function, and the interprocedural chain
+carriers.                                                             is assembled by the agent’s navigation decisions. We frame the
+search as an optimization problem, to find a high-confidence,         on undirected discovery, unlike RepoAudit’s fixed K=4 call-
+shallow call-graph location at which the verifier accepts a           context cap that bounds exploration before anything is verified.
+candidate with confidence at least a pinned threshold τ , which             d) Tool interface.: The exploration agent interacts with
+turns open-ended traversal into targeted evidence-seeking.            the CPG through a small library of semantic tools rather
+Once a critical variable is bound, the search is a best-first         than raw graph queries. Each tool exposes one vulnerability-
+walk over a priority queue, the frontier, of work items (f, v)        semantics question, such as “does this value flow to this
+seeded from Stage 1. At each iteration the highest-priority           statement?” or “which calls take this value as an argument?”,
+item is dequeued, the function is sliced locally, and the agent       and its deterministic implementation handles the correct CPG
+decides whether a trigger is present and which callees, callers,      traversal. This keeps the agent’s reasoning above the level
+or return-origin producers to enqueue. Each item carries a            of individual graph edges and prevents ad-hoc queries that
+priority                                                              silently diverge from Joern’s semantics. Two auxiliary knowl-
+                                                                      edge tools return CWE-specific sink categories and a short
+           score(f, v) = pagent · 100 − |d| · 10 ,             (6)    procedural workflow on demand. The full tool set and the
+                         | {z }         | {z }
+                          semantic relevance   depth penalty          underlying Joern queries are listed in Appendix A.
+                                                                            e) Navigation decisions across call boundaries.: At each
+where pagent ∈ [0, 1] is the agent’s confidence that f merits
+                                                                      work item the agent chooses one of four local moves (Fig. 2):
+exploration and |d| is the call-graph distance from the patched
+                                                                      stay, descend into a callee, ascend to a caller, or trace a
+function; the depth penalty biases toward shallow evidence
+                                                                      return-origin producer. The hard part is carrying the taint label
+at equal relevance. A visited set keyed on (f, v) suppresses
+                                                                      across each scope change, mapping argument to parameter on
+re-enqueuing, and an alias memory of every identifier the
+                                                                      descent and back on ascent; all tainted identifiers enter a per-
+taint has entered and a remaining budget are carried across
+                                                                      sample alias memory, so the verifier can confirm a complete
+iterations so the search converges. Two further memories steer
+                                                                      path even when no single name spans the chain. The agent
+exploration without reaching the verifier: an episodic memory
+                                                                      also distinguishes leaf calls that perform the dangerous action
+that replays, within a run, sinks the gates already refused so
+                                                                      from routing calls that merely forward the value, so the search
+they are not re-proposed, and a long-term memory of cross-
+                                                                      neither stops at a forwarder nor descends uselessly into a leaf.
+CVE priors by CWE and project (sink categories, expansion
+                                                                         For each work item the agent returns a structured decision
+directions), category-level statistics that never bypass the gates.
+                                                                      with candidate triggers, evidence citations, and expansion
+RQ2 (§IV-C) ablates both.
+                                                                      targets; if a turn yields no verified trigger and no useful
+   The visited set bounds total work to O(B) slices and agent
+                                                                      expansion, it issues one reflection-based retry with explicit
+turns; per-step cost scales with one function body, not the
+                                                                      failure context. Verified triggers are later materialized as the
+repository, so traversal is linear in budget and independent of
+                                                                      S2S exemplars of Stage 5 (§III-I).
+program size.
+      b) A worked example.: Consider the motivating CVE
+                                                                      H. Stage 4: Multi-Layer Verification
+(Fig. 1, CVE-2014-9659). Stage 1 binds a stack-index value
+constrained by the patch in interpT2CharString. Itera-                    Every candidate trigger must pass a multi-layer verification
+tion 1 slices that function, finds no local sink, and de-             stage before it enters the output. The design rests on one
+scends into doStems; iteration 2 follows the value into               principle: a report must be backed by at least one piece of
+stack_getReal; iteration 3 reaches line 189, the indexed              necessary evidence, and may be calibrated by corroborating
+read stack->buffer[idx], where the verifier confirms the              evidence that changes how much it is trusted but not whether
+path interpT2CharString → doStems → stack_getReal                     it is admitted. The four layers split into two classes. Admissi-
+and accepts. The trigger lies three call layers from the patch,       bility Gates (Layers 1 and 4) are hard rejections that no other
+yet each step examined only one function’s slice.                     evidence can override; Corroborating Evidence (Layers 2
+      c) Confidence-triggered early termination.: Each turn           and 3) modulates confidence but never vetoes. Which layers
+yields zero or more candidates that pass through the verifier         apply is set by the CWE class, and with the single leak-family
+of §III-H; those failing a hard gate are discarded and do not         exception noted in Threats to Validity the gates always apply.
+affect termination. The search for a critical variable stops once           a) Layer 1: Dataflow (gate).: The primary gate requires
+a verified candidate has confidence pcand ≥ τ (default 0.95)          an explicit dataflow path from the tracked critical variable v
+and the frontier holds no shallower unexplored item, with a           to the candidate σ, HasFlow(v → σ) = true, paired with a
+two-level lookahead that preserves alternate high-confidence          concrete FlowPaths witness that is serialized into the output.
+sinks for multi-sink CVEs. Two properties make this safe.             When direct dataflow is absent, Layer 1b recovers control-
+Soundness is independent of the stopping rule: hard admis-            dependent triggers by checking whether v participates in a loop
+sibility is owned by the deterministic gates, so stopping only        bound or enclosing condition, whether σ is control-dependent
+changes which candidates are considered, never whether one            on that condition, and whether the unsafe access sits in the
+bypasses the evidence requirements. And because the depth-            guarded region. This is a targeted recovery for loop- and
+penalized order never stops while a shallower item remains,           guard-shaped triggers, not a general fallback; a candidate that
+budget is spent deepening a concrete causal chain rather than         satisfies neither Layer 1 nor Layer 1b fails the gate.
+     b) Layer 4: Contextual consistency (gate).: The second                b) Composition.: SinkTrace-Bench releases 771 matched
+gate asks whether the candidate is coherent with the causal          vulnerable/safe pairs (1,542 samples, exactly balanced) over
+chain that produced it: it must sit in the control structure         540 CVEs, 45 projects, and 16 CWE classes, led by out-
+the agent claimed and be reachable from the original critical        of-bounds access (CWE-119/125/787, 55.6%). We keep only
+variable via the recorded alias memory and call chain. A             matched pairs: a trigger contributes samples only when both its
+plausible sink in an unreachable branch, or one whose call           vulnerable (P − ) and safe (P + ) half yield a fix-distinguishing
+chain does not connect back to the patched function, is rejected     slice, and we discard any unpaired half and any byte-identical
+here. A trigger without a coherent call-chain justification is a     pair (a residual label leak where the fix falls outside the
+co-occurrence, not a report, and AutoTrace refuses to emit it.       extracted window), so balance comes from construction and
+     c) Corroborating evidence (Layers 2 and 3).: Layer 2            neither class priors nor memorizing “this CVE is vulnerable”
+asks whether existing bounds or null checks already protect the      can separate a pair (§IV-E). The two halves are near-identical
+path to σ: a complete guard lowers confidence substantially,         in length (median 89 vs. 91, mean 155 vs. 158 lines) and differ
+a partial guard moderately, and a guard present in the fixed         by a median of only three changed lines, forcing the decision
+commit but absent in the vulnerable one is strong positive ev-       onto the semantic edit rather than gross textual size. Slices
+idence, so candidates behind incomplete guards are preserved         span up to 9 function frames, and 22.7% are interprocedural.
+rather than rejected. Layer 3 compares the two versions: a path            c) Deployment to coding agents.: Because a reported
+blocked in the fixed commit strongly confirms the candidate,         trigger carries a machine-checkable witness, we expose Au-
+since the patch neutralizes it, while a path that persists in both   toTrace as a Model Context Protocol server and a VSCode
+is only weak negative evidence, because many patches add an          extension, so agentic assistants (Claude Code, Codex, Copilot)
+upstream guard rather than removing the sink, so it lowers           can call trigger localization as a tool and receive a witness-
+confidence modestly without rejecting.                               backed statement rather than an unverified suggestion.
+     d) Evidence synthesis: the verification agent.: Each layer
+emits a structured packet with a boolean outcome, a confi-                         IV. R ESULTS AND E VALUATION
+dence, and, where applicable, a witness or guard descriptor.         Research questions. We investigate three questions. RQ1 asks
+The report predicate is                                              how effective AutoTrace is at trigger localization relative to
+                                                                     prior tools on both intra- and interprocedural CVEs. RQ2 asks
+report(σ) = Gate1/1b (σ) ∧ Gate4 (σ) ∧ Agent3Accept(σ),
+                                                                     which pipeline components contribute to that effectiveness
+a strict monotone restriction that fixes what Agent 3 is for: the    and what the operational cost looks like. RQ3 asks whether
+hard gates are necessary, so a candidate that fails Gate1/1b or      SinkTrace-Bench serves as a discriminative benchmark for
+Gate4 is rejected regardless of the agent’s confidence, and          interprocedural vulnerability reasoning.
+Agent 3 can only further reject, never admit a gate-failer. It
+                                                                     A. Experimental Setup
+is thus neither an override nor redundant: among gate-passers
+it weighs the corroborating Layer 2 and Layer 3 signals to                 a) Dataset.: We evaluate AutoTrace on InterPVD [1],
+render the final verdict, and is the primary decider only for the    whose 744 unique real-world C/C++ CVEs span 16 CWE
+leak family (CWE-401), whose missing-release defect has no           classes; because AutoTrace analyzes each fixing commit as
+provable forward dataflow (§IV-E). It defaults conservatively        a whole, one sample is one CVE. InterPVD provides ground-
+and can never create a sink, alter the statement, or read a          truth annotations for (i) patch statements, (ii) vulnerability-
+missing witness as success; exact rules and prompts are in           triggering statements and their enclosing functions, and (iii)
+Appendix A.                                                          whether the trigger is interprocedural relative to the patched
+                                                                     function; to our knowledge, it is the most comprehensive
+I. Stage 5: SinkTrace-Bench Construction                             public benchmark for VFC-conditioned trigger localization.
+      a) From triggers to a benchmark.: Existing vulnerability             b) Metrics.: We report trigger localization using three
+datasets label what is vulnerable but leave why implicit, so         metrics. VulnHit counts a CVE as correct only when an
+models learn the surface shape of vulnerable code, the wrong         identified trigger lands on a ground-truth trigger by matching
+signal for interprocedural triggers whose surface shape is           its statement or line; reaching the correct function without
+ordinary. SinkTrace-Bench bakes the S2S chain into every             the correct statement earns no credit, matching the line-level
+sample, matching the supervisory signal to the reasoning task.       criterion VulTrigger [1] reports. FuncHit is a broader function-
+   For each accepted trigger the builder emits a vulnerable and      reach metric: it counts a prediction as correct when the pre-
+a safe sample (Fig. 3), each carrying the full source-to-sink        dicted function matches either the annotated trigger function or
+slice, the trigger statement σ, and the critical variable, the       the VFC patch function associated with the benchmark entry,
+vulnerable half from P − and the safe half from P + . Because        regardless of line. Within±5 is the tolerance-based counterpart
+the two come from genuinely different program states, the con-       to VulnHit: it counts a CVE as correct when any identified
+struction avoids the near-identical-snapshot leakage of patch-       trigger lies within a ±5-line tolerance of a ground-truth trigger
+only datasets. The labels come from AutoTrace’s verifier rather      line in the correct file or matches a ground-truth trigger
+than independent experts, so we call them verifier-confirmed         statement. Together, these metrics cover CVE-level trigger
+and audit their agreement with expert ground truth in §IV-D.         success, broad function-level reach, and a tolerance-based
+Fig. 3. Why SinkTrace-Bench is hard (CVE-2014-9659; cf. Fig. 1). Each verifier-confirmed trigger (σ, π) (Fig. 2) forks into a matched pair of independently-
+labeled samples: a vulnerable half from the pre-fix snapshot P − and a safe half from the post-fix snapshot P + . Both halves expose the identical operative
+statement σ (stack->buffer[idx] at cf2_stack_getReal:189, marked ≡), so a model that keys on the sink alone cannot separate them.
+The sole difference (marked ̸=) is a guard two call hops upstream (the post-fix break in cf2_interpT2CharString at depth 0) that bounds
+opStack before it propagates to the sink, flipping the label from vulnerable to safe. Assigning these opposite labels therefore demands interprocedural
+reasoning along the source-to-sink chain rather than patch-diff pattern matching.
+
+
+
+localization view. All three score the trigger statement σ and its                                              TABLE II
+line and function projections (§III-A), never the witness path:                                  T RIGGER - LOCALIZATION ON I NTER PVD.
+localization is statement-level throughout, and the S2S trace
+                                                                               Method                                                             Score (%)
+serves only as the certificate behind each scored statement.
+                                                                               Static analysis: trigger-overlap accuracy
+      c) Implementation and evaluation cohort.: All exper-                     Flawfinder [1]                                                           9.8
+iments run AutoTrace against InterPVD using the pre-fix                        Checkmarx [1]                                                           12.7
+snapshot for trigger localization and the post-fix snapshot                    Infer† [17]                                                             2.5
+for differential verification. The LLM backbone is Gemini-                     Fortify† [18]                                                           13.0
+                                                                               CodeQL† [1]                                                             8.6
+3-Flash; Joern [4] constructs CPGs under a pinned repository
+configuration. We evaluate over the full InterPVD corpus and                   DL detectors: triggering-fn. accuracy                           Intra          Inter
+                                                                               VulBERTa [1]                                                     36.5          31.9
+count every non-output as a miss: any sample that emits no                     LineVul [11]                                                     39.3          28.1
+verified trigger receives a score of 0 on all metrics, so the                  Devign [19]                                                      35.5          34.0
+denominator is fixed at the full corpus and the numbers stay                   ReVeal [20]                                                      36.6          31.5
+                                                                               VulCNN [21]                                                      35.9          36.2
+directly comparable to published baselines. Samples that yield
+no trigger, an acknowledged limitation of the pipeline (§IV-E),                Trigger localization                                          VulnHit FuncHit
+                                                                               VulTrigger [1]‡                                                69.8     n/a
+are already absorbed as misses in every score reported here.                   LLM + RAG§                                                      37.8           87.5
+RQ3 evaluates SinkTrace-Bench on its own dataset.                              AutoTrace (ours)                                                75.0           80.8
+                                                                               †
+                                                                                 72-CVE Magma subset; requires compilation. ‡ VulTrigger reports the same line-level
+                                                                               inclusion accuracy as VulnHit; it provides no function-level figure (n/a).
+B. RQ1: Effectiveness on InterPVD                                              §
+                                                                                 Retrieval-augmented Qwen3.5 on the 593 InterPVD CVEs with available source.
+
+      a) RQ1.1: Overall effectiveness vs. prior tools.: Table II
+compares AutoTrace with prior tools and a simple LLM
+baseline on InterPVD. AutoTrace achieves 75.0% VulnHit                         We isolate the contribution of agentic exploration, against a
+and 80.8% FuncHit. VulnHit is a strict CVE-level inclusion                     non-agentic baseline sharing the same verifier, in §IV-C.
+criterion: a vulnerability counts as solved only when a reported                  Three observations follow. Static rule tools cluster at or
+trigger lands on a ground-truth trigger line or statement,                     below 13% across all five tools (2.5% to 13.0%), because
+not merely the correct function. This is the same line-level                   their enumerated sink lists cannot cover the open-ended set of
+criterion VulTrigger [1] reports, so on the same 744-CVE                       project-specific wrappers and kernel helpers that real C/C++
+corpus the two are directly comparable: AutoTrace’s 75.0%                      codebases use; Fortify and Infer, which require compilation,
+improves on VulTrigger’s 69.8% by 5.2 pp. VulTrigger pub-                      perform similarly to open-source scanners on the 72-CVE
+lishes no function-level figure, so FuncHit is AutoTrace-only.                 Magma subset. Every deep-learning detector degrades on
+The LLM+RAG baseline exposes what this strict criterion                        interprocedural samples: LineVul’s 11.2 pp drop (39.3% to
+measures. On the 593 CVEs both cover, AutoTrace localizes                      28.1%) is the largest, confirming that attention-based line
+the exact trigger nearly twice as often (71.0% vs. 37.8%                       ranking cannot follow a value across a call boundary, while
+VulnHit): the baseline names the right function but misses the                 VulCNN is nearly flat (35.9% vs. 36.2%), likely because its
+triggering statement. Its higher FuncHit (87.5% vs. 80.8%)                     image-based representation encodes less positional context to
+is a coverage artifact, since a plain LLM always emits some                    lose. A patch-function classifier [1] achieves only 8.4% F1
+function while AutoTrace’s verifier abstains rather than guess.                on inter-procedural triggers, confirming that detecting patch
+                         TABLE III                                                              TABLE IV
+AUTOT RACE BREAKDOWN BY INTERPROCEDURAL DEPTH , CWE FAMILY,                 V ERIFICATION GATE ACTIVATION THAT REACH AGENT 3.
+                  AND PROJECT (744 CVE S ).
+                                                                   Gate              Signal                                       %
+Subset                              N    VulnHit FuncHit   W±5
+                                                                   Admissibility (hard): candidate rejected if failed
+Call depth from patched function                                   L1 direct         Direct S2S witness to sink                  55.6
+Depth 1 (intra)                    564    78.0     83.9    80.1    L1b control       Loop/guard fallback (recovered)             33.1
+Depth 2                             98    72.4     77.6    73.5    L1 bypass         Leak-family CWE; L1 waived                  11.4
+Depth 3                             53    56.6     62.3    58.5    L4 context        Sink reachable and guard-free              100.0
+Depth ≥ 4                           29    58.6     65.5    65.5
+                                                                   Corroboration (soft): never rejects
+CWE family                                                         L2 guard          Protective guard on path                    60.8
+Memory (CWE-119/125/787)           413    75.3     81.1    77.2    L3 differential   Patch neutralizes flow                      64.7
+Integer (CWE-189/190/191)          106    73.6     76.4    73.6
+NULL ptr (CWE-476)                  82    68.3     75.6    73.2
+Resource leak (CWE-401/772)         40    80.0     95.0    87.5
+Use-after-free (CWE-416)            31    71.0     77.4    71.0    Classification quality matters downstream: a correct predicted
+Project (top by N)                                                 CWE yields a 59.5% trigger-found rate versus 52.1% when
+linux                              251    70.9     73.3    72.1
+ffmpeg                             102    80.4     82.4    80.4
+                                                                   wrong, so CWE context acts as a search-space constraint, not
+tcpdump                             54    72.2     87.0    77.8    just a label. On 337 commits with curated single-hunk ground
+imagemagick                         54    66.7     81.5    72.2    truth, Stage 1 picks a critical variable from the correct hunk in
+qemu                                49    77.6     87.8    81.6    97.9% of cases. This matters because VulTrigger requires the
+Total                              744    75.0     80.8    77.2    security-relevant diff hunk to be supplied manually, whereas
+                                                                   AutoTrace must autonomously identify it from commits that
+                                                                   often bundle refactoring with the security fix; the 2.1% failures
+scope is not the same as locating the operative statement.         are multi-hunk commits where a high-churn change displaced
+      b) RQ1.2: Effectiveness across vulnerability character-      the true fix.
+istics.: Table III breaks the full benchmark down by depth,           Verification pipeline. A candidate enters the output only
+CWE family, and project. VulnHit degrades with depth (78.0%        through the layered gates of §III-H. Most candidates carry a
+at depth 1 to 57–59% at depth 3 and beyond), and FuncHit           direct dataflow witness and are admitted without the synthesis
+tracks it closely throughout, sitting a roughly uniform 5–7 pp     agent; only the 360 ambiguous candidates reach Agent 3,
+above.                                                             which accepts 356 (98.9%). Agent 3 therefore tightens ac-
+   The function-to-statement gap. FuncHit exceeds VulnHit by       ceptance at the margin rather than driving it, and Table IV
+a roughly uniform 5–7 pp at every depth (5.8 pp overall: 80.8%     reports the evidence mix for these 360.
+vs. 75.0%). The gap is the patch-site fallback: cases landing in      Per-layer contribution. Among the 360 candidates that reach
+the correct function but on a different statement than InterPVD    Agent 3 (Table IV), 55.6% carry a direct L1 dataflow wit-
+annotates, because the verifier reports the patched statement      ness, 33.1% rely on the L1b loop-bound/control-dependency
+as a proxy when an alias, macro wrapper, or missing callee         fallback that recovers otherwise-failing candidates, and 11.4%
+body blocks certification. Since the gap does not widen with       are leak-family admissions with L1 skipped; no complete-L1-
+depth, cross-boundary failures miss the function outright rather   failure candidate reaches the agent, since hard-gate rejections
+than mislocate within it; in every regime the verifier turns       precede it. Among these, L2 flagged a protective guard in
+uncertainty into abstention, not false positives.                  60.8% (never rejecting) and L3 confirmed flow_blocked in
+   CWE misprediction is architecturally coherent rather than       64.7% (its strongest positive signal), while all 360 are L4-
+random: the most frequent confusions are CWE-119→125,              unguarded. In short, L1/L4 supply hard admissibility, L1b
+119→129, 772→401, and 119→787, in each case between                recovers a third of otherwise-failing candidates, and L2/L3
+classes that share the same structural trigger pattern, so down-   only calibrate confidence.
+stream slicing proceeds on a plausible target even when the           Leave-one-out ablation. On a 25-CVE intraprocedural sub-
+label is imprecise.                                                set (full system: 100% FuncHit, 56% VulnHit), reflection-with-
+      c) RQ1.3: Output richness.: AutoTrace emits 2.15 dedu-       retry contributes most (−32 pp FuncHit), then episodic mem-
+plicated triggers per CVE, between expert ground truth (1.20)      ory (−16), CV refinement (−12), and long-term memory (−8);
+and VulTrigger (2.30): more than experts because most CVEs         disabling all four drops FuncHit to 60%, so the mechanisms
+expose several critical variables, fewer than VulTrigger be-       are roughly additive.
+cause every trigger needs a CPG-confirmed path.                       Agentic vs. non-agentic exploration. The ablation above
+                                                                   varies components within the agent; a sharper question is what
+C. RQ2: Component Contribution and Operational Cost                agentic exploration adds over ordinary interprocedural traver-
+     a) RQ2.1: Component contribution.: Stage 1 (CV ex-            sal. We run a non-agentic baseline that shares AutoTrace’s
+traction). Stage 1 reaches 43.2% strict CWE accuracy, but          CPG, slicing, sink taxonomy, and verifier gates but replaces the
+most misclassifications are hierarchically valid (child, parent,   LLM exploration agent with a deterministic best-first traversal
+or root-cause relations) and fuzzy CV recall reaches 82.7%.        over call edges, on the depth-2+ cohort where the question
+is sharpest. On the 43 CVEs both arms complete, the agentic
+explorer raises VulnHit from 4.7% to 18.6% (and at depth 2
+from 7.7% to 30.8%), while FuncHit stays comparable (69.8%
+vs. 74.4%): its contribution concentrates in VulnHit at depth,
+where deterministic traversal reaches the right function but
+cannot track the aliasing and indirect dispatch needed to certify
+the precise statement. Because the deterministic arm uses an
+open-weights verifier backbone, we read the VulnHit gap as
+directional.
+     b) RQ2.2: Operational cost profile.: At $0.65 per CVE
+on average (Gemini-3-Flash billing) and 23.2 LLM calls per
+CVE, AutoTrace is inexpensive in model cost; the wall-clock
+is instead dominated by Joern CPG construction and slicing,
+not LLM inference, with a median of 42 minutes and a P90
+tail near 13.8 hours on deep CVEs. Because the dominant
+cost is per repository, a deployment localizing many CVEs
+against one codebase builds the graph once and amortizes it,
+and the low token cost makes corpus-scale SinkTrace-Bench
+generation economical. AutoTrace therefore targets offline
+batch localization, not interactive use.                              Fig. 4. Zero-shot ROC comparison of seven frontier models on SinkTrace-
+                                                                      Bench.
+D. RQ3: SinkTrace-Bench as a Discriminative Benchmark
+   Beyond training data, SinkTrace-Bench is a point-in-time
+evaluation benchmark for interprocedural reasoning. Each              upstream patch rather than pattern-matching the sink. This
+sample presents one vulnerable or patched program state and           also argues against contamination as the dominant factor: a
+asks a model to classify it as Vulnerable or Safe. This is distinct   model recalling “this CVE is vulnerable” would not explain
+from the localization of §IV-B: the (σ, π) trace is the input a       the systematic collapse on the safe twins, and the spread tracks
+model reasons over, not an output to be localized.                    code-reasoning ability rather than mere exposure.
+   Prompt inputs and contamination control. To test reasoning            Label fidelity. Because the labels come from AutoTrace’s
+rather than recall, every model receives the CWE category,            verifier rather than independent experts, the benchmark carries
+the critical variable, and the source-to-sink slice (vulnerable       a circularity risk bounded by the verifier’s reliability. Auditing
+or patched), and outputs a binary decision plus trigger               against the independent InterPVD annotations, for the vulner-
+localization (function, line, statement) when vulnerable. No          able samples whose CVE has an expert trigger the SinkTrace
+CVE identifier, file name, or commit hash is shown, and inline        label agrees with the expert function in 64.8% of cases and the
+VULNERABLE/FIX/SAFE markers are stripped; the CWE and
+                                                                      exact line in 28.0%. This mirrors AutoTrace’s own localization
+critical variable focus reasoning on the relevant path rather         accuracy, so the labels inherit rather than exceed the localizer’s
+than supply a retrieval key, and cannot alone recover the CVE.        reliability; we call them verifier-confirmed, with the function-
+   Results. Figure 4 and Table V report zero-shot performance         level label the more reliable signal.
+on the 1,542-sample matched-pair release; because the set
+                                                                      E. Threats to Validity
+is balanced, Accuracy equals macro-F1 at full coverage.
+All seven backbones (MiniMax-M2.7, GLM-5.2, Qwen3.5,                       a) Non-completions.: Of the 744 CVEs, 603 (81%) yield
+Qwen3-Coder-Next, Kimi-K2.6, Nemotron-3-Super, Gemini-                at least one verified trigger; the remaining 141 produce none
+3-Flash) are evaluated over the whole set. No model clears            and are counted as misses in the fixed denominator (§IV-A)
+the benchmark: the top accuracy is 59.0% (Gemini-3-Flash),            rather than behind a smaller cohort, so the headline metrics
+only nine points above the 50% chance floor, and it reaches           already absorb the cost. The dominant cause is a 3-hour wall-
+even that by defaulting to vulnerable. The dominant failure           time timeout on deep multi-file vulnerabilities, where Joern
+mode is a true-positive/true-negative asymmetry: the strongest        CPG construction or slicing dominates cost; the remainder
+backbones (Gemini-3-Flash, GLM-5.2, Qwen3-Coder-Next,                 are API or tooling failures and incomplete runs. Because the
+Kimi-K2.6) reach 87–95% TPR but collapse on the safe half             timeouts skew deep, the depth-3+ figures (Table III) are the
+(7–31% TNR), predicting a vulnerable verdict whenever the             conservative reading of the hardest tail. Building the CPG
+sink is present; in ROC space (Fig. 4) they land at high              over the full call path (§V), relaxing the wall-time limit,
+FPR while most models hug the random-classifier diagonal.             and improving CPG incremental loading are the practical
+The one model that stays balanced is the reasoning-enabled            mitigations.
+MiniMax (54.7% TNR against 60.3% TPR), which leads on                      b) Internal.: Three internal limits stem from the CPG
+both TNR and FPR though not on raw accuracy, indicating               substrate. Resource-leak CWEs (401 and kin) manifest as
+that separating a matched pair requires reasoning about the           a missing deallocation, which dataflow cannot prove, so the
+                              TABLE V                                   verified triggers, so the pipeline presupposes a frontier-scale
+ Z ERO - SHOT FRONTIER - MODEL RESULTS ON S INK T RACE -B ENCH ( ALL    model. Finally, matched-pair construction retains a CVE only
+        1,542 SAMPLES ; VALUES %). B OLD = BEST PER COLUMN .
+                                                                        when both halves yield a resolvable, fix-distinguishing slice,
+Model                        Acc     F1    TPR    TNR     FPR    FNR
+                                                                        biasing the benchmark toward cleanly sliceable vulnerabilities.
+                                                                              e) Benchmark construction and manual audit.: The
+Gemini-3-Flash               59.0   68.1   87.5   30.5   69.5    12.5
+MiniMax-M2.7                 57.5   58.7   60.3   54.7   45.3    39.7
+                                                                        pipeline emitted 2,801 candidate samples from the InterPVD
+GLM-5.2                      57.1   67.4   88.5   25.8   74.2    11.5   VFCs, curated in three steps: drop candidates whose source
+Qwen3.5-9B                   55.1   57.2   59.9   50.3   49.7    40.1   file Joern cannot reconstruct; remove exact duplicates, since
+Qwen3-Coder-Next             52.7   65.3   89.2   16.1   83.9    10.8   a CVE’s several critical variables share one source-to-sink
+Kimi-K2.6                    51.3   66.2   95.2    7.4   92.6     4.8
+Nemotron-3-Super             50.1   53.0   56.3   43.8   56.2    43.7   chain and collapse to identical (slice, trigger, label) triples; and
+                                                                        keep only matched vulnerable/safe pairs whose halves differ,
+                                                                        discarding unpaired halves and byte-identical pairs (residual
+                                                                        label leaks where the fix falls outside the extracted window).
+verifier admits them on structural grounds, widening the hal-           Each slice keeps every frame on the source-to-sink path so the
+lucination surface the dataflow gate ordinarily closes (all such        critical variable’s provenance stays continuous, with frames
+decisions are logged). Joern’s field-sensitivity does not fully         beyond a window cropped around their next-hop call site.
+track nested dereferences, so slices for deeply indirect pointer        Earlier snapshots (2,414 body-only, 1,687 endpoint-only, 1,556
+patterns may omit use sites; because the verifier reasons over          pre-full-path) predate this representation; Table V and the
+the same graph, this is an integrity limit as well as a recall          audit below report the current release. To meet the reviewers’
+one (§III-C). More often the loss is coarser: on 80 CVEs the            request for an independent check, we manually annotated all
+patch-scoped CPG (§III-E) never grows to the sink function or           1,542 samples against a fixed eight-field rubric. Every sample
+the sink hides behind an unexpanded macro, so Joern returns             carries an agreed Vulnerable/Safe label (100% label fidelity:
+an empty slice, not from an inability to follow the value               92.3% agree outright, 7.7% agree after deliberation), and the
+but from being handed a partial graph (remedy in §V). And               CWE family, source-to-sink validity, and safe-side fix are
+InterPVD does not uniformly annotate root-cause triggers, so            consistent in every sample. The one imperfection is trigger
+a causally correct trigger can score as a VulnHit miss, the bias        precision: the annotated trigger statement genuinely causes
+§V quantifies.                                                          the vulnerability in 83.8% of vulnerable samples (646/771,
+      c) External.: InterPVD covers C/C++ CVEs over                     with 6 further partial matches), still well above the 64.8%
+16 CWE classes; generalization to managed languages,                    automated agreement with InterPVD’s expert function (§IV-D)
+firmware, or fuzz-discovered classes is unvalidated. The sub-           because annotators credit root-cause triggers that diverge
+tler threat is contamination: the CVEs predate the evaluated            from InterPVD’s consequence-level annotation; the remaining
+models’ cutoffs, so a model could recall a vulnerability rather         15.4% point off-target where Joern cannot resolve a cross-
+than reason about it, inflating RQ3 and, to a lesser degree,            function hop (alias, indirect call, or macro wrapper). We
+RQ1. We reduce but cannot eliminate it (RQ3 prompts omit                release every per-sample annotation and position SinkTrace-
+CVE identifiers, file names, and commit hashes (§IV-D);                 Bench for training and reasoning evaluation rather than as a
+matched vulnerable/patched pairs make “this CVE is vulner-              gold detection oracle.
+able” non-discriminative; and model-to-model variation under
+identical inputs checks against pure recall), but a definitive                                  V. D ISCUSSION
+control requires vulnerabilities disclosed after every model’s             Two findings shape how AutoTrace should be read. The
+cutoff, which the current corpus cannot supply. This motivates          5.8 pp FuncHit/VulnHit gap reflects conservative abstention,
+our main forward direction: running AutoTrace over repository           not confident error: at every depth the system reaches the
+snapshots dated after every evaluated model’s cutoff, and               correct function but reports a proxy statement when it cannot
+ultimately over unpatched code where no fix or advisory yet             certify the exact operation (§IV-B). The strictness of the
+exists, so no public record of the trigger predates the model           dataflow gate is the intended price of grounded acceptance, so
+and the memorization route is removed rather than merely                the principal lever for recall is CPG completeness, not verifier
+bounded. Because each reported trigger is CPG-gated rather              relaxation (fully graphed radare2 100% FuncHit vs. deep,
+than a model guess, the same leak-free setting doubles as               timeout-prone linux 73.3%), and at $0.65 per CVE the same
+zero-day trigger discovery: evidence-backed candidates in live          machinery yields SinkTrace-Bench at a scale no prior localizer
+code rather than the reproduction of known CVEs. RQ1 is                 reaches without manual annotation.
+less exposed in any case, demanding an exact statement on a                From patch-scoped to call-path CPGs. The completeness
+specific snapshot.                                                      gap above is an engineering limit, not a reasoning one,
+      d) Construct.: VulnHit credits a trigger that lands on            and closing it is a central near-term direction. AutoTrace
+the ground-truth statement or line and FuncHit ignores line             grows the workspace on demand from the patch (§III-E) to
+position, with Within±5 between; the three are meant to                 bound context and whole-repository noise, but that growth
+be read together. AutoTrace’s accuracy is also bounded by               stalls at macro-hidden or unresolved call targets, so the sink
+its backbone: a preliminary small-backbone run produced no              function is often absent and the slice comes back empty.
+Building the CPG eagerly over every file on the source-to-                       [12] Y. Ding, S. Suneja, Y. Zheng, J. Laredo, A. Morari, G. Kaiser, and
+sink call path, and expanding macros and headers so macro-                            B. Ray, “Velvet: a novel ensemble learning approach to automatically
+                                                                                      locate vulnerable statements,” in 2022 IEEE International Conference
+sinks (e.g. ipaddr_string) become real nodes, would let                               on Software Analysis, Evolution and Reengineering (SANER). IEEE,
+Joern’s dataflow carry the critical variable through pointers,                        2022, pp. 959–970.
+                                                                                 [13] G. Tang, L. Yang, L. Zhang, H. Kuang, and H. Wang, “Mrc-vulloc:
+struct fields, and calls uniformly rather than re-anchoring it                        Software source code vulnerability localization based on multi-choice
+by name at each hop. Field-sensitivity still misses some deep                         reading comprehension,” Computers & Security, vol. 141, p. 103816,
+aliasing (§IV-E), so completeness stays below 100%, but this                          2024.
+                                                                                 [14] Z. Li, S. Dutta, and M. Naik, “Iris: Llm-assisted static analysis for
+moves AutoTrace from cleanly sliceable cases to the large                             detecting security vulnerabilities,” arXiv preprint arXiv:2405.17238,
+majority, handled the same way across scenarios.                                      2024.
+                                                                                 [15] A. Hou, B. Su, W. Niu, Q. Hou, H. Wu, and X. Zhang, “Cpghunter:
+                       VI. C ONCLUSION                                                Llm-guided semantic modeling for scalable vulnerability detection via
+                                                                                      taint analysis,” Empirical Software Engineering, vol. 31, no. 4, p. 106,
+   Trigger localization demands causal, interprocedural rea-                          2026.
+soning that neither static rule sets nor attention-based line                    [16] J. Guo, C. Wang, X. Xu, Z. Su, and X. Zhang, “Repoaudit: An
+                                                                                      autonomous llm-agent for repository-level code auditing,” arXiv preprint
+rankers provide. AutoTrace supplies it with an agentic CPG                            arXiv:2501.18160, 2025.
+search whose every reported trigger is gated by deterministic                    [17] “Infer static analyzer,” https://fbinfer.com/, 2023.
+                                                                                 [18] “Fortify static code analyzer,” https://www.microfocus.com/en-us/
+admissibility, reaching 75.0% VulnHit and 80.8% FuncHit on                            cyberres/application-security, 2023.
+the full InterPVD benchmark and improving on VulTrigger’s                        [19] Y. Zhou, S. Liu, J. Siow, X. Du, and Y. Liu, “Devign: Effective vulner-
+69.8% under the same inclusion metric; the same machinery                             ability identification by learning comprehensive program semantics via
+                                                                                      graph neural networks,” in Advances in Neural Information Processing
+yields SinkTrace-Bench (1,542 verifier-confirmed samples,                             Systems, vol. 32, 2019.
+771 matched pairs, at $0.65 per CVE). Our primary next step                      [20] S. Chakraborty, R. Krishna, Y. Ding, and B. Ray, “Deep learning based
+                                                                                      vulnerability detection: Are we there yet?” in IEEE Transactions on
+is to run AutoTrace over live repository snapshots to surface                         Software Engineering, vol. 48, no. 9. IEEE, 2022, pp. 3280–3296.
+zero-day triggers, where no prior public record can leak                         [21] Y. Wu, D. Zou, S. Dou, W. Yang, D. Xu, and H. Jin, “VulCNN: An
+the answer and its CPG-gated acceptance keeps discovered                              image-inspired scalable vulnerability detection system,” in Proceedings
+                                                                                      of the 44th IEEE/ACM International Conference on Software Engineer-
+candidates evidence-backed; extending to managed languages                            ing (ICSE). ACM, 2022, pp. 2365–2376.
+and distilling localization into smaller models follow.
+                              R EFERENCES                                                                           A PPENDIX
+ [1] Z. Li, N. Wang, D. Zou, Y. Li, R. Zhang, S. Xu, C. Zhang, and               A. Agent Prompts
+     H. Jin, “On the effectiveness of function-level vulnerability detectors      Agent 1: Critical-Variable Extraction
+     for inter-procedural vulnerabilities,” in Proceedings of the IEEE/ACM
+     46th International Conference on Software Engineering, 2024, pp. 1–            You are a security expert analyzing code commits. Extract ALL distinct
+                                                                                    critical variables from this fix using exact code identifiers (struct
+     12.                                                                            fields: the field, not the pointer); predict a CWE per variable.
+ [2] A. Sejfia, S. Das, S. Shafiq, and N. Medvidović, “Toward improved             In: {commit_message, diff, context}   Out: [{name, location, reason,
+     deep learning-based vulnerability detection,” in Proceedings of the 46th              confidence, predicted_cwe}]
+
+     IEEE/ACM international conference on software engineering, 2024, pp.
+     1–12.                                                                        Agent 2: Frontier Exploration
+ [3] F. Yamaguchi, N. Golde, D. Arp, and K. Rieck, “Modeling and discover-          You are a vulnerability analyst tracing a critical variable through C/C++
+     ing vulnerabilities with code property graphs,” in 2014 IEEE symposium         to find sinks. Tools: slice_variable, find_tainted_callsites, list_callees/
+                                                                                    callers, read_function_source_code, lookup_cwe_sink_patterns. Local first; <=5
+     on security and privacy. IEEE, 2014, pp. 590–604.                                      targets.
+ [4] Joern Project, “Joern documentation,” https://docs.joern.io/, 2026, ac-        In: {cve_id, cwe, function, variable, depth, slice_nodes, ...}   Out:
+     cessed 2026-03-16.                                                                    ExplorationDecision {sinks, targets}
+
+ [5] Z. Li, D. Zou, S. Xu, H. Jin, Y. Zhu, and Z. Chen, “Sysevr: A
+     framework for using deep learning to detect software vulnerabilities,”       Agent 3: Verification Judge
+     IEEE Transactions on Dependable and Secure Computing, vol. 19, no. 4,          You are a vulnerability verification specialist. Given L1-L4 evidence for one
+     pp. 2244–2258, 2021.                                                           candidate, decide if it is a TRUE trigger. Rules: L1 dataflow required (skip
+                                                                                    for leak CWEs); L2/L3 adjust confidence ("flow_exists_both" never rejects
+ [6] B. Wu, S. Liu, Y. Xiao, Z. Li, J. Sun, and S.-W. Lin, “Learning                       alone); L4 confirms guard absence.
+     program semantics for vulnerability detection via vulnerability-specific       In: {evidence: layer1..layer4}   Out: {is_true_trigger, confidence, reasoning}
+     inter-procedural slicing,” in Proceedings of the 31st ACM Joint European
+     Software Engineering Conference and Symposium on the Foundations             SinkTrace-Bench Evaluation: Frontier Models (RQ3)
+     of Software Engineering, 2023, pp. 1371–1383.                                  [SYSTEM] You are a vulnerability analysis expert. Given a source-to-sink
+ [7] S. Salimi and M. Kharrazi, “Vulslicer: Vulnerability detection through         slice, decide Vulnerable or Safe; if vulnerable, give the exact trigger
+     code slicing,” Journal of Systems and Software, vol. 193, p. 111450,           statement. Respond ONLY: {"decision":"Vulnerable"|"Safe","trigger_function",
+                                                                                    "trigger_line","trigger_statement"} (localization null when Safe).
+     2022.                                                                          [USER] CWE: {cwe} Critical Variable: {variable}
+ [8] F. Mächtle, N. Loose, T. Schulz, F. Sieck, J.-N. Serr, R. Möller,            ## Source-to-Sink Code: {source_to_sink_code}
+                                                                                    Return JSON only.
+     and T. Eisenbarth, “Trace gadgets: Minimizing code context for
+     machine learning-based vulnerability prediction,” arXiv preprint
+     arXiv:2504.13676, 2025.                                                      Appendix B: Joern (CPGQL) traversals per evidence layer
+ [9] A. Lekssays, H. Mouhcine, K. Tran, T. Yu, and I. Khalil,                     Notation: m = method, v = critical variable, L = sink line. Shared bindings below.
+     “{LLMxCPG}:{Context-Aware} vulnerability detection through code                val tgt = cpg.identifier.name(v) ++ cpg.fieldIdentifier.canonicalName(v)
+                                                                                    val src = m.ast.isIdentifier.nameExact(v) ++ m.parameter.nameExact(v)
+     property {Graph-Guided} large language models,” in 34th USENIX
+     Security Symposium (USENIX Security 25), 2025, pp. 489–507.                  slice variable: backward, then forward data-flow slice of v.
+[10] J. Chen, H. Xiang, Z. Zhao, L. Li, Y. Zhang, B. Ding, Q. Li, and               tgt.reachableByFlows(m.parameter ++ m.call ++ m.literal)
+                                                                                    tgt.reachableByFlows(m.call.argument ++ m.ast.isReturn)
+     S. Xiong, “Utilizing precise and complete code context to guide llm in
+     automatic false positive mitigation,” arXiv preprint arXiv:2411.03079,       find tainted callsites: taint from v to a call argument, mapped to callee/param.
+                                                                                    m.call.argument.reachableByFlows(src).map(_.inCall)
+     2024.
+[11] M. Fu and C. Tantithamthavorn, “Linevul: A transformer-based line-           L1 has flow: sink reachable from the source (out-parameter semantics).
+                                                                                    val snk = m.ast.lineNumber(L) ++ m.ast.code(".*" + sink + ".*")
+     level vulnerability prediction,” in Proceedings of the 19th international      snk.collect { case n: CfgNode => n }.reachableByFlows(src)
+     conference on mining software repositories, 2022, pp. 608–620.
+L1b control dependency: a loop header that references v.
+  m.ast.isControlStructure.filter(_.ast.isIdentifier.nameExact(v).nonEmpty)
+
+L3 differential: rerun L1 on patched CPG; flow blocked in P + only.
+
