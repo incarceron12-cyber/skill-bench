@@ -766,6 +766,7 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [AFTER](../papers/agent-benchmarks/2026-07-13-after-procedural-memory-transfer-validity.md) | A | Separates source-context gain, equivalent-form reuse, changed-context transport, and cross-model consumption while exposing complete-case selection, configured-system gaps, feedback/authoring overlap, and trace-diversity/volume confounding |
 | [SLBench](../papers/agent-benchmarks/2026-07-13-slbench-skill-relation-validity.md) | B | Makes precondition, postcondition, constraint, conjunction, fallback, exception, override, and conflict relations executable, while exposing that LLM-co-designed extraction, case generation, and evidence contracts need independent projection and grader validation |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Shows why expert-written examples and criteria can improve judge agreement while also anchoring outputs |
+| [ComplexConstraints](../papers/agent-benchmarks/2026-07-17-complexconstraints-expert-rubric-reward-validity.md) | A | Separates authority-bearing requirements, criterion projection, observer calibration, reward topology, optimizer exposure, same-instrument gain, untouched transport, and artifact/state consequence; its complete public benchmark is inspectable but the training/judge/CoreCraft/checkpoint/run evidence needed for reward or professional-validity claims is absent |
 | [Harness-Bench](../papers/agent-benchmarks/2026-07-10-harness-bench-execution-isolation.md) | B | Makes the harness and execution boundary explicit so a skill effect is not confused with launcher, tool, or isolation differences |
 | [Harness-Induced Belief Divergence](../papers/agent-benchmarks/2026-07-17-harness-induced-belief-divergence-validity.md) | B | Makes representation, blocked-branch visibility, repair compression, verification masking, and evidence pruning explicit harness treatments, while its imagined non-executing rollouts, fabricated repair/verifier events, schema-elicited self-reports, one model, and incomplete release bound the evidence to prompt-conditioned report divergence |
 | [WildClawBench](../papers/agent-benchmarks/2026-07-17-wildclawbench-native-runtime-transport-validity.md) | A | Adds 60 cross-domain bilingual/multimodal native-CLI tasks, artifact/state/trace grading, time/cost evidence, and negative Skill interactions; its post-v1 release audit shows that privileged networked images, runtime installs, mock/live services, adapter-normalized traces, state-to-prose fallback, absent result ledgers, and corrected live-web ground truth make full task→consequence transport validity a prerequisite for harness, Skill, safety, or reproducibility claims |
@@ -782,6 +783,32 @@ records can carry the gate; no simulator-specific subsystem follows.
 | [Human oversight of agentic systems in practice](../papers/agent-benchmarks/2026-07-17-human-oversight-agentic-systems-practice.md) | B | Locates reported oversight across a priori control, co-planning, monitoring, and post-hoc review and exposes practical plan/test/spot-check/deference heuristics, while a one-company-heavy N=17 retrospective intensity sample with no observed work or outcomes supports lifecycle authoring hypotheses—not prevalence, heuristic correctness, oversight efficacy, or readiness |
 
 **Repository consequence:** The benchmark bundle encodes configured-system identity and a no-skill/public-skill × independent/shared-rubric design rather than reporting an unqualified “skill lift.” Recognition is a different intervention axis: preserve situation-only, minimally framed, and fully specified conditions, positive and negative near neighbors, and separate observations for cue extraction, problem framing, targeted inquiry, action, and artifact consequence. Domain analysis adds a related but distinct inquiry ladder: preserve source-bound observation, anomaly or candidate hypothesis, rivals and uncertainty, predeclared discriminating test, executed evidence, update/rejection, recommendation or escalation, and downstream consequence. Candidate-generation quality must not inherit verification or causal-truth credit from a holistic prose grade. A recognition frame names or narrows the problem; a procedural skill prescribes how to solve it; a rubric or evaluator cue reveals what will be rewarded. Their versions and effects must not be collapsed. The internal problem-recognition replay exercises this staged instrumentation and invalid-environment abstention on builder-authored synthetic cases only; it supplies no expert validity, agent result, treatment effect, prevalence, or cross-domain claim ([replay](../pilots/problem-recognition-intervention/replay-report.json)).
+
+Criteria used for optimization require a parallel **rubric-reward claim ladder**:
+`authority-bearing requirement → criterion projection → observer evidence view →
+reward transform → optimizer exposure → frozen same-instrument measurement →
+untouched transport measurement → authoritative artifact/state consequence →
+licensed claim`. Keep rubric authority, observer reliability, reward learnability,
+same-instrument gain, external transport, consequence, expertise transfer, and
+professional validity/readiness distinct. Criterion means and all-criteria task pass
+are different estimands; applicability, dependencies, hard gates, answer-bearing
+anchors, overlap, and unequal information content prevent raw criteria from being
+treated as independent equal units. Positive/negative verdict-flip pairs establish
+local observer responsiveness, not representative specificity or construct validity.
+
+[ComplexConstraints](../papers/agent-benchmarks/2026-07-17-complexconstraints-expert-rubric-reward-validity.md)
+makes this coupling concrete. The complete pinned release supports inspection of 75
+prompts and 1,559 criteria, including bundled, overlapping, conditional, and
+answer-bearing checks. The paper reports one single-seed +15.5-point held-out
+criterion-score change and preliminary gains on independently named external
+instruments, but releases no 1,000-item training set, criterion roles/dependencies,
+calibration labels, grader, CoreCraft package, checkpoints, exact configurations, or
+raw runs. Thus the source supports same-instrument and preliminary transport evidence,
+not reproduced reward causality, expert authority, observer validity, authoritative
+artifact/state improvement, expertise transfer, professional validity, or readiness.
+Use existing criterion, configured-system, grader/evidence-view, artifact/state,
+metric, task-health, trial-accounting, and validity records; add no RL-specific
+schema or pilot.
 
 Harness validity adds a runtime projection boundary after source-to-task construction:
 `canonical executor/environment/verifier event → declared agent-visible projection

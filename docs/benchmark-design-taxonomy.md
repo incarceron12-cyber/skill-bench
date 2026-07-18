@@ -2920,6 +2920,72 @@ consistency but also create evaluator-cue compliance. The minimum causal matrix
 is no-skill/public-skill × independent/shared-rubric, with exact-rubric
 disclosure only as an explicit leakage/compliance condition [LH].
 
+### Rubric reward and rubric measurement are distinct configured roles
+
+When criteria become optimizer feedback, “rubric” no longer identifies one object.
+Preserve a typed, non-inheriting chain:
+
+```text
+authority-bearing requirement → criterion projection → observer evidence view
+  → reward transform → optimizer exposure → frozen same-instrument measurement
+    → untouched transport measurement → authoritative artifact/state consequence
+      → licensed expertise, professional-validity, or readiness claim
+```
+
+The requirement record binds source spans, qualified authority and scope, public
+basis, alternatives, valid time, and contributor disposition. The criterion binds
+a stable ID/hash; proposition and polarity; required, bonus, penalty, diagnostic,
+or gate role; applicability; dependencies; answer-bearing examples; evidence view;
+and licensed interpretation. The reward configuration separately binds the exact
+criterion set, grouping, weights, gates, clipping, aggregation, judge/model/prompt,
+invalid or missing-judgment policy, and version. Optimizer exposure records the
+training items, repetitions, feedback visible to the solver, checkpoint-selection
+policy, seeds, and complete resource and attempt ledger. Changing any of these
+forks the configured intervention; it does not silently revise the instrument.
+
+Keep at least eight claim rungs separate: **rubric authority**, **observer
+reliability**, **reward learnability**, **same-instrument gain**, **external
+transport**, **artifact/state consequence**, **expertise transfer**, and
+**professional validity/readiness**. Criterion-pass and all-criteria task-pass are
+different estimands. Uniform criterion means do not establish independent or equal
+requirements: split or overlapping checks can multiply leverage, inactive checks
+need applicability states, prerequisites induce masking, and severe vetoes must not
+be compensated by many presentational successes. Preserve effective requirement
+groups and dependency/gate sensitivity beside the raw criterion vector.
+
+Local satisfying/verdict-flip pairs are useful observer mutation tests, but they do
+not establish representative specificity, repeated-call stability, legitimate-
+alternative acceptance, criterion authority, or reward validity. Answer-bearing
+criteria can reduce judge recall demands while exposing optimizer anchors. Calibrate
+the observer on frozen positive, negative, alternate-valid, bundled/dependent,
+inapplicable, insufficient-evidence, and severe-error cases with repeated human and
+model observations; then test reward effects separately with repeated training
+seeds, task-clustered paired outcomes, complete missing/invalid accounting, and a
+frozen configured-system and resource envelope.
+
+For stateful work, trajectory prose is not consequence evidence. Join reward
+observations to authoritative action receipts, before/after state or native artifact
+views, preserved/collateral predicates, cleanup, and recipient or expert disposition.
+A useful minimum measurement design crosses intervention exposure with four frozen
+surfaces: same tasks/criteria under an independently calibrated observer;
+equivalent-form tasks with independently authored criteria; another domain sharing
+the proposed procedure; and authoritative artifact/state consequences. A gain only
+on the first is evaluator-package adaptation; the middle surfaces support bounded
+transport; the final surface is required before consequence promotion.
+
+ComplexConstraints makes this boundary unusually visible. Its complete pinned
+public surface contains 75 prompts and 1,559 criteria, but no stable criterion IDs,
+roles, applicability/dependency graph, grader or calibration records, 1,000-item
+training corpus, CoreCraft package, checkpoints, raw runs, or result rows [CC]. The
+paper reports two single-seed pre/post training cases, a +15.5-point held-out
+criterion-score change, and gains on independently named external instruments. This
+is same-instrument and preliminary transport evidence, not a reproduced reward
+effect, expert-authority proof, observer calibration, artifact/state improvement,
+expertise transfer, professional validity, or readiness. Existing criterion,
+configured-component, grader/evidence-view, metric, task-health, artifact/state,
+trial-accounting, and validity records host the chain; no RL-specific schema or
+pilot follows.
+
 A problem frame is a third object: it names or narrows *what situation is
 present*, while a skill prescribes *how to proceed* and a rubric exposes *what an
 observer will reward*. Estimate recognition with situation-only versus minimal-
@@ -4035,6 +4101,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Practitioner production-practice evidence (MAP) | reporting-unit/selection/denominator provenance and practice→realization→outcome bridge | selected self-report prevalence mistaken for representative practice, audited realization, causal efficacy, reliability, or successful deployment | full accepted immutable v4 paper/instrument plus v3 headline comparison; 20 confidential selected cases and 86 production/pilot main-frame records, no released row data or system/outcome audit [MAP] |
 | Trajectory confidence prediction (Agentic Confidence Calibration) | typed derived probability for one configured success predicate, followed by transport and decision-policy validation | post-outcome prediction mistaken for early warning, repeat reliability, causal diagnosis, decision utility, or provider-invariant confidence | full immutable v1 paper/source review; reported eight-sample cross-validation and transfer tables, but no released code, trajectories, labels, splits, configurations, or calibrator [ACC] |
 | Expert-authored criterion evaluation (ResearchRubrics) | reviewed criterion inventory, criterion-level judge observation, rubric transformation lineage | task-design authority mistaken for domain authority; bundled/dependent or hidden criteria; artifact-only source checks; uncalibrated additive score | full immutable v1 paper plus inspected post-paper official code/dataset releases; authoring and agreement evidence, not professional-readiness validation [RR] |
+| Criterion-as-reward evaluation (ComplexConstraints) | requirement→criterion→observer→reward→optimizer→same-instrument/transport/consequence chain; criterion/task-pass and dependency/gate separation | judge-legible or answer-bearing criteria optimized as if authoritative and independent; same-family gain promoted to expertise transfer; external pre/post promoted to causal reward, consequence, or readiness evidence | full immutable v3 paper plus complete pinned 75-task/1,559-criterion release audit; benchmark text is inspectable, while training data, calibration labels, grader, CoreCraft, checkpoints, configurations, and raw runs are unavailable [CC] |
 | Human-first criterion authoring (Nugget-HIL) | pre-assistance human intent, typed canonicalization, impact-preview adaptation, frozen-bank confirmation | human initiative mistaken for complete authority; candidate-output and ranking anchoring; same-pool tuning; matcher/export invalidity | full immutable v2 paper plus mutable prototype/code/data audit; interface-pattern evidence only, with no user, rater, judge, held-out, cost, or professional-decision validation [HNA] |
 | Executable decision artifacts (ORAgentBench) | obligation/conformance dual witness; native objective and hard feasibility; reference-strength and staged-policy records | authored-model feasibility or oracle-relative normalization promoted to professional quality; heterogeneous scales pooled; single-run rankings treated as reliable | full immutable v1 paper plus complete pinned post-v1 release audit; strong package-inspection evidence, not reproduced rankings, professional OR validity, operational competitiveness, or readiness [ORA] |
 | Dynamic professional grading (JADE) | separate fixed and response-triggered criterion populations, trigger lineage, typed evidence/dependency graph, and plural score families | answer-conditioned obligations, variable denominators, duplicate/shared-cue checks, live-web authority error, fail-open verification, and uncalibrated fusion | full immutable v1 paper plus inspected close post-v1 release; bounded evaluator-architecture and deterministic fallback evidence, not expert-equivalent, cross-domain, or readiness validation [JADE] |
@@ -4341,6 +4408,12 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
     nesting; distinguish assembly opportunity from realized assembly, and do not
     promote configured artifact generation into mechanism, prevalence, harm,
     defense, or readiness [RIC].
+65. **Reward learnability is not rubric or consequence validity:** preserve
+    requirement authority, criterion semantics/dependencies, observer evidence view
+    and calibration, reward topology, optimizer exposure, seeds/attempts, frozen
+    same-instrument outcomes, untouched transport, and authoritative artifact/state
+    consequences. A score increase against the optimized criterion family cannot
+    silently license expertise transfer, professional validity, or readiness [CC].
 
 ## 8. Unresolved tensions and required experiments
 
@@ -4367,6 +4440,7 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
 | Shared runner breadth vs measurement equivalence | BrowserGym runs heterogeneous families through one interface, but inspected adapters retain different rewards/evaluators and transform observations, trajectories, parsing, errors, retries, and resets; paper results lack native/adapted agreement and clustered repeats [BG]. | From frozen native states, run matched native/adapted cases and compare score, termination, side effects, typed evaluator evidence, invalidity, resets, and all attempts; report family scores until preservation and any common-scale validity are independently supported. |
 | Executable composition vs workflow/planning validity | WorkArena++ composes setup, oracle, and validators and increases horizon, but author-designed variants, history-dependent sequential validation, near-floor agents, a small ServiceNow-heavy human sample, and a later release do not isolate planning or occupational realism [WA]. | Across two provenance-grounded unlike workflows, compare matched atomic and composite conditions with controlled presentation/interface/information budgets; replay terminal invariants independent of polling order, test reversals and resets, and report family-clustered uncertainty plus earliest unsupported dependencies [CW]. |
 | Judge agreement vs rubric construct preservation | ResearchRubrics finds better binary than ternary agreement and modest agreement gains from examples, but lacks duplicated-human reliability, criterion atomicity/dependence audits, and evidence access for source predicates [RR]. | On a pilot rubric, independently mark bundled/overlapping criteria and answer anchors; compare transformed variants on duplicated expert labels, judge confusion, legitimate solution diversity, and external artifact acceptability. |
+| Dense rubric reward vs independent consequence improvement | ComplexConstraints reports single-seed same-family and external pre/post gains, while the released criteria include answer-bearing, bundled, overlapping, conditional, and unequally sized units and omit reward/training/judge/run artifacts [CC]. | Freeze requirement authority, criterion groups/dependencies, judge and reward topology; cross no/placebo/dense/dependence-aware rewards over repeated seeds; evaluate same-family, independently authored equivalent-form, cross-domain procedure, and authoritative artifact/state surfaces separately with complete trial ledgers and collateral gates. |
 | Human-first initiative vs outcome-conditioned instrument tuning | Nugget-HIL enforces a human note/span before canonicalization, but displays candidate outputs, matcher grades, quotes, coverage, and ranking effects before final admission/weighting; it has no user study, held-out bank, or judge validation [HNA]. | Across two unlike artifact families, compare human-only, AI-proposal-first, human-note-first without preview, and human-note-first with preview; randomize exposure, preserve pre-assistance intent, add external obligations absent from outputs, and test semantic fidelity, coverage, matcher error, burden, and frozen-bank decisions on untouched systems. |
 | Executable feasibility vs calibrated professional decision quality | ORAgentBench strongly observes encoded constraints and oracle-relative objectives, but heterogeneous reference strengths/calibration modes and one common threshold do not establish one loss tolerance, recipient acceptance, or operational utility [ORA]. The internal objective package validates record semantics only [OC]. | On unlike decision artifacts, plant feasible-poor, objective-strong-but-obligation-wrong, legitimate-alternative, parser/tolerance exploit, stale replan, and cumulative-versus-terminal cases; retain native loss and calibration mode, require independent obligation/acceptance review, and test aggregation and threshold sensitivity before any quality or readiness promotion. |
 | Rich temporal observation vs coherent signed criterion semantics | AgenticVBench's later release supplies native/rendered/audio/metadata/model views, yet 13/36 Repurpose briefs conflict with hidden resolution criteria and at least five desirable-state negative-weight items omit the scorer's inversion flag; human/calibration/result records are absent [AVB]. The completed internal slice rejects both observed defect classes and five adjacent contract mutations, but is deterministic builder-authored preflight only [SCI]. | On signed, semantically coherent criteria, calibrate each artifact observer against blinded temporal boundary cases and independent authority review; measure criterion and decision error, disagreement, invalidity, and professional acceptance separately rather than promoting schema conformance or observer agreement. |
@@ -4585,6 +4659,18 @@ them:
 
 ## Provenance keys
 
+- **[CC]**
+  `papers/agent-benchmarks/2026-07-17-complexconstraints-expert-rubric-reward-validity.md`;
+  reviewed immutable arXiv v3 PDF/text and complete official Hugging Face benchmark
+  surface pinned at `e9625c6f635f42b72cb85a04c2be64746f945126` are recorded in
+  `data/sources/releases/2606.09118v3-complexconstraints/provenance.json`. The
+  release exposes 75 prompts and 1,559 criteria but omits the training corpus,
+  expert/review lineage, criterion roles, calibration pairs and labels, grader,
+  CoreCraft, checkpoints, configurations, and raw runs. Evidence supports benchmark-
+  text inspection plus paper-reported same-instrument and preliminary external
+  transport observations—not reproduced reward effects, criterion authority, judge
+  validity, artifact/state consequence, expertise transfer, professional validity,
+  production fitness, or readiness.
 - **[DW]**
   `papers/agent-benchmarks/2026-07-17-devicesworld-cross-device-state-validity.md`;
   reviewed immutable v1 PDF/text and review-time official placeholder repository
