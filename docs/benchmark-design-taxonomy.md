@@ -358,7 +358,7 @@ candidate is positive fail-closed adjudication evidence, not a successful proced
 executor failure, or transfer observation. Preserve intended, attempted, valid,
 adjudicated, assigned, executed, and scored denominators separately.
 
-Five immutable internal prospective slices locate successive blockers and instrument
+Seven immutable internal prospective slices locate successive blockers and instrument
 failures. V1 made zero
 model/provider calls and stopped because its two families had no independent
 family-level source authority and all four public forms disclosed the complete
@@ -393,17 +393,48 @@ is diagnostic only: it cannot rescore v4, and the frozen all-zero result cannot 
 a transfer effect. Instrument execution is evidence about lifecycle conformance only
 when the endpoint itself remains fair and valid.
 
-V5 therefore changes only the endpoint instrument and preserves the v4 source rules,
-treatments, candidates, controls, and assignments by hash. Required identifiers and
-JSON types are public; expected consequences are independently derived from public
-inputs plus frozen source rules; non-empty reason paraphrases are accepted; and every
-checked field has a fair-basis crosswalk. Its builder preflight passes exact-byte,
-derivation, public-basis, condition-blindness, checker, assignment-parity, all-false-
-claim, zero-attempt, and planted-mutation gates. That is not independent validation:
-before any v5 execution, a separate reviewer must recompute hashes and expectations,
-test valid alternatives and adversarial defects, and rule out derivation/checker common-
-mode error without editing the frozen bytes. Expert provenance, professional validity,
-transfer, agent capability, utility, production fitness, and readiness remain false.
+V5 changed only the endpoint instrument and preserved the v4 source rules, treatments,
+candidates, controls, and assignments by hash. Required identifiers and JSON types were
+public, consequences were independently derived from the public/source basis, and
+reasons admitted paraphrases. Yet an independent commit-bound review blocked execution:
+authority still said v4-only, open objects admitted condition-bearing payloads, Python
+equality accepted JSON `true` for numeric `1`, and the builder and preflight shared an
+ancestor-rollback defect. V6 preserved that failure and repaired the semantic edges, but
+then failed its output-overlay canary and dependency scan. V7 preserved the complete v6
+freeze and failed reports, added narrow current source applicability, closed object and
+recursive JSON-type semantics, retained a separately implemented oracle, and repaired
+the output mount. Its independent review passed this prospective-repair chain:
+
+```text
+retained failed bytes → new version identity → current narrow authority
+  → independent semantic witness → checker-language closure
+    → output-capable equal envelope → separate empirical execution
+```
+
+The separate v7 execution completed all 32 frozen rows once with no feedback, repair,
+or retry: 32 were service- and environment-valid, 30 met the minimal artifact gate, all
+32 were scored, and 24 passed. The result requires two non-substitutable estimands:
+
+1. **Assigned-row policy outcome:** invalid artifacts remain end-to-end failures. This
+   yields a descriptive generated-package-minus-no-package mean of `+0.75` across two
+   authored families.
+2. **Artifact-conditional mechanism outcome:** only admissible task artifacts enter the
+   semantic comparison. Because artifact validity is treatment-affected, conditioning
+   can select post-treatment; one invalid zeta no-package artifact means the two-family
+   generated-versus-no-package mechanism contrast is not identified.
+
+Generated package minus equal-budget raw is artifact-complete and `0.0` in both
+families. Generated, raw, generated-plus-raw, reference, and hindsight support all
+saturate at 4/4; irrelevant support changes behavior through rejection/omission, and
+the single-defect control passes 3/4. Positive-control success therefore establishes
+neither compression value nor transfer. Future procedure studies must predeclare both
+estimands, missingness and selection rules; calibrate controls to the intended
+mechanism; use repeated, independently authored non-saturating families with admissible
+expert or external-source authority; and prospectively hash prompts, executable/runtime
+tree, effective configuration, and an actually enforced budget. Preserve v1–v7 and do
+not escalate to another synthetic version until those prerequisites exist. Expert
+provenance, professional validity, transfer, agent capability, utility, production
+fitness, and readiness remain false.
 
 ### 2.1f Model panels are configured proxy estimators, not synthetic experts
 
@@ -6170,11 +6201,16 @@ them:
   and predefined-control treatments plus absent transcripts, assignment, burden, and
   training evidence block learned expert-reasoning, timing, transfer, minimality,
   professional-validity, and readiness claims.
-- **[PTP]** `pilots/pretask-procedure-transfer-v1/feasibility-report.json`,
-  `pilots/pretask-procedure-transfer-v2/readiness-audit.json`, and
-  `pilots/pretask-procedure-transfer-v3/generation-audit.json`, with immutable
-  protocols, source corpora, tasks, prompts, reference packages, candidate outputs,
-  usage, per-family reports, preflight, adjudication logs, validators, and hashes in
-  the corresponding pilot directories. These are builder-authored synthetic
-  instrument and configured-generation observations only; no executor attempt or
-  transfer outcome occurred.
+- **[PTP]** `pilots/pretask-procedure-transfer-v1/` through
+  `pilots/pretask-procedure-transfer-v7/`,
+  `pilots/pretask-procedure-transfer-v7-execution/`,
+  `docs/concepts/pretask-procedure-transfer-v7-independent-freeze-review.md`,
+  `docs/concepts/pretask-procedure-transfer-v7-execution-validity-review.md`, and
+  `reports/validation/2026-07-19-pretask-procedure-v7-execution-independent-audit.json`.
+  The immutable sequence retains source/task, generation-contract, endpoint,
+  authority, checker-language, canary, and configured-execution evidence. V7 supplies
+  32 assigned synthetic attempts and 24 endpoint passes, but only two builder-authored
+  families, one attempt per row, imperfect controls, saturated positive-support cells,
+  incomplete runtime/budget identity, and no expert or professional source. It supports
+  lifecycle/execution closure and bounded assigned outcomes—not transfer, capability,
+  utility, professional validity, production fitness, or readiness.

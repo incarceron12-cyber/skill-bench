@@ -52,24 +52,38 @@ withdrawal/reconsent, and claim-blocking behavior before asserting that this
 model is feasible for free or near-zero cost. See
 `papers/agent-benchmarks/2026-07-10-domain-expert-participation-ethnography.md`.
 
-## Active gate: independently interpret the executed v7 pre-task endpoint matrix
+## Closed validation slice: v7 pre-task procedure matrix
 
-The v1–v6 prospective procedure-transfer slices located successive source/task,
-launcher, model-facing, endpoint, authority, and canary failures without rewriting
-earlier evidence. V7 prospectively repaired the last mechanical edge, bound the
-retained v6 failure, passed an independent commit-bound freeze review, and then ran
-its frozen 32-row matrix exactly once with no feedback, repair, or retry. All 32
-rows were service- and environment-valid and scored; 30 artifacts were valid and
-24 passed the frozen endpoint checker. The execution retained prompts, redacted
-traces, usage, strict denominators, hashes, family summaries, and an all-false
-claim ledger in `pilots/pretask-procedure-transfer-v7-execution/`.
+Independent interpretation is complete. The v1–v7 prospective sequence located and
+retained successive source/task, launcher, model-facing, endpoint, authority,
+checker-language, and canary failures without rewriting earlier evidence. V7 repaired
+the last mechanical edge prospectively, bound the failed v6 records, passed a
+commit-bound independent freeze review, and executed its frozen 32-row matrix exactly
+once with no feedback, repair, or retry. All 32 rows were service- and
+environment-valid and scored; 30 artifacts met the minimal task-identity gate and 24
+passed the frozen endpoint checker. The independent zero-call audit reproduced those
+denominators, all eight endpoint misses, treatment joins, resources, and all seven
+false claim flags. See
+[`pretask-procedure-transfer-v7-execution-validity-review.md`](concepts/pretask-procedure-transfer-v7-execution-validity-review.md),
+[`2026-07-19-pretask-procedure-v7-execution-independent-audit.json`](../reports/validation/2026-07-19-pretask-procedure-v7-execution-independent-audit.json),
+and [`pilots/pretask-procedure-transfer-v7-execution/`](../pilots/pretask-procedure-transfer-v7-execution/).
 
-Those counts are bounded synthetic configured-agent observations, not an authorized
-package-effect or transfer conclusion. The current gate is independent
-interpretation of assignment closure, artifact-invalid rows, condition/family
-contrasts, endpoint dependencies, clustering, resources, and alternative
-explanations against the frozen v7 instrument and execution audit. Do not rerun,
-repair, rescore, or edit v1–v7 bytes; do not pool invalid artifacts into a transfer
-estimand; and do not infer expert provenance, general procedure transfer,
-capability, utility, professional validity, production fitness, or readiness unless
-a separate validity argument licenses it.
+The predeclared assigned-row generated-package-minus-no-package result is a descriptive
+`+0.75` across two authored families, but one zeta no-package artifact is invalid, so
+an artifact-complete two-family mechanism contrast is not identified. The
+artifact-complete generated-package-minus-equal-budget-raw contrast is `0.0` in both
+families; generated, raw, generated-plus-raw, reference, and hindsight support all
+saturate at 4/4. The controls also miss the intended clean discrimination: irrelevant
+support induces rejection/omission, while the single-defect control passes 3/4. These
+results validate lifecycle and execution-custody machinery more strongly than the
+generated procedure.
+
+This synthetic escalation loop is closed. Preserve v1–v7 bytes and do not rerun,
+repair, rescore, add v8, or infer expert provenance, transfer, capability, utility,
+professional validity, production fitness, or readiness. A future procedure-transfer
+proposal is eligible only if it supplies independently authored non-saturating
+families, repeated attempts, controls calibrated to the intended mechanism,
+admissible expert or external-source authority, and prospectively hashed prompts,
+runtime, effective configuration, and enforceable budget. It must predeclare both
+end-to-end assigned-row and artifact-conditional estimands, including missingness and
+post-treatment-selection rules.

@@ -169,7 +169,7 @@ procedure-package, instrument-layer, ablation, configured-system, task-health, r
 metric, trace, release, and validity machinery suffices; no Skill-specific subsystem or
 scope commitment follows.
 
-Five internal prospective slices now add direct instrument evidence to that external
+Seven internal prospective slices now add direct instrument evidence to that external
 gap. The durable gate chain is `source/task identifiability → public contract
 completeness → model-facing representation/interface usability → independent
 structural/semantic adjudication → eligible execution → transfer/consequence`. V1
@@ -197,26 +197,49 @@ contradictory and the checker imposes undisclosed exact identifier, wording, typ
 representation obligations. V4 therefore supplies execution-lifecycle and instrument-
 failure evidence, not an interpretable package effect.
 
-V5 repairs only that endpoint layer while binding the v4 treatments, candidates,
-controls, source rules, and assignments by hash. Public inputs disclose required
-identifiers and types; expected consequences are derived from the public/source
-basis; reasons admit paraphrases; and the builder-authored fair-basis, derivation,
-condition-blindness, parity, and planted-mutation preflight passes with zero
-attempts. A separate commit-bound audit independently recomputed all hashes,
-assignment parity, zero attempts, claim ceilings, and the four current endpoint
-semantics, but **blocked execution** on four deterministic gates: the bound source
-corpora explicitly limit authority and every proposition to v4; the checker accepts
-unknown and condition-bearing fields; Python equality accepts JSON `true` for
-expected numeric `1` inside `final_state`; and the builder deriver plus preflight
-share a Z-P3 defect that rejects source-authorized ancestor rollback. This yields a
-reusable release chain: `byte identity → source applicability → independent
-semantic derivation → checker-language closure`; no stage inherits the next.
-Preserve immutable v4 scores and frozen v5 bytes. A new prospectively frozen
-version needs explicit source applicability, closed object contracts, strict
-recursive JSON types, an independent oracle, source-targeted mutations, and
-another independent review before any calls. See [`v4`](../pilots/pretask-procedure-transfer-v4),
-[`v5`](../pilots/pretask-procedure-transfer-v5), and the
-[independent freeze review](concepts/pretask-procedure-transfer-v5-independent-freeze-review.md).
+V5 repaired only that endpoint layer while binding the v4 treatments, candidates,
+controls, source rules, and assignments by hash. Its builder preflight passed, but a
+separate commit-bound review blocked execution on four deterministic gates: stale v4-
+only source applicability, open checker objects that admitted condition-bearing fields,
+Python equality accepting JSON `true` for numeric `1`, and a shared builder/preflight
+Z-P3 rollback defect. V6 preserved v5 and repaired those semantics prospectively, then
+failed its output-overlay canary and dependency scan. V7 in turn preserved the exact v6
+failed manifest/reports, gave unchanged propositions narrow v7-only internal authority,
+closed recursive JSON types and objects, supplied an independently implemented oracle,
+repaired the output mount, and passed a commit-bound independent freeze review. This
+extends the reusable release chain to `retained failed bytes → new version identity →
+current narrow authority → independent semantic witness → checker-language closure →
+output-capable equal envelope → separate empirical execution`; no stage inherits the
+next.
+
+The separately retained v7 execution then completed all 32 frozen assigned rows with
+one attempt, no feedback, repair, or retry: 32/32 service- and environment-valid,
+30/32 minimally artifact-valid, 32/32 scored, and 24/32 endpoint passes. Independent
+zero-call reconstruction reproduced all eight misses and the resource ledger. The
+assigned-row generated-package-minus-no-package mean is descriptively `+0.75` across
+the two authored families, but one zeta no-package artifact is invalid, so an artifact-
+complete two-family mechanism contrast is not identified. Generated package minus
+equal-budget raw context is artifact-complete and `0.0` in both families. All five
+positive-support conditions saturate at 4/4; irrelevant support actively induces
+rejection/omission and the single-defect control passes 3/4. The run therefore validates
+lifecycle/execution closure and exposes control and endpoint failure signatures more
+strongly than it validates generated-procedure value.
+
+Future trials must predeclare the **assigned-row policy outcome** (invalid artifacts
+remain end-to-end failures) separately from the **artifact-conditional mechanism
+outcome** (conditioning can create post-treatment selection), retain their missingness
+bridge, and freeze the complete configured system—not just a launcher record. Preserve
+v1–v7 bytes and all seven false claim flags. Do not add v8 or another synthetic matrix
+unless independently authored non-saturating families, repeated attempts, mechanism-
+calibrated controls, admissible expert/external-source authority, and prospectively
+hashed prompts, runtime, effective configuration, and enforced budget resolve the
+current limits. See [`v4`](../pilots/pretask-procedure-transfer-v4),
+[`v5`](../pilots/pretask-procedure-transfer-v5),
+[`v6`](../pilots/pretask-procedure-transfer-v6),
+[`v7`](../pilots/pretask-procedure-transfer-v7), the
+[independent freeze review](concepts/pretask-procedure-transfer-v7-independent-freeze-review.md),
+the [execution-validity review](concepts/pretask-procedure-transfer-v7-execution-validity-review.md),
+and its [machine audit](../reports/validation/2026-07-19-pretask-procedure-v7-execution-independent-audit.json).
 Expert provenance, professional validity, transfer, capability, utility, production
 fitness, and readiness remain false.
 
