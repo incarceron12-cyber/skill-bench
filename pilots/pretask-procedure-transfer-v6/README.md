@@ -9,7 +9,8 @@ V6 is a prospective mechanical repair of four deterministic v5 freeze failures. 
 - The public artifact contract is closed at every object level. Repeated keys, condition/treatment fields, unknown payloads, and non-finite numbers fail.
 - Recursive JSON comparison requires exact types. Booleans are distinct from numbers; integer-form and decimal/exponent-form numbers are distinct (`1 != 1.0`); object key order and whitespace are irrelevant.
 - Z-P3 rollback records still-open descendants from innermost outward and then the target. Ancestor commit remains invalid.
-- `run_canaries.py` exercises two zero-call bubblewrap arms and checks equal sandbox command envelopes. It is filesystem conformance evidence, not an agent trial.
+- `run_canaries.py` exercises two zero-call bubblewrap arms and checks equal sandbox command envelopes. It materializes the nested `/trial/outputs` mountpoint before the read-only `/trial` bind so only the overlaid output root is writable. It is filesystem conformance evidence, not an agent trial.
+- Oracle independence is checked from Python AST import targets (including literal dynamic-import paths), not prose substrings; comments and docstrings cannot create false coupling failures, while actual builder/checker/preflight dependencies fail closed.
 
 ## Reproduce
 

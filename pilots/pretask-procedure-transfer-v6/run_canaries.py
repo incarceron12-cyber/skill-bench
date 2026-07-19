@@ -29,6 +29,13 @@ def sandbox(inputs: Path, outputs: Path, command: list[str]) -> list[str]:
             "--setenv", "HOME", "/home/sam", "--setenv", "TERMINAL_CWD", "/trial", "--", *command]
 
 
+def observation_passes(observed: dict[str, Any], returncode: int, expected: list[str]) -> bool:
+    """Fail closed unless every declared isolation property is observed."""
+    return (returncode == 0 and observed.get("cwd") == "/trial" and observed.get("visible") == expected
+            and observed.get("repo_exists") is False and observed.get("private_exists") is False
+            and observed.get("output_write") is True and observed.get("outside_write_succeeded") is False)
+
+
 PROBE = r'''
 import json, os
 from pathlib import Path
@@ -53,20 +60,23 @@ def arm_canary(name: str, support: Path | None, root: Path) -> dict[str, Any]:
     shutil.copy2(HERE / "tasks/k4n7/input.json", inputs / "input.json")
     if support:
         shutil.copy2(support, inputs / "procedure-package.json")
-    expected = sorted([path.name for path in inputs.iterdir()] + ["outputs"])
+    # bubblewrap cannot create a nested bind target beneath an existing
+    # read-only bind. Materialize the empty mountpoint before binding inputs;
+    # the sibling host output root is then overlaid at exactly that path.
+    (inputs / "outputs").mkdir()
+    expected = sorted(path.name for path in inputs.iterdir())
     command = ["/usr/bin/python3", "-c", PROBE]
     proc = subprocess.run(sandbox(inputs, outputs, command), text=True, capture_output=True, timeout=30)
     try:
         observed = json.loads(proc.stdout.strip().splitlines()[-1])
     except (json.JSONDecodeError, IndexError):
         observed = {}
-    passed = (proc.returncode == 0 and observed.get("cwd") == "/trial" and observed.get("visible") == expected
-              and observed.get("repo_exists") is False and observed.get("private_exists") is False
-              and observed.get("output_write") is True and observed.get("outside_write_succeeded") is False)
+    passed = observation_passes(observed, proc.returncode, expected)
     signature = sandbox(Path("<inputs>"), Path("<outputs>"), command)
     return {"arm": name, "passed": passed, "model_calls": 0, "expected_visible": expected,
             "observed": observed, "returncode": proc.returncode, "stderr": proc.stderr[-1000:],
-            "sandbox_signature": signature, "input_hashes": {path.name: sha(path) for path in inputs.iterdir()}}
+            "sandbox_signature": signature,
+            "input_hashes": {path.name: sha(path) for path in inputs.iterdir() if path.is_file()}}
 
 
 def main() -> int:

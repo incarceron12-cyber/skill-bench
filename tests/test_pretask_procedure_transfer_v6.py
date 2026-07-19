@@ -28,6 +28,7 @@ oracle = module("v6_oracle_tests", V6 / "oracle.py")
 checker = module("v6_checker_tests", V6 / "checkers/check_endpoint.py")
 builder = module("v6_builder_tests", V6 / "prepare_freeze.py")
 preflight = module("v6_preflight_tests", V6 / "preflight.py")
+canaries = module("v6_canary_tests", V6 / "run_canaries.py")
 
 
 def zeta(events):
@@ -159,6 +160,41 @@ class PretaskProcedureTransferV6Tests(unittest.TestCase):
         self.assertFalse(record["supersedes_or_edits_v4_authority"])
         self.assertEqual(8, len(record["proposition_lineage"]))
         self.assertTrue(all(row["source_valid_time_retained"] == "v4 only" for row in record["proposition_lineage"]))
+
+    def test_oracle_dependency_check_ignores_prose_and_rejects_real_coupling(self):
+        prose = '\"\"\"No builder, check_endpoint, or preflight import is allowed.\"\"\"\nvalue = "prepare_freeze"\n'
+        self.assertEqual(set(), preflight.forbidden_oracle_dependencies(prose))
+        mutations = {
+            "preflight": "import preflight\n",
+            "check_endpoint": "from checks.check_endpoint import compare\n",
+            "prepare_freeze": "import importlib\nimportlib.import_module('prepare_freeze')\n",
+            "preflight_path": (
+                "import importlib.util\n"
+                "importlib.util.spec_from_file_location('independent', 'pilots/x/preflight.py')\n"
+            ),
+        }
+        for name, source in mutations.items():
+            expected = name.removesuffix("_path")
+            with self.subTest(name=name):
+                self.assertIn(expected, preflight.forbidden_oracle_dependencies(source))
+
+    def test_isolation_observation_mutations_fail_closed(self):
+        expected = ["input.json", "outputs", "public-task.md"]
+        valid = {"cwd": "/trial", "visible": expected, "repo_exists": False,
+                 "private_exists": False, "output_write": True, "outside_write_succeeded": False}
+        self.assertTrue(canaries.observation_passes(valid, 0, expected))
+        mutations = [
+            ({**valid, "cwd": "/home/sam/skill-bench"}, 0),
+            ({**valid, "visible": expected + ["private.json"]}, 0),
+            ({**valid, "repo_exists": True}, 0),
+            ({**valid, "private_exists": True}, 0),
+            ({**valid, "output_write": False}, 0),
+            ({**valid, "outside_write_succeeded": True}, 0),
+            (valid, 1),
+        ]
+        for observed, returncode in mutations:
+            with self.subTest(observed=observed, returncode=returncode):
+                self.assertFalse(canaries.observation_passes(observed, returncode, expected))
 
     def test_zero_call_preflight_and_canaries_pass(self):
         self.assertEqual([], preflight.validate(check_paths=True))

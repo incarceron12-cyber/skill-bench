@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import copy
 import hashlib
 import importlib.util
@@ -51,6 +52,49 @@ def normalize_reason(value: dict[str, Any], family: str) -> dict[str, Any]:
     else:
         result["reason"] = "normalized"
     return result
+
+
+def dependency_targets(source: str) -> set[str]:
+    """Return static and literal dynamic dependency targets, not prose mentions.
+
+    ``spec_from_file_location`` takes the import path as its second positional
+    argument, unlike ``import_module`` and ``__import__``. Recording both the
+    declared module and literal path catches either form without treating
+    comments, docstrings, or ordinary string constants as coupling.
+    """
+    tree = ast.parse(source)
+    targets: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            targets.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                targets.add(node.module)
+            targets.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.Call):
+            function = node.func
+            name = function.id if isinstance(function, ast.Name) else (
+                function.attr if isinstance(function, ast.Attribute) else ""
+            )
+            argument_indexes = (0, 1) if name == "spec_from_file_location" else (0,)
+            if name in {"__import__", "import_module", "spec_from_file_location"}:
+                for index in argument_indexes:
+                    if index < len(node.args):
+                        argument = node.args[index]
+                        if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+                            targets.add(argument.value)
+    return targets
+
+
+def forbidden_oracle_dependencies(source: str) -> set[str]:
+    """Return forbidden v6 component stems referenced as dependency targets."""
+    forbidden = {"prepare_freeze", "check_endpoint", "preflight"}
+    found: set[str] = set()
+    for target in dependency_targets(source):
+        normalized = target.replace("-", "_").replace("\\", "/")
+        components = normalized.replace("/", ".").split(".")
+        found.update(forbidden.intersection(components))
+    return found
 
 
 def validate(*, check_paths: bool = True) -> list[str]:
@@ -132,9 +176,8 @@ def validate(*, check_paths: bool = True) -> list[str]:
         if token in checker_text:
             errors.append("condition_aware_checker:" + token)
     oracle_text = (HERE / "oracle.py").read_text()
-    for token in ("prepare_freeze", "check_endpoint", "preflight"):
-        if token in oracle_text:
-            errors.append("oracle_import_coupling:" + token)
+    for token in sorted(forbidden_oracle_dependencies(oracle_text)):
+        errors.append("oracle_import_coupling:" + token)
     canary_path = HERE / "canary-report.json"
     if not canary_path.is_file() or load(canary_path).get("status") != "PASS" or load(canary_path).get("model_calls") != 0:
         errors.append("canary_gate")
