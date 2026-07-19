@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skill-bench.local/schemas/freeze-custody.schema.json",
+  "title": "Commit-bound benchmark freeze custody ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "custody_id", "scope", "claim_ceiling", "freezes", "adjudications", "execution_closures"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "custody_id": {"type": "string", "minLength": 1},
+    "scope": {"type": "string", "minLength": 1},
+    "claim_ceiling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_capability", "construct_validity", "expert_provenance", "professional_validity", "readiness"],
+      "properties": {
+        "agent_capability": {"const": false},
+        "construct_validity": {"const": false},
+        "expert_provenance": {"const": false},
+        "professional_validity": {"const": false},
+        "readiness": {"const": false}
+      }
+    },
+    "freezes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/freeze"}},
+    "adjudications": {"type": "array", "items": {"$ref": "#/$defs/adjudication"}},
+    "execution_closures": {"type": "array", "items": {"$ref": "#/$defs/executionClosure"}}
+  },
+  "$defs": {
+    "oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "repoPath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "object_type", "git_oid"],
+      "properties": {
+        "role": {"enum": ["manifest", "component", "external_binding"]},
+        "path": {"$ref": "#/$defs/repoPath"},
+        "object_type": {"enum": ["blob", "tree"]},
+        "git_oid": {"$ref": "#/$defs/oid"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "allOf": [
+        {"if": {"properties": {"object_type": {"const": "blob"}}}, "then": {"required": ["bytes", "sha256"]}},
+        {"if": {"properties": {"role": {"const": "manifest"}}}, "then": {"properties": {"object_type": {"const": "blob"}}}}
+      ]
+    },
+    "gateState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate_id", "outcome", "evidence_path", "json_pointer"],
+      "properties": {
+        "gate_id": {"type": "string", "minLength": 1},
+        "outcome": {"enum": ["PASS", "FAIL", "BLOCKED", "NOT_RUN"]},
+        "evidence_path": {"$ref": "#/$defs/repoPath"},
+        "json_pointer": {"type": "string", "pattern": "^/"}
+      }
+    },
+    "freeze": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["freeze_id", "instrument_version", "snapshot", "bindings", "observed_gate_states"],
+      "properties": {
+        "freeze_id": {"type": "string", "minLength": 1},
+        "instrument_version": {"type": "string", "minLength": 1},
+        "predecessor_freeze_id": {"type": "string", "minLength": 1},
+        "supersession_adjudication_id": {"type": "string", "minLength": 1},
+        "snapshot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["git_commit", "root_path", "git_tree"],
+          "properties": {
+            "git_commit": {"$ref": "#/$defs/oid"},
+            "root_path": {"$ref": "#/$defs/repoPath"},
+            "git_tree": {"$ref": "#/$defs/oid"}
+          }
+        },
+        "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/binding"}},
+        "observed_gate_states": {"type": "array", "items": {"$ref": "#/$defs/gateState"}}
+      },
+      "dependentRequired": {
+        "predecessor_freeze_id": ["supersession_adjudication_id"],
+        "supersession_adjudication_id": ["predecessor_freeze_id"]
+      }
+    },
+    "adjudication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adjudication_id", "event_commit", "subject_freeze_id", "decision", "changed_bound_paths", "successor_freeze_id", "preserves_subject_history"],
+      "properties": {
+        "adjudication_id": {"type": "string", "minLength": 1},
+        "event_commit": {"$ref": "#/$defs/oid"},
+        "subject_freeze_id": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["custody_breach", "superseded", "retired"]},
+        "changed_bound_paths": {"type": "array", "items": {"$ref": "#/$defs/repoPath"}, "uniqueItems": true},
+        "successor_freeze_id": {"type": ["string", "null"]},
+        "preserves_subject_history": {"const": true}
+      }
+    },
+    "executionClosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["execution_id", "freeze_id", "source_commit", "manifest_path", "manifest_git_blob", "execution_root_path", "execution_git_tree"],
+      "properties": {
+        "execution_id": {"type": "string", "minLength": 1},
+        "freeze_id": {"type": "string", "minLength": 1},
+        "source_commit": {"$ref": "#/$defs/oid"},
+        "manifest_path": {"$ref": "#/$defs/repoPath"},
+        "manifest_git_blob": {"$ref": "#/$defs/oid"},
+        "execution_root_path": {"$ref": "#/$defs/repoPath"},
+        "execution_git_tree": {"$ref": "#/$defs/oid"}
+      }
+    }
+  }
+}
