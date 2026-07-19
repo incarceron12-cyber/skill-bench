@@ -244,6 +244,19 @@ and its [machine audit](../reports/validation/2026-07-19-pretask-procedure-v7-ex
 Expert provenance, professional validity, transfer, capability, utility, production
 fitness, and readiness remain false.
 
+A later custody audit narrows the preservation claim. Commit `0cb5bea` retrospectively
+repaired six v6 files that the original v7 manifest bound as failed-parent evidence and
+refreshed the six corresponding manifest entries. Thus current `HEAD` no longer contains
+the exact failed v6 bytes or original audited manifest at those live paths. The
+[append-only adjudication](concepts/pretask-procedure-transfer-v6-v7-custody-adjudication.md)
+recomputes all 55 bindings with zero mismatches at both `0b7f930…` and execution source
+`a6d06f9…`, confirms the original manifest was identical across those commits, and finds
+no repair-time change to v7 task/treatment or execution-package bytes. V7 execution
+closure therefore survives as a Git-commit-bound historical fact, while the stronger
+claim that the lifecycle never rewrote prior frozen evidence does not. The repaired v6
+pass is post-hoc infrastructure evidence, not a retroactive v6 gate result; all seven
+claim ceilings remain false.
+
 Executable science adds a distinct **execution-to-consequence chain**:
 `authorized request → plan/code → submission → monitored execution → artifact →
 frozen comparator → declared solution-equivalence class → item adjudication →

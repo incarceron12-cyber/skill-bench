@@ -487,6 +487,20 @@ not escalate to another synthetic version until those prerequisites exist. Exper
 provenance, professional validity, transfer, agent capability, utility, production
 fitness, and readiness remain false.
 
+**Custody correction after execution.** Commit `0cb5bea` later repaired six already
+bound v6 pilot files and refreshed those six entries in the already audited v7 manifest.
+Current `HEAD` therefore does **not** preserve the exact failed v6 bytes or the original
+v7 manifest in place. An append-only Git reconstruction nevertheless closes all 22
+component and 33 external bindings at both the independent-freeze source `0b7f930…`
+and execution source `a6d06f9…`; the original manifest is byte-identical across those
+commits, and the repair changed no v7 task/treatment or execution-package byte. The
+32-row execution remains hash-verifiable only as a commit-bound historical snapshot,
+not through the refreshed `HEAD` manifest. Treat the repaired v6 pass as post-hoc
+infrastructure evidence, never as a retroactive replacement for frozen v6 failure. See
+the [custody adjudication](concepts/pretask-procedure-transfer-v6-v7-custody-adjudication.md)
+and its [machine report](../reports/validation/2026-07-19-pretask-procedure-v6-v7-custody-adjudication.json).
+All seven claim ceilings remain false.
+
 ### 2.1f Model panels are configured proxy estimators, not synthetic experts
 
 An LLM panel may cheaply generate candidate estimates, rival rationales, assumptions,
