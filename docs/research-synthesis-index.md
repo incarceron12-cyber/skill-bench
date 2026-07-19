@@ -1617,6 +1617,7 @@ or task follows.
 | [JADE](../papers/agent-benchmarks/2026-07-11-jade-dynamic-professional-grading.md) | B | Separates invariant requirements from response-created claims/consequences, while exposing variable denominators, shared-cue judging, verifier fail-open behavior, and unvalidated score fusion |
 | [Adversarial verifier hardening](../papers/agent-benchmarks/2026-07-14-adversarial-verifier-hardening-validity.md) | A/B | Makes iterative false-accept search, patch provenance, and fixed held-out attack replay inspectable, while directly showing that a narrow solver witness can yield 0% attack success together with near-total legitimate-solution rejection |
 | [AsymmetryZero](../papers/agent-benchmarks/2026-07-14-asymmetryzero-semantic-eval-contracts.md) | B | Makes criterion, grader mode, panel vote, weight, threshold, cost, and adapter realization inspectable; its private available-case study shows why cross-model dissent, repeated-call instability, criterion correctness, task-decision agreement, and use/decision loss must remain separate |
+| [Adversarial Pragmatics](../papers/agent-benchmarks/2026-07-19-adversarial-pragmatics-inference-license-validity.md) | B | Treats behavioral labels as inference licenses over declared projection sets; its 18 author-written items and one answer-cued same-model judge pass expose majority-dominated agreement and controlled-label fragility, but do not execute the proposed taxonomy-drift study or establish gold labels, safety validity, or professional-work validity |
 | [SaaS-Bench](../papers/agent-benchmarks/2026-07-11-saas-bench-stateful-workflow-validity.md) | A | Release audit shows that a checkpoint becomes partial-progress evidence only when it was not pre-satisfied, is attributable to the run, has declared necessity/sufficiency, and does not double-count one upstream event through dependent consequences |
 | [Efficient Benchmarking of AI Agents](../papers/agent-benchmarks/2026-07-09-efficient-benchmarking-ai-agents.md) | B | Shows that reduced panels may preserve rank while degrading absolute-score interpretation |
 | [Agent Psychometrics](../papers/agent-benchmarks/2026-07-09-agent-psychometrics.md) | B | Treats difficulty as a property of the configured task/system package and motivates response matrices and scaffold-aware reporting |
@@ -1646,6 +1647,28 @@ judge for candidate comparison, run isolated-versus-joint, order-randomization, 
 leave-one-candidate-out canaries with repeated calls. Material score, profile, or rank
 movement is rater-instrument sensitivity and blocks an agent/product claim until the
 intended topology is justified and frozen [LAT].
+
+Behavioral labels additionally need a **label-license contract**:
+`public basis and admissible alternatives → criterion-specific evidence view → raw
+labels/uncertainty/disagreement → declared projection set → invariant-preserving and
+boundary-changing variants → observed stability/failure → licensed score and claim`.
+Paraphrase, source order, wrapper, rater role, model version, judge prompt, and
+evidence-view changes are different projections, and each preservation claim needs
+its own warrant. Pair harmless variants with controls that should change the label,
+such as authority, scope, policy, or protected-channel changes. Classify
+`behavior_change`, item/projection defect, observer-view change, rater instability,
+criterion conflict, genuine ambiguity, and taxonomy drift separately; agreement
+with an answer-cued judge or linguistic mention/use cannot inherit blind validity or
+state/consequence evidence.
+
+[Adversarial Pragmatics](../papers/agent-benchmarks/2026-07-19-adversarial-pragmatics-inference-license-validity.md)
+supplies an inspectable seed and a useful negative instrument result, not an
+empirical projectibility profile. Its 18 author-written items, 54 author-adjudicated
+one-attempt outputs, and one same-model judge pass lack independent labels and matched
+same-control paraphrase/wrapper variants; the proposed taxonomy-drift rate and fake
+development pass were not empirical. Existing public-basis, authority, criterion,
+configured-rater, disagreement, artifact/state, trace, metric, task-health, and
+validity records suffice; no linguistics- or safety-specific subsystem follows.
 
 Before the second pilot is interpreted, its adversarial audit should plant a pre-
 satisfied requirement, an unrelated record sharing the expected scalar, a title-only

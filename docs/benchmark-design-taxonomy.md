@@ -2928,6 +2928,67 @@ historical labels, bundles edits, changes aggregation, covers two domains/two
 models, and releases no runnable package; it identifies configured agreement
 effects, not improved accuracy or rubric validity [RM].
 
+#### A behavioral label is licensed only over its tested projection set
+
+Labels such as `task_success`, `policy_compliant`, `refusal`, `safe`, or a
+failure-attribution category compress an interpretation; they do not inherit a
+stable construct merely because a schema accepts them. Preserve a **label-license
+contract** [AP]:
+
+```text
+public requirement, authority, or policy basis + admissible alternatives
+  → criterion-specific interpretation and exact observer evidence view
+    → independent raw labels, uncertainty, rationale, and disagreement
+      → declared projection set
+        → invariant-preserving and boundary-changing variants
+          → observed stability, justified change, ambiguity, or failure
+            → licensed score population and downstream claim
+```
+
+The projection set names the transformations over which one label is expected to
+retain meaning: harmless paraphrase, source order, document or interface wrapper,
+rater role, model/version, judge prompt, context, or evidence-view change. Each
+member needs an independently supported preservation warrant. Pair it with a
+matched **boundary-changing control**—for example, a source-role, authority,
+scope, policy-version, or protected-channel change that should alter the legitimate
+label. A stable label on preservation variants supports only those tested variants;
+failure to change on a boundary control can reveal an insensitive criterion or
+observer rather than robust behavior.
+
+Classify changes before attributing them to the target system. Keep
+`behavior_change`, `item_wording_or_projection_defect`, `observer_view_change`,
+`rater_or_judge_instability`, `criterion_or_policy_conflict`, `genuine_ambiguity`,
+and `taxonomy_drift` as distinct dispositions. A change under a new wrapper is not
+taxonomy drift when the wrapper changes authority or visible evidence; agreement
+with an expected-behavior-cued judge is not blind-label validity; and linguistic
+mention/use does not establish a protected state or channel consequence. Preserve
+`item_problem`, `insufficient_visible_context`, alternative-valid interpretations,
+and criterion-specific confusion/minority-recall results rather than forcing one
+Boolean or consensus label.
+
+Adversarial Pragmatics motivates this contract with 18 author-written seed items,
+54 one-attempt outputs from three local configured models, and an inspectable
+timing-appropriate release [AP]. Its strict pairs and one answer-cued same-model
+judge pass expose majority-dominated agreement and label instability. They do not
+execute the paper's proposed taxonomy-drift study: the minimal pairs intentionally
+change controls, wrappers are not matched same-control variants, author labels lack
+independent raters, and the fake development pass is simulated. No empirical drift
+rate, gold-label stability, projectibility profile, safety validity, or professional-
+work claim follows.
+
+**Invariant:** a label may travel no farther than the transformations and observer
+conditions under which its public basis, evidence sufficiency, invariance or
+expected change, and disagreement were actually tested. **Validation experiment:**
+on two unlike existing task shapes, cross a same-control paraphrase and wrapper with
+an authority-changing control, a genuinely ambiguous form, task-successful/policy-
+violating and policy-preserving/task-incomplete outputs, a protected-channel leak,
+and a clean sentinel. Obtain blind role-separated human, deterministic, and model
+observations under frozen evidence views; report item/family-clustered stability,
+expected flips, ambiguity, confusion, minority recall, invalidity, and consequence
+checks separately. Existing public-basis, authority, criterion, configured-rater,
+disagreement, artifact/state, trace, metric, task-health, and validity contracts are
+the durable homes; no linguistics- or safety-specific schema follows.
+
 ### 3.2a Disagreement can be evidence about the instrument or the construct
 
 Before averaging or forcing consensus, follow an identification ladder:
@@ -5322,6 +5383,18 @@ them:
 
 ## Provenance keys
 
+- **[AP]**
+  `papers/agent-benchmarks/2026-07-19-adversarial-pragmatics-inference-license-validity.md`;
+  reviewed immutable arXiv v2 PDF/text/TeX plus the complete timing-appropriate
+  official release at commit `4f27d32378ed4b9fb4bf77b54b9bc13d3173df31` are
+  recorded in
+  `data/sources/releases/2607.01153v2-adversarial-pragmatics/provenance.json`.
+  The release exposes the 18 seed items, validators, rater materials, local runner,
+  judge/diagnostic scripts, 54 sanitized rows, and aggregate tables, but not raw
+  model-output bundles or independent annotations. Evidence supports a controlled
+  label-contrast and negative instrument case—not gold labels, empirical taxonomy
+  drift, projectibility, judge robustness, safety/professional validity, production
+  fitness, or readiness.
 - **[QPD]**
   `papers/agent-benchmarks/2026-07-19-qwenpaw-data-enterprise-asset-flywheel-validity.md`;
   reviewed immutable arXiv v2 PDF/text and the complete timing-appropriate official
