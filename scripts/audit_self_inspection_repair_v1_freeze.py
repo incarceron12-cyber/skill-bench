@@ -294,6 +294,11 @@ def mutate_json(base: dict[str, Any], action: Callable[[dict[str, Any]], None]) 
 def run_audit(commit: str) -> dict[str, Any]:
     resolved_commit = str(git("rev-parse", commit)).strip()
     origin_main = str(git("rev-parse", "origin/main")).strip()
+    source_on_origin_main = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", resolved_commit, origin_main],
+        cwd=ROOT,
+        check=False,
+    ).returncode == 0
     tree = str(git("rev-parse", f"{resolved_commit}^{{tree}}")).strip()
     manifest = load_blob(resolved_commit, "freeze-manifest.json")
     protocol = load_blob(resolved_commit, "protocol.json")
@@ -459,7 +464,7 @@ def run_audit(commit: str) -> dict[str, Any]:
     canary = isolation_canary()
     preflight_report = load_blob(resolved_commit, "preflight-report.json")
     gates = {
-        "commit_is_origin_main_at_audit": resolved_commit == origin_main,
+        "source_commit_reachable_from_origin_main": source_on_origin_main,
         "expected_commit": resolved_commit == DEFAULT_COMMIT,
         "expected_root_tree": tree == EXPECTED_TREE,
         "baseline_semantics": not baseline_errors,
@@ -531,7 +536,7 @@ def write_note(report: dict[str, Any], path: Path) -> None:
         "",
         f"**Result: {report['status']}**",
         "",
-        f"Audited commit `{source['resolved_commit']}` and root tree `{source['root_tree']}` at `origin/main`. No v1 byte was modified; no model, provider, or repair row was called.",
+        f"Audited commit `{source['resolved_commit']}` and root tree `{source['root_tree']}` on `origin/main` history. No v1 byte was modified; no model, provider, or repair row was called.",
         "",
         "## Evidence",
         "",

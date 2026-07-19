@@ -2,7 +2,7 @@
 
 **Result: PASS**
 
-Audited commit `7d976a28b9f33337f2f90519964361388b3eae7f` and root tree `6eed1293c68faf90eb2b72e2dd2adf3600016c75` at `origin/main`. No v1 byte was modified; no model, provider, or repair row was called.
+Audited commit `7d976a28b9f33337f2f90519964361388b3eae7f` and root tree `6eed1293c68faf90eb2b72e2dd2adf3600016c75` on `origin/main` history. No v1 byte was modified; no model, provider, or repair row was called.
 
 ## Evidence
 
