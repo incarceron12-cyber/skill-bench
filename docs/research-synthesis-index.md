@@ -2330,6 +2330,7 @@ claim.
 | Source | Tier | Main contribution to skill-bench |
 |---|---:|---|
 | [Anchor](../papers/agent-benchmarks/2026-07-10-anchor-artifact-drift-generation.md) | B | Motivates a task intermediate representation and bidirectional instruction/environment/witness/check conformance tests |
+| [Adaptive task elicitation](../papers/agent-benchmarks/2026-07-19-adaptive-task-elicitation-profiling-validity.md) | B | Shows that response-conditioned generation can improve configured hard-example yield while separating selected one-shot failures, generic difficulty, stable target-specific contrasts, profile labels, and calibrated capability claims |
 | [Agentic Context Engineering](../papers/agent-benchmarks/2026-07-10-agentic-context-engineering.md) | C | Shows the value of bounded context deltas while motivating provenance, contradiction, held-out promotion, and rollback controls |
 | [Self-evolving agents survey](../papers/agent-benchmarks/2026-07-10-self-evolving-agents-survey.md) | C | Supplies a broad evolution taxonomy and highlights task-order, retention, cost, safety, and feedback confounds |
 | [ClawArena](../papers/agent-benchmarks/2026-07-10-clawarena-evolving-information.md) | B | Provides persistent evidence and workspace updates while motivating typed corrections, retractions, supersession, and changed/unchanged checks |
@@ -2340,6 +2341,20 @@ claim.
 | [QwenPaw-Data](../papers/agent-benchmarks/2026-07-19-qwenpaw-data-enterprise-asset-flywheel-validity.md) | B | Separates volatile authority-bearing facts, applicability-bounded methods, and configured execution state, while showing that an architecture diagram and selected endpoint scores do not establish an auditable or improving asset flywheel |
 
 **Repository consequence:** Projection manifests, candidate-lesson lifecycle, longitudinal stream/evolution contracts, immutable hashes, validation gates, and rollback. Experience-derived knowledge needs two linked, non-substitutable estimands: evidence-grounded retrospective retrieval and intervention benefit on held-out action. Failed attempts, realized procedures, inferred causes, environment/version scope, stale claims, safe alternatives, and harmful transfer must remain typed rather than flattened into notes.
+
+Response-conditioned task generation adds a distinct **probe-specificity chain**:
+`initial item and response record → generated candidate and answer authority →
+independent validity/novelty admission → repeated receiving-system response →
+crossed source-history × receiving-system contrast → frozen failure-family label →
+untouched confirmation → bounded profile use`. A candidate selected because one target
+missed it is hard-example evidence, not failure prevalence or a stable capability
+profile. Cross true/swapped/shuffled/blind target histories under equal budgets, then
+repeat independently admitted candidates across systems and untouched matched variants.
+Preserve proposed, parse-valid, source-valid, novel, tested, failed, repeat-failed,
+admitted, profile-linked, and confirmatory denominators; missing samples and exhausted
+retries must fail closed. The paper and post-paper release support configured adaptive
+search—not model-specific profiling, domain expertise, professional validity, safety,
+readiness, or one universal score.
 
 QwenPaw-Data adds a useful **volatility and realization boundary**. Keep three
 authority planes distinct: time- and source-bound facts or definitions; method
