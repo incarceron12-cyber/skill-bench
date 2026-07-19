@@ -2300,8 +2300,38 @@ claim.
 | [EvoMemBench](../papers/agent-benchmarks/2026-07-15-evomembench-memory-scope-content-validity.md) | B | Adds an in-/cross-episode × knowledge/execution organizing grid and broad adapter substrate while showing that scope/content labels do not identify one construct when task lineage, current-context necessity, write correctness, retrieval, endpoint, grader, missingness, and compute change together |
 | [MemSyco-Bench](../papers/agent-benchmarks/2026-07-15-memsyco-memory-authority-validity.md) | B | Separates semantic relevance from decision authority through ignore/constrain/defer/supersede/use policies, while its synthetic labels, uncalibrated judge, missing adoption/action evidence, and nonfactorial families bound conclusions to configured answer behavior |
 | [The Compliance Trap](../papers/agent-benchmarks/2026-07-16-compliance-trap-memory-consumption-validity.md) | B | Moves post-retrieval evaluation into action and consequence traces while showing that schedule effects, treatment-selected “compliance,” and baseline-action realignment do not identify proposition entry, dependency propagation, or accepted state repair |
+| [QwenPaw-Data](../papers/agent-benchmarks/2026-07-19-qwenpaw-data-enterprise-asset-flywheel-validity.md) | B | Separates volatile authority-bearing facts, applicability-bounded methods, and configured execution state, while showing that an architecture diagram and selected endpoint scores do not establish an auditable or improving asset flywheel |
 
 **Repository consequence:** Projection manifests, candidate-lesson lifecycle, longitudinal stream/evolution contracts, immutable hashes, validation gates, and rollback. Experience-derived knowledge needs two linked, non-substitutable estimands: evidence-grounded retrospective retrieval and intervention benefit on held-out action. Failed attempts, realized procedures, inferred causes, environment/version scope, stale claims, safe alternatives, and harmful transfer must remain typed rather than flattened into notes.
+
+QwenPaw-Data adds a useful **volatility and realization boundary**. Keep three
+authority planes distinct: time- and source-bound facts or definitions; method
+packages whose reuse depends on declared preconditions and applicability; and the
+configured runtime that binds one fact snapshot to one method version, tools,
+artifacts, and trace. A successful historical path is not authoritative fact, and a
+stable-looking method can still be domain-, decision-, or evidence-dependent. For a
+method-package claim, observe availability, eligible retrieval, content exposure,
+clause or script adoption, artifact/trace change, and independently judged consequence
+rather than inferring use from a `+ Skill` endpoint [QPD].
+
+The corresponding claim ladder is `architecture field → realized immutable record →
+audited completeness/correctness property → valid endpoint → stakeholder uptake and
+decision → consequence → held-out longitudinal non-regression`. No rung inherits the
+next. Feedback enters as an authority-, consent-, visibility-, and scope-typed candidate;
+promotion additionally requires frozen intervention identity, independent held-out
+validation, dependency hashes, a recorded decision, and rollback evidence. Existing
+expertise-transfer, bundle, compounding-lesson, longitudinal, task-health, metric, and
+validity contracts already host these records; no enterprise-analytics schema follows.
+
+The immutable paper reports selected internal accuracy, satisfaction, ablation, and
+two public-benchmark endpoints, but releases no item-level reconstruction, graph or
+artifact record, feedback/promotion event, before/after version, or non-regression
+result. Its timing-appropriate official archive is explicitly the general QwenPaw host:
+it contains generic runtime and Skill primitives but no identifiable DataBridge,
+paper evaluation assets, or described flywheel records. This supports architecture
+and bounded configured-product hypotheses—not semantic authority, method fidelity,
+causal Skill benefit, business value, self-evolution, production fitness, or readiness
+[QPD].
 
 EvoMemBench adds a necessary **memory-scope identification rule**: attach
 `in-episode`, `cross-episode`, `knowledge`, and `execution` to a frozen

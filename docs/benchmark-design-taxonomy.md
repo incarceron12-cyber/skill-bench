@@ -336,6 +336,57 @@ readiness [BP]. Existing expertise-transfer, participation/authority, evidence-s
 context-treatment, persistent-workspace, trace, artifact, metric, and validity records
 are the implementation homes; no domain- or Skill-specific schema follows.
 
+#### Facts, methods, and realized runtime have different authority and clocks
+
+Do not flatten domain assets into one undifferentiated memory or knowledge store.
+Preserve three independently versioned planes [QPD]:
+
+1. **Volatile facts and semantics:** source, authority, scope, valid time, precedence,
+   contradiction, access, and deletion or supersession policy for data locations,
+   metric definitions, business rules, events, and other task evidence.
+2. **Method packages:** source and transformation authority, applicability and
+   evidence preconditions, forbidden shortcuts, procedure/scripts, expected artifacts,
+   maintenance owner, and expiry. Apparent stability does not imply universal reuse.
+3. **Configured runtime binding:** the exact fact snapshot, method hash, host/tools,
+   permissions, environment, plan, artifacts, receipts, trace, feedback policy, and
+   evaluator identities realized for one trial.
+
+A successful trace is experience evidence, not an authoritative fact or reusable
+method by default. A metric definition may itself contain methodological choices, and
+a method can become stale when its evidence or decision regime changes. Every cross-
+plane edge therefore needs authority and applicability evidence rather than inheriting
+legitimacy from a subsystem label.
+
+For any claimed asset flywheel, retain this non-inheriting ladder:
+
+```text
+architecture field → immutable realized record → audited property
+  → criterion-valid endpoint → authorized uptake and changed decision
+    → intended/collateral consequence → held-out longitudinal non-regression
+```
+
+An architecture label such as `candidate`, `traceable`, `reviewed`, or `rollback`
+does not establish that a record exists or that the property was tested. Feedback must
+enter the candidate-lesson lifecycle with source authority, allowed use, visibility,
+scope, contradiction and dependency links. Promotion additionally needs a frozen
+intervention, independent held-out validation, a recorded decision, and rollback;
+later equivalent forms must test retention, harmful transfer, cost, and regression.
+For method-package attribution, preserve availability → eligible retrieval → exposure
+→ clause/script adoption → artifact/trace delta → independent consequence, and cross
+shared versus independent procedure rubrics where evaluator-cue coupling is plausible.
+
+QwenPaw-Data motivates this decomposition through DataBridge, Skill-Hub, and Host, but
+the immutable v2 paper exposes architecture prose plus selected endpoint aggregates,
+not graph/artifact records, promotion events, longitudinal comparisons, or business
+consequences. Its timing-appropriate official archive is the general QwenPaw host and
+contains generic Skill/runtime primitives, but no identifiable DataBridge, industrial
+or public evaluation assets, or described flywheel ledger. Thus the source supports a
+bounded configured-product and design hypothesis—not semantic correctness, method
+fidelity, causal Skill benefit, self-evolution, production fitness, or readiness [QPD].
+Existing expertise-transfer, procedural-skill, bundle, compounding-lesson,
+longitudinal, task-health, metric, and validity contracts suffice; no BI-specific
+schema follows.
+
 #### Pre-task procedure generation has non-inheriting gates before transfer
 
 A source-only package study must preserve a longer fail-closed chain than package
@@ -4672,6 +4723,7 @@ corpus evidence support scalable triage, not autonomous invalidation [ABA].
 | Trace diagnosis and recovery (STRACE, DRIFT/TELBench, LH-Bench recovery analysis) | linked raw-event/semantic-span and claim/support projections; dependency-aware causal slice; error→feedback→repair→verification chain | lossy projection or outcome-aware span agreement promoted to causal root; all-positive localization promoted to monitoring; inferred dependencies may be wrong; post-test optimization can leak | STRACE and LH-Bench full reviews [ST, LH]; immutable DRIFT v2 plus pinned post-v2 code/dataset audit [DRIFT] |
 | Psychometric operation (Efficient Benchmarking, Agent Psychometrics) | response matrix, difficulty/discrimination, reduced ranking panel, scaffold-aware analysis | historical population drift; ranking panel drops rare diagnostic coverage | extracted-paper deep reviews [EB, AP] |
 | Continual/context adaptation and self-evolution (ACE; self-evolving-agent survey) | immutable local delta, candidate-lesson lifecycle, evolution-event ledger, retention/transfer stream | order dependence, weak-feedback pollution, private-test contamination, mixed-component attribution, benchmark/agent co-evolution | full immutable ACE v3 and survey v4 PDFs/text plus deep reviews [ACE, SE] |
+| Governed enterprise analytical assets (QwenPaw-Data) | volatile-fact authority, method applicability, configured-runtime binding, and architecture→record→audit→endpoint→decision/consequence→non-regression ladder | architecture labels promoted to observed properties; endpoint gains promoted to method use or flywheel improvement; shared Skill/checklist coupling; private system inferred from a generic host release | full immutable v2 paper plus timing-appropriate official general-host release audit; selected results are paper-reported, while DataBridge, evaluation assets, lifecycle records, and longitudinal evidence are unavailable [QPD] |
 | Procedural-memory transfer (AFTER) | typed source-context, equivalent-form, changed-context, and cross-model transfer edges with paired outcomes and harm gates | shared authoring/verifier lineage, feedback leakage, complete-case selection, diversity/volume confounding, missing configured-system identity, and macro gains hiding negative transfer | full immutable v1 paper plus pinned post-v1 release audit; 129 released test packages are inspectable, but the 382-task instrument, evolution machinery, traces, configurations, evolved procedures, and result rows are unavailable [AFTER] |
 | Domain-scaffolded scientific workflow (BrainPilot) | source/Skill authority → retrieval/load → clause adoption → artifact delta → typed trace/audit evidence → authorized judgment → independent consequence chain; event-sourced trace and result-row bridge | material presence or load promoted to expertise/benefit; mutable inferred graph promoted to execution lineage; bounded workspace audit promoted to scientific validity; heterogeneous single-run tasks pooled as capability | full immutable v1 paper plus pinned post-v1 system/benchmark releases and code/task audit; current framework and four task packages are inspectable and tested, but Skill authority, corpus bytes, raw runs, exact paper bridges, trace integrity, Auditor validity, independent scientific consequence, and readiness are unsupported [BP] |
 | Delayed-obligation dual-task evaluation (PM-Bench; internal pilot) | obligation state machine linked to harness-observed cue access, timed realized action, and separately graded primary-work preservation | ungraded nominal ongoing work, privileged reminders mislabeled as memory support, self-report promoted to access/internal-memory evidence, ceiling forms, and single-attempt cells promoted to causal effects | PM-Bench full immutable v1 paper plus pinned paper-time release audit [PMB]; internal frozen six-cell pilot and exact replay support instrument behavior and exact retained observations only [DOT] |
@@ -4752,6 +4804,10 @@ review; “triage” and “preliminary” are not promoted to equivalent eviden
    an agent-visible skill or lesson on the same split.
 10. **Promotion requires independent evidence:** schema completeness or improved
     training-set score is not enough to change durable benchmark doctrine.
+10a. **Architecture is not realization:** a declared field or lifecycle state is a
+    design hypothesis until an immutable record and admissible audit establish its
+    operation; endpoint quality, stakeholder uptake, consequence, and longitudinal
+    non-regression require additional, separately authorized evidence.
 11. **Freeze or bridge the instrument:** do not attribute longitudinal score
     movement to agent evolution while tasks, graders, or panels change without
     a frozen anchor or explicit recalibration design.
@@ -5252,6 +5308,16 @@ them:
 
 ## Provenance keys
 
+- **[QPD]**
+  `papers/agent-benchmarks/2026-07-19-qwenpaw-data-enterprise-asset-flywheel-validity.md`;
+  reviewed immutable arXiv v2 PDF/text and the complete timing-appropriate official
+  general-QwenPaw archive at commit `7373854e8e690df41810ff037e261fba9de11929`
+  are recorded in `data/sources/releases/2607.11019v2-qwenpaw-data/provenance.json`.
+  The archive supports inspection of generic host and Skill primitives but contains no
+  identifiable DataBridge, paper evaluation assets, artifact/flywheel records, or
+  longitudinal evidence. Paper-reported selected endpoints do not establish semantic
+  correctness, method fidelity, causal Skill benefit, decision/business consequence,
+  self-evolution, production fitness, or readiness.
 - **[LAT]**
   `papers/agent-benchmarks/2026-07-19-lattice-decision-support-utility-validity.md`;
   reviewed immutable arXiv v1 PDF/text/TeX and the complete timing-appropriate
