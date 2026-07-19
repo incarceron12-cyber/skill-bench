@@ -16,6 +16,7 @@ The review files below are deep reviews unless their own evidence-status section
 
 | Review | Primary question | Secondary tags |
 |---|---|---|
+| [Good Benchmarks](agent-benchmarks/2026-07-19-good-benchmarks-task-quality-guidance.md) | Which practitioner task-quality heuristics survive as falsification probes, and why are outcome-only grading, complete unambiguity, brevity, and human-only authorship not validated universal rules? | task authoring, practitioner testimony, solvability witness, crux alignment, verifier validity |
 | [ECBD: Evidence-Centered Benchmark Design](agent-benchmarks/2026-07-10-ecbd-evidence-centered-benchmark-design.md) | How should intended use, constructs, tasks, measurements, and score claims be connected by evidence? | validity, assembly, warrants |
 | [Validity-Centered AI Evaluation](agent-benchmarks/2026-07-10-validity-centered-ai-evaluation.md) | What validity arguments are required before promoting a score into a capability or readiness claim? | claims, deployment, evidence |
 | [Design Report for Knowledge-Work Benchmarks](agent-benchmarks/2026-07-11-design-report-knowledge-work-benchmarks.md) | How should activities, settings, outputs, handoffs, and omitted work bound knowledge-work claims? | work taxonomy, handoffs, coverage |
