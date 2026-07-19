@@ -1,0 +1,932 @@
+                                           Agent Memory: Characterization and System Implications of
+                                                      Stateful Long-Horizon Workloads
+                                                                    Yasmine Omri1⋆ Ziyu Gan2⋆ Zachary Broveak1
+                                                              Robin Geens3 Zexue He1 Alex Pentland1,4 Marian Verhelst3
+                                                                           Tsachy Weissman1 Thierry Tambe1
+                                                                                   ⋆ Equal contribution
+
+                                                                           1 Stanford University                               2 Independent Researcher
+                                                                   3 MICAS, KU Leuven                             4 Massachusetts Institute of Technology
+
+
+
+
+arXiv:2606.06448v1 [cs.AI] 4 Jun 2026
+                                                                            Interaction stream                          memory construction units               This pipeline can be abstracted
+                                                              Generation
+                                                                            <user>                                      (eg. chunks / conversation turns)       as a two-tier memory hierarchy:
+                                                                            <assistant>
+                                                                                                            Ingestion
+                                                       LLM Agent
+                                                                                          <tool output>
+                                                                                                                                           …
+                                         User query                          <user>
+                                                                            <assistant>                                                                             LLM
+                                                                                                                          Construction                                          Working memory
+                                                                                                                          + Storage                                             (current context and
+                                                                            Retrieval                                                                                           retrieved memories)
+                                                                                                                          (Write Path)
+                                                        Reason              + Prompt Assembly                                                                    Short-term
+                                                                                                                                                                  memory Forget
+                                                                            (Read Path)                          Agent Memory
+                                                Observe            Act      memory entries
+                                                                                                                                      Maintenance             Construct   Retrieve
+                                                                                                                                                                & store   & Assemble
+                                                                                                                                      Memory systems may                         Persisted
+                                                                                                                                      organize entries by                        agent memory
+                                                        Feedback                                                                      type, though most use
+                                                                                                                                      a homogeneous store.       Long-term
+                                                      Environment               Semantic                  Episodic    Procedural                                  memory       Forget
+                                                                                Facts /                   Past        Skills /
+                                                                                Knowledge                 experiences strategies                                   Maintain
+
+                                        Figure 1: Agent memory gives rise to short-term working memory and long-term memory: the agent retrieves relevant
+                                        long-term state into its active context, updates memory after interaction, and maintains stored knowledge over time.
+
+                                        Abstract                                                                               1. Introduction
+                                                                                                                                   Large language models (LLMs) are increasingly deployed
+                                            LLM agents are increasingly deployed on long-horizon                               as autonomous agents capable of multi-step reasoning, tool
+                                        tasks requiring sustained reasoning over extended interaction                          use, and persistent interaction over extended time horizons.
+                                        histories. Realizing this at scale requires agents to persis-                          Stateful execution enables LLMs to act as personal assistants
+                                        tently store, retrieve, and update their own memory across                             that track user preferences across weeks of dialogue, code
+                                        sessions. A rich ecosystem of agent memory systems has                                 agents that maintain project context across editing ses-
+                                        emerged spanning flat retrieval, LLM-mediated extraction,                              sions, deep-research agents that synthesize evidence across
+                                        consolidating fact stores, and agentic control flows. Yet, their                       long investigation trajectories, and enterprise systems that
+                                        system-level behavior remains uncharacterized. We present                              integrate structured business data with ongoing conversa-
+                                        the first systems characterization of agent memory. First, we                          tional history [16, 17, 25]. In these regimes, LLM agents
+                                        introduce a system-oriented taxonomy classifying agent mem-                            accumulate state that far exceeds what a single inference
+                                        ory systems along four axes. Second, we build a phase-aware                            context can hold. As such, realizing these long-horizon
+                                        profiling harness attributing cost to construction, retrieval,                         capabilities at scale requires agents to persistently store,
+                                        and generation. Third, we characterize ten representative                              selectively retrieve, and incrementally update their own
+                                        systems across two benchmark suites, uncovering how design                             memory across sessions, as illustrated by Fig.1.
+                                        choices shift cost across the write and read paths. Finally,                               Agent memory generalizes RAG from static re-
+                                        we derive 10 system recommendations covering construction                              trieval to mutable state management. The evolution
+                                        scheduling, capability floors, amortization via query volume,                          toward stateful agents reflects a progression in how LLMs
+                                        freshness-latency tradeoffs, and fleet-scale management.                               manage knowledge. Early systems treated knowledge as
+                                                                                                                               purely parametric, encoded in model weights at training
+                                                                                                                               time. Retrieval-augmented generation (RAG) decoupled
+                                        Correspondence to: yomri@stanford.edu, ziyu.gan@outlook.com
+                                          .                                                                                    knowledge from parameters by attaching LLMs to static ex-
+
+
+                                                                                                                           1
+ternal corpora, enabling selective access to non-parametric           3) How do specific algorithmic design choices con-
+state at inference time [8, 11]. Long-horizon agents extend              cerning the construction mechanism, storage or-
+this further: the memory corpus is no longer a fixed                     ganization, retrieval policy, and update strategy
+document collection that is preprocessed and indexed a                   shape observable system characteristics such as
+priori, but a mutable state produced by the agent’s own                  utilization, bandwidth, latency, and scalability?
+interaction stream, often per user, and may be appended,                Our analysis reveals that agent memory workloads
+summarized, consolidated, linked, or rewritten across ses-          impose system needs beyond traditional LLM serving,
+sions as new evidence arrives. This shift transforms memory         making the following four contributions:
+from a passive retrieval target into an active systems                 • A system-oriented taxonomy classifying ten agent
+component with a write path, a search path, and an ongoing               memory systems along four axes (construction, storage,
+maintenance policy.                                                      retrieval, and mutability) with predicted cost signatures
+    A natural baseline is to preserve the full interaction               per paradigm.
+history in the model’s context window, relying on its                  • A phase-aware profiling harness (to be open-
+native long-context capability as the memory mechanism.                  sourced) tracking tokens, model calls, GPU utiliza-
+While context limits have rapidly scaled from tens of                    tion, and latency across construction, retrieval, and
+thousands to over one million tokens in just the last two                generation.
+years [23], this approach faces three fundamental limits.              • A comprehensive systems characterization span-
+First, continuous multi-session interactions and tool traces             ning construction cost shape, capability thresholds,
+inevitably exceed any fixed context budget, making external              amortization structure, freshness scheduling, footprint
+memory a functional prerequisite. Second, prefill costs scale            growth, and retrieval tail behavior.
+quadratically with history length. Prefix caching mitigates            • Ten system recommendations for agent memory
+this within active sessions but fails across sessions due to             serving infrastructure, scheduling, and system selec-
+cache eviction and the massive KV-cache memory pressure                  tion.
+placed on the serving stack. Third, reasoning and recall
+fidelity degrade significantly in long sequences. Models
+exhibit a "U-shaped" performance curve where facts in the
+                                                                    2. Agent Memory Paradigms
+middle of the context are routinely lost [13], and their                This section introduces the execution structure and
+effective context length for complex reasoning is often             design space of agent memory systems. We first decompose
+a fraction of the claimed window [5]. External memory               agent memory execution into its core runtime stages
+systems resolve these constraints by decoupling capacity            (Sec. 2.1), then categorize recent agent memory systems into
+from context length. By persisting state externally and             four paradigms according to how they construct, organize,
+retrieving only a query-relevant subset, they bound per-            and retrieve persistent state (Sec. 2.2). Table 1 summarizes
+query prefill costs and enable scalable, stateful execution         the representative systems considered in this study.
+for long-horizon agents.
+    The last year has seen a surge of agent memory                  2.1. Agent Memory Execution Pipeline
+systems capable of ingesting, encoding, and persisting an               Agent memory systems transform an interaction stream
+interaction stream into a queryable state. Their designs            into persistent state that can be reused across future agent
+differ dramatically in construction mechanism, database             invocations. Although implementations differ widely, most
+structure, retrieval flow, and update policy [1–3, 16, 26,          systems can be decomposed into seven stages: ingestion,
+29]. Existing benchmarks evaluate these systems purely on           memory construction, storage, retrieval, prompt assembly,
+downstream accuracy [6, 14, 27, 28], leaving their system-          generation, and maintenance.
+level behavior uncharacterized. Yet, these design choices               Ingestion. The ingestion stage receives the raw inter-
+drastically and asymmetrically redistribute cost: a system          action stream, which may include user-assistant dialogue,
+that compresses history into atomic facts slashes query-            tool calls, documents, execution traces, and environmental
+time prompt length but pays orders-of-magnitude more                feedback. Ingestion defines the unit of memory processing:
+in construction-time LLM prefill; a graph-based memory              individual turns, fixed-size chunks, sliding windows, or
+improves relational retrieval while multiplying embedding           complete sessions. This choice determines write granularity
+traffic and storage footprint. These costs are invisible to         and the number of downstream construction operations.
+accuracy metrics, yet critically dominate at deployment                 Memory construction. We use memory construction to
+scale. In this paper, we present the first systems study of         denote the write-path transformation from raw interaction
+agent memory algorithms, spanning the full design space.            history into persistent memory records. Construction takes
+Our study is organized around three research questions:             one of four forms: absent (history retained directly in the
+  1) What are the key tradeoffs among emerging                      prompt), deterministic (chunking or indexing without any
+      paradigms for constructing and using memory                   LLM), LLM-mediated (extraction of facts, summaries, or
+      in long-horizon agent workloads?                              structured records at predefined points, optionally with add,
+  2) What computational costs and system opportuni-                 update, or delete consolidation over prior memories), or
+      ties do these workloads expose, and what demands              agentic (LLM-controlled writes, tool invocation, and record
+      do they place on deployment infrastructure?                   mutation) [1, 16, 26, 29].
+
+
+                                                                2
+    Storage. The storage stage persists constructed mem-             PARADIGM II: Flat RAG memory. Flat RAG memory
+ories in a system-specific agent database, which is not              applies a deterministic indexing pipeline (each lexical or
+necessarily a vector store. Memories may be stored as                vector index) to raw interaction chunks. Construction
+raw prompt buffers, inverted indices, dense vector indices,          is append-only and does not involve a LLM. Retrieval
+knowledge graphs, or multi-store combinations coupling               is typically single-shot. This paradigm is operationally
+lexical, vector, graph, and structured metadata. The storage         closest to classical RAG, except the corpus is produced
+substrate determines memory footprint, update cost, index            by the agent’s own interaction stream rather than a static
+rebuild requirements, and available retrieval operators.             document collection.
+    Retrieval. The retrieval stage selects memory records             2 BM25 [19] chunks the interaction history into an in-
+relevant to the current query. Retrieval ranges from a single-            verted index. Construction uses no LLM or embedding
+shot sparse or dense search to multi-stage pipelines combin-              model; retrieval is lexical top-k. BM25 represents the
+ing sparse search, dense search, graph traversal, reranking,              lowest-complexity external-memory design in our suite.
+and filtering. In agentic systems, retrieval becomes a tool-
+                                                                      3 EmbedRAG [7, 8, 11] chunks and embeds the inter-
+mediated control loop where the LLM decides when to
+                                                                          action history into a dense index. Retrieval embeds
+search, which memory type to query, and whether retrieved
+                                                                          the query and returns nearest-neighbor chunks. Unlike
+evidence is sufficient.
+                                                                          BM25, construction and retrieval both route through
+    Prompt assembly. Retrieved memories are serialized
+                                                                          the embedding service, but the write path remains
+into the final model context before generation. This stage
+                                                                          single-shot and append-only.
+is the interface between the external memory system and
+the LLM serving stack, yielding the prefill length of the            PARADIGM III: Structure-augmented RAG memory.
+final answer-generation call.                                        These systems use an LLM as a fixed extractor to derive
+    Generation. The generation stage invokes the task                facts, summaries, entities, triples, or graph records from
+LLM on the current query and assembled memory context.               the interaction stream [1–3, 18, 21]. The LLM is called at
+All agent memory systems converge here, but arrive with              predefined points to produce structured outputs, not as a
+different prompt lengths and prior orchestration costs. Two          free-form controller. We distinguish append-only variants,
+systems may use the same LLM and produce similar answers             which enrich the retrieval substrate without revising prior
+while imposing very different write-path and read-path               records, from consolidating variants, which distill or update
+workloads.                                                           records over time.
+    Maintenance. The maintenance stage updates memory                PARADIGM III.a: Append-only structure-augmented RAG.
+over the agent’s lifetime through deduplication, consol-              4 GraphRAG [2]. Uses an LLM to extract entity-relation
+idation, conflict resolution, forgetting, compression, or                 structure from chunks, storing entities, relationships,
+re-embedding. In many current systems, maintenance is                     and source chunks alongside dense representations.
+weak or absent: memory accumulates indefinitely with no                   Retrieval combines dense lookup with graph expansion,
+freshness or pruning policy, which becomes critical for                   exposing LLM-based extraction on the write path and
+long-lived agents where state grows continuously and may                  graph traversal on the read path.
+become redundant or stale.                                            5 HippoRAG v2 [3]. Builds an associative memory
+                                                                          over passages, entities, and facts via OpenIE-style
+2.2. Taxonomy of Agent Memory Paradigms                                   extraction, with each view embedded separately and
+     Based on how the agent builds and interacts with                     linked through a graph. Retrieval propagates relevance
+the memory, we classify agent memory systems into four                    via Personalized PageRank over a coupled passage-
+Paradigms: long-context memory, flat RAG memory, structure-               entity-fact graph before reranking.
+augmented RAG memory, and agentic control flow. Table 1              PARADIGM III.b: Consolidating structure-augmented RAG.
+summarizes representative systems across these paradigms
+and records their construction pipeline, agent database,              6 Mem0 [1]. Rewrites conversation turns into atomic
+retrieval pipeline, and mutability. For our workload charac-              facts and resolves each against existing memories
+terization, we select ten agent memory systems spanning                   via ADD, UPDATE, or DELETE decisions. Retrieval
+all four paradigms and their subdivisions. The remainder of               is compact: query embedding matched against the
+this section describes each paradigm and its representative               fact store with no retrieval-side LLM, separating a
+agent memory systems in turn.                                             semantically expensive write path from a lightweight
+PARADIGM I: Long-context memory. Long-context                             read path.
+memory uses the model context itself as the memory                    7 SimpleMem [12]. Processes dialogue through sliding
+substrate. Prior interactions are retained as raw text and                windows into distilled memory entries with semantic,
+passed directly, or after truncation, to the LLM.                         lexical, and structured views. Retrieval is hybrid, com-
+ 1 long_context [5, 13]. This agent memory system                         bining semantic search, keyword search, and structured
+      performs no memory construction and stores no ex-                   filtering, with optional LLM planning and reflection
+      ternal representation. The full interaction history is              rounds to expand evidence.
+      inserted into the prompt, making retrieval equivalent          PARADIGM IV: Agentic control flow. Agentic memory
+      to passthrough with maximal final-prompt growth.               systems expose memory operations to the LLM as part of
+
+
+                                                                 3
+TABLE 1: Agent Memory Systems. Categorization of representative agent memory systems into four paradigms with
+their construction pipeline, agent database, retrieval pipeline, and mutability. In the retrieval columns, “LLM” indicates an
+LLM call before final answer generation.
+                                                      Construction Pipeline                  Agent DB                       Retrieval Pipeline
+ Paradigm                    Agent Memory System                                                                                                           Mutability
+                                                   Agent Ctrl.   LLM   Embed       Struct.    Store               LLM        Flow
+ I: Long-context memory      long_context              ✗          ✗       ✗          ✗        raw context           ✗        passthrough                    append
+                             BM25                      ✗          ✗       ✗          ✗        inverted index        ✗        lexical top-k                  append
+ II: Flat RAG memory
+                             embedRAG                  ✗          ✗       ✓          ✗        dense store           ✗        dense top-k                    append
+ III.a: Structure-aug. RAG   GraphRAG                  ✗         ✓        ✓          ✓        graph store        optional    graph expand                   append
+         append-only         HippoRAG v2               ✗         ✓        ✓          ✓        multi-view graph   optional    PPR rerank                     append
+ III.b: Structure-aug. RAG   Mem0                      ✗         ✓        ✓          ✓        dense store           ✗        fact top-k                    consolidate
+        consolidating        SimpleMem                 ✗         ✓        ✓          ✓        hybrid store          ✓        iterative hybrid              consolidate
+                             A-Mem                     ✓         ✓        ✓          ✓        graph store           ✗        graph-structured map-reduce     mutate
+ IV: Agentic control flow    Letta                     ✓         ✓     optional      ✓        blocks+archive        ✓        tool calls                      mutate
+                             MIRIX                     ✓         ✓        ✓          ✓        multi-store DB        ✓        routed typed-memory search      mutate
+
+
+
+its decision loop, turning construction and retrieval into                         comparison is not possible. We therefore standardize the
+variable-depth control flow [16, 22, 26, 29]. Unlike Paradigm                      dominant controllable factors while preserving each sys-
+III, the LLM decides when to write, which tool to invoke,                          tem’s native execution model. Within each model config-
+and whether retrieved evidence is sufficient.                                      uration, all systems use the same generation LLM and
+ 8 A-Mem [29]. Treats memory as an evolving note graph.                            the same embedding backbone when LLM calls and/or
+      Each new note is matched against nearby memories                             embeddings are required. Histories are streamed in 4096-
+      and an LLM evolution step updates links, metadata,                           token chunks, matching the MAB protocol, but we retain
+      and neighboring records, exposing stateful mutation                          each system’s native buffering, parallel ingestion, and cross-
+      on the write path.                                                           chunk consolidation behavior, since these mechanisms are
+ 9 Letta [10]. Implements the MemGPT [16] abstrac-
+                                                                                   part of the system being characterized. At query time, we
+      tion, separating compact core memory from archival                           cap retrieval at 10 memory entries for all systems. In local-
+      memory and exposing reads and writes as LLM-callable                         model settings with restricted context windows, if a system
+      tools. Memory access is an action selected by the agent,                     overflows the context budget, we reduce retrieval to 5
+      making latency dependent on when and how the LLM                             entries; for Letta, we additionally use 512-token ingestion
+      invokes memory operations.                                                   chunks to avoid repeated context overflow during tool-
+                                                                                   mediated memory construction.
+10 MIRIX [26]. Routes incoming information to type-                                Several systems were originally designed for conversational
+     specific extractors across episodic, semantic, procedu-                       agents rather than the full diversity of MAB tasks. To
+     ral, and resource memory stores. Retrieval uses type-                         avoid penalizing them for prompt-format mismatch rather
+     specific operators including vector search, temporal                          than memory quality, we make minimal task-adaptation
+     filtering, and LLM-based synthesis, stressing both the                        changes. For dialogue-oriented systems such as Simple-
+     LLM control path and the heterogeneous database layer.                        Mem, we update the extraction prompts so that they
+                                                                                   can consume non-dialogue histories and preserve task-
+3. Workload Suite and Profiling Harness                                            relevant facts. For A-Mem, whose native parser assumes
+                                                                                   each conversational turn forms a coherent memory note,
+3.1. Workload Suite                                                                we aggregate consecutive fine-grained parsed units on non-
+    MemoryAgentBench. We use MemoryAgentBench                                      dialogue datasets so that memory notes are comparable
+(MAB) as our primary benchmark [6]. MAB converts long-                             in granularity to conversation-derived notes. For Mem0
+context tasks into incremental multi-turn streams and evalu-                       on in-context-learning datasets, we replace the default
+ates four memory competencies: accurate retrieval, test-time                       personalization-oriented extraction prompt with an ICL-
+learning, long-range understanding, and selective forgetting.                      aware prompt that preserves integer labels verbatim, since
+Table 2 summarizes the task families. Each sample is fed                           these labels are the task signal. For Letta with local models,
+incrementally in 4096-token chunks. We use the full suite to                       we cap repeated tool calls during construction and retrieval
+study quality trends, but center our systems characterization                      and lightly specialize the system prompt to the task format.
+on LongMemEval_S_*, the most widely adopted long-term                              These adaptations are restricted to interface and prompt-
+conversational memory setting in MAB. This workload                                level compatibility changes. For Letta, the tool-call caps
+contains five samples, each with approximately 360K tokens                         prevent local models from emitting hundreds of duplicate
+of history and 60 queries (300 total), cleanly separating                          memory tool calls, and task-specific system prompts ensure
+construction over a long interaction history from repeated                         that task-critical symbols, such as ICL class labels, are stored
+query-time retrieval and generation.                                               rather than summarized away. For A-Mem, local backbones
+    Because agent memory systems expose many imple-                                use the plain-text prompt variant, while API backbones
+mentation degrees of freedom, a perfectly apples-to-apples                         retain the original JSON-schema prompt. For Mem0, the
+
+
+
+                                                                               4
+ICL-aware extractor is applied only to ICL datasets; all                                                                 Question Answering Serving Latency / Query
+                                                                                                                                    (LongMemEval_S_*)
+
+
+
+
+                                                                                                                                                                                                Mean QA Wallclock / Query (s)
+                                                                                              100
+
+
+
+
+                                                                     LLM-Judge Accuracy (%)
+                                                                                                                                                                                            40
+other ingestion behavior is unchanged.                                                        80
+                                                                                                                                                                                            30
+                                                                                              60
+TABLE 2: MemoryAgentBench workloads. MAB groups                                               40
+                                                                                                                                                                                            20
+
+memory-agent workloads into four task categories. AvgL                                        20                                                                                            10
+
+denotes the average input length reported by MAB.                                              0
+                                                                                                        ext      BM25 mbedRAG raphRAG poRAG_v2        0
+                                                                                                                                                   Mem impleMem   MIRIX   Letta   A-Me
+                                                                                                                                                                                      m
+                                                                                                                                                                                            0
+                                                                                                    Cont
+                                                                                                Long                 e        G     Hip                 S
+
+ Task Category          Datasets                    AvgL.
+                                                                                                      Remote Runs Embed = Text Embedding 3 Small          Local Runs Embed = Qwen3-Embedding-0.6B
+ Accurate retrieval     SH-Doc QA, MH-Doc QA,       197K–534K
+                                                                                                              GPT-4.1-mini    GPT-4o-mini                     Qwen3-32B        Qwen3-14B
+                        LongMemEval_S_*, EventQA
+                                                                                                                       Remote QA serving latency         Local QA serving latency
+ Test-time learning     BANKING77, CLINC150, NLU,   103K–1.44M
+                        TREC, MovieRec                                     Figure 2: Long-context prompting vs. external agent
+                                                                           memory. Per-query serving latency (retrieval + generation,
+ Long-range             ∞Bench-Sum, Detective QA    124K–172K
+ understanding                                                             excluding construction) on LongMemEval_S_*. Remote con-
+                                                                           struction via OpenAI API, Local construction via vLLM.
+ Selective forgetting   FactConsolidation-SH/MH     262K
+
+
+    MemoryArena. We additionally use MemoryArena [4],                     completion tokens, embedding input tokens, and number
+which contains multi-session tasks, where later sessions                  of embedded sequences. Calls are tagged with the active
+depend on information established earlier. We use its session             phase and the chunk, window, turn, or query index that
+structure to surface a systems property static benchmarks                 triggered them.
+hide: freshness-latency tradeoff in Sec. 4.6. When construc-                  Hardware telemetry. A polling monitor samples GPU
+tion is slower than session arrival, the system must either               counters via NVML and DCGM-class GPM counters, record-
+block queries until writes commit or serve stale memory,                  ing device power, GPU utilization, VRAM footprint, SM
+exposing scheduling and write-prioritization opportunities.               activity, tensor-core activity, and HBM bandwidth. Samples
+                                                                          are aligned with phase markers, and phase energy is
+3.2. Serving and Hardware Setup                                           computed by integrating device power over each interval.
+    We evaluate two construction regimes. In the remote-                  Together, the API and hardware telemetry characterize
+construction regime, construction uses OpenAI-hosted                      each agent memory system as a workload: call volume,
+models (GPT-4o-mini or GPT-4.1-mini for LLM calls,                        prompt and embedding traffic, GPU energy, and how control
+text-embedding-3-small for embeddings), matching most                     flow manifests as construction, retrieval, and user-visible
+systems’ original release configurations. In the local-                   generation latency.
+construction regime, all models are served locally on one
+NVIDIA H100 80 GB HBM3 GPU via vLLM [9], enabling                          4. Characterizing Agent Memory Workloads
+measurement of hardware utilization, energy, and phase-                     This section characterizes agent memory as a systems
+level bottlenecks. Each system runs in an isolated SLURM                 workload, tracing how design choices shift cost across
+job, with one GPU and six Intel Xeon Platinum 8480C                      construction, retrieval, and generation, and how operators
+cores. The LLM ladder comprises Qwen3-32B, Qwen3-                        should select and host agent memory systems for SLO-
+14B, Qwen3-8B, and Qwen3-1.7B; the embedding model                       bound serving and fleet-scale deployment.
+is Qwen3-Embedding-0.6B. Qwen3-32B and Qwen3-14B use
+FP8 weight quantization to fit within a single 80 GB serving               4.1. Why Agent Memory
+stack with sufficient KV-cache headroom for long-prefill
+                                                                               To quantify the benefits of long-horizon agent memory
+execution [15, 24]; smaller models use BF16. The LLM server
+                                                                           systems over full-history baselines, we measure the task
+is allocated 75% of GPU memory and the embedding server
+                                                                           accuracy and execution times of running LongMemEval_S_*
+15%. Thinking mode is disabled for all calls to avoid context
+                                                                           for a multitude of agent memory systems. Fig. 2 plots
+overflow from verbose reasoning traces.
+                                                                           per-query serving latency against accuracy, where each
+                                                                           system ingests 5 samples of ∼360 K tokens of history
+3.3. Profiling Harness                                                     each (300 total queries). Construction cost is excluded here
+    We build a phase-aware profiling harness (to be open-                  and addressed in Sec. 4.2. Most agent memory systems
+sourced) that attributes cost to three logical phases: mem-                serve queries in a fraction of long-context wall time while
+ory construction, retrieval, and generation. The harness                   matching or exceeding its accuracy: Mem0 achieves <0.1 s
+records API telemetry and hardware telemetry on the same                   per query versus ∼38 s for long-context (GPT-4.1-mini,
+monotonic timeline, enabling per-phase attribution of token                OpenAI API, averaged over 300 queries). The taxonomy
+volume, call structure, latency, utilization, and energy.                  predicts this spread directly. Paradigm I pays full-history
+    API telemetry. We instrument every chat-completion                     prefill at every query. Paradigm II eliminates the LLM
+and embedding request (whether remote or local through                     from construction and performs deterministic top-k re-
+vLLM) issued by an agent memory system, recording call                     trieval, yielding the lowest per-query cost at the price
+type, source label, start/end time, latency, prompt tokens,                of expressiveness. Paradigms III and IV move work into
+
+
+                                                                 5
+construction and introduce richer retrieval pipelines, giving                                                          Energy per Correct Answer: Construction + QA (n_queries = 300)
+query-time cost lower than long-context but higher and                                                                    BM25        4.1 kJ
+more variable than flat retrieval.Yet, Fig. 2 shows two orders                                                       embedRAG         4.1 kJ
+                                                                                                                   HippoRAG_v2                 10.1 kJ
+of magnitude spread in per-query latency across systems                                                               GraphRAG                      15.1 kJ
+on (local) identical hardware. The remainder of this section                                                        SimpleMem                                                  50.7 kJ
+                                                                                                                          Mem0                                                 50.8 kJ
+reveals comparable spread in construction cost, capability                                                               A-Mem                                                                    116.1 kJ
+requirements, and storage footprint.                                                                                      MIRIX                                                                        144.6 kJ
+                                                                                                                          Letta                                                                                   185.9 kJ
+ Insight 1: For long-horizon workloads, full-history prefill                                                                      0      10           20      30   40     50         60   70          150         200
+                                                                                                                                        Raw GPU Energy / Correct Answer (kJ)
+cost is substantial and grows with accumulated history. Agent
+memory systems reduce this cost, but span two orders of                                                                                        Construction         QA (Retrieval + Generation)
+magnitude in per-query serving latency on identical hardware,                                                     Figure 4: Energy per correct answer. Normalizing total
+with comparable spread in construction costs. These costs are                                                     energy by correct answers jointly prices construction and
+invisible to accuracy metrics, and vary based on the system’s                                                     serving against task quality. The spread across agent
+construction and retrieval algorithms.                                                                            memory systems exceeds 47×.
+ Recommendation 1: Long-horizon agent deployments
+should treat agent memory system selection as a system-level
+decision. Accuracy alone is an insufficient criterion when                                                        a question we address in Sec. 4.6. This section quantifies
+systems differ by orders of magnitude in construction cost,                                                       the energy component, which is the unhideable cost the
+serving latency, and storage footprint.                                                                           operator pays to deploy each agent memory system. All
+                                                                                                                  experiments presented in this section were measured and
+4.2. Construction Dominates the Agent Lifecycle                                                                   averaged over five samples of LongMemEval_S_*, totaling
+                                                                                                                  1.8M tokens of history and 300 queries, and run using
+                                                                                                                  local vLLM serving (LLM=Qwen3-32B; Embed=Qwen3-
+                  (a) Memory Construction                 (b) QA Retrieval              (c) QA Generation         Embedding-0.6B). Fig. 3 shows construction wall time,
+                  (Up To ~13.3h For Letta)
+        BM25                                                                                                      as well as the resulting time spent on retrieval and QA.
+   embedRAG                                                                                                       Paradigm II agent memory systems (BM25, embedRAG)
+    GraphRAG
+ HippoRAG_v2                                                                                                      complete construction in under a minute through determin-
+        Mem0
+  SimpleMem                                                                                                       istic indexing. Paradigm III and IV systems invoke LLMs
+        MIRIX
+        Letta                                                                                                     repeatedly to extract facts, triples, summaries, or memory
+       A-Mem                                                                                                      updates, pushing wall time from hours (eg. SimpleMem
+                100      101    102   103   104       0.001 0.01 0.1   1      10    0          2          4
+                Construction Wallclock (s, Log)          Retrieval / Query (s)      Generation / Query (s)        ∼3.9h) to over half a day (Letta ∼13.3h). The energy
+                      Construction          QA Retrieval / Query            QA Generation / Query                 consequences follow directly. Table 3 shows that end-to-
+                                                                                                                  end energy span is over 26.7×, from BM25 at 582 kJ to
+Figure 3: Phase cost breakdown. Paradigm III and IV
+                                                                                                                  Letta at 15,429 kJ. Fig. 4 normalizes total energy by correct
+agent memory systems shift the majority of end-to-end
+                                                                                                                  answers. Normalizing total energy by correct answers
+energy into construction, which is invisible to the user at
+                                                                                                                  jointly prices construction and serving against task quality.
+query time.
+                                                                                                                  This is inspired by the Intelligence per Watt metric proposed
+                                                                                                                  in [20]. BM25 establishes a floor of 4,145 J per correct
+TABLE 3: End-to-end cost summary on LongMemEval                                                                   answer. A-Mem and MIRIX reach 115 kJ and 197 kJ, a 28–
+(Qwen3-32B, n = 300 queries). Construct + 300 QA.                                                                 47× premium that must be justified by capabilities flat
+                                                                                                                  retrieval cannot provide: mutation, conflict resolution, multi-
+  Agent memory system                       Acc.       Wall        Calls       Total kJ        J/correct
+                                                                                                                  type routing, or long-range reasoning.
+  BM25                                      47.0     16.3m            300             582             4,128
+  GraphRAG                                  46.0      1.83h         3,215           2,082            15,084        Insight 2: Construction energy dominates the agent lifecy-
+  HippoRAG v2                               44.3     44.2m          2,743           1,339            10,079       cle: for LLM-mediated agent memory systems, construction
+  A-Mem                                     42.7     11.76h        19,230          14,864           116,116
+  embedRAG                                  39.8     14.4m            610             495             4,144
+                                                                                                                  energy exceeds total query-phase energy across 300 queries.
+  SimpleMem                                 36.0      3.92h         4,447           5,481            50,749       Energy per correct answer exceeds 47 × across the suite, and
+  Mem0                                      32.0      4.02h         4,538           4,878            50,813       agent memory systems with similar accuracy can differ by
+  Letta                                     27.7     14.36h        18,394          15,429           185,873
+  MIRIX                                     20.0      6.03h         7,655           8,678           144,629       an order of magnitude on this axis.
+                                                                                                                   Recommendation 2: Operators should account for en-
+   The per-query latency advantage in Fig. 2 is conditional                                                       ergy across the full agent lifecycle, not just at query time.
+on memory having already been constructed. Construction                                                           Construction dominates total energy for most LLM-mediated
+has two cost components that behave differently under                                                             agent memory systems, which trade construction cost for
+scheduling. Energy is invariant: whatever LLM and embed-                                                          capabilities such as mutation, structured retrieval, and multi-
+ding calls construction makes are paid regardless of when                                                         store routing. Systems with similar accuracy can differ by
+they run. Latency, by contrast, is schedulable; whether it                                                        an order of magnitude in lifecycle energy depending on their
+can be hidden behind asynchronous or background writes                                                            construction pipeline.
+depends on the agent memory system’s consistency model,
+
+
+                                                                                                              6
+     4.3. Construction Is an Overwhelmingly Embed-                                                                                                                                                                                       processing large input volumes across many independent
+     ding and Prefill-dominated Workload                                                                                                                                                                                                 chunks with no user-facing latency pressure. Routing both
+                                                                                                                                                                                                                                         through the same LLM endpoint means a large construction
+                                                                                                                                                                                                                                         prefill job occupies KV-cache headroom and stalls the batch
+                        (a.i) Construction Phase                                                                                  (b) QA Phase (Per Query)                                                                               scheduler precisely when a latency-sensitive query arrives.
+                                                      LLM Calls                   Embed Calls                                                            # Embed Sequences (right axis)
+                                                    23k                                                                                        10                                                                                            Embedding traffic is further bimodal by paradigm.
+
+
+
+                                                                                               # Embed Sequences (Log)
+                                             6.3k                          6.9k
+                         104                              3.0k 6.0k 3.2k                 104                                                                                                                                             Paradigm III.a agent memory systems submit large batches
+                                                                                  1.1k                                                          8
+
+
+
+                                                                                                                             Calls / Query
+                         103           449                                               103
+                                                                                                                                                                                                                                         to the embedding server: GraphRAG yields ∼2,300 se-
+  Calls (Log)
+                                                                                                                                                6
+                         102                                                             102
+                         101                                                             101                                                    4                                                                                        quences per API call (batching ∼10 entity-relation tuples per
+                         100                                                             100                                                    2                                                                                        chunk), HippoRAG v2 ∼125 sequences per call across three
+                        10 1 0 0 0                                                       10 1                                                   0
+                                                                                                                                                            0                                                       0                    indexed views. Paradigms III.b and IV present the opposite
+                               5 G G 2 0 m IX ta m                                                                                                  5     G      G      2    0 m IX ta m
+                           BM2bedRAraphRoARAG_v MempleMe MIR Let A-Me                                                                            BM2 bedRA raphRA oRAG_v Mem pleMe MIR Let A-Me                                          shape: Mem0 must embed each extracted fact before its
+                           em G Hipp            Sim                                                                                               em G Hipp               Sim
+                        (a.ii) Construction Paradigm Batching creates Bimodal GPU traffic                                                                                                                                                similarity search resolves the ADD/UPDATE/DELETE deci-
+                                                                Tensor (HMMA) %                                              DRAM BW %                                        Power (W)                                                  sion, producing a 1:1 call-to-sequence ratio; agentic systems
+                  120                                                  HippoRAG_v2 900                                                         120                                                           Mem0                        are similarly sequential. An embedding server configured
+                                                                                                                                                                                                                        700
+                                    Triple                      Batched                              800                                                               1 : 1 call-to-sequence ratio:
+                  100             Extraction                   Embeddings
+                                                                                                     700
+                                                                                                                                               100                      embed one fact at a time                        600              for batch throughput will create head-of-line blocking for
+
+Utilization (%)                                                                                                  Power (W)   Utilization (%)                                                                             Power (W)
+                   80                                                                                600                                        80                                                                      500
+                   60                                                                                500                                        60
+                                                                                                                                                                                                                                         latency-sensitive write-loop tenants.
+                                                                                                                                                                                                                        400
+                   40
+                                                                                                     400
+                                                                                                                                                40                                                                      300               Insight 3: Agent memory construction is prefill- and
+                                                                                                     300
+                   20                                                                                200                                        20                                                                      200              embedding-heavy: it repeatedly reads long chunks or windows
+                    0                                                                        100                                                 0                                                                100
+                        0            50         100
+                                                Wall time (s)
+                                                               150          200            250                                                       0            50           100         150
+                                                                                                                                                                                Wall time (s)
+                                                                                                                                                                                                       200      250                      and emits compact memory records. Unlike QA, construction is
+                                                                                                                                                                                                                                         not on the user-facing decode path, so its cost profile is closer
+                                                                                                                                                                                                                                         to background indexing than interactive serving. Embedding
+                                                                            (c) Construction Tokens
+                            Decode%                                               0          BM25                                                           0                                                                            traffic splits further by paradigm, between large-batch offline
+                                                                                                                                                            0
+                            = Total Decode Tokens
+                                                                                                                                                            0                                                                            indexing (Paradigm III.a) and sequential per-event writes
+                                    Construction Tokens                           0       embedRAG
+                                      6.2%                                                 GraphRAG                                                                                                                                      (Paradigms III.b and IV).
+                                       4.6%                                              HippoRAG_v2
+                                    11.9%                                                    Mem0
+                                                                                                                                                                                                                                          Recommendation 3: Agent-serving systems should treat
+                                  28.5%                                                   SimpleMem                                                                                                                                      memory construction as a background throughput workload
+                                     1.7%                                                    MIRIX                                                                                                                                       with explicit admission control. Construction jobs should be
+                                   0.9%                                                      Letta                                                                                                                                       rate-limited, batched, or deferred when they would interfere
+                                   3.3%                                                     A-Mem                                                                                                                                        with latency-sensitive QA. Paradigm III.a tenants benefit from
+                            108           106         104            102          100                                                                    100            102          104         106           108
+                                    Decode Tokens (Log)                                                                                                         Prefill and Embed Tokens (Log)                                           large embedding batch sizes; Paradigms III.b and IV require
+                                          Decode (LLM Completion)                                                        Prefill (LLM Prompt)                                             Embed Input                                    per-call latency prioritization on the embedding path.
+     Figure 5: Construction call structure and token de-                                                                                                                                                                                  Recommendation 4: Construction pipelines should exploit
+     composition. Embedding batching ratios split sharply by                                                                                                                                                                             reuse across overlapping inputs. Windowed and chunked
+     taxonomy paradigm: Paradigm III.a generates large-batch                                                                                                                                                                             memory systems can reduce repeated prefill cost through
+     offline-indexing traffic; Paradigms III.b and IV generate                                                                                                                                                                           prefix reuse, chunk caching, and batching of independent
+     sequential per-event traffic on the write-loop critical path.                                                                                                                                                                       construction units.
+        The construction cost identified in Sec. 4.2 has a specific
+    computational shape that follows from how each paradigm
+                                                                                                                                                                                                                                         4.4. Construction-LLM Choice Is Agent memory
+    transforms interaction history into persistent records.                                                                                                                                                                              system-Constrained
+        Fig. 5 decomposes construction traffic into LLM prompt                                                                                                                                                                               Sec. 4.2 showed that construction energy often domi-
+    tokens, completion tokens, and embedding input tokens.                                                                                                                                                                               nates the agent lifecycle. A natural cost lever for an operator
+    Construction is dominated by embedding and LLM prefill:                                                                                                                                                                              is to use a smaller, cheaper LLM for construction than for
+    the embedding model’s entire forward pass is prefill with                                                                                                                                                                            QA. Fig. 6 shows that this lever is available for most systems,
+    no decode component, and the LLM construction path reads                                                                                                                                                                             but its safe range is set by the construction algorithm’s
+    a window or chunk and emits a compact structured output                                                                                                                                                                              output contracts.
+    (a fact list, a JSON triple set, an ADD/UPDATE/DELETE                                                                                                                                                                                    For systems without hard output contracts (Mem0,
+    decision) whose token count is small relative to the context                                                                                                                                                                         SimpleMem, A-Mem), accuracy degrades smoothly as the
+    consumed. The median decode share of total construction                                                                                                                                                                              construction LLM shrinks, permitting continuous accuracy-
+    tokens is 4.6% across agent memory systems, ranging                                                                                                                                                                                  cost tradeoffs down to small models. GraphRAG is notably
+    from 0.9% (Letta) to 28.5% (SimpleMem, whose per-window                                                                                                                                                                              robust, maintaining ∼47–48% accuracy across the full
+    memory entries are longer). Construction is a repeated                                                                                                                                                                               ladder from Qwen3-1.7B to GPT-4o-mini, because its entity-
+    long-read, short-write workload.                                                                                                                                                                                                     relation extraction degrades gracefully rather than failing
+        This creates a structural conflict with QA serving.                                                                                                                                                                              structurally. Systems with strict output contracts exhibit a
+    QA traffic is latency-sensitive and optimized around time-                                                                                                                                                                           harder floor. MIRIX fails entirely at Qwen3-1.7B, because its
+    to-first-token; construction traffic is throughput-oriented,                                                                                                                                                                         pipeline relies on multiple sub-agent tool calls that require
+
+
+                                                                                                                                                                                                                                     7
+                                             LongMemEval Accuracy vs.                                 BM25’s strong aggregate showing should not be read
+                         60                      Construction LLM                                 as a universal result. The macro-average in Fig. 7a is
+
+
+
+
+LLM-Judge Accuracy (%)
+                         50                                                 GraphRAG              computed over all datasets in MemoryAgentBench, many
+                                                                            HippoRAG_v2           of which are recall-heavy and reward the exact-match
+                         40
+                                                                            Mem0                  retrieval that lexical indexing handles well. BM25 has well-
+                         30                                                 SimpleMem             documented weaknesses on queries requiring paraphrase
+                         20                                                 MIRIX                 matching, multi-hop reasoning, or temporal inference, the
+                                                                            A-Mem                 task families that motivate Paradigm III and IV designs.
+                         10
+                                                                        Embedding model and
+                                                                                                  Fig. 7b shows this: the aggregate hides sharp per-category
+                         0            Fail                              QA LLM fixed              variation, and on the harder categories the gap between
+                              1.7b          b      b      b        ni
+                         n3-            n3-8 en3-14 en3-32 t-4o-mi                                BM25 and the structure-augmented systems narrows or
+        qwe                          qwe      q w    q w    g p                                   reverses.
+                               Construction LLM (Weakest Strongest)                                Insight 5: No agent memory system is optimal across con-
+ Figure 6: Construction-LLM sensitivity. QA LLM is fixed                                          struction cost, per-query latency, and accuracy. Agent memory
+ to GPT-4o-mini. Embed is fixed to Text Embedding 3 Small.                                        systems with similar accuracy occupy distinct positions on
+ Construction LLM is swept for LLM-dependent systems.                                             the construction-versus-query cost split.
+                                                                                                   Recommendation 6: Operators selecting an agent mem-
+ well-formed JSON schemas and legal tool-call syntax; a                                           ory system should match the construction-versus-query cost
+ model that cannot reliably satisfy these contracts produces                                      split to the workload’s query arrival pattern, in addition to
+ a corrupted store from which the QA model can recover                                            matching the agent memory system’s capability profile to the
+ no useful evidence.                                                                              dominant task family. High-volume query workloads against
+  Insight 4: Construction-LLM downscaling is available for                                        stable histories favor agent memory systems that move work
+ most systems but its safe range is algorithm-constrained.                                        into construction. Continuous-ingestion workloads with sparse
+ Systems without hard output contracts tolerate smaller con-                                      queries favor agent memory systems with low construction
+ struction LLMs with graceful accuracy degradation. Systems                                       costs.
+ with strict output contracts impose a capability floor: falling
+                                                                                                  4.6. Inter-Session Construction               Creates      a
+ below it corrupts the memory store entirely, as seen with                                        Freshness–Latency Tradeoff
+ MIRIX’s complete failure at Qwen3-1.7B.                                                              The preceding sections characterized agent memory
+                                                                                                  in the batch-construct-then-query regime. When sessions
+  Recommendation 5: Operators should treat the minimum
+                                                                                                  instead arrive continuously and later queries depend on
+ viable construction LLM as an algorithm-imposed cost floor.
+                                                                                                  memory from earlier ones, the serving system faces a
+ For systems with strict output contracts, this floor must be
+                                                                                                  scheduling decision batch evaluation hides.
+ validated before deployment; falling below it renders the store
+                                                                                                      We characterize this regime using the physics split of
+ unusable. For systems without hard contracts, construction-
+                                                                                                  MemoryArena [4]: 20 multi-session tasks, each a sequence
+ LLM downscaling is a cost lever, tunable against an accuracy
+                                                                                                  of interdependent subtasks where a later subtask depends
+ constraint.
+                                                                                                  on results established by earlier ones. Each subtask is one
+                                                                                                  session, a retrieve-act-write cycle. We capture per-session
+ 4.5. The Construction–Serve–Accuracy Frontier                                                    timing traces and replay them under a controlled 5-second
+     Fig. 7 plots construction wall time, per-query latency,                                      inter-session arrival schedule, emulating synchronous and
+ and accuracy, each macro-averaged over all MemoryAgent-                                          asynchronous scheduling. All runs use Qwen3-32B (FP8)
+ Bench datasets. BM25 completes construction in under                                             with Qwen3-Embedding-0.6B. We define staleness as the
+ a second and reaches the highest accuracy in the suite                                           number of prior sessions not yet persisted to the memory
+ at 55.8%, but its query time (∼7.4 s) is behind Mem0, A-                                         store at query time; a system is fresh when staleness is
+ Mem, and GraphRAG. The structure-augmented and agentic                                           zero. Fig. 8a–b shows one representative task under each
+ systems pay substantially more construction cost without                                         mode, one row per system. In panel b, hatched markers
+ overtaking BM25 on accuracy: HippoRAG v2 reaches 47.4%                                           indicate queries admitted before the prior write committed.
+ at ∼277 s of construction, GraphRAG 47.0% at ∼2,850 s, and                                       Under synchronous scheduling, slow-construction systems
+ A-Mem 42.1% at ∼17,666 s, the most expensive build in the                                        extend the timeline as each session blocks on its own
+ suite. The cost axes also trade against each other. Mem0                                         write. Under asynchronous scheduling, SimpleMem, MIRIX,
+ attains the lowest per-query latency (∼2.2 s) by distilling                                      Letta, Mem0, and A-Mem accumulate staleness, retrieving
+ history into atomic facts, but pays ∼4,108 s of construction                                     against memory one or more sessions behind the ingestion
+ to do so and reaches only 26.8% accuracy. SimpleMem is the                                       stream. Paradigm II systems (BM25, embedRAG) remain
+ slowest at query time (∼18.4 s), because its retrieval pipeline                                  fresh in both modes. Fig. 8c shows per-session construction
+ adds intent planning, multi-view retrieval, and iterative                                        time across all papers, spanning five orders of magnitude:
+ reflection rounds on top of its compressed entries. No single                                    from ∼10−3 s for BM25 to ∼10 s for Mem0 and MIRIX,
+ system is therefore best on all three axes: each occupies a                                      with tails exceeding 100 s for inputs that trigger multiple
+ distinct point on the construction–serve–accuracy frontier.                                      consolidation rounds. Construction time alone does not
+
+
+                                                                                              8
+                                    (a)                                                                                                                         (b)
+                                    102
+                                                            Build × Serve × Accuracy                                                                                         Accurate Retrieval                                       Test-Time Learning                                     Long-Range Understanding                                                 Conflict Resolution
+                                                                                                                              55
+                                            Cost Pareto                                                                                                     BM25 48           75          73             53     249                          77                        14 91                      30                         68                98                       46                   4 50
+
+
+
+
+   Serve Latency / Query (s, Log)
+                                                                                                                              50                        embedRAG 44           73     50         40 207                                       73                      14 87                       29                         63                93                  31              5 36
+
+
+
+
+                                                                                                                              LLM-Judge Accuracy (%)
+                                                                                         SimpleMem
+                                                                                           36.2%   MIRIX Letta                                            GraphRAG 47         69     52          49       217                               67                    72                         18                        72                 90                 21             23
+                                                                                HippoRAG           31.7% 25.9%                45
+                                                          embedRAG                47.4%                                                                HippoRAG_v2 48         70         58         51     226                              67                  14 80                        20                       56            76                           26              29
+                                          BM25            50.3%
+                                    101   55.8%                                                                                                              Mem0 40 29 27 35 130                                                37               9 46                                      10             35         45                                    15         18
+                                                                                                                              40
+                                                                                                GraphRAG                                                SimpleMem 36     44 19 42 141                                                  55                    15 70                               21        23                                                                58                      6 64
+                                                                                                  47.0%
+                                                                                                                 A-Mem        35                             MIRIX 26 37 34        46 143                                         41                  9 50                                  11                  49           60                                  27              5 32
+                                                                                                                 42.1%
+                                                                                                       Mem0                                                   Letta 29 26 25 41 121                                              35              11 46                                            30            31                                               26              29
+                                                                                                       26.8%                  30
+                                                                                                                                                             A-Mem 44      63   50             49        207                           58                    12 69                           19                        66                86                5 7
+                                    100
+                                            100             101           102             103              104                                                    0     50     100       150     200           250    300 0       20             40       60         80        100      0             20         40         60      80        100      0               20               40          60
+                                                                  Build Latency (s, Log)                                                                                      Score sum (raw)                                           Score sum (raw)                                                     Score sum (raw)                                            Score sum (raw)
+                                                                                                                                                                  Datasets:                   LME(S*)           EventQA       RULER QA1               RULER QA2           ICL (Avg. of 5 datasets)              RecSys           InfBench-Sum       DetectiveQA         FC-SH            FC-MH
+
+
+
+Figure 7: (a) Construction–serve–accuracy frontier. Fast construction, fast per-query serving, and high accuracy
+cannot be jointly maximized. Accuracy and cost are macro-averaged over all MemoryAgentBench datasets (remote serving,
+GPT-4o-mini, text-embedding-3-small). (b) Performance of agent memory systems on various task categories in the
+MemoryAgentBench suite.
+
+                                               (a) Synchronous                                                                                                (b) Asynchronous,                                                                                                                                 (c) Per-Call Construct()
+                                             Memory Construction                                                                                             5s Inter-Session Gap                                                                                                                                      Wall Time
+          BM25                                                                                                                                                                                                                                                                         BM25
+     embedRAG                                                                                                                                                                                                                                                                     embedRAG
+      GraphRAG                                                                                                                                                                                                                                                                     GraphRAG
+  HippoRAG_v2                                                                                                                                                                                                                    max stale: 2                                  HippoRAG_v2
+          Mem0                                                                                                                                                                                                                   max stale: 2                                          Mem0
+    SimpleMem                                                                                                                                                                                                                    max stale: 1                                    SimpleMem
+          MIRIX                                                                                                                                                                                                                  max stale: 2                                          MIRIX
+          Letta                                                                                                                                                                                                                  max stale: 1                                          Letta
+         A-Mem                                                                                                                                                                                                                   max stale: 1                                         A-Mem
+  Long-Context                                                                                                                                                                                                                                                                 Long-Context
+                                                  0       100 200 300 400 700 750                                         0                            100              200                     300                            500 400                                                                               10 4 10 3 10 2 10 1 100 101 102 103
+                                                  Wall Time (Seconds)                                                                                         Wall Time (Seconds)                                                                                                                                                        Construct() Wall Time
+                                                                                                                                                                                                                                                                                                                                            (Seconds, Log)
+                                                                                  Retrieve                         Task                                Construct                              Inter-Session Gap                                                        Retrieve Sees Stale State
+Figure 8: Construction scheduling and per-session write latency under session arrivals (MemoryArena, physics
+split, 20 multi-session tasks). Under asynchronous scheduling, slow-construction agent memory systems serve queries
+against stale memory because prior session writes have not yet committed. Per-session write latency spans five orders of
+magnitude, from sub-millisecond for BM25 to tens of seconds for Paradigm IV systems.
+
+
+determine feasibility: retrieval cost during the next session’s                                                                                                                                 Recommendation 8: Construction cadence should be
+action loop also contributes, and the cumulative time                                                                                                                                          agent memory system-aware. Append-only memory can
+must fit within the inter-session interval to avoid a write                                                                                                                                    be updated continuously, but consolidating and mutating
+backlog. When it does not, the operator faces a forced                                                                                                                                         systems should monitor marginal per-chunk construction cost
+choice between synchronous scheduling, which exposes                                                                                                                                           and trigger compaction or offline rebuild when new chunks
+construction latency on the critical path, and asynchronous                                                                                                                                    increasingly spend time comparing against or rewriting prior
+scheduling, which admits unbounded staleness.                                                                                                                                                  records.
+ Insight 6: For agent memory systems where per-session
+                                                                                                                                                                                               4.7. Per-User Memory Footprint Growth Diverges
+construction time exceeds the inter-session arrival interval,
+synchronous construction scheduling leads to user-facing                                                                                                                                       Across Agent Memory Systems
+latency and memory staleness, thus requiring concurrent                                                                                                                                            Agent memory is per-user, unbounded, and accumulates
+(asynchronous) construction scheduling. Per-session construc-                                                                                                                                  continuously, so per-user costs compound across users and
+tion time alone spans five orders of magnitude across systems,                                                                                                                                 over deployment lifetime. Fig. 9 tracks construction time,
+making it the dominant property for inter-session system                                                                                                                                       LLM token cost, retrieval latency, and on-disk footprint as
+selection.                                                                                                                                                                                     we scale one user’s history from about 64 K to 1 M tokens,
+                                                                                                                                                                                               using LongMemEval’s arbitrary context generation [28].
+ Recommendation 7: For inter-session workloads with                                                                                                                                                On-disk footprint (panel c) grows roughly proportionally
+strict cross-session dependencies, cumulative construction and                                                                                                                                 to content volume for most systems, with a ∼9× spread at
+retrieval time should be treated as a hard feasibility constraint.                                                                                                                             1 M tokens. Multi-view designs inflate the proportionality
+Systems that exceed the arrival interval cannot satisfy both                                                                                                                                   constant (HippoRAG v2 reaches ∼62 MB at 1 M tokens);
+freshness and latency targets simultaneously; accuracy alone                                                                                                                                   consolidating systems have the potential to compress stor-
+is an insufficient selection criterion when this constraint binds.                                                                                                                             age over time as redundant records are merged, keeping
+
+
+                                                                                                                                                                                     9
+                                    (a) Memory Construction                                                                                                                                  User Wait Per Query
+
+
+
+
+Construction Wallclock (s)
+                                           Latency                                                  ×107 (b) LLM Token Cost
+
+
+                                                                          LLM Tokens
+                                                                                              5.0                                                                                                     TTFT (s) : Total (s)
+                              104                                                             4.5
+                                                                                              4.0                                                      BM25                              2.41 : 3.20
+                              103                                                             3.5                                                 embedRAG                            1.96 : 2.78
+
+
+
+                                                                     (Prompt + Completion)
+                                                                                              3.0
+                              102                                                             2.5                                                  GraphRAG                 0.22 : 1.42
+                                                                                              2.0                                               HippoRAG_v2                                                   3.56 : 5.03
+                              101                                                             1.5                                                      Mem0           0.10 : 0.57
+                                                                                              1.0
+                              100                                                             0.5                                                SimpleMem                                                                                              22.58 : 24.68
+                                    64k    128k   256k   512k   1M                            0.0    64k    128k     256k   512k    1M                 MIRIX                        1.23 : 2.15
+                                          Context Size (Log)                                               Context Size (Log)                          Letta                                                                        9.17 : 12.76
+                                                                                                                                                      A-Mem                    1.20 : 1.92
+                                           (c) Memory DB                                                   (d) QA Retrieval                                    0       1      2         3         4       5        6         10       15           20   25      30
+                                              Footprint                                                        Latency                                                      Seconds per Query
+
+                                                                     Avg Retrieval Latency
+Memory Size (MB)
+                              102                                                             101
+                                                                                              100
+                                                                                                                                                                   Pre-First-Token Wait (Effective TTFT)                          Post-First-Token Streaming
+                              101
+
+
+                                                                         per Query (s)
+                                                                                             10 1
+                              100                                                                                                               Figure 10: Effective time-to-first-token. Pre-answer la-
+                                                                                             10 2
+                                                                                             10 3
+                                                                                                                                                tency spans two orders of magnitude on identical hardware.
+                             10 1
+                                    64k    128k   256k   512k   1M                                   64k    128k     256k   512k    1M          The dominant variable is retrieval pipeline depth, not LLM
+                                          Context Size (Log)                                               Context Size (Log)                   serving speed.
+                                BM25                 GraphRAG                   Mem0                               MIRIX           Letta
+                                embedRAG             HippoRAG_v2                SimpleMem                          A-Mem
+                                                                                                                                                compaction or summarization policies to prevent unbounded
+       Figure 9: Scaling with input length. Construction time,                                                                                  cost escalation. Because all evaluated systems accumulate state
+       LLM token cost, retrieval latency, and on-disk footprint as                                                                              monotonically by default, operators must add independent
+       a single user’s history scales from 64 K to about 1 M tokens                                                                             pruning or forgetting policies to bound fleet-scale storage and
+       (local serving, Qwen3-32B, Qwen3-Embedding-0.6B).                                                                                        token costs.
+       footprint lower than their ingestion volume would suggest
+                                                                                                                                                4.8. Serving Latency Structure
+       (Mem0 at ∼12 MB). None of the evaluated systems prune or
+       forget by default, so footprint grows monotonically under                                                                                    Sec. 4.6 treated per-session construction and retrieval
+       default behavior; bounding fleet storage requires an inde-                                                                               time as inputs to the scheduling decision; this section
+       pendent forgetting policy. LLM token cost (panel b) reveals                                                                              explains what sets them. On identical hardware and a
+       a sharper divergence. Paradigm IV agentic systems (Letta,                                                                                fixed corpus, effective time-to-first-token spans two orders
+       A-Mem, MIRIX) scale super-linearly in token cost: each new                                                                               of magnitude across systems (Fig. 10, ∼0.10 s for Mem0
+       ingestion issues tool calls that query and assess the growing                                                                            to ∼22.6 s for SimpleMem), and per-session construction
+       memory store before merging or rewriting records, so per-                                                                                time spans five (Fig. 8c). With the serving stack held
+       ingestion token cost rises with store size and total cost                                                                                constant, the variation comes from how each algorithm
+       compounds with history length. Letta in particular diverges                                                                              bounds its own work. Agent memory systems fall into
+       steeply beyond 256 K tokens. Paradigm II systems (BM25,                                                                                  two regimes, and a system can sit in different regimes for
+       embedRAG) incur negligible LLM token cost at all scales.                                                                                 construction versus retrieval. Algorithm-bounded phases
+       At fleet scale, projecting 1 M-token footprints to 100 K users                                                                           stop at a point fixed by the algorithm: BM25’s single top-
+       gives a ∼9× storage spread, from ∼0.7 TB (embedRAG) to                                                                                   k lookup, HippoRAG v2’s fixed passage–entity–fact–PPR
+       ∼6.2 TB (HippoRAG v2). But for long-lived deployments the                                                                                sequence, GraphRAG’s one extraction call per chunk. Per-
+       more consequential variable is the token-cost growth slope:                                                                              phase cost varies with input and graph topology, but its
+       agentic systems whose construction cost compounds with                                                                                   worst case is bounded by static properties the operator can
+       memory size will become disproportionately expensive as                                                                                  profile in advance. LLM-bounded phases continue until the
+       user histories grow. Retrieval latency (panel d), by contrast,                                                                           LLM decides they are done: MIRIX’s type-specific tool calls,
+       stays nearly flat as the store grows: index-lookup retrieval                                                                             SimpleMem’s reflection rounds, Letta’s tool-driven memory
+       is sub-linear in store size, decoupling per-query read cost                                                                              access, A-Mem’s note evolution. When the specification
+       from history length.                                                                                                                     permits arbitrary depth, only an explicit iteration cap
+                                                                                                                                                bounds cost. The two regimes produce distinct tail behavior.
+        Insight 7: Per-user memory footprints vary by up to 9×
+                                                                                                                                                As seen in Fig. /reffig:tail-latency, deterministic systems
+       across systems at 1 M tokens, but construction token cost                                                                                have narrow tails: BM25 and embedRAG show p95/p50
+       diverges far more sharply. Paradigm IV agentic systems scale                                                                             ratios near 1.3×, and HippoRAG v2 only slightly wider
+       super-linearly in LLM token cost as growing memory stores                                                                                at 1.6× as PPR convergence depends on the query’s seed
+       amplify per-ingestion work. Multi-view representations inflate                                                                           distribution. LLM-bounded systems show the widest tails,
+       storage growth; consolidating systems dampen it. An agent’s                                                                              reaching 5.9× for GraphRAG and 3.9× for Letta, since extra
+       long-term cost is therefore dictated by its algorithmic growth                                                                           tool calls or reflection rounds drive latency beyond what
+       slope, not its initial footprint.                                                                                                        the corpus alone predicts.
+         Recommendation 9: Selecting memory for long-lived                                                                                       Insight 8: LLM-bounded agent memory systems produce
+        agents requires evaluating both baseline footprint and cost                                                                             construction and retrieval costs that are less tightly constrained
+        growth slope. Agentic systems whose construction cost com-                                                                              by the input size alone than deterministic paradigms, since
+        pounds with memory size should be paired with active                                                                                    runtime LLM decisions can introduce variable numbers of
+
+
+                                                                                                                                           10
+                         QA Query Tail Latency (p50 p95)                         p50          p95         Amanda Butler for their continued support. We would
+                                                                1.2×                   3.9×               also like to thank the Stanford PORTAL and MemoryDAX
+
+
+
+Latency (s, Log)
+                                                                                                          industrial affiliates program. Finally, we thank the Knight-
+                   101                         1.6×                                                       Hennessy Fellowship for partly funding this research.
+                          1.3×          5.9×                              2.3×
+                                 1.3×                                                         1.6×        Statement on Generative AI: Codebase development was
+                                                         2.4×                                             accelerated using Claude Code. Claude was additionally
+                   100                                                                                    used to assist in improving the presentation of this writing.
+                                                                                                          All technical content, experimental design, analysis, and
+                        5     G      G
+                     BM2 bedRA raphRA oRAG_v
+                                             2           0
+                                                      Mem mpleMe
+                                                                 m     MIRI
+                                                                           X     Letta A-Mem              conclusions are the work of the authors.
+                        em    G Hipp                    Si
+  Figure 11: QA tail latency by agent memory system.                                                      References
+  Fixed-depth pipelines (Paradigm II) have p95/p50 near 1.3×.
+  Systems with more complex store structures or query-                                                    [1]   P. Chhikara, D. Khant, S. Aryan, T. Singh, and D. Yadav, “Mem0:
+  adaptive pipelines display wider tails at QA time.                                                            Building Production-Ready AI Agents with Scalable Long-Term
+                                                                                                                Memory,” 2025. [Online]. Available: https://arxiv.org/abs/2504.19413
+                                                                                                          [2]   D. Edge, H. Trinh, N. Cheng, J. Bradley, A. Chao, A. Mody, S. Truitt,
+                                                                                                                D. Metropolitansky, R. O. Ness, and J. Larson, “From Local to Global:
+  reasoning, tool-use, or refinement steps. External iteration                                                  A Graph RAG Approach to Query-Focused Summarization,” 2025.
+  caps or timeouts are therefore required to bound worst-case                                                   [Online]. Available: https://arxiv.org/abs/2404.16130
+  cost.                                                                                                   [3]   B. J. Gutiérrez, Y. Shu, W. Qi, S. Zhou, and Y. Su, “From RAG
+   Recommendation 10: Latency-sensitive deployments                                                             to memory: non-parametric continual learning for large language
+  should treat worst-case latency, on both construction and                                                     models,” in Proceedings of the 42nd International Conference on
+                                                                                                                Machine Learning, ser. ICML’25. JMLR.org, 2025.
+  retrieval, as a selection criterion. Algorithm-bounded systems
+  can be provisioned from worst-case latency measured on                                                  [4]   Z. He, Y. Wang, C. Zhi, Y. Hu, T.-P. Chen, L. Yin, Z. Chen,
+                                                                                                                T. A. Wu, S. Ouyang, Z. Wang, J. Pei, J. McAuley, Y. Choi,
+  representative inputs. LLM-bounded systems require external                                                   and A. Pentland, “MemoryArena: Benchmarking Agent Memory
+  iteration caps and timeouts, since profiling samples the LLM’s                                                in Interdependent Multi-Session Agentic Tasks,” 2026. [Online].
+  behavior on tested inputs but does not bound it on others.                                                    Available: https://arxiv.org/abs/2602.16313
+                                                                                                          [5]   C.-P. Hsieh, S. Sun, S. Kriman, S. Acharya, D. Rekesh, F. Jia,
+                                                                                                                Y. Zhang, and B. Ginsburg, “RULER: What’s the Real Context Size
+  5. Discussion & Conclusion                                                                                    of Your Long-Context Language Models?” 2024. [Online]. Available:
+                                                                                                                https://arxiv.org/abs/2404.06654
+       This paper presents the first systems characterization
+                                                                                                          [6]   Y. Hu, Y. Wang, and J. McAuley, “Evaluating Memory in LLM
+  of agent memory workloads. Across ten agent memory                                                            Agents via Incremental Multi-Turn Interactions,” 2026. [Online].
+  systems spanning four paradigms, we find that the dominant                                                    Available: https://arxiv.org/abs/2507.05257
+  cost in agent memory is not query-time serving but con-                                                 [7]   J. Johnson, M. Douze, and H. Jegou, “ Billion-Scale Similarity
+  struction, and that construction is structurally embedding                                                    Search with GPUs ,” IEEE Transactions on Big Data,
+  and prefill-dominated, and in direct tension with latency-                                                    vol. 7, no. 03, pp. 535–547, Jul. 2021. [Online]. Available:
+  sensitive QA traffic when co-located on the same serving                                                      https://doi.ieeecomputersociety.org/10.1109/TBDATA.2019.2921572
+  stack. The taxonomy introduced in Sec. 2.2 predicts this be-                                            [8]   V. Karpukhin, B. Oguz, S. Min, P. Lewis, L. Wu, S. Edunov, D. Chen,
+  havior: paradigm membership determines construction cost                                                      and W.-t. Yih, “Dense Passage Retrieval for Open-Domain Question
+                                                                                                                Answering,” in Proceedings of the 2020 Conference on Empirical
+  shape, embedding traffic pattern, capability sensitivity to                                                   Methods in Natural Language Processing (EMNLP), B. Webber,
+  construction-model choice, and retrieval tail width, making                                                   T. Cohn, Y. He, and Y. Liu, Eds. Online: Association for
+  it a systematic lens for deployment decisions beyond the rep-                                                 Computational Linguistics, Nov. 2020, pp. 6769–6781. [Online].
+  resentative agent memory systems evaluated here. Several                                                      Available: https://aclanthology.org/2020.emnlp-main.550/
+  open challenges extend beyond our current scope. Multi-                                                 [9]   W. Kwon, Z. Li, S. Zhuang, Y. Sheng, L. Zheng, C. H. Yu, J. Gonzalez,
+  node and multi-agent deployments introduce consistency                                                        H. Zhang, and I. Stoica, “Efficient Memory Management for Large
+                                                                                                                Language Model Serving with PagedAttention,” in Proceedings of
+  and coordination requirements across distributed memory                                                       the 29th Symposium on Operating Systems Principles, ser. SOSP ’23.
+  stores that single-node characterization cannot capture.                                                      New York, NY, USA: Association for Computing Machinery, 2023, p.
+  Multimodal memory, persisting and retrieving images, audio,                                                   611–626. [Online]. Available: https://doi.org/10.1145/3600006.3613165
+  and structured observations alongside text, is an emerging                                              [10] Letta, “Stateful Agents: The Missing Link in LLM Intelligence,” Febru-
+  and less mature frontier that we expect will amplify the                                                     ary 2025. [Online]. Available: https://www.letta.com/blog/stateful-
+  construction cost, storage footprint, and retrieval complexity                                               agents
+  challenges identified here. The taxonomy and profiling                                                  [11] P. Lewis, E. Perez, A. Piktus, F. Petroni, V. Karpukhin, N. Goyal,
+  methodology developed in this work provide a foundation                                                      H. Küttler, M. Lewis, W.-t. Yih, T. Rocktäschel, S. Riedel, and
+                                                                                                               D. Kiela, “Retrieval-Augmented Generation forKknowledge-Intensive
+  for characterizing these richer settings as they mature.                                                     NLP Tasks,” in Proceedings of the 34th International Conference on
+                                                                                                               Neural Information Processing Systems, ser. NIPS ’20. Red Hook, NY,
+  Acknowledgments                                                                                              USA: Curran Associates Inc., 2020.
+                                                                                                          [12] J. Liu, Y. Su, P. Xia, S. Han, Z. Zheng, C. Xie, M. Ding, and H. Yao,
+      We thank the staff of the Stanford Marlowe computing                                                     “SimpleMem: Efficient Lifelong Memory for LLM Agents,” 2026.
+  cluster and NVIDIA solutions architects Zoe Ryan and                                                         [Online]. Available: https://arxiv.org/abs/2601.02553
+
+
+
+                                                                                                     11
+[13] N. F. Liu, K. Lin, J. Hewitt, A. Paranjape, M. Bevilacqua, F. Petroni,           [20] J. Saad-Falcon, A. Narayan, H. O. Akengin, J. W. Griffin, H. Shandilya,
+     and P. Liang, “Lost in the Middle: How Language Models Use Long                       A. G. Lafuente, M. Goel, R. Joseph, S. Natarajan, E. K. Guha,
+     Contexts,” vol. 12. Cambridge, MA: MIT Press, 2024, pp. 157–173.                      S. Zhu, B. Athiwaratkun, J. Hennessy, A. Mirhoseini, and C. Ré,
+     [Online]. Available: https://aclanthology.org/2024.tacl-1.9/                          “Intelligence per watt: Measuring intelligence efficiency of local ai,”
+                                                                                           2026. [Online]. Available: https://arxiv.org/abs/2511.07885
+[14] A. Maharana, D.-H. Lee, S. Tulyakov, M. Bansal, F. Barbieri, and
+     Y. Fang, “Evaluating Very Long-Term Conversational Memory of LLM                 [21] P. Sarthi, S. Abdullah, A. Tuli, S. Khanna, A. Goldie, and
+     Agents,” in Proceedings of the 62nd Annual Meeting of the Association                 C. D. Manning, “RAPTOR: Recursive Abstractive Processing
+     for Computational Linguistics (Volume 1: Long Papers), L.-W. Ku,                      for Tree-Organized Retrieval,” 2024. [Online]. Available:
+     A. Martins, and V. Srikumar, Eds. Bangkok, Thailand: Association                      https://arxiv.org/abs/2401.18059
+     for Computational Linguistics, Aug. 2024, pp. 13 851–13 870. [Online].
+     Available: https://aclanthology.org/2024.acl-long.747/                           [22] N. Shinn, F. Cassano, A. Gopinath, K. Narasimhan, and S. Yao,
+[15] P. Micikevicius, D. Stosic, N. Burgess, M. Cornea, P. Dubey,                          “Reflexion: Language Agents with Verbal Reinforcement Learning,” in
+     R. Grisenthwaite, S. Ha, A. Heinecke, P. Judd, J. Kamalu,                             Proceedings of the 37th International Conference on Neural Information
+     N. Mellempudi, S. Oberman, M. Shoeybi, M. Siu, and H. Wu,                             Processing Systems, ser. NIPS ’23. Red Hook, NY, USA: Curran
+     “FP8 Formats for Deep Learning,” 2022. [Online]. Available:                           Associates Inc., 2023.
+     https://arxiv.org/abs/2209.05433
+                                                                                      [23] G. Team et al., “Gemini 1.5: Unlocking multimodal understanding
+[16] C. Packer, S. Wooders, K. Lin, V. Fang, S. G. Patil, I. Stoica, and J. E.             across millions of tokens of context,” 2024. [Online]. Available:
+     Gonzalez, “MemGPT: Towards LLMs as Operating Systems,” 2024.                          https://arxiv.org/abs/2403.05530
+     [Online]. Available: https://arxiv.org/abs/2310.08560
+                                                                                      [24] vLLM Project, “vLLM quantization documentation: FP8,” 2025, online:
+[17] J. S. Park, J. O’Brien, C. J. Cai, M. R. Morris, P. Liang, and M. S.                  https://docs.vllm.ai/en/latest/features/quantization/fp8.html.
+     Bernstein, “Generative Agents: Interactive Simulacra of Human
+     Behavior,” in Proceedings of the 36th Annual ACM Symposium on                    [25] L. Wang, C. Ma, X. Feng, Z. Zhang, H. Yang, J. Zhang, Z. Chen,
+     User Interface Software and Technology, ser. UIST ’23. New York,                      J. Tang, X. Chen, Y. Lin, W. X. Zhao, Z. Wei, and J. Wen, “A
+     NY, USA: Association for Computing Machinery, 2023. [Online].                         Survey on Large Language Model Based Autonomous Agents,”
+     Available: https://doi.org/10.1145/3586183.3606763                                    Front. Comput. Sci., vol. 18, no. 6, Mar. 2024. [Online]. Available:
+[18] P. Rasmussen, P. Paliychuk, T. Beauvais, J. Ryan, and D. Chalef, “Zep:                https://doi.org/10.1007/s11704-024-40231-1
+     A Temporal Knowledge Graph Architecture for Agent Memory,”
+                                                                                      [26] Y. Wang and X. Chen, “MIRIX: Multi-Agent Memory
+     2025. [Online]. Available: https://arxiv.org/abs/2501.13956
+                                                                                           System for LLM-Based Agents,” 2025. [Online]. Available:
+[19] S. Robertson and H. Zaragoza, “The Probabilistic Relevance                            https://arxiv.org/abs/2507.07957
+     Framework: BM25 and Beyond,” Found. Trends Inf. Retr.,                           [28] D. Wu, H. Wang, W. Yu, Y. Zhang, K.-W. Chang, and
+     vol. 3, no. 4, p. 333–389, Apr. 2009. [Online]. Available:                            D. Yu, “LongMemEval: Benchmarking Chat Assistants on
+     https://doi.org/10.1561/1500000019                                                    Long-Term Interactive Memory,” 2024. [Online]. Available:
+[27] T. Wei, N. Sachdeva, B. Coleman, Z. He, Y. Bei, X. Ning, M. Ai,                       https://arxiv.org/abs/2410.10813
+     Y. Li, J. He, E. H. Chi, C. Wang, S. Chen, F. Pereira, W.-C. Kang, and
+     D. Z. Cheng, “Evo-Memory: Benchmarking LLM Agent Test-time                       [29] W. Xu, Z. Liang, K. Mei, H. Gao, J. Tan, and Y. Zhang, “A-MEM:
+     Learning with Self-Evolving Memory,” 2026. [Online]. Available:                       Agentic Memory for LLM Agents,” 2025. [Online]. Available:
+     https://arxiv.org/abs/2511.20857                                                      https://arxiv.org/abs/2502.12110
+
+
+
+
+                                                                                 12
+
