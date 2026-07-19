@@ -2502,6 +2502,76 @@ cross-mode pooling, underspecified common thresholds, and staged policies withou
 sensitivity outputs. It supplies no external calibration, expert acceptance,
 capability, operational quality, reliability, production, or readiness evidence.
 
+#### Metric ordering is conditional on utility authority and executable conformance
+
+A score may be mathematically coherent with a decision model while remaining invalid
+for stakeholder decisions. Preserve this non-inheriting chain [DAU, LAT, ACC]:
+
+```text
+immutable metric implementation + aggregation + eligible observation population
+  → declared action set and parameterized utility/loss family
+    → prior/weight authority, affected parties, units, horizon, and disagreement
+      → exact order/tie or approximate rank/threshold/regret estimand
+        → executable equation-to-code and numerical conformance
+          → held-out system/task/time/population transport
+            → frozen threshold, selection, abstention, or review policy
+              → observed exposure, uptake, and action
+                → realized benefit, burden, loss, and harm
+```
+
+Keep four claim types explicit. **Properness** concerns truthful probabilistic reporting
+in expectation. **Formal alignment** concerns equivalence—possibly through a strictly
+increasing transform—between metric ordering/ties and expected utility for one named
+family and prior. **Stakeholder utility authority** concerns whether affected parties or
+legitimate decision-makers authorize the action model, units, trade-offs, horizon,
+prior, group aggregation, and noncompensatory gates. **Realized benefit** requires a
+used policy and observed consequences. None implies another.
+
+The metric record should therefore bind metric/aggregation hashes; observation unit,
+eligible population, dependence, missingness, and label time; action set; utility
+family and assumptions; authority/elicitation evidence and affected-party scope;
+prior family, parameters, alternatives, disagreement, version, and sensitivity;
+expected-utility computation and numerical error; exact versus approximate estimand;
+held-out transport populations; policy/threshold version; and prohibited claims.
+Treat order with ties, tie-aware rank agreement, top-*k* selection, cardinal
+correspondence, threshold decisions, and regret as different estimands. A forced
+alphabetical or array-order tie break is instrument behavior, not evidence. For strict
+complete rankings only, pairwise agreement is `(Kendall tau + 1) / 2`.
+
+Formal results require executable conformance before empirical promotion. Include
+closed-form and brute-force fixtures; one-item and many-item cases; no-action,
+all-action, and mixed-action cases; ties and near-ties; population-size invariance when
+the theory specifies a mean; Monte Carlo convergence and seed checks; and mutations
+for sign, normalization, threshold inequality, and duplicated total costs. Freeze
+family/prior/threshold choices before held-out systems, tasks, stakeholders, and time;
+do not construct a metric from prior A and treat utilities sampled only from prior A
+as independent validation. Report transport, policy-specific false acceptance or
+rejection, severe defects, workload, latency, cost, regret, subgroup/tail outcomes,
+and realized consequence separately.
+
+Decision-Aligned UQ makes this boundary concrete. Its theorem gives exact order and
+tie preservation for one declared prior-weighted family, and PWU is aligned by
+construction [DAU]. But the priors are heuristic rather than stakeholder-authorized;
+controlled target utilities are five draws from the same prior used to construct each
+PWU; and the applied studies are offline simulations without uptake or consequence.
+The timing-appropriate release also assigns each abstained regression row
+`lambda * n_abstain`, so a mean loss scales as `lambda * n_abstain^2 / n` rather than
+the paper's pointwise `lambda * n_abstain / n`. The independently rerun four-row
+fixture with two abstentions yields `-1.0` in code versus `-0.5` under the paper
+equation. Its strict-ranking Kendall helper discards ties; a five-item one-discordance
+fixture yields `tau=.8` and 90% pair agreement, contradicting the paper's 80%
+interpretation [DAU]. Thus syntax success and apparent alignment can survive a shared
+metric/target implementation defect.
+
+This extends rather than replaces adjacent ladders. LATTICE observes response
+affordances and an unlinked preference panel, not utility [LAT]. Agentic Confidence
+Calibration predicts one configured trial label post hoc, but does not execute a
+selective-action policy or observe workload/loss [ACC]. A formally aligned metric,
+actionable-looking artifact, or calibrated probability remains upstream of policy,
+uptake, and consequence. Reuse metric-monitoring, configured-system,
+participation/authority, response-matrix, task-health, consequence, and validity
+records; do not add a UQ-specific schema.
+
 ### 3.2e Mediated execution and analytical inquiry need link-specific observations
 
 Some evaluations observe a candidate only after another configured system acts
@@ -5415,6 +5485,16 @@ them:
   means. The separate crowd panel is unreleased and unlinked; no user exposure,
   uptake, decision, benefit, burden, harm, professional-validity, production, or
   readiness claim is supported.
+- **[DAU]**
+  `papers/agent-benchmarks/2026-07-19-decision-aligned-uncertainty-metric-validity.md`;
+  reviewed immutable arXiv v1 PDF/text/TeX and the complete timing-appropriate
+  official release at commit `94ab70d6e88857b2b561390f017feb29a1716fac` are
+  recorded there. Hash and ZIP-integrity checks plus independently rerun focused
+  fixtures confirm the selective-regression total-cost defect and tie-blind Kendall
+  behavior. Evidence supports one formal metric–utility alignment criterion and an
+  implementation-validity counterexample—not stakeholder-authorized utility,
+  transported ranking, decision improvement, realized benefit, professional validity,
+  production fitness, or readiness.
 - **[POS]**
   `papers/agent-benchmarks/2026-07-18-proof-or-stop-evidence-gated-lifecycle-validity.md`;
   reviewed immutable arXiv v1 PDF/text/TeX and acquisition-time release provenance

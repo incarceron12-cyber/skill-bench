@@ -1602,6 +1602,7 @@ or task follows.
 | [Agentic CLEAR](../papers/agent-benchmarks/2026-07-17-agentic-clear-dynamic-diagnostic-validity.md) | B | Makes heterogeneous trace normalization, multi-resolution judge views, open-vocabulary issue induction, and evidence backlinks inspectable while showing that sampled judge-text categories are review hypotheses—not stable prevalence, criterion-valid diagnoses, supported roots, or actionable repairs |
 | [Measuring Agents in Production](../papers/agent-benchmarks/2026-07-14-measuring-agents-production-practitioner-evidence.md) | B | Supplies a transparent practitioner instrument and selected reports of bounded workflows, human gates, sensitive context, delayed outcomes, and mixed evaluators; outcome-conditioned recruitment, optional-question denominators, unknown respondent/organization dependence, and no system audit make this portfolio evidence, not representative prevalence or practice efficacy |
 | [Agentic Confidence Calibration](../papers/agent-benchmarks/2026-07-14-agentic-confidence-calibration-validity.md) | B | Separates predicted success for one configured trajectory from repeated reliability and causal diagnosis; its unreleased labels/configurations, post-outcome features, clustering omissions, asymmetric transfer, and logprob dependence block decision-utility or universal-calibration claims |
+| [Decision-Aligned UQ](../papers/agent-benchmarks/2026-07-19-decision-aligned-uncertainty-metric-validity.md) | A/B | Formalizes exact metric order/tie equivalence to one declared prior-weighted utility family, while its heuristic prior authority, same-prior target coupling, selective-regression implementation defect, tie-blind Kendall code, and offline cases separate properness, formal alignment, executable conformance, ranking transport, policy utility, and realized benefit |
 | [ResearchRubrics](../papers/agent-benchmarks/2026-07-10-researchrubrics-expert-rubric-authoring.md) | A | Contributes inspectable criterion authoring while revealing compensatory mandatory criteria and missing applicability/dependence controls |
 | [Project Kaleidoscope](../papers/agent-benchmarks/2026-07-18-project-kaleidoscope-contextual-eval-validity.md) | A/B | Makes a contextual persona/case authoring and reliability-gated jury workflow inspectable, while its formative pilot, judge-assisted one-label runtime annotation, syntactic rubric augmentation, fixed Macro-F1 gate, reused selected calibration rows, correlated judges, and unavailable gated dataset bound it to configured workflow and local agreement—not representative coverage, independent ground truth, transport reliability, governance utility, or readiness |
 | [FinResearchBench II](../papers/agent-benchmarks/2026-07-16-finresearchbench-ii-consensus-rubric-validity.md) | B | Exposes 14,450→3,687→2,600 generated-criterion attrition and makes panel stability/non-triviality screening operational, while report-conditioned generation, outcome-conditioned selection, a 70.76% joint-unanimity subset, partial holdout, and no release block criterion-authority, transport, professional-validity, and readiness claims |
@@ -1669,6 +1670,59 @@ same-control paraphrase/wrapper variants; the proposed taxonomy-drift rate and f
 development pass were not empirical. Existing public-basis, authority, criterion,
 configured-rater, disagreement, artifact/state, trace, metric, task-health, and
 validity records suffice; no linguistics- or safety-specific subsystem follows.
+
+Decision-weighted metrics add a distinct **metric-to-consequence claim chain**:
+
+```text
+versioned metric/property over a declared observation population
+  → declared action and utility/loss family
+    → prior/weight authority, affected parties, units, horizon, and disagreement
+      → exact order/tie alignment or approximate rank/threshold/regret estimand
+        → executable equation-to-code and numerical conformance
+          → held-out system/task/time/population transport
+            → frozen threshold/selection/review policy
+              → observed exposure, uptake, and action
+                → realized benefit, burden, loss, and harm
+```
+
+No link inherits the next. A **proper** score rewards truthful probabilistic reporting
+in expectation; **formal decision-alignment** means order and ties match one named
+prior-weighted utility family under stated assumptions. Neither identifies an
+authorized stakeholder utility. Exact order/tie preservation, tie-aware approximate
+ranking, top-*k* agreement, cardinal correspondence, threshold error, and regret are
+different estimands. The family, action set, outcome horizon, affected-party scope,
+prior, severe-harm gates, and aggregation are governed benchmark artifacts, not neutral
+defaults. Freeze their author, role, elicitation evidence, alternatives, disagreement,
+valid period, sensitivity envelope, and prohibited interpretations.
+
+[Decision-Aligned UQ](../papers/agent-benchmarks/2026-07-19-decision-aligned-uncertainty-metric-validity.md)
+supports the formal order/tie criterion and prior-weighted construction, not the later
+rungs. Its controlled targets use only five utility draws from the same authored prior
+that constructs each PWU, and its three applied cases are retrospective policy
+simulations without observed users or consequences. More decisively, the pinned
+paper-time release assigns every abstained regression row the **total** cost
+`lambda * n_abstain`, changing the stated mean contribution from
+`lambda * n_abstain / n` to `lambda * n_abstain^2 / n`. An independently rerun
+four-row/two-abstention fixture yields release utility `-1.0` versus paper-formula
+`-0.5`. Its custom Kendall helper assumes strict permutations and forces ties out of
+the statistic despite tie preservation being part of the theorem; a five-item/one-
+discordance fixture yields `tau=.8`, which is 90%, not 80%, strict pair agreement.
+Syntactic validity and even metric–target agreement can therefore coexist around the
+wrong implemented construct.
+
+Read this chain with LATTICE and Agentic Confidence Calibration. LATTICE stops at
+response properties and a non-linked preference panel; confidence calibration stops
+at post-hoc prediction/calibration for one configured trajectory. A metric aligned to
+an authored utility, an actionable-looking response, and a calibrated failure
+probability all remain upstream of a frozen policy, uptake, workload/loss, and
+consequence. Before any decision-weighted score is used, require closed-form and
+brute-force equation fixtures, one/many-item and no/all/mixed-action cases, ties and
+near-ties, required population-size invariance, numerical-convergence checks, and
+mutations for sign, normalization, threshold direction, and duplicated total costs.
+Then test the frozen policy on held-out tasks, systems, stakeholders, and time periods
+against simple baselines under the same capacity. Existing metric-monitoring,
+configured-system, participation/authority, response-matrix, task-health, consequence,
+and validity records suffice; no UQ-specific schema follows.
 
 Before the second pilot is interpreted, its adversarial audit should plant a pre-
 satisfied requirement, an unrelated record sharing the expected scalar, a title-only
