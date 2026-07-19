@@ -51,11 +51,33 @@ class SelfInspectionRepairExecutionTests(unittest.TestCase):
 
     def test_preflight_replays_all_zero_call_canaries(self) -> None:
         report = launcher.preflight(require_origin=False, write=False)
-        self.assertTrue(report["passed"], json.dumps(report, indent=2))
+        # Before execution the aggregate gate passes. After the one-shot matrix is
+        # retained, only the anti-retry ``execution_root_absent`` gate is expected
+        # to be false; all replayable zero-call gates must remain green.
+        self.assertEqual(not launcher.EXECUTION.exists(), report["passed"], json.dumps(report, indent=2))
+        self.assertEqual(not launcher.EXECUTION.exists(), report["execution_root_absent"])
         self.assertEqual(0, report["model_calls"])
+        self.assertTrue(report["independent_audit_passed"])
+        self.assertTrue(all(row["passed"] for row in report["frozen_commit_bindings"]))
+        self.assertTrue(report["equal_envelope"]["passed"])
         self.assertEqual(12, len(report["isolation_canaries"]))
         self.assertTrue(all(row["passed"] for row in report["isolation_canaries"]))
         self.assertTrue(report["service_and_cost"]["passed"])
+
+    def test_retained_execution_is_complete_one_shot_and_replayable(self) -> None:
+        if not launcher.EXECUTION.exists():
+            self.skipTest("prospective launcher commit has no retained execution yet")
+        report = launcher.replay()
+        self.assertEqual(12, report["declared_assignments"])
+        self.assertEqual(12, report["attempts_retained"])
+        self.assertEqual(10, report["provider_calls"])
+        self.assertEqual(12, len(report["assignment_rows"]))
+        self.assertTrue(all(row["attempt_count"] == 1 for row in report["assignment_rows"]))
+        self.assertTrue(all(row["input_integrity"] and row["service_valid"] and row["no_cost"] for row in report["assignment_rows"]))
+        self.assertTrue(all(row["agent_repair_record_valid"] for row in report["assignment_rows"]))
+        self.assertEqual({"criterion_fail"}, {row["terminal_state"] for row in report["assignment_rows"] if row["condition_id"] == "no_second_attempt"})
+        self.assertEqual({"passed"}, {row["terminal_state"] for row in report["assignment_rows"] if row["condition_id"] != "no_second_attempt"})
+        self.assertFalse(any(report["claim_ceiling"].values()))
 
 
 if __name__ == "__main__":
